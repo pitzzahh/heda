@@ -39,9 +39,7 @@ export default function Page() {
             </BreadcrumbList>
           </Breadcrumb>
         </header>
-        <div className="flex flex-1 flex-col gap-4">
-          <LoadTable />
-        </div>
+        <LoadTable />
       </SidebarInset>
     </SidebarProvider>
   );

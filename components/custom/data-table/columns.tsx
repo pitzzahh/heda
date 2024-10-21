@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DataTableColumnHeader } from "@/components/custom/data-table/data-table-column-header";
 
 export type Payment = {
   id: string;
@@ -25,6 +26,7 @@ export type Payment = {
 export const columns: ColumnDef<Payment>[] = [
   {
     id: "select",
+    accessorKey: "id",
     header: ({ table }) => (
       <Checkbox
         checked={
@@ -47,21 +49,15 @@ export const columns: ColumnDef<Payment>[] = [
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
   },
   {
     accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Email" />
+    ),
   },
   {
     accessorKey: "amount",

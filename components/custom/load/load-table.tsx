@@ -18,7 +18,7 @@ export default async function LoadTable() {
   const data = await getData();
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="mx-2">
       <DataTable columns={columns} data={data} />
     </div>
   );
