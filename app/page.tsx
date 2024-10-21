@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { FileActions } from "@/components/file-actions";
 
 export default function Home() {

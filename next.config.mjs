@@ -12,8 +12,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Configure assetPrefix or else the server won't properly resolve your assets.
-  assetPrefix: isProd ? null : `http://${internalHost}:3000`,
+  // Configure assetPrefix for development, leave it undefined for production
+  assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
 };
 
 export default nextConfig;
