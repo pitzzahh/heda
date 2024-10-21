@@ -27,7 +27,7 @@ export async function NavStructure() {
   const data = await Promise.resolve({
     tree: [
       [
-        "app",
+        "Transformer",
         [
           "api",
           ["hello", ["route.ts"]],
