@@ -27,7 +27,7 @@ export async function NavStructure() {
   const data = await Promise.resolve({
     tree: [
       [
-        "Transformer",
+        "transformer",
         [
           "api",
           ["hello", ["route.ts"]],
@@ -79,13 +79,13 @@ function Tree({ item }: { item: string | any[] }) {
             className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
             defaultOpen={name === "components" || name === "ui"}
           >
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton>
+            <SidebarMenuButton>
+              <CollapsibleTrigger asChild>
                 <ChevronRight className="transition-transform" />
-                <Folder />
-                {name}
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
+              </CollapsibleTrigger>
+              <Folder />
+              {name}
+            </SidebarMenuButton>
             <CollapsibleContent>
               <SidebarMenuSub>
                 {items.map((subItem, index) => (
