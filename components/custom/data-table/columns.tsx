@@ -1,10 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, ArrowUpDown } from "lucide-react";
-
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeProps } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,17 +15,21 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/custom/data-table/data-table-column-header";
 
+// Extended Payment type with more complex fields
 export type Payment = {
   id: string;
   amount: number;
+  currency: string;
+  transactionDate: string;
   status: "pending" | "processing" | "success" | "failed";
   email: string;
+  customerName: string;
+  customerCountry: string;
 };
 
 export const columns: ColumnDef<Payment>[] = [
   {
     id: "select",
-    accessorKey: "id",
     header: ({ table }) => (
       <Checkbox
         checked={
@@ -48,29 +51,74 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
+    header: "Customer Info",
+    columns: [
+      {
+        accessorKey: "customerName",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Name" />
+        ),
+      },
+      {
+        accessorKey: "customerCountry",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Country" />
+        ),
+      },
+      {
+        accessorKey: "email",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Email" />
+        ),
+      },
+    ],
   },
   {
-    accessorKey: "email",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Email" />
-    ),
-  },
-  {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount);
+    header: "Payment Details",
+    columns: [
+      {
+        accessorKey: "amount",
+        header: () => <div className="text-right">Amount</div>,
+        cell: ({ row }) => {
+          const amount = parseFloat(row.getValue("amount"));
+          const currency = row.getValue("currency") as string;
+          const formatted = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+          }).format(amount);
 
-      return <div className="text-right font-medium">{formatted}</div>;
-    },
+          return <div className="text-right font-medium">{formatted}</div>;
+        },
+      },
+      {
+        accessorKey: "transactionDate",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Transaction Date" />
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("transactionDate") as string;
+          return (
+            <div className="text-right">
+              {new Date(date).toLocaleDateString()}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "currency",
+        header: () => <div className="text-right">Currency</div>,
+      },
+      {
+        accessorKey: "status",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Status" />
+        ),
+        cell: ({ row }) => {
+          const status = row.getValue("status") as BadgeProps["variant"];
+          return <Badge variant={status}>{status}</Badge>;
+        },
+      },
+    ],
   },
   {
     id: "actions",
