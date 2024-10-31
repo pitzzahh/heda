@@ -12,6 +12,8 @@
 			message: 'A filename is required'
 		})
 	});
+
+	export type NewFileSchema = z.infer<typeof newFileSchema>;
 </script>
 
 <script lang="ts">
@@ -19,18 +21,9 @@
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Label } from '@/components/ui/label/index.js';
+	import { NewFileForm } from '@routes/(components)';
 
-	import { superForm } from 'sveltekit-superforms';
-	import { Field } from 'formsnap';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SuperDebug from 'sveltekit-superforms';
-
-	let { new_file_form } = $props();
-
-	const form = superForm(new_file_form, {
-		validators: zodClient(newFileSchema)
-	});
-	const { form: formData } = form;
+	const { data } = $props();
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-background">
@@ -45,8 +38,7 @@
 						data from our servers.
 					</Dialog.Description>
 				</Dialog.Header>
-
-				<Button href="/home" class="w-full">Save</Button>
+				<NewFileForm new_file_form={data.new_file_form} />
 			</Dialog.Content>
 		</Dialog.Root>
 		<Button variant="ghost" size="xl" class="w-full">Load File</Button>
