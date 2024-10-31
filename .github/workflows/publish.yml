@@ -76,13 +76,13 @@ jobs:
         with:
           version: 9
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        # NOTE: enterprise developers may hard code a version
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 'lts/*'
-          cache: pnpm
-          # node-version-file: '.nvmrc'
+          bun-version: latest
+
+      - name: Install npm as global
+        run: bun install -g npm
 
       - name: Setup Rust
         run: |
