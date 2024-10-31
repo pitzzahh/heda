@@ -101,12 +101,12 @@ jobs:
 
       - name: Install frontend
         run: |
-          pnpm install
+          bun install
 
       - name: CI Build
         if: ${{ github.ref_type == 'branch' }}
         run: |
-          pnpm rls
+          bun tauri build
 
       - name: CI Upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
@@ -114,8 +114,8 @@ jobs:
         with:
           name: 'Windows Installers'
           path: |
-            src-tauri/release/bundle/msi/*.msi
-            src-tauri/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
 
       - name: CI Upload macOS
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'macos-latest' }}
@@ -123,7 +123,7 @@ jobs:
         with:
           name: 'macOS Installer'
           path: |
-            src-tauri/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/dmg/*.dmg
 
       - name: CI Upload Linux
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'ubuntu-latest' }}
