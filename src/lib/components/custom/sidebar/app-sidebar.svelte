@@ -42,11 +42,14 @@
 	import File from 'lucide-svelte/icons/file';
 	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
+	import { SidebarHeader } from '.';
+	import SidebarFooter from './sidebar-footer.svelte';
 
 	let { ref = $bindable(null), ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
+	<SidebarHeader />
 	<Sidebar.Content>
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>Changes</Sidebar.GroupLabel>
@@ -76,6 +79,7 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 	<Sidebar.Rail />
+	<SidebarFooter />
 </Sidebar.Root>
 
 {#snippet Tree({ item }: { item: string | any[] })}
