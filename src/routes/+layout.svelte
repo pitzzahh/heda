@@ -6,6 +6,6 @@
 	let { children } = $props();
 </script>
 
-<Toaster />
+<Toaster richColors={true} />
 <ModeWatcher />
 {@render children?.()}
