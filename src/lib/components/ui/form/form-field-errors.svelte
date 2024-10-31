@@ -1,7 +1,8 @@
 <script lang="ts">
-	import * as FormPrimitive from "formsnap";
-	import type { WithoutChild } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import * as FormPrimitive from 'formsnap';
+	import type { WithoutChild } from 'bits-ui';
+	import { cn } from '$lib/utils.js';
+	import { CrossCircled } from 'svelte-radix';
 
 	let {
 		ref = $bindable(null),
@@ -15,7 +16,7 @@
 </script>
 
 <FormPrimitive.FieldErrors
-	class={cn("text-destructive text-[0.8rem] font-medium", className)}
+	class={cn('text-[0.8rem] font-medium text-destructive', className)}
 	{...restProps}
 >
 	{#snippet children({ errors, errorProps })}
@@ -23,7 +24,10 @@
 			{@render childrenProp({ errors, errorProps })}
 		{:else}
 			{#each errors as error}
-				<div {...errorProps} class={cn(errorClasses)}>{error}</div>
+				<div {...errorProps} class={cn('mb-1 flex items-center justify-start', errorClasses)}>
+					<CrossCircled class="mr-1 inline-flex h-4 w-4" />
+					{error}
+				</div>
 			{/each}
 		{/if}
 	{/snippet}
