@@ -24,6 +24,7 @@
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import type { NewFileSchema } from '@routes/+page.svelte';
 	import SuperDebug from 'sveltekit-superforms';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		new_file_form: T;
@@ -35,13 +36,15 @@
 	const form = superForm(new_file_form, {
 		validators: zodClient(newFileSchema),
 		onSubmit: (values) => {
+			// toast the values
 			console.log(values);
+			toast(`File name: ${$formData.file_name}}`);
 		}
 	});
-	const { form: formData } = form;
+	const { form: formData, enhance } = form;
 </script>
 
-<form>
+<form method="POST" use:enhance>
 	<Form.Field {form} name="file_name">
 		<Form.Control>
 			{#snippet children({ props })}
