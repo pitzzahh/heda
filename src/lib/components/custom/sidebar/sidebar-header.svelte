@@ -47,9 +47,9 @@
 
 		<div class="flex items-center gap-2">
 			<Tooltip>
-				<TooltipTrigger>
+				<TooltipTrigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
 					<Dialog.Root>
-						<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
+						<Dialog.Trigger>
 							<Gear class="size-4" />
 						</Dialog.Trigger>
 						<Dialog.Content class="sm:max-w-[425px]">
