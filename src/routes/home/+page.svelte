@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AppSidebar from '@/components/app-sidebar.svelte';
+	import SidebarPage from '@/components/sidebar-page.svelte';
 </script>
 
-<AppSidebar />
+<SidebarPage />
