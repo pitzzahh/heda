@@ -43,8 +43,7 @@
 	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader } from '.';
-	import SidebarFooter from './sidebar-footer.svelte';
-
+	
 	let { ref = $bindable(null), ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
 </script>
 
