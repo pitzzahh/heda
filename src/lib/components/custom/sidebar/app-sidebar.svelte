@@ -52,22 +52,6 @@
 	<SidebarHeader />
 	<Sidebar.Content>
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Changes</Sidebar.GroupLabel>
-			<Sidebar.GroupContent>
-				<Sidebar.Menu>
-					{#each data.changes as item, index (index)}
-						<Sidebar.MenuItem>
-							<Sidebar.MenuButton>
-								<File />
-								{item.file}
-							</Sidebar.MenuButton>
-							<Sidebar.MenuBadge>{item.state}</Sidebar.MenuBadge>
-						</Sidebar.MenuItem>
-					{/each}
-				</Sidebar.Menu>
-			</Sidebar.GroupContent>
-		</Sidebar.Group>
-		<Sidebar.Group>
 			<Sidebar.GroupLabel>Files</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
@@ -79,7 +63,6 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 	<Sidebar.Rail />
-	<SidebarFooter />
 </Sidebar.Root>
 
 {#snippet Tree({ item }: { item: string | any[] })}
