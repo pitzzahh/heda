@@ -46,7 +46,7 @@
 		</label>
 
 		<label>
-			<input type="range" bind:value={box.current.dimensions[0]} min={100} max={500} />
+			<input type="range" bind:value={box.current.dimensions[0]} min={100} max={700} />
 			width
 		</label>
 
