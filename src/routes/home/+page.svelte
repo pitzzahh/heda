@@ -3,6 +3,17 @@
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
+	import { LocalStorage } from '@/hooks/storage.svelte';
+
+	type Box = {
+		color: string;
+		dimensions: number[];
+	};
+
+	const box = new LocalStorage<Box>('box', {
+		color: '#ff3e00',
+		dimensions: [100, 100]
+	});
 </script>
 
 <Sidebar.Provider>
@@ -27,13 +38,38 @@
 				</Breadcrumb.List>
 			</Breadcrumb.Root>
 		</header>
-		<div class="flex flex-1 flex-col gap-4 p-4">
-			<div class="grid auto-rows-min gap-4 md:grid-cols-3">
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-			</div>
-			<div class="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min"></div>
-		</div>
+		<p>tip: open this page in multiple tabs</p>
+
+		<label>
+			<input type="color" bind:value={box.current.color} />
+			color
+		</label>
+
+		<label>
+			<input type="range" bind:value={box.current.dimensions[0]} min={100} max={500} />
+			width
+		</label>
+
+		<label>
+			<input type="range" bind:value={box.current.dimensions[1]} min={100} max={500} />
+			height
+		</label>
+
+		<hr />
+
+		<div
+			class="box"
+			style:background={box.current.color}
+			style:width="{box.current.dimensions[0]}px"
+			style:height="{box.current.dimensions[1]}px"
+		></div>
 	</Sidebar.Inset>
 </Sidebar.Provider>
+
+<style>
+	label {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+	}
+</style>
