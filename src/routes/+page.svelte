@@ -17,7 +17,10 @@
 						Choose the file name and other options for the new file.
 					</Dialog.Description>
 				</Dialog.Header>
-				<NewFileForm new_file_form={data.new_file_form} />
+				<NewFileForm
+					new_file_form={data.new_file_form}
+					recent_files={['peter-file', 'alessandro-file', 'misha-file', 'jason-file']}
+				/>
 			</Dialog.Content>
 		</Dialog.Root>
 		<Button variant="ghost" size="xl" class="w-full">Load File</Button>
