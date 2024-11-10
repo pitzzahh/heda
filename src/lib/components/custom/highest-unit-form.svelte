@@ -1,9 +1,7 @@
 <script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
-	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SuperDebug from 'sveltekit-superforms';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
@@ -117,8 +115,7 @@
 					</Popover.Content>
 				</Popover.Root>
 				<Form.Description>
-					This is the ambient temp that will determine the ambient temp of the wire from main to
-					load.
+					This is the ambient temp that will determine the ambient temp of the wire to the main.
 				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -127,9 +124,11 @@
 			<Form.Field {form} name="wire_length">
 				<Form.Control>
 					{#snippet children({ props })}
-						<Form.Label>Wire length</Form.Label>
+						<Form.Label>Wire length (m)</Form.Label>
 						<Input
 							{...props}
+							type="number"
+							inputmode="numeric"
 							bind:value={$formData.wire_length}
 							placeholder="Enter the wire length"
 						/>
@@ -147,7 +146,7 @@
 							<Form.Label
 								class={buttonVariants({
 									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-primary/50'
+									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
 								})}
 							>
 								<RadioGroup.Item value="one_phase" {...props} class="sr-only" />
@@ -162,7 +161,7 @@
 							<Form.Label
 								class={buttonVariants({
 									variant: 'outline',
-									className: 'w-full font-normal  [&:has([data-state=checked])]:bg-primary/50'
+									className: 'w-full font-normal  [&:has([data-state=checked])]:bg-muted'
 								})}
 							>
 								<RadioGroup.Item value="three_phase_wye" {...props} class="sr-only" />
@@ -177,7 +176,7 @@
 							<Form.Label
 								class={buttonVariants({
 									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-primary/50'
+									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
 								})}
 							>
 								<RadioGroup.Item value="three_phase_delta" {...props} class="sr-only" />
@@ -192,9 +191,3 @@
 	</div>
 	<Form.Button class="w-full">Proceed</Form.Button>
 </form>
-
-{#if dev}
-	<div class="absolute bottom-5 right-5">
-		<SuperDebug data={$formData} />
-	</div>
-{/if}
