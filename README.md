@@ -13,3 +13,7 @@
 - Simple interface for scheduling electrical loads.
 - Efficient tools for analyzing voltage drops in circuits.
 - Short circuit analysis to ensure system safety.
+
+## Fonts
+- Verdana
+- Isocpeur

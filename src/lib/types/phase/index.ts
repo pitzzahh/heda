@@ -1,0 +1,1 @@
+export type Phase = 'ONE_PHASE' | 'THREE_PHASE_WYE' | 'THREE_PHASE_DELTA';

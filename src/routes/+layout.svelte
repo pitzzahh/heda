@@ -7,5 +7,5 @@
 </script>
 
 <Toaster richColors={true} />
-<ModeWatcher />
+<ModeWatcher />	
 {@render children?.()}
