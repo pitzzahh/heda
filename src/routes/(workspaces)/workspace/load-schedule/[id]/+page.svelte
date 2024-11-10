@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { TThreePhaseLoadSchedule } from '@/components/custom/tables/columns';
-	import DataTable from '@/components/custom/tables/data-table.svelte';
-	import { columns } from '@/components/custom/tables/columns';
+	import type { TThreePhaseLoadSchedule } from '@/components/custom/table/columns';
+	import DataTable from '@/components/custom/table/data-table.svelte';
+	import { columns } from '@/components/custom/table/columns';
 
 	let id = $page.params.id;
 
