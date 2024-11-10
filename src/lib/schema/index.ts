@@ -12,10 +12,9 @@ export const highest_unit_schema = z.object({
     }
   ),
   wire_length: z
-    .string()
-    .refine(FIELD_VALIDATION.TEST.ALL_NUMBER, 'Wire length must be a number')
-    .refine((value) => Number(value) > 0, {
-      message: 'Wire must be greater than 0.'
+    .number({ message: "Please enter a valid wire length." })
+    .refine((value) => value > 0, {
+      message: 'Wire length must be greater than 0.'
     }),
   phase: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
     required_error: 'You need to select a phase'
