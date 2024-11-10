@@ -1,0 +1,1 @@
+export type LoadType = "DEFAULT" | 'CUSTOM';

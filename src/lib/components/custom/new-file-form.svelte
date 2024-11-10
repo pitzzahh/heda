@@ -9,21 +9,25 @@
 </script>
 
 <script lang="ts" generics="T extends SuperValidated<NewFileSchema>">
-	import { Input } from '@/components/ui/input/index.js';
+	import { dev } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
-	import * as Form from '@/components/ui/form/index.js';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import SuperDebug from 'sveltekit-superforms';
 	import { toast } from 'svelte-sonner';
-	import { dev } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { Input } from '@/components/ui/input/index.js';
+	import { Button } from '@/components/ui/button/index.js';
+	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
+	import { Separator } from '@/components/ui/separator/index.js';
+	import * as Form from '@/components/ui/form/index.js';
 
 	interface Props {
 		new_file_form: T;
 		saved_path?: string;
+		recent_files?: string[];
 	}
 
-	let { new_file_form, saved_path = 'Documents' }: Props = $props();
+	let { new_file_form, saved_path = 'Documents', recent_files }: Props = $props();
 
 	const form = superForm(new_file_form, {
 		SPA: true,
@@ -55,6 +59,24 @@
 		<Form.FieldErrors />
 	</Form.Field>
 	<Form.Button class="w-full">Save</Form.Button>
+	{#if recent_files}
+		<h4 class="my-4 text-sm font-medium leading-none">Recent files</h4>
+		<ScrollArea class="h-40">
+			<svelte:fragment>
+				{#each recent_files as rf}
+					<Button
+						class="w-full"
+						variant="ghost"
+						onclick={() => {
+							$formData.file_name = rf;
+							form.submit();
+						}}>{rf}</Button
+					>
+					<Separator class="my-2" />
+				{/each}
+			</svelte:fragment>
+		</ScrollArea>
+	{/if}
 </form>
 
 {#if dev}
