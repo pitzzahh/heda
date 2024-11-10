@@ -10,7 +10,7 @@ export type MainLoad = {
 }
 
 export type LoadDescription = {
-  
+
 }
 
 export type OnePhaseLoad = {
