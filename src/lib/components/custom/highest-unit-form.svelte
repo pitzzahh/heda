@@ -12,7 +12,7 @@
 	import * as Command from '@/components/ui/command/index.js';
 	import { tick } from 'svelte';
 	import { useId } from 'bits-ui';
-	import { cn } from '$lib/utils.js';
+	import { cn } from '@/utils';
 	import { buttonVariants } from '@/components/ui/button';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
@@ -194,5 +194,7 @@
 </form>
 
 {#if dev}
-	<SuperDebug data={$formData} />
+	<div class="absolute bottom-5 right-5">
+		<SuperDebug data={$formData} />
+	</div>
 {/if}
