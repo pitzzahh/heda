@@ -29,7 +29,7 @@
 			// toast the values
 			if (form.valid) {
 				toast.success('Form is valid');
-				goto('/home');
+				goto('/workspace');
 			} else {
 				toast.error('Form is invalid');
 			}
