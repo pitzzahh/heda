@@ -1,8 +1,8 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Voltix",
-	"version": "0.0.5",
-	"identifier": "me.araopj.voltix",
+	"version": "0.0.6",
+	"identifier": "me.araopj.heda",
 	"build": {
 		"frontendDist": "../build",
 		"devUrl": "http://localhost:5173",
