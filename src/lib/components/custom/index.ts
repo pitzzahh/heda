@@ -1,1 +1,1 @@
-export { default as UnitForm } from './highest-unit-form.svelte'
+export { default as HighestUnitForm } from './highest-unit-form.svelte'
