@@ -1,8 +1,8 @@
-# ⚡ PEC Voltix
+# ⚡ HEDA
 
 [![publish](https://github.com/pitzzahh/voltix/actions/workflows/publish.yml/badge.svg)](https://github.com/pitzzahh/voltix/actions/workflows/publish.yml)
 
-**PEC Voltix** is an easy-to-use tool designed to help with essential electrical engineering tasks such as:
+**HEDA** is an easy-to-use tool designed to help with essential electrical engineering tasks such as:
 
 - 📅 **Load Scheduling**
 - 🔋 **Voltage Drop Analysis**
