@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
 	import { AppSidebar } from '@/components/custom/sidebar';
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
@@ -10,18 +9,14 @@
 	import { toast } from 'svelte-sonner';
 	import { HighestUnitForm } from '@/components/custom';
 
-	interface Props {
-		is_new_file: boolean;
-		is_load_file: boolean;
-		data: PageData;
-	}
+	let { data } = $props();
+	const { is_new_file, is_load_file } = $derived(data);
 
-	let { is_new_file, is_load_file, data }: Props = $props();
-
-	let highest_unit = $state(is_new_file);
+	let highest_unit = $state(false);
 
 	onMount(() => {
 		toast.info(`Is new file: ${is_new_file}\nIs load file: ${is_load_file}`);
+		highest_unit = is_new_file;
 	});
 </script>
 
@@ -52,15 +47,12 @@
 
 <Dialog.Root bind:open={highest_unit}>
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Highest unit form</Dialog.Trigger>
-	<Dialog.Content class="sm:max-w-[425px]">
+	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title class="text-center font-bold"
 				>Choose the highest unit for this project.</Dialog.Title
 			>
 		</Dialog.Header>
 		<HighestUnitForm highest_unit_form={data.highest_unit_form} />
-		<Dialog.Footer>
-			<Button type="submit">Save changes</Button>
-		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
