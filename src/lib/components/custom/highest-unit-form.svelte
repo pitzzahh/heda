@@ -45,12 +45,12 @@
 	import { CaretSort, Check } from '@/assets/icons/radix';
 
 	interface Props {
-		higest_unit_form: T;
+		highest_unit_form: T;
 	}
 
-	let { higest_unit_form }: Props = $props();
+	let { highest_unit_form }: Props = $props();
 
-	const form = superForm(higest_unit_form, {
+	const form = superForm(highest_unit_form, {
 		SPA: true,
 		validators: zodClient(unit_schema),
 		onUpdate: ({ form }) => {
