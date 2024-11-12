@@ -15,6 +15,9 @@
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
 	import { ambient_temperatures } from '@/constants';
+	import { MISC_STATE_CTX } from '@/state/constants';
+	import { getState } from '@/state/index.svelte';
+	import type { MiscState } from '@/state/types';
 
 	interface Props {
 		highest_unit_form: T;
@@ -36,9 +39,10 @@
 		}
 	});
 	const { form: formData, enhance } = form;
+	const miscState = getState<MiscState>(MISC_STATE_CTX);
+	const ambient_temp_trigger_id = useId();
 
 	let open_ambient_temp = $state(false);
-	const ambient_temp_trigger_id = useId();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
@@ -49,6 +53,13 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		miscState.form_data = {
+			data: $formData,
+			label: 'Highest unit form'
+		};
+	});
 </script>
 
 <form method="POST" use:enhance>
