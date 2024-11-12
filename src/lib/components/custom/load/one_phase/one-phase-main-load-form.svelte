@@ -1,19 +1,4 @@
-<script module>
-	import { z } from 'zod';
-
-	export const one_main_load_schema = z.object({
-		circuit_number: z.string().refine((v) => v, { message: 'A circuit number is required.' }),
-		ambient_temperature: z
-			.string()
-			.refine((v) => v, { message: 'An ambient temperature is required.' }),
-		phase_name: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
-			required_error: 'You need to select a phase name'
-		})
-	});
-	export type OneMainLoadSchema = z.infer<typeof one_main_load_schema>;
-</script>
-
-<script lang="ts" generics="T extends SuperValidated<OneMainLoadSchema>">
+<script lang="ts" generics="T extends SuperValidated<OnePhaseMainLoadSchema>">
 	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
@@ -31,20 +16,20 @@
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
-	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
 	import { ambient_temperatures } from '@/constants';
 	import type { LoadType } from '@/types/load';
+	import { one_phase_main_load_schema, type OnePhaseMainLoadSchema } from '@/schema/load/one_phase';
 
 	interface Props {
-		new_file_form: T;
+		one_phase_main_load_form: T;
 		saved_path?: string;
 	}
 
-	let { new_file_form, saved_path = 'Documents' }: Props = $props();
+	let { one_phase_main_load_form }: Props = $props();
 
-	const form = superForm(new_file_form, {
+	const form = superForm(one_phase_main_load_form, {
 		SPA: true,
-		validators: zodClient(one_main_load_schema),
+		validators: zodClient(one_phase_main_load_schema),
 		onUpdate: ({ form }) => {
 			// toast the values
 			if (form.valid) {
@@ -138,12 +123,12 @@
 
 	{#if !load_type}
 		<div class="items-center-justify-between flex gap-2">
-			<Button onclick={()=> load_type = 'DEFAULT'}>Default</Button>
-			<Button onclick={()=> load_type = 'CUSTOM'}>Custom</Button>
+			<Button onclick={() => (load_type = 'DEFAULT')}>Default</Button>
+			<Button onclick={() => (load_type = 'CUSTOM')}>Custom</Button>
 		</div>
 	{/if}
 	{#if load_type === 'DEFAULT'}
-	DEFAULT LOAD FORM
+		DEFAULT LOAD FORM
 	{/if}
 	{#if load_type === 'CUSTOM'}
 		CUSTOM LOAD FORM
