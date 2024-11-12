@@ -75,7 +75,7 @@ jobs:
         uses: mindsers/changelog-reader-action@v2
         with:
           validation_level: warn
-          version: ${{ steps.tag_name.outputs.current_version }}
+          version: ${{ github.ref_name }}
           path: ./changelog.md
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
