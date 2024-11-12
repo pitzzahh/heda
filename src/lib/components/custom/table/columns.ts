@@ -1,6 +1,7 @@
 // import { createRawSnippet } from 'svelte';
 // import { renderSnippet } from '$lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
+import { renderComponent } from "@/components/ui/data-table/index.js";
 
 
 export type TThreePhaseLoadSchedule = {
@@ -28,9 +29,10 @@ export type TThreePhaseLoadSchedule = {
 	conduit_type: string;
 };
 
-export const createLeftMostBaseColumns = <T>(): ColumnDef<T>[] => [
+export const createLeftMostBaseColumns = <T extends TThreePhaseLoadSchedule>(): ColumnDef<T>[] => [
 	{
 		accessorKey: 'crkt_num',
+		cell: ({ row }) => row.original.crkt_num,
 		header: 'CRKT No.'
 	},
 	{
@@ -87,7 +89,7 @@ export const createLeftMostBaseColumns = <T>(): ColumnDef<T>[] => [
 	}
 ];
 
-export const createRightMostBaseColumns = <T>(): ColumnDef<T>[] => [
+export const createRightMostBaseColumns = <T extends TThreePhaseLoadSchedule>(): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
 		columns: [
