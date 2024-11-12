@@ -16,7 +16,7 @@
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
-	import { ambient_temperatures, specials } from '@/constants';
+	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
 	import type { LoadType } from '@/types/load';
 	import { one_phase_main_load_schema, type OnePhaseMainLoadSchema } from '@/schema/load/one_phase';
 
@@ -44,8 +44,10 @@
 
 	let open_ambient_temp = $state(false);
 	let open_special = $state(false);
+	let open_load_description = $state(false);
 	const ambient_temp_trigger_id = useId();
 	const special_trigger_id = useId();
+	const load_description_trigger_id = useId();
 	let load_type = $state<LoadType | undefined>();
 
 	// We want to refocus the trigger button when the user selects
@@ -150,15 +152,7 @@
 		}}
 	>
 		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
-			<Separator class="my-2" />
-		{/if}
-		{#if load_type === 'DEFAULT'}
-			{@render SubFields()}
-		{/if}
-		{#if load_type === 'CUSTOM'}
-			{@render SubFields()}
-		{/if}
-		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
+			{@render SubFields(load_type)}
 			<Separator class="my-2" />
 		{/if}
 	</div>
@@ -166,7 +160,7 @@
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
 
-{#snippet SubFields()}
+{#snippet SubFields(load_type: LoadType | undefined)}
 	<div class="flex justify-between gap-1">
 		<Form.Field {form} name="quantity" class="w-28 text-center">
 			<Form.Control>
@@ -184,19 +178,72 @@
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="load_description" class="w-full text-center">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Load description</Form.Label>
-					<Input
-						{...props}
-						bind:value={$formData.load_description}
-						placeholder="Enter load description"
-					/>
-				{/snippet}
-			</Form.Control>
-			<Form.FieldErrors />
-		</Form.Field>
+		{#if load_type === 'CUSTOM'}
+			<Form.Field {form} name="load_description" class="w-full text-center">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Load description</Form.Label>
+						<Input
+							{...props}
+							bind:value={$formData.load_description}
+							placeholder="Enter load description"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+		{/if}
+		{#if load_type === 'DEFAULT'}
+			<Form.Field {form} name="load_description" class="mt-2 grid w-full text-center">
+				<Popover.Root bind:open={open_load_description}>
+					<Form.Control id={load_description_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>Load description</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.load_description && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{default_loads_description.find((s) => s.value === $formData.load_description)
+									?.label ?? 'Select a load description'}
+								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.load_description} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
+							<Command.Empty>No load description found.</Command.Empty>
+							<Command.Group>
+								{#each default_loads_description as default_load}
+									<Command.Item
+										value={default_load.value}
+										onSelect={() => {
+											$formData.load_description = default_load.value;
+											closeAndFocusTrigger(load_description_trigger_id);
+										}}
+									>
+										{default_load.label}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												default_load.value !== $formData.load_description && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.FieldErrors />
+			</Form.Field>
+		{/if}
 		<Form.Field {form} name="varies" class="text-center">
 			<Form.Control>
 				{#snippet children({ props })}
@@ -213,16 +260,16 @@
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="continuous" class="mt-2 grid text-center">
+		<Form.Field {form} name="continuous" class="mt-1.5 grid text-center">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
 					<Checkbox {...props} bind:checked={$formData.continuous} />
-					<input name={props.name} value={$formData.continuous} hidden />
+					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
 				{/snippet}
 			</Form.Control>
 		</Form.Field>
-		<Form.Field {form} name="special" class="mt-2 grid text-center">
+		<Form.Field {form} name="special" class="mt-1.5 grid text-center">
 			<Popover.Root bind:open={open_special}>
 				<Form.Control id={special_trigger_id}>
 					{#snippet children({ props })}
