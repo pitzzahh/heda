@@ -68,7 +68,7 @@
 	$effect(() => {
 		miscState.form_data = {
 			data: $formData,
-			label: 'One phase main load form'
+			label: 'One phase main panel form'
 		};
 	});
 </script>
