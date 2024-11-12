@@ -1,6 +1,6 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-	"productName": "Voltix",
+	"productName": "Hierarchical Electrical Design Analyzer",
 	"version": "0.0.11",
 	"identifier": "me.araopj.heda",
 	"build": {
@@ -12,7 +12,7 @@
 	"app": {
 		"windows": [
 			{
-				"title": "Voltix",
+				"title": "Hierarchical Electrical Design Analyzer",
 				"width": 800,
 				"height": 600,
 				"minWidth": 800,
