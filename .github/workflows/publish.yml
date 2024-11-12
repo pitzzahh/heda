@@ -5,15 +5,16 @@ on:
     tags:
       - '*.*.*'
 
-permissions:
-  contents: write
-  releases: write
+
 
 env:
   APP_NAME: 'PEC Voltix'
 
 jobs:
   release:
+    permissions:
+      contents: write
+      releases: write
     strategy:
       fail-fast: false
       matrix:
