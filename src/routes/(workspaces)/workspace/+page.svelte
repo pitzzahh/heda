@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { FileQuestionIcon } from '@/assets/icons/lucide';
-	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
+	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { OnePhaseMainLoadForm } from '@/components/custom/load';
 
@@ -15,7 +15,7 @@
 <Dialog.Root>
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Test Main Load Form</Dialog.Trigger
 	>
-	<Dialog.Content class="w-2/4">
+	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Test Main Load Form</Dialog.Title>
 			<Dialog.Description>Enter the load details.</Dialog.Description>
