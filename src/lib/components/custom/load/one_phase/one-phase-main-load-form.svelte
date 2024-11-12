@@ -7,7 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
+	import { Checkbox } from '@/components/ui/checkbox/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
@@ -62,13 +62,16 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Circuit number</Form.Label>
-				<Input {...props} bind:value={$formData.circuit_number} />
+				<Input
+					{...props}
+					bind:value={$formData.circuit_number}
+					placeholder="Enter the circuit number"
+				/>
 			{/snippet}
 		</Form.Control>
-		<Form.Description>This is the main load name</Form.Description>
 		<Form.FieldErrors />
 	</Form.Field>
-	<Form.Field {form} name="ambient_temperature" class="col-span-2 flex flex-col">
+	<Form.Field {form} name="load_ambient_temperature" class="col-span-2 flex flex-col">
 		<Popover.Root bind:open={open_ambient_temp}>
 			<Form.Control id={ambient_temp_trigger_id}>
 				{#snippet children({ props })}
@@ -77,16 +80,16 @@
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'justify-between',
-							!$formData.ambient_temperature && 'text-muted-foreground'
+							!$formData.load_ambient_temperature && 'text-muted-foreground'
 						)}
 						role="combobox"
 						{...props}
 					>
-						{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)?.label ??
-							'Select an ambient temperature'}
+						{ambient_temperatures.find((f) => f.value === $formData.load_ambient_temperature)
+							?.label ?? 'Select an ambient temperature'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
-					<input hidden value={$formData.ambient_temperature} name={props.name} />
+					<input hidden value={$formData.load_ambient_temperature} name={props.name} />
 				{/snippet}
 			</Form.Control>
 			<Popover.Content class="w-auto p-0">
@@ -98,7 +101,7 @@
 							<Command.Item
 								value={ambient_temp.value}
 								onSelect={() => {
-									$formData.ambient_temperature = ambient_temp.value;
+									$formData.load_ambient_temperature = ambient_temp.value;
 									closeAndFocusTrigger(ambient_temp_trigger_id);
 								}}
 							>
@@ -106,7 +109,7 @@
 								<Check
 									class={cn(
 										'ml-auto size-4',
-										ambient_temp.value !== $formData.ambient_temperature && 'text-transparent'
+										ambient_temp.value !== $formData.load_ambient_temperature && 'text-transparent'
 									)}
 								/>
 							</Command.Item>
@@ -122,20 +125,73 @@
 	</Form.Field>
 
 	{#if !load_type}
-		<div class="items-center-justify-between flex gap-2">
-			<Button onclick={() => (load_type = 'DEFAULT')}>Default</Button>
-			<Button onclick={() => (load_type = 'CUSTOM')}>Custom</Button>
+		<div class="my-2 flex items-center justify-around gap-2">
+			<Button variant="outline" onclick={() => (load_type = 'DEFAULT')}>Default</Button>
+			<Button variant="outline" onclick={() => (load_type = 'CUSTOM')}>Custom</Button>
 		</div>
 	{/if}
 	{#if load_type === 'DEFAULT'}
 		DEFAULT LOAD FORM
 	{/if}
 	{#if load_type === 'CUSTOM'}
-		CUSTOM LOAD FORM
+		<div class="grid grid-cols-5 place-items-center gap-1">
+			<Form.Field {form} name="quantity">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>QTY</Form.Label>
+						<Input {...props} bind:value={$formData.quantity} placeholder="Enter quantity" />
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field {form} name="load_description">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Load description</Form.Label>
+						<Input
+							{...props}
+							bind:value={$formData.load_description}
+							placeholder="Enter load description"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field {form} name="varies">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Varies</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							bind:value={$formData.varies}
+							placeholder="Enter varies"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field
+				{form}
+				name="continuous"
+				class="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
+			>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Checkbox {...props} bind:checked={$formData.continuous} />
+						<div class="space-y-1 leading-none">
+							<Form.Label>Continuous</Form.Label>
+						</div>
+						<input name={props.name} value={$formData.continuous} hidden />
+					{/snippet}
+				</Form.Control>
+			</Form.Field>
+		</div>
 	{/if}
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
 
-{#if dev}
+<!-- {#if dev}
 	<SuperDebug data={$formData} />
-{/if}
+{/if} -->
