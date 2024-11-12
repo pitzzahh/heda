@@ -1,14 +1,11 @@
 <script lang="ts" generics="T extends SuperValidated<OnePhaseMainLoadSchema>">
-	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SuperDebug from 'sveltekit-superforms';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import { Checkbox } from '@/components/ui/checkbox/index.js';
-	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
 	import * as Form from '@/components/ui/form/index.js';
@@ -16,7 +13,7 @@
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
-	import { ambient_temperatures } from '@/constants';
+	import { ambient_temperatures, specials } from '@/constants';
 	import type { LoadType } from '@/types/load';
 	import { one_phase_main_load_schema, type OnePhaseMainLoadSchema } from '@/schema/load/one_phase';
 
@@ -43,7 +40,9 @@
 	const { form: formData, enhance } = form;
 
 	let open_ambient_temp = $state(false);
+	let open_special = $state(false);
 	const ambient_temp_trigger_id = useId();
+	const special_trigger_id = useId();
 	let load_type = $state<LoadType | undefined>();
 
 	// We want to refocus the trigger button when the user selects
@@ -51,6 +50,7 @@
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
 		open_ambient_temp = false;
+		open_special = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -85,8 +85,8 @@
 						role="combobox"
 						{...props}
 					>
-						{ambient_temperatures.find((f) => f.value === $formData.load_ambient_temperature)
-							?.label ?? 'Select an ambient temperature'}
+						{specials.find((f) => f.value === $formData.load_ambient_temperature)?.label ??
+							'Select an ambient temperature'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.load_ambient_temperature} name={props.name} />
@@ -134,7 +134,7 @@
 		DEFAULT LOAD FORM
 	{/if}
 	{#if load_type === 'CUSTOM'}
-		<div class="grid grid-cols-5 place-items-center gap-1">
+		<div class="grid grid-cols-5 place-items-stretch gap-4">
 			<Form.Field {form} name="quantity">
 				<Form.Control>
 					{#snippet children({ props })}
@@ -179,13 +179,60 @@
 			>
 				<Form.Control>
 					{#snippet children({ props })}
+						<Form.Label>Continuous</Form.Label>
 						<Checkbox {...props} bind:checked={$formData.continuous} />
-						<div class="space-y-1 leading-none">
-							<Form.Label>Continuous</Form.Label>
-						</div>
 						<input name={props.name} value={$formData.continuous} hidden />
 					{/snippet}
 				</Form.Control>
+			</Form.Field>
+			<Form.Field {form} name="special" class="col-span-2 flex flex-col">
+				<Popover.Root bind:open={open_special}>
+					<Form.Control id={special_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>Special</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.special && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
+								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.special} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a special..." class="h-9" />
+							<Command.Empty>No special found.</Command.Empty>
+							<Command.Group>
+								{#each specials as special}
+									<Command.Item
+										value={special.value}
+										onSelect={() => {
+											$formData.special = special.value;
+											closeAndFocusTrigger(special_trigger_id);
+										}}
+									>
+										{special.label}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												special.value !== $formData.special && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.Description></Form.Description>
+				<Form.FieldErrors />
 			</Form.Field>
 		</div>
 	{/if}
