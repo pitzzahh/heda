@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { TThreePhaseLoadSchedule } from '@/components/custom/table/columns';
-	import DataTable from '@/components/custom/table/data-table.svelte';
-	import { columns } from '@/components/custom/table/columns';
+	import { DataTable } from '@/components/custom/table';
+	import { onePhaseMainCols } from '@/components/custom/table/one-phase-load-cols';
+
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	let id = $page.params.id;
 
-	const data: TThreePhaseLoadSchedule[] = [
+	const data: PhaseLoadSchedule[] = [
 		{
 			crkt_num: 'CKT-001',
 			load_description: 'Lighting Load',
@@ -73,8 +74,10 @@
 	];
 </script>
 
-{#if id}
-	<DataTable {data} {columns} />
-{:else}
-	<p>No file yet</p>
-{/if}
+<div class="flex w-full flex-col gap-2">
+	<div>
+		<p>Distribution Unit: MDP</p>
+		<p>Phase: 1P</p>
+	</div>
+	<DataTable {data} columns={onePhaseMainCols} />
+</div>
