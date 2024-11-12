@@ -13,6 +13,13 @@ export const specials = [
   { label: 'Other', value: 'other' }
 ] as const;
 
+export const default_loads_description = [
+  { label: 'Lighting', value: 'lighting' },
+  { label: 'Receptacles', value: 'receptacles' },
+  { label: 'HVAC', value: 'hvac' },
+  { label: 'Other', value: 'other' }
+] as const;
+
 export const FIELD_VALIDATION = {
   TEST: {
     SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/.test(value),
