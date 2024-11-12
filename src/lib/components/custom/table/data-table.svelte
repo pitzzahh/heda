@@ -28,7 +28,7 @@
 					{#each headerGroup.headers as header, index (header.id)}
 						<Table.Head
 							colspan={header.colSpan}
-							class={cn({
+							class={cn('bg-primary font-semibold text-white', {
 								'border-r': index + 1 < headerGroup.headers.length,
 								'text-center': header.colSpan
 							})}
