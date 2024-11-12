@@ -60,6 +60,7 @@
 	function closeAndFocusTrigger(trigger_id: string) {
 		open_ambient_temp = false;
 		open_special = false;
+		open_load_description = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -168,7 +169,23 @@
 		{/if}
 	</div>
 
-	<Form.Button class="w-full">Save</Form.Button>
+	<div class="flex gap-2">
+		{#if load_type}
+			<Button
+				variant="ghost"
+				onclick={() =>
+					(load_type =
+						load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
+			>
+				Change to {load_type === 'DEFAULT'
+					? 'Default'
+					: load_type === 'CUSTOM'
+						? 'Custom'
+						: undefined}
+			</Button>
+		{/if}
+		<Form.Button class="w-full">Save</Form.Button>
+	</div>
 </form>
 
 {#snippet SubFields(load_type: LoadType | undefined)}
@@ -205,14 +222,14 @@
 			</Form.Field>
 		{/if}
 		{#if load_type === 'DEFAULT'}
-			<Form.Field {form} name="load_description" class="mt-2 grid w-full text-center">
+			<Form.Field {form} name="load_description" class="mt-2 grid w-full space-y-2 text-center">
 				<Popover.Root bind:open={open_load_description}>
 					<Form.Control id={load_description_trigger_id}>
 						{#snippet children({ props })}
 							<Form.Label>Load description</Form.Label>
 							<Popover.Trigger
 								class={cn(
-									buttonVariants({ variant: 'outline' }),
+									buttonVariants({ variant: 'outline', className: 'mt-0' }),
 									'justify-between',
 									!$formData.load_description && 'text-muted-foreground'
 								)}
@@ -275,12 +292,12 @@
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
-					<Checkbox {...props} bind:checked={$formData.continuous} />
+					<Checkbox {...props} bind:checked={$formData.continuous} class="mx-auto mt-0" />
 					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
 				{/snippet}
 			</Form.Control>
 		</Form.Field>
-		<Form.Field {form} name="special" class="mt-1.5 grid text-center">
+		<Form.Field {form} name="special" class="mt-2 grid text-center">
 			<Popover.Root bind:open={open_special}>
 				<Form.Control id={special_trigger_id}>
 					{#snippet children({ props })}
