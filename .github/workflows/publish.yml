@@ -10,16 +10,18 @@ env:
 
 jobs:
   release:
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          # - platform: 'macos-latest' # for Arm based macs (M1 and above).
-          #   args: '--target aarch64-apple-darwin'
-          # - platform: 'macos-latest' # for Intel based macs.
-          #   args: '--target x86_64-apple-darwin'
-          # - platform: 'ubuntu-22.04'
-          #   args: ''
+          - platform: 'macos-latest' # for Arm based macs (M1 and above).
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
           - platform: 'windows-latest'
             args: ''
 
@@ -70,20 +72,13 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-      # - name: Update CHANGELOG
-      #   id: changelog
-      #   uses: requarks/changelog-action@v1
-      #   with:
-      #     token: ${{ github.token }}
-      #     tag: ${{ github.ref_name }}
-
-      # - name: Build changelog.md
-      #   uses: stefanzweifel/git-auto-commit-action@v4
-      #   with:
-      #     branch: main
-      #     commit_message: '📝 Update changelog.md for ${{ github.ref_name }}'
-      #     file_pattern: changelog.md
-
+      - name: Get Changelog Entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          validation_level: warn
+          version: ${{ github.ref_name }}
+          path: ./changelog.md
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         if: ${{ github.ref_type == 'tag' }}
@@ -93,7 +88,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '${{ env.APP_NAME }} v__VERSION__'
-          releaseBody: 'Download the assets below'
+          releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
