@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ambient_temperatures, MIN_VARIES, MAX_VARIES, MIN_WIRE_LENGTH, MAX_WIRE_LENGTH } from '@/constants';
-import type { Temperature } from '@/types/misc';
+import { ambient_temperatures, specials, MIN_VARIES, MAX_VARIES, MIN_WIRE_LENGTH, MAX_WIRE_LENGTH } from '@/constants';
+import type { Temperature, Special } from '@/types/misc';
 
 export const one_phase_main_load_schema = z.object({
   distribution_unit: z.string().refine((v) => v, { message: 'A distribution unit is required.' }),
@@ -34,5 +34,11 @@ export const one_phase_main_load_schema = z.object({
     .refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` })
     .refine((v) => v <= MAX_VARIES, { message: `Varies must be less than or equal to ${MAX_VARIES}` }),
   continuous: z.boolean(),
+  special: z.enum(
+    specials.map((f) => f.value) as [Special, ...Special[]],
+    {
+      errorMap: () => ({ message: 'Please select a valid special.' })
+    }
+  ),
 })
 export type OnePhaseMainLoadSchema = z.infer<typeof one_phase_main_load_schema>;
