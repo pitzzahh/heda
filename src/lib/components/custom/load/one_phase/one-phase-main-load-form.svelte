@@ -95,11 +95,11 @@
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="load_ambient_temperature" class="mt-2.5 flex flex-col">
+		<Form.Field {form} name="load_ambient_temperature" class="mt-2 flex flex-col">
 			<Popover.Root bind:open={open_ambient_temp}>
 				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
-						<Form.Label>Ambient Temperature</Form.Label>
+						<Form.Label class="mb-0.5">Ambient Temperature</Form.Label>
 						<Popover.Trigger
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
@@ -190,7 +190,7 @@
 
 {#snippet SubFields(load_type: LoadType | undefined)}
 	<div class="flex justify-between gap-1">
-		<Form.Field {form} name="quantity" class="w-28 text-center">
+		<Form.Field {form} name="quantity" class="text-center">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>QTY</Form.Label>
@@ -222,14 +222,18 @@
 			</Form.Field>
 		{/if}
 		{#if load_type === 'DEFAULT'}
-			<Form.Field {form} name="load_description" class="mt-2 grid w-full space-y-2 text-center">
+			<Form.Field
+				{form}
+				name="load_description"
+				class="mt-[0.42rem] flex w-full flex-col text-center"
+			>
 				<Popover.Root bind:open={open_load_description}>
 					<Form.Control id={load_description_trigger_id}>
 						{#snippet children({ props })}
-							<Form.Label>Load description</Form.Label>
+							<Form.Label class="mb-[0.2rem]">Load description</Form.Label>
 							<Popover.Trigger
 								class={cn(
-									buttonVariants({ variant: 'outline', className: 'mt-0' }),
+									buttonVariants({ variant: 'outline' }),
 									'justify-between',
 									!$formData.load_description && 'text-muted-foreground'
 								)}
@@ -292,57 +296,83 @@
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
-					<Checkbox {...props} bind:checked={$formData.continuous} class="mx-auto mt-0" />
+					<Checkbox
+						disabled={load_type === 'DEFAULT'}
+						{...props}
+						bind:checked={$formData.continuous}
+						class="mx-auto mt-0"
+					/>
 					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
 				{/snippet}
 			</Form.Control>
 		</Form.Field>
-		<Form.Field {form} name="special" class="mt-2 grid text-center">
-			<Popover.Root bind:open={open_special}>
-				<Form.Control id={special_trigger_id}>
+		<Form.Field
+			{form}
+			name="special"
+			class={cn('text-center', {
+				'mt-2 grid': load_type === 'CUSTOM'
+			})}
+		>
+			{#if load_type === 'DEFAULT'}
+				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Special</Form.Label>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
-								!$formData.special && 'text-muted-foreground'
-							)}
-							role="combobox"
+						<Input
+							disabled={true}
 							{...props}
-						>
-							{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<input hidden value={$formData.special} name={props.name} />
+							bind:value={$formData.special}
+							placeholder="Enter a special"
+						/>
 					{/snippet}
 				</Form.Control>
-				<Popover.Content class="w-auto p-0">
-					<Command.Root>
-						<Command.Input autofocus placeholder="Search a special..." class="h-9" />
-						<Command.Empty>No special found.</Command.Empty>
-						<Command.Group>
-							{#each specials as special}
-								<Command.Item
-									value={special.value}
-									onSelect={() => {
-										$formData.special = special.value;
-										closeAndFocusTrigger(special_trigger_id);
-									}}
-								>
-									{special.label}
-									<Check
-										class={cn(
-											'ml-auto size-4',
-											special.value !== $formData.special && 'text-transparent'
-										)}
-									/>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
+			{/if}
+			{#if load_type === 'CUSTOM'}
+				<Popover.Root bind:open={open_special}>
+					<Form.Control id={special_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>Special</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.special && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
+								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.special} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a special..." class="h-9" />
+							<Command.Empty>No special found.</Command.Empty>
+							<Command.Group>
+								{#each specials as special}
+									<Command.Item
+										value={special.value}
+										onSelect={() => {
+											$formData.special = special.value;
+											closeAndFocusTrigger(special_trigger_id);
+										}}
+									>
+										{special.label}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												special.value !== $formData.special && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+			{/if}
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>
