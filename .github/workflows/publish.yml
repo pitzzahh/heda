@@ -5,6 +5,10 @@ on:
     tags:
       - '*.*.*'
 
+permissions:
+  contents: write
+  releases: write
+
 env:
   APP_NAME: 'PEC Voltix'
 
