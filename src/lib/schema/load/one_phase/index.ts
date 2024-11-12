@@ -33,5 +33,6 @@ export const one_phase_main_load_schema = z.object({
   varies: z.number()
     .refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` })
     .refine((v) => v <= MAX_VARIES, { message: `Varies must be less than or equal to ${MAX_VARIES}` }),
+  continuous: z.boolean(),
 })
 export type OnePhaseMainLoadSchema = z.infer<typeof one_phase_main_load_schema>;
