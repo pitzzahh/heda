@@ -20,7 +20,11 @@ export const one_phase_main_load_schema = z.object({
   phase: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
     required_error: 'You need to select a phase'
   }),
-  circuit_number: z.string().refine((v) => v, { message: 'A circuit number is required.' }),
+  circuit_number: z
+    .number({ message: "Please enter a valid circuit number." })
+    .refine((value) => value > 0, {
+      message: 'Circuit number must be greater than 0.'
+    }),
   load_ambient_temperature: z
     .string()
     .refine((v) => v, { message: 'An ambient temperature is required.' }),
