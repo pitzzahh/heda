@@ -70,6 +70,7 @@
 						{...props}
 						type="number"
 						inputmode="numeric"
+						min={1}
 						bind:value={$formData.circuit_number}
 						placeholder="Enter the circuit number"
 					/>
@@ -94,8 +95,8 @@
 							role="combobox"
 							{...props}
 						>
-							{specials.find((f) => f.value === $formData.load_ambient_temperature)?.label ??
-								'Select an ambient temperature'}
+							{ambient_temperatures.find((f) => f.value === $formData.load_ambient_temperature)
+								?.label ?? 'Select an ambient temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
@@ -163,6 +164,7 @@
 							<Input
 								{...props}
 								type="number"
+								min={1}
 								inputmode="numeric"
 								bind:value={$formData.quantity}
 								placeholder="Enter quantity"
@@ -192,6 +194,7 @@
 								{...props}
 								type="number"
 								inputmode="numeric"
+								min={1}
 								bind:value={$formData.varies}
 								placeholder="Enter varies"
 							/>
@@ -199,11 +202,7 @@
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
-				<Form.Field
-					{form}
-					name="continuous"
-					class="grid place-content-around justify-items-center text-center"
-				>
+				<Form.Field {form} name="continuous" class="mt-2 grid text-center">
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Continuous</Form.Label>
@@ -212,7 +211,7 @@
 						{/snippet}
 					</Form.Control>
 				</Form.Field>
-				<Form.Field {form} name="special" class="grid text-center">
+				<Form.Field {form} name="special" class="mt-2 grid text-center">
 					<Popover.Root bind:open={open_special}>
 						<Form.Control id={special_trigger_id}>
 							{#snippet children({ props })}
@@ -259,7 +258,6 @@
 							</Command.Root>
 						</Popover.Content>
 					</Popover.Root>
-					<Form.Description></Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
 			</div>
