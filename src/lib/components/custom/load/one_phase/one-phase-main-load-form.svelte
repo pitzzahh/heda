@@ -153,114 +153,10 @@
 			<Separator class="my-2" />
 		{/if}
 		{#if load_type === 'DEFAULT'}
-			DEFAULT LOAD FORM
+			{@render SubFields()}
 		{/if}
 		{#if load_type === 'CUSTOM'}
-			<div class="flex justify-between gap-1">
-				<Form.Field {form} name="quantity" class="w-28 text-center">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>QTY</Form.Label>
-							<Input
-								{...props}
-								type="number"
-								min={1}
-								inputmode="numeric"
-								bind:value={$formData.quantity}
-								placeholder="Enter quantity"
-							/>
-						{/snippet}
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-				<Form.Field {form} name="load_description" class="w-full text-center">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>Load description</Form.Label>
-							<Input
-								{...props}
-								bind:value={$formData.load_description}
-								placeholder="Enter load description"
-							/>
-						{/snippet}
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-				<Form.Field {form} name="varies" class="text-center">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>Varies</Form.Label>
-							<Input
-								{...props}
-								type="number"
-								inputmode="numeric"
-								min={1}
-								bind:value={$formData.varies}
-								placeholder="Enter varies"
-							/>
-						{/snippet}
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-				<Form.Field {form} name="continuous" class="mt-2 grid text-center">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>Continuous</Form.Label>
-							<Checkbox {...props} bind:checked={$formData.continuous} />
-							<input name={props.name} value={$formData.continuous} hidden />
-						{/snippet}
-					</Form.Control>
-				</Form.Field>
-				<Form.Field {form} name="special" class="mt-2 grid text-center">
-					<Popover.Root bind:open={open_special}>
-						<Form.Control id={special_trigger_id}>
-							{#snippet children({ props })}
-								<Form.Label>Special</Form.Label>
-								<Popover.Trigger
-									class={cn(
-										buttonVariants({ variant: 'outline' }),
-										'justify-between',
-										!$formData.special && 'text-muted-foreground'
-									)}
-									role="combobox"
-									{...props}
-								>
-									{specials.find((s) => s.value === $formData.special)?.label ??
-										'Select an special'}
-									<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-								</Popover.Trigger>
-								<input hidden value={$formData.special} name={props.name} />
-							{/snippet}
-						</Form.Control>
-						<Popover.Content class="w-auto p-0">
-							<Command.Root>
-								<Command.Input autofocus placeholder="Search a special..." class="h-9" />
-								<Command.Empty>No special found.</Command.Empty>
-								<Command.Group>
-									{#each specials as special}
-										<Command.Item
-											value={special.value}
-											onSelect={() => {
-												$formData.special = special.value;
-												closeAndFocusTrigger(special_trigger_id);
-											}}
-										>
-											{special.label}
-											<Check
-												class={cn(
-													'ml-auto size-4',
-													special.value !== $formData.special && 'text-transparent'
-												)}
-											/>
-										</Command.Item>
-									{/each}
-								</Command.Group>
-							</Command.Root>
-						</Popover.Content>
-					</Popover.Root>
-					<Form.FieldErrors />
-				</Form.Field>
-			</div>
+			{@render SubFields()}
 		{/if}
 		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
 			<Separator class="my-2" />
@@ -270,6 +166,109 @@
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
 
-<!-- {#if dev}
-	<SuperDebug data={$formData} />
-{/if} -->
+{#snippet SubFields()}
+	<div class="flex justify-between gap-1">
+		<Form.Field {form} name="quantity" class="w-28 text-center">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>QTY</Form.Label>
+					<Input
+						{...props}
+						type="number"
+						min={1}
+						inputmode="numeric"
+						bind:value={$formData.quantity}
+						placeholder="Enter quantity"
+					/>
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+		<Form.Field {form} name="load_description" class="w-full text-center">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Load description</Form.Label>
+					<Input
+						{...props}
+						bind:value={$formData.load_description}
+						placeholder="Enter load description"
+					/>
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+		<Form.Field {form} name="varies" class="text-center">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Varies</Form.Label>
+					<Input
+						{...props}
+						type="number"
+						inputmode="numeric"
+						min={1}
+						bind:value={$formData.varies}
+						placeholder="Enter varies"
+					/>
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+		<Form.Field {form} name="continuous" class="mt-2 grid text-center">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Continuous</Form.Label>
+					<Checkbox {...props} bind:checked={$formData.continuous} />
+					<input name={props.name} value={$formData.continuous} hidden />
+				{/snippet}
+			</Form.Control>
+		</Form.Field>
+		<Form.Field {form} name="special" class="mt-2 grid text-center">
+			<Popover.Root bind:open={open_special}>
+				<Form.Control id={special_trigger_id}>
+					{#snippet children({ props })}
+						<Form.Label>Special</Form.Label>
+						<Popover.Trigger
+							class={cn(
+								buttonVariants({ variant: 'outline' }),
+								'justify-between',
+								!$formData.special && 'text-muted-foreground'
+							)}
+							role="combobox"
+							{...props}
+						>
+							{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
+							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+						</Popover.Trigger>
+						<input hidden value={$formData.special} name={props.name} />
+					{/snippet}
+				</Form.Control>
+				<Popover.Content class="w-auto p-0">
+					<Command.Root>
+						<Command.Input autofocus placeholder="Search a special..." class="h-9" />
+						<Command.Empty>No special found.</Command.Empty>
+						<Command.Group>
+							{#each specials as special}
+								<Command.Item
+									value={special.value}
+									onSelect={() => {
+										$formData.special = special.value;
+										closeAndFocusTrigger(special_trigger_id);
+									}}
+								>
+									{special.label}
+									<Check
+										class={cn(
+											'ml-auto size-4',
+											special.value !== $formData.special && 'text-transparent'
+										)}
+									/>
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					</Command.Root>
+				</Popover.Content>
+			</Popover.Root>
+			<Form.FieldErrors />
+		</Form.Field>
+	</div>
+{/snippet}
