@@ -15,16 +15,11 @@
 <Dialog.Root>
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Test Main Load Form</Dialog.Trigger
 	>
-	<Dialog.Content class="sm:max-w-fit">
+	<Dialog.Content class="w-2/4">
 		<Dialog.Header>
 			<Dialog.Title>Test Main Load Form</Dialog.Title>
-			<Dialog.Description>
-				Make changes to your profile here. Click save when you're done.
-			</Dialog.Description>
+			<Dialog.Description>Enter the load details.</Dialog.Description>
 		</Dialog.Header>
 		<OnePhaseMainLoadForm one_phase_main_load_form={data.one_phase_main_load_form} />
-		<Dialog.Footer>
-			<Button type="submit">Save changes</Button>
-		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
