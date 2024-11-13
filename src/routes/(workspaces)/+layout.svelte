@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { AppSidebar } from '@/components/custom/sidebar';
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
@@ -8,41 +8,57 @@
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { HighestUnitForm } from '@/components/custom';
+	import { Input } from '@/components/ui/input';
+	import { PenLine } from 'lucide-svelte';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let { data, children } = $props();
 	const { is_new_file, is_load_file } = $derived(data);
 
 	let highest_unit = $state(false);
+	let is_editing = $state(false);
+	// TODO: ADD A DEFAULT VALUE OF THE PROJECT
+	let project_title = $state('Untitled');
 
 	onMount(() => {
 		toast.info(`Is new file: ${is_new_file}\nIs load file: ${is_load_file}`);
 		highest_unit = is_new_file;
 	});
+
+	function toggleEdit() {
+		is_editing = !is_editing;
+		tick().then(() => {
+			document.getElementById('project-title-input')?.focus();
+		});
+	}
 </script>
 
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+		<header class="fixed flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4">
 			<Sidebar.Trigger class="-ml-1" />
 			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumb.Root>
-				<Breadcrumb.List>
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Link href="#">lib</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					<Breadcrumb.Separator class="hidden md:block" />
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Link href="#">components</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					<Breadcrumb.Separator class="hidden md:block" />
-					<Breadcrumb.Item>
-						<Breadcrumb.Page>button.svelte</Breadcrumb.Page>
-					</Breadcrumb.Item>
-				</Breadcrumb.List>
-			</Breadcrumb.Root>
+			<div class="flex items-center gap-2">
+				{#if is_editing}
+					<Input bind:value={project_title} type="text" id="project-title-input" />
+				{:else}
+					<p>
+						{project_title}
+					</p>
+				{/if}
+
+				<Tooltip>
+					<TooltipTrigger>
+						<Button size="icon" variant="outline" onclick={toggleEdit}>
+							<PenLine class="h-4 w-4" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
+				</Tooltip>
+			</div>
 		</header>
-		<div class="flex flex-1 flex-col gap-4 p-4">
+		<div class="mt-14 flex flex-1 flex-col gap-4 p-4">
 			{@render children?.()}
 		</div>
 	</Sidebar.Inset>
