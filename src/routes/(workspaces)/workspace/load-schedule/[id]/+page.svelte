@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { DataTable } from '@/components/custom/table';
-	import { onePhaseMainCols } from '@/components/custom/table/one-phase-load-cols';
+	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols';
 
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
@@ -79,5 +79,5 @@
 		<p>Distribution Unit: MDP</p>
 		<p>Phase: 1P</p>
 	</div>
-	<DataTable {data} columns={onePhaseMainCols} />
+	<DataTable {data} columns={onePhaseMainOrWyeCols} />
 </div>
