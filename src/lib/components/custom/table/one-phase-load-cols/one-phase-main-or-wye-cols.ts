@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/table-core';
 import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-columns';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
-export const onePhaseMainCols: ColumnDef<PhaseLoadSchedule>[] = [
+export const onePhaseMainOrWyeCols: ColumnDef<PhaseLoadSchedule>[] = [
 	...createLeftMostBaseColumns<PhaseLoadSchedule>(),
 	{
 		header: 'CONDUCTOR',
