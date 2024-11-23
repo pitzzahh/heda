@@ -178,9 +178,9 @@
 						load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
 			>
 				Change to {load_type === 'DEFAULT'
-					? 'Default'
+					? 'Custom'
 					: load_type === 'CUSTOM'
-						? 'Custom'
+						? 'Default'
 						: undefined}
 			</Button>
 		{/if}
