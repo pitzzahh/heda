@@ -2,6 +2,10 @@
 	"name": "heda",
 	"version": "0.0.11",
 	"type": "module",
+	"private": true,
+	"author": {
+		"name": "Peter John Arao"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -10,7 +14,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"tauri": "tauri"
+		"tauri": "tauri",
+		"db:gen": "drizzle-kit generate"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
@@ -45,6 +50,7 @@
 	},
 	"dependencies": {
 		"@tanstack/table-core": "^8.20.5",
+		"@tauri-apps/plugin-sql": "^2.0.1",
 		"formsnap": "^2.0.0-next.1",
 		"mode-watcher": "^0.4.1",
 		"svelte-headless-table": "^0.18.3",
