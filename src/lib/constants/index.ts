@@ -5,6 +5,21 @@ export const ambient_temperatures = [
   { label: 'temparature limitation', value: 'default' }
 ] as const;
 
+export const specials = [
+  { label: 'None', value: 'none' },
+  { label: 'Motor', value: 'motor' },
+  { label: 'Welding', value: 'welding' },
+  { label: 'UPS', value: 'ups' },
+  { label: 'Other', value: 'other' }
+] as const;
+
+export const default_loads_description = [
+  { label: 'Lighting', value: 'lighting' },
+  { label: 'Receptacles', value: 'receptacles' },
+  { label: 'HVAC', value: 'hvac' },
+  { label: 'Other', value: 'other' }
+] as const;
+
 export const FIELD_VALIDATION = {
   TEST: {
     SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/.test(value),
@@ -22,3 +37,10 @@ export const FIELD_VALIDATION = {
     MATCH: 'Passwords must match.'
   }
 };
+
+export const MIN_LOAD_QUANTITY = 1;
+export const MAX_LOAD_QUANTITY = 100;
+export const MIN_WIRE_LENGTH = 1;
+export const MAX_WIRE_LENGTH = 1000;
+export const MIN_VARIES = 0;
+export const MAX_VARIES = 100;

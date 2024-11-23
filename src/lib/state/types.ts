@@ -3,6 +3,7 @@ export type State =
 	| RouteState
 	| DialogState
 	| CountState
+	| MiscState;
 
 export type MainState = {
 	isArchiving: boolean;
@@ -35,3 +36,10 @@ export type CountState = {
 	transferredEmployeesCount: number;
 	temporaryEmployeesCount: number;
 };
+
+export type MiscState = {
+	form_data?: {
+		data?: unknown;
+		label?: string;
+	}
+}

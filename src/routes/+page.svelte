@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { NewFileForm } from '@routes/(components)';
+	import { Button } from '@/components/ui/button/index.js';
 
 	const { data } = $props();
 </script>
@@ -11,7 +9,7 @@
 		<h1 class="scroll-m-20 text-4xl font-extrabold uppercase tracking-tight lg:text-5xl">
 			HIERARCHICAL ELECTRICAL DESIGN ANALYZER
 		</h1>
-		<p class="uppercase leading-7 [&:not(:first-child)]:mt-6">
+		<p class="uppercase leading-7 [&:not(:first-child)]:mt-2">
 			DESIGN ANALYSIS SOFTWARE IN COMPLIANCE WITH THE PHILIPPINE ELECTRICAL CODE 2017 EDITION
 		</p>
 	</div>

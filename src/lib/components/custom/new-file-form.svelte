@@ -11,15 +11,17 @@
 <script lang="ts" generics="T extends SuperValidated<NewFileSchema>">
 	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SuperDebug from 'sveltekit-superforms';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Button } from '@/components/ui/button/index.js';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Form from '@/components/ui/form/index.js';
+	import { MISC_STATE_CTX } from '@/state/constants';
+	import { getState } from '@/state/index.svelte';
+	import type { MiscState } from '@/state/types';
 
 	interface Props {
 		new_file_form: T;
@@ -43,6 +45,14 @@
 		}
 	});
 	const { form: formData, enhance } = form;
+	const miscState = getState<MiscState>(MISC_STATE_CTX);
+
+	$effect(() => {
+		miscState.form_data = {
+			data: $formData,
+			label: 'New file form'
+		};
+	});
 </script>
 
 <form method="POST" use:enhance>
@@ -78,7 +88,3 @@
 		</ScrollArea>
 	{/if}
 </form>
-
-{#if dev}
-	<SuperDebug data={$formData} />
-{/if}

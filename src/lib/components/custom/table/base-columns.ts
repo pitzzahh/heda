@@ -1,7 +1,7 @@
 // import { createRawSnippet } from 'svelte';
 // import { renderSnippet } from '$lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import type { PhaseLoadSchedule  } from '@/types/load/one_phase';
+import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(): ColumnDef<T>[] => [
 	{
