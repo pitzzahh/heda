@@ -2,7 +2,7 @@
 	import { FileQuestionIcon } from '@/assets/icons/lucide';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { OnePhaseMainLoadForm } from '@/components/custom/load';
+	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
 
 	let { data } = $props();
 </script>
@@ -20,6 +20,6 @@
 			<Dialog.Title>Test Main Load Form</Dialog.Title>
 			<Dialog.Description>Enter the load details.</Dialog.Description>
 		</Dialog.Header>
-		<OnePhaseMainLoadForm one_phase_main_load_form={data.one_phase_main_load_form} />
+		<GenericPhaseMainLoadForm phase_main_load_form={data.phase_main_load_form} />
 	</Dialog.Content>
 </Dialog.Root>
