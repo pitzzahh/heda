@@ -1,37 +1,12 @@
 // import { createRawSnippet } from 'svelte';
 // import { renderSnippet } from '$lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
+import type { PhaseLoadSchedule  } from '@/types/load/one_phase';
 
-
-export type TThreePhaseLoadSchedule = {
-	crkt_num: string;
-	load_description: string;
-	voltage: number;
-	va: number;
-	// Current section
-	ab: number;
-	bc: number;
-	ca: number;
-	// Circuit Breaker section
-	at: number;
-	pole: number;
-	kaic: number;
-	// Conductor section
-	sets: number;
-	p_plus_p_size: string;
-	p_plus_p_insulation: string;
-	three_phase_size: string;
-	three_phase_insulation: string;
-	egc_size: string;
-	egc_insulation: string;
-	conduit_size: string;
-	conduit_type: string;
-};
-
-export const createLeftMostBaseColumns = <T>(): ColumnDef<T>[] => [
+export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(): ColumnDef<T>[] => [
 	{
 		accessorKey: 'crkt_num',
-		header: 'CRKT No.'
+		header: 'CRKT No.',
 	},
 	{
 		accessorKey: 'load_description',
@@ -87,7 +62,7 @@ export const createLeftMostBaseColumns = <T>(): ColumnDef<T>[] => [
 	}
 ];
 
-export const createRightMostBaseColumns = <T>(): ColumnDef<T>[] => [
+export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
 		columns: [
@@ -118,49 +93,4 @@ export const createRightMostBaseColumns = <T>(): ColumnDef<T>[] => [
 			}
 		]
 	}
-];
-
-export const columns: ColumnDef<TThreePhaseLoadSchedule>[] = [
-	...createLeftMostBaseColumns<TThreePhaseLoadSchedule>(),
-	{
-		header: 'CONDUCTOR',
-		columns: [
-			{
-				accessorKey: 'sets',
-				cell: (info) => info.getValue(),
-				header: () => 'Sets'
-			},
-			{
-				header: 'P+P',
-				columns: [
-					{
-						accessorKey: 'p_plus_p_size',
-						header: () => 'Size',
-						cell: (info) => info.getValue()
-					},
-					{
-						accessorKey: 'p_plus_p_insulation',
-						header: 'INSULATION',
-						cell: (info) => info.getValue()
-					}
-				]
-			},
-			{
-				header: '3P',
-				columns: [
-					{
-						accessorKey: 'three_phase_size',
-						header: () => 'Size',
-						cell: (info) => info.getValue()
-					},
-					{
-						accessorKey: 'three_phase_insulation',
-						header: 'INSULATION',
-						cell: (info) => info.getValue()
-					}
-				]
-			}
-		]
-	},
-	...createRightMostBaseColumns<TThreePhaseLoadSchedule>()
 ];
