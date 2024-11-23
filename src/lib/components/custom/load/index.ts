@@ -1,1 +1,1 @@
-export { default as OnePhaseMainLoadForm } from './one_phase/one-phase-main-load-form.svelte';
+export { default as GenericPhaseMainLoadForm } from './generic-phase-main-load-form.svelte';
