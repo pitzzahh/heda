@@ -1,1 +1,1 @@
-export { default as OnePhaseMainPanelForm } from './one_phase/one-phase-main-panel-form.svelte';
+export { default as GenericPhaseMainPanelForm } from './generic-phase-main-panel-form.svelte';
