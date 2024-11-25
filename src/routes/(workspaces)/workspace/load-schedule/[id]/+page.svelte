@@ -7,7 +7,7 @@
 
 	let id = $page.params.id;
 
-	const data: PhaseLoadSchedule[] = [
+	const table_data: PhaseLoadSchedule[] = [
 		{
 			crkt_num: 'CKT-001',
 			load_description: 'Lighting Load',
@@ -72,6 +72,8 @@
 			conduit_type: 'PVC'
 		}
 	];
+
+	let { data } = $props();
 </script>
 
 <div class="flex w-full flex-col gap-2">
@@ -79,5 +81,5 @@
 		<p>Distribution Unit: MDP</p>
 		<p>Phase: 1P</p>
 	</div>
-	<DataTable {data} columns={onePhaseMainOrWyeCols} />
+	<DataTable data={table_data} columns={onePhaseMainOrWyeCols(data.phase_main_load_form)} />
 </div>
