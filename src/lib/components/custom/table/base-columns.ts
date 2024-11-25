@@ -1,12 +1,22 @@
 // import { createRawSnippet } from 'svelte';
-// import { renderSnippet } from '$lib/components/ui/data-table/index.js';
+import { renderComponent } from '@/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+import { DataTableAddLoad } from '@/components/custom/table/(components)';
+import type { PhaseMainLoadSchema } from '@/schema/load';
+import type { SuperValidated } from 'sveltekit-superforms';
 
-export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(): ColumnDef<T>[] => [
+export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
+	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
+): ColumnDef<T>[] => [
 	{
 		accessorKey: 'crkt_num',
-		header: 'CRKT No.',
+		header: () =>
+			renderComponent(DataTableAddLoad, {
+				phase_main_load_form,
+				'aria-label': 'Select row',
+				class: 'translate-y-[2px]'
+			})
 	},
 	{
 		accessorKey: 'load_description',
