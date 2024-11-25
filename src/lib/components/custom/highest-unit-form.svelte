@@ -18,12 +18,15 @@
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
+	import { LocalStorage } from '@/hooks/storage.svelte';
 
 	interface Props {
 		highest_unit_form: T;
+		closeDialog: () => void;
 	}
 
-	let { highest_unit_form }: Props = $props();
+	let { highest_unit_form, closeDialog }: Props = $props();
+	let localStorage = new LocalStorage('project');
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -32,7 +35,16 @@
 			// toast the values
 			if (form.valid) {
 				toast.success('Form is valid');
-				goto('/workspace');
+				goto(`/workspace/load-schedule/${form.data.distribution_unit}`);
+				localStorage.current = {
+					highest_unit_form: form.data,
+					panels: [
+						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
+						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
+						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] }
+					]
+				};
+				closeDialog();
 			} else {
 				toast.error('Form is invalid');
 			}
