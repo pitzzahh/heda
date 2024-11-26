@@ -36,46 +36,45 @@ export async function loadDatabase(fileName: string = "sqlite-1", fileExtension:
   return await Database.load(dbPath);
 }
 
-/**
- * The sqlite database instance.
- */
-export const sqlite = await loadDatabase();
 
 /**
  * The drizzle database instance.
  */
-export const db = drizzle<typeof schema>(
-  async (sql, params, method) => {
-    let rows: any = [];
-    let results = [];
+export async function db(database: Database) {
+  return drizzle<typeof schema>(
+    async (sql, params, method) => {
+      let rows: any = [];
+      let results = [];
 
-    // If the query is a SELECT, use the select method
-    if (isSelectQuery(sql)) {
-      rows = await sqlite.select(sql, params).catch((e) => {
-        console.error("SQL Error:", e);
-        return [];
+      // If the query is a SELECT, use the select method
+      if (isSelectQuery(sql)) {
+        rows = await database.select(sql, params).catch((e) => {
+          console.error("SQL Error:", e);
+          return [];
+        });
+      } else {
+        // Otherwise, use the execute method
+        rows = await database.execute(sql, params).catch((e) => {
+          console.error("SQL Error:", e);
+          return [];
+        });
+        return { rows: [] };
+      }
+
+      rows = rows.map((row: any) => {
+        return Object.values(row);
       });
-    } else {
-      // Otherwise, use the execute method
-      rows = await sqlite.execute(sql, params).catch((e) => {
-        console.error("SQL Error:", e);
-        return [];
-      });
-      return { rows: [] };
-    }
 
-    rows = rows.map((row: any) => {
-      return Object.values(row);
-    });
+      // If the method is "all", return all rows
+      results = method === "all" ? rows : rows[0];
 
-    // If the method is "all", return all rows
-    results = method === "all" ? rows : rows[0];
+      return { rows: results };
+    },
+    // Pass the schema to the drizzle instance
+    { schema: schema, logger: true }
+  );
+}
 
-    return { rows: results };
-  },
-  // Pass the schema to the drizzle instance
-  { schema: schema, logger: true }
-);
 
 /**
  * Checks if the given SQL query is a SELECT query.
