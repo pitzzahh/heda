@@ -15,7 +15,8 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"tauri": "tauri",
-		"db:gen": "drizzle-kit generate"
+		"db:gen": "drizzle-kit generate",
+		"db:push": "drizzle-kit push"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
@@ -55,6 +56,7 @@
 		"@tauri-apps/api": "^2.1.1",
 		"@tauri-apps/plugin-sql": "^2.0.1",
 		"drizzle-orm": "^0.36.4",
+		"drizzle-seed": "^0.1.2",
 		"formsnap": "^2.0.0-next.1",
 		"mode-watcher": "^0.4.1",
 		"svelte-headless-table": "^0.18.3",

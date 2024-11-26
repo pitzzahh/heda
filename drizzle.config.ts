@@ -7,6 +7,6 @@ export default defineConfig({
   out: "./src-tauri/migrations",
   dialect: "sqlite",
   dbCredentials: {
-    url: "sqlite:test.db"
+    url: "file:test.heda"
   }
 });
