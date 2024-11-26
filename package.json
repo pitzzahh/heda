@@ -51,7 +51,6 @@
 		"vite": "^5.4.11"
 	},
 	"dependencies": {
-		"@libsql/client": "^0.14.0",
 		"@tanstack/table-core": "^8.20.5",
 		"@tauri-apps/api": "^2.1.1",
 		"@tauri-apps/plugin-fs": "^2.0.2",
