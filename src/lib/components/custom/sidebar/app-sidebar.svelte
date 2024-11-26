@@ -44,21 +44,30 @@
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader } from '.';
 	import { LocalStorage } from '@/hooks/storage.svelte';
+	import type { Panel } from '@/types/panel';
 	import SidebarItemContextMenu from './sidebar-item-context-menu.svelte';
 
-	let localStorage = new LocalStorage('project') as any;
+	interface ProjectProps {
+		highest_unit_form: any;
+		panels: Panel[];
+	}
 
+	let localStorage = new LocalStorage<ProjectProps>('project');
+
+	// Props for Sidebar component
+	let {
+		ref = $bindable(null),
+		panels,
+		...restProps
+	}: ComponentProps<typeof Sidebar.Root> & {
+		panels: Panel[];
+	} = $props();
 	let localStorageData = $derived(
 		localStorage.current || {
 			highest_unit_form: null,
-			panels: []
+			panels
 		}
 	);
-
-	$inspect(localStorage);
-
-	// Props for Sidebar component
-	let { ref = $bindable(null), ...restProps }: ComponentProps<typeof Sidebar.Root> = $props();
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>

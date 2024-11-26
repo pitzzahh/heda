@@ -10,6 +10,7 @@ const load = sqliteTable("load", {
   is_panel: integer("is_panel").default(0),
   continuous: integer("continuous").notNull().default(0),
   special: text("special").default("NULL"),
+  panel_id: text("panel_id"),
   // updated_at: text("updated_at").default("CURRENT_TIMESTAMP"),
 });
 

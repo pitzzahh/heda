@@ -13,7 +13,7 @@
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let { data, children } = $props();
-	const { is_new_file, is_load_file } = $derived(data);
+	const { is_new_file, is_load_file, panels } = $derived(data);
 
 	let highest_unit = $state(false);
 	let is_editing = $state(false);
@@ -34,7 +34,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar />
+	<AppSidebar panels={[]}/>
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
