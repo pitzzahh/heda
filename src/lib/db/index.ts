@@ -28,19 +28,19 @@ export type SelectQueryResult = {
 
 /**
  * Loads the sqlite database via the Tauri Proxy.
- * @param fileName The name of the database file.
- * @param fileExtension The extension of the database file.
+ * @param file_name The name of the database file.
+ * @param file_extenstion The extension of the database file.
  */
-export async function loadDatabase(fileName: string = "sqlite-1", fileExtension: string = "db") {
-  const dbPath = `sqlite:${fileName}.${fileExtension}`;
-  return await Database.load(dbPath);
+export async function loadDatabase(file_name: string = "sqlite-1", file_extenstion: string = "db") {
+  const db_path = `sqlite:${file_name}.${file_extenstion}`;
+  return typeof window !== "undefined" ? await Database.load(db_path) : ({} as Database);
 }
 
 
 /**
  * The drizzle database instance.
  */
-export async function db(database: Database) {
+export async function createDatabase(database: Database) {
   return drizzle<typeof schema>(
     async (sql, params, method) => {
       let rows: any = [];
