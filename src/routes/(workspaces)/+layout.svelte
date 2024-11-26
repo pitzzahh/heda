@@ -36,7 +36,9 @@
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<header class="fixed flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4">
+		<header
+			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
+		>
 			<Sidebar.Trigger class="-ml-1" />
 			<Separator orientation="vertical" class="mr-2 h-4" />
 			<div class="flex items-center gap-2">
@@ -72,6 +74,9 @@
 				>Choose the highest unit for this project.</Dialog.Title
 			>
 		</Dialog.Header>
-		<HighestUnitForm highest_unit_form={data.highest_unit_form} />
+		<HighestUnitForm
+			highest_unit_form={data.highest_unit_form}
+			closeDialog={() => (highest_unit = false)}
+		/>
 	</Dialog.Content>
 </Dialog.Root>

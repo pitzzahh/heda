@@ -3,7 +3,7 @@
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
-	import { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
@@ -13,7 +13,7 @@
 	import * as Command from '@/components/ui/command/index.js';
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
@@ -22,6 +22,7 @@
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
+	import { LocalStorage } from '@/hooks/storage.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -29,15 +30,25 @@
 	}
 
 	let { phase_main_load_form }: Props = $props();
+	let localStorage = new LocalStorage('project') as any;
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onUpdate: ({ form }) => {
 			// toast the values
+
+			// SAMPLE 
 			if (form.valid) {
+				localStorage.current = {
+					...localStorage.current,
+					panels: localStorage.current.panels.map((panel: any, idx: any) =>
+						idx === 0
+							? { ...panel, loads: [...panel.loads, { description: form.data.load_description }] }
+							: panel
+					)
+				};
 				toast.success('Form is valid');
-				goto('/home');
 			} else {
 				toast.error('Form is invalid');
 			}
@@ -72,9 +83,30 @@
 			label: 'One phase main load form'
 		};
 	});
+
+	onMount(() => {
+		$formData.distribution_unit = 'SAMPLE DU';
+		$formData.wire_length = 50;
+	});
 </script>
 
 <form method="POST" use:enhance>
+	<Form.Field {form} name="distribution_unit" class="sr-only text-center">
+		<Form.Control>
+			{#snippet children({ props })}
+				<Form.Label>Distribution unit</Form.Label>
+				<Input
+					{...props}
+					type="number"
+					min={1}
+					inputmode="numeric"
+					bind:value={$formData.distribution_unit}
+					placeholder="Enter distribution_unit"
+				/>
+			{/snippet}
+		</Form.Control>
+		<Form.FieldErrors />
+	</Form.Field>
 	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
@@ -187,6 +219,8 @@
 		<Form.Button class="w-full">Save</Form.Button>
 	</div>
 </form>
+
+<SuperDebug data={$formData} />
 
 {#snippet SubFields(load_type: LoadType | undefined)}
 	<div class="flex justify-between gap-1">
