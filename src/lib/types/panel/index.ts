@@ -1,4 +1,4 @@
 export type Panel = {
-  id: string;
+  id: number;
   name: string;
 }
