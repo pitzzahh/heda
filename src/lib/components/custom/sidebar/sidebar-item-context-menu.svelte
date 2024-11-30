@@ -9,17 +9,16 @@
 	let { children } = $props();
 	let panelName = $state('');
 	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
-	let localStorage = new LocalStorage('project');
-	let localStorageState = (localStorage.current as any) || {
-		highest_unit_form: null,
-		panels: []
-	};
+	let localStorage = new LocalStorage<{
+		highest_unit_form: any;
+		panels: { panel_name: string; loads: { description: string }[] }[];
+	}>('project');
 
 	function handleSubmit() {
 		const newProjectData = {
-			...localStorageState,
+			...localStorage.current,
 			panels: [
-				...localStorageState.panels,
+				...localStorage.current.panels,
 				{ panel_name: panelName, loads: [{ description: panelName + ' load' }] }
 			]
 		};
