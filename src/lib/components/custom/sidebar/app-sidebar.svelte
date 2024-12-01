@@ -1,40 +1,3 @@
-<script lang="ts" module>
-	// This is sample data.
-	const data = {
-		changes: [
-			{
-				file: 'README.md',
-				state: 'M'
-			},
-			{
-				file: 'routes/+page.svelte',
-				state: 'U'
-			},
-			{
-				file: 'routes/+layout.svelte',
-				state: 'M'
-			}
-		],
-		tree: [
-			['lib', ['components', 'button.svelte', 'card.svelte'], 'utils.ts'],
-			[
-				'routes',
-				['hello', '+page.svelte', '+page.ts'],
-				'+page.svelte',
-				'+page.server.ts',
-				'+layout.svelte'
-			],
-			['static', 'favicon.ico', 'svelte.svg'],
-			'eslint.config.js',
-			'.gitignore',
-			'svelte.config.js',
-			'tailwind.config.js',
-			'package.json',
-			'README.md'
-		]
-	};
-</script>
-
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -49,24 +12,25 @@
 
 	interface ProjectProps {
 		highest_unit_form: any;
-		panels: Panel[];
+		tree: Panel[];
 	}
 
 	let localStorage = new LocalStorage<ProjectProps>('project');
 
 	let {
 		ref = $bindable(null),
-		panels,
+		tree,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
-		panels: Panel[];
+		tree: Panel[];
 	} = $props();
-	let localStorageData = $derived(
-		localStorage.current || {
-			highest_unit_form: null,
-			panels
-		}
-	);
+
+	$effect(() => {
+		localStorage.current = {
+			...localStorage.current,
+			tree
+		};
+	});
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -76,12 +40,11 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if localStorageData.highest_unit_form}
-						<!-- Render the root node for the highest unit -->
+					{#if localStorage.current.highest_unit_form}
 						{@render Tree({
-							item: localStorageData.highest_unit_form.distribution_unit,
-							children: localStorageData.panels,
-							isRootNode: !!localStorageData.highest_unit_form.distribution_unit
+							item: localStorage.current.highest_unit_form.distribution_unit,
+							children: localStorage.current.tree,
+							isRootNode: !!localStorage.current.highest_unit_form.distribution_unit
 						})}
 					{/if}
 				</Sidebar.Menu>
@@ -96,14 +59,14 @@
 	children = [],
 	isRootNode
 }: {
-	item: any;
-	children: any[];
+	item: Panel;
+	children: Panel[];
 	isRootNode?: boolean;
 })}
 	{#if children.length === 0 && !isRootNode}
 		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
 			<File />
-			<span>{item.description || item}</span>
+			<span>{item.name || item}</span>
 		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem>
@@ -116,7 +79,7 @@
 							<Sidebar.MenuButton {...props}>
 								<ChevronRight class="transition-transform" />
 								<Folder />
-								<span>{item.panel_name || item}</span>
+								<span>{item.name || item}</span>
 							</Sidebar.MenuButton>
 						</SidebarItemContextMenu>
 					{/snippet}
@@ -125,7 +88,7 @@
 				<Collapsible.Content>
 					<Sidebar.MenuSub>
 						{#each children as child, index (index)}
-							{@render Tree({ item: child, children: child.loads || [] })}
+							{@render Tree({ item: child, children: children || [] })}
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>

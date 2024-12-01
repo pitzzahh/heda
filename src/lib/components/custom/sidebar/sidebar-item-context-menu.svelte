@@ -5,25 +5,53 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { LocalStorage } from '@/hooks/storage.svelte';
+	import type { Panel } from '@/types/panel';
+
+	interface ProjectProps {
+		highest_unit_form: any;
+		tree: Panel[];
+	}
 
 	let { children } = $props();
 	let panelName = $state('');
 	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
-	let localStorage = new LocalStorage('project');
-	let localStorageState = (localStorage.current as any) || {
-		highest_unit_form: null,
-		panels: []
-	};
+	let localStorage = new LocalStorage<ProjectProps>('project');
 
 	function handleSubmit() {
-		const newProjectData = {
-			...localStorageState,
-			panels: [
-				...localStorageState.panels,
-				{ panel_name: panelName, loads: [{ description: panelName + ' load' }] }
+		// should normally work because its a signal
+		localStorage.current.tree.push({
+			id: Math.floor(Math.random() * 100) + 1,
+			name: panelName,
+			loads: [
+				{
+					id: (Math.floor(Math.random() * 100) + 1).toString(),
+					load_description: 'Lighting Circuit',
+					quantity: 10,
+					varies: 0,
+					is_panel: 1,
+					continuous: 1,
+					special: 'Main hallway lights'
+				},
+				{
+					id: (Math.floor(Math.random() * 100) + 1).toString(),
+					load_description: 'Power Circuit',
+					quantity: 5,
+					varies: 1,
+					is_panel: 0,
+					continuous: 0,
+					special: 'Office power outlets'
+				},
+				{
+					id: (Math.floor(Math.random() * 100) + 1).toString(),
+					load_description: 'HVAC Circuit',
+					quantity: 2,
+					varies: 0,
+					is_panel: 1,
+					continuous: 1,
+					special: 'Main HVAC system'
+				}
 			]
-		};
-		localStorage.current = newProjectData;
+		});
 		// Close the dialog after submission
 		isDialogOpen = false;
 		panelName = ''; // Reset the input field
