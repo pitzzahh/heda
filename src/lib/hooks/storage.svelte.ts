@@ -26,7 +26,7 @@ export class LocalStorage<T extends object> {
 
 	get current(): T {
 		this.#version;
-			
+
 		const isValidJSON = (str: string | null): boolean => {
 			if (!str) return false;
 			try {
@@ -36,11 +36,12 @@ export class LocalStorage<T extends object> {
 				return false;
 			}
 		};
-		
+
 		const storedData = localStorage.getItem(this.#key);
-		const root = typeof localStorage !== 'undefined' && isValidJSON(storedData)
-			? JSON.parse(storedData as string)
-			: (this.#value as T);
+		const root =
+			typeof localStorage !== 'undefined' && isValidJSON(storedData)
+				? JSON.parse(storedData as string)
+				: (this.#value as T);
 
 		const proxies = new WeakMap<object, T>();
 
