@@ -23,6 +23,26 @@ export const load = (async ({ url: { searchParams } }) => {
             is_panel: 1,
             continuous: 1,
             special: "Main hallway lights",
+            loads: [
+              {
+                id: "load-1",
+                load_description: "Lighting Circuit",
+                quantity: 10,
+                varies: 0,
+                is_panel: 1,
+                continuous: 1,
+                special: "Main hallway lights"
+              },
+              {
+                id: "load-2",
+                load_description: "HVAC System",
+                quantity: 1,
+                varies: 1,
+                is_panel: 0,
+                continuous: 1,
+                special: "Energy-efficient unit",
+              },
+            ]
           },
           {
             id: "load-2",
