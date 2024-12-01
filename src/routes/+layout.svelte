@@ -8,11 +8,17 @@
 	import SuperDebug from 'sveltekit-superforms';
 	import { dev } from '$app/environment';
 	import { LocalStorage } from '@/hooks/storage.svelte';
-	import setGlobalColorTheme from '@/theme-colors/theme-colors';
+	import type { Settings } from '@/types/settings';
+	import { setSettingsState } from '@/hooks/settings-state.svelte';
 
 	let { children } = $props();
-	const localStorage = new LocalStorage<{ color: 'autocad' | 'excel' }>('theme_color');
-	const themeColor = localStorage?.current?.color;
+
+	let localStorage = new LocalStorage<Settings>('settings');
+	setSettingsState(
+		localStorage?.current?.color || 'excel',
+		$mode === 'light' ? 'light' : 'dark',
+		'default'
+	);
 
 	const miscState = setState<MiscState>(
 		{
@@ -20,10 +26,6 @@
 		},
 		MISC_STATE_CTX
 	);
-
-	$effect(() => {
-		setGlobalColorTheme($mode === 'light' ? 'light' : 'dark', themeColor ? themeColor : 'excel');
-	});
 </script>
 
 <Toaster richColors={true} />
