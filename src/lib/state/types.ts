@@ -1,9 +1,4 @@
-export type State =
-	| MainState
-	| RouteState
-	| DialogState
-	| CountState
-	| MiscState;
+export type State = MainState | RouteState | DialogState | CountState | MiscState | SettingsState;
 
 export type MainState = {
 	isArchiving: boolean;
@@ -41,5 +36,10 @@ export type MiscState = {
 	form_data?: {
 		data?: unknown;
 		label?: string;
-	}
-}
+	};
+};
+
+export type SettingsState = {
+	themeColor: 'excel' | 'autocad';
+	font: string;
+};

@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { Save, FilePlus, Settings, MoreVertical } from 'lucide-svelte';
+	import { Save, FilePlus } from 'lucide-svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
-	import Sun from 'lucide-svelte/icons/sun';
-	import Moon from 'lucide-svelte/icons/moon';
-	import { Gear } from 'svelte-radix';
-	import { resetMode, setMode } from 'mode-watcher';
-	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { Input } from '@/components/ui/input/index.js';
-	import { Label } from '@/components/ui/label/index.js';
+	import SettingsDialog from '../settings-dialog.svelte';
+	import { Moon, Sun } from 'svelte-radix';
+	import { resetMode, setMode } from 'mode-watcher';
+	import * as DropdownMenu from '@/components/ui/dropdown-menu';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
+
+	const settingsState = getSettingsState();
 
 	function handleSave() {
 		// Implement save functionality
@@ -19,6 +18,11 @@
 	function handleNew() {
 		// Implement new document functionality
 		console.log('Creating new...');
+	}
+
+	function setModeAndColor(mode: 'dark' | 'light') {
+		settingsState.setThemeColor(settingsState.themeColor, mode);
+		setMode(mode);
 	}
 </script>
 
@@ -46,38 +50,7 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<Tooltip>
-				<TooltipTrigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
-					<Dialog.Root>
-						<Dialog.Trigger>
-							<Gear class="size-4" />
-						</Dialog.Trigger>
-						<Dialog.Content class="sm:max-w-[425px]">
-							<Dialog.Header>
-								<Dialog.Title>Edit profile</Dialog.Title>
-								<Dialog.Description>
-									Make changes to your profile here. Click save when you're done.
-								</Dialog.Description>
-							</Dialog.Header>
-							<div class="grid gap-4 py-4">
-								<div class="grid grid-cols-4 items-center gap-4">
-									<Label for="name" class="text-right">Name</Label>
-									<Input id="name" value="Pedro Duarte" class="col-span-3" />
-								</div>
-								<div class="grid grid-cols-4 items-center gap-4">
-									<Label for="username" class="text-right">Username</Label>
-									<Input id="username" value="@peduarte" class="col-span-3" />
-								</div>
-							</div>
-							<Dialog.Footer>
-								<Button type="submit">Save changes</Button>
-							</Dialog.Footer>
-						</Dialog.Content>
-					</Dialog.Root>
-				</TooltipTrigger>
-				<TooltipContent>Settings</TooltipContent>
-			</Tooltip>
-
+			<SettingsDialog />
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
 					<Sun
@@ -89,8 +62,8 @@
 					<span class="sr-only">Toggle theme</span>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					<DropdownMenu.Item onclick={() => setMode('light')}>Light</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => setMode('dark')}>Dark</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => setModeAndColor('light')}>Light</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => setModeAndColor('dark')}>Dark</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

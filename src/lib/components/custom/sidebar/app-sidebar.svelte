@@ -17,7 +17,6 @@
 
 	let localStorage = new LocalStorage<ProjectProps>('project');
 
-	// Props for Sidebar component
 	let {
 		ref = $bindable(null),
 		tree,
@@ -41,12 +40,13 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<!-- Render the root node for the highest unit -->
-					{@render Tree({
-						item: localStorage.current.highest_unit_form.distribution_unit,
-						children: localStorage.current.tree,
-						isRootNode: !!localStorage.current.highest_unit_form.distribution_unit
-					})}
+					{#if localStorage.current.highest_unit_form}
+						{@render Tree({
+							item: localStorage.current.highest_unit_form.distribution_unit,
+							children: localStorage.current.tree,
+							isRootNode: !!localStorage.current.highest_unit_form.distribution_unit
+						})}
+					{/if}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
