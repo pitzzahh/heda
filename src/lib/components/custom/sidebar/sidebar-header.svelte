@@ -6,6 +6,9 @@
 	import { Moon, Sun } from 'svelte-radix';
 	import { resetMode, setMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
+
+	const settingsState = getSettingsState();
 
 	function handleSave() {
 		// Implement save functionality
@@ -15,6 +18,11 @@
 	function handleNew() {
 		// Implement new document functionality
 		console.log('Creating new...');
+	}
+
+	function setModeAndColor(mode: 'dark' | 'light') {
+		settingsState.setThemeColor(settingsState.themeColor, mode);
+		setMode(mode);
 	}
 </script>
 
@@ -54,8 +62,8 @@
 					<span class="sr-only">Toggle theme</span>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					<DropdownMenu.Item onclick={() => setMode('light')}>Light</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => setMode('dark')}>Dark</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => setModeAndColor('light')}>Light</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => setModeAndColor('dark')}>Dark</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
