@@ -19,6 +19,7 @@
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
 	import { LocalStorage } from '@/hooks/storage.svelte';
+	import { getProjectState } from '@/hooks/project.svelte';
 
 	interface Props {
 		highest_unit_form: T;
@@ -27,6 +28,7 @@
 
 	let { highest_unit_form, closeDialog }: Props = $props();
 	let localStorage = new LocalStorage('project');
+	let projectState = getProjectState();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -36,14 +38,15 @@
 			if (form.valid) {
 				toast.success('Form is valid');
 				goto(`/workspace/load-schedule/${form.data.distribution_unit}`);
-				localStorage.current = {
-					highest_unit_form: form.data,
-					panels: [
-						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
-						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
-						// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] }
-					]
-				};
+				// localStorage.current = {
+				// 	highest_unit_form: form.data,
+				// 	tree: [
+				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
+				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
+				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] }
+				// 	]
+				// };
+				projectState.createProject(form.data);
 				closeDialog();
 			} else {
 				toast.error('Form is invalid');
