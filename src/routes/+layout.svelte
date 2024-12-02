@@ -7,18 +7,13 @@
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import SuperDebug from 'sveltekit-superforms';
 	import { dev } from '$app/environment';
-	import { LocalStorage } from '@/hooks/storage.svelte';
-	import type { Settings } from '@/types/settings';
 	import { setSettingsState } from '@/hooks/settings-state.svelte';
+	import { setProjectState } from '@/hooks/project.svelte';
 
 	let { children } = $props();
 
-	let localStorage = new LocalStorage<Settings>('settings');
-	setSettingsState(
-		localStorage?.current?.color || 'excel',
-		$mode === 'light' ? 'light' : 'dark',
-		'default'
-	);
+	setSettingsState($mode === 'light' ? 'light' : 'dark', 'default');
+	setProjectState();
 
 	const miscState = setState<MiscState>(
 		{
