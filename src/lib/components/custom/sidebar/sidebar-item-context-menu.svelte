@@ -17,6 +17,7 @@
 	let { children, uri }: { children: any; uri: string } = $props();
 	let panelName = $state('');
 	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
+	let context_menu_open = $state(false); // Add a reactive variable to control the dialog state
 	let localStorage = new LocalStorage<ProjectProps>('project');
 	let projectState = getProjectState();
 
@@ -58,12 +59,13 @@
 
 		// localStorage.current.tree.push();
 		// Close the dialog after submission
+		context_menu_open = false;
 		isDialogOpen = false;
 		panelName = ''; // Reset the input field
 	}
 </script>
 
-<ContextMenu.Root>
+<ContextMenu.Root bind:open={context_menu_open}>
 	<ContextMenu.Trigger>
 		{@render children?.()}
 	</ContextMenu.Trigger>
