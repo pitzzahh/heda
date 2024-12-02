@@ -9,13 +9,18 @@
 	import { LocalStorage } from '@/hooks/storage.svelte';
 	import type { Panel } from '@/types/panel';
 	import SidebarItemContextMenu from './sidebar-item-context-menu.svelte';
+	import type { Load } from '@/types/load';
+	import { getProjectState } from '@/hooks/project.svelte';
 
 	interface ProjectProps {
 		highest_unit_form: any;
 		tree: Panel[];
 	}
 
-	let localStorage = new LocalStorage<ProjectProps>('project');
+	// let localStorage = new LocalStorage<ProjectProps>('project');
+	let projectState = getProjectState();
+
+	console.log(projectState.project);
 
 	let {
 		ref = $bindable(null),
@@ -25,12 +30,17 @@
 		tree: Panel[];
 	} = $props();
 
-	$effect(() => {
-		localStorage.current = {
-			...localStorage.current,
-			tree
-		};
-	});
+	// this causes the re-renders
+	// $effect(() => {
+	// 	localStorage.current = {
+	// 		...localStorage.current,
+	// 		tree
+	// 	};
+	// });
+
+	function isPanel(item: Panel | Load): item is Panel {
+		return (item as Panel).name !== undefined;
+	}
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -40,11 +50,11 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if localStorage.current.highest_unit_form}
+					{#if projectState.project?.highest_unit_form}
 						{@render Tree({
-							item: localStorage.current.highest_unit_form.distribution_unit,
-							children: localStorage.current.tree,
-							isRootNode: !!localStorage.current.highest_unit_form.distribution_unit
+							item: projectState.project?.highest_unit_form.distribution_unit,
+							children: projectState.project.tree,
+							isRootNode: !!projectState.project?.highest_unit_form.distribution_unit
 						})}
 					{/if}
 				</Sidebar.Menu>
@@ -59,14 +69,14 @@
 	children = [],
 	isRootNode
 }: {
-	item: Panel;
-	children: Panel[];
+	item: Panel | Load;
+	children: Panel[] | Load[];
 	isRootNode?: boolean;
 })}
 	{#if children.length === 0 && !isRootNode}
 		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
 			<File />
-			<span>{item.name || item}</span>
+			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem>
@@ -75,20 +85,26 @@
 			>
 				<Collapsible.Trigger>
 					{#snippet child({ props })}
-						<SidebarItemContextMenu>
+						<SidebarItemContextMenu
+							uri={`/workspace/${isPanel(item) ? 'panel' : 'load-schedule'}/${item.id}`}
+						>
 							<Sidebar.MenuButton {...props}>
 								<ChevronRight class="transition-transform" />
 								<Folder />
-								<span>{item.name || item}</span>
+								<span
+									>{(isPanel(item) && item.name) ||
+										(!isPanel(item) && item.load_description) ||
+										item}</span
+								>
 							</Sidebar.MenuButton>
 						</SidebarItemContextMenu>
 					{/snippet}
 				</Collapsible.Trigger>
 
-				<Collapsible.Content>
-					<Sidebar.MenuSub>
+				<Collapsible.Content class="w-full">
+					<Sidebar.MenuSub class="w-full">
 						{#each children as child, index (index)}
-							{@render Tree({ item: child, children: children || [] })}
+							{@render Tree({ item: child, children: child.loads || [] })}
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>
