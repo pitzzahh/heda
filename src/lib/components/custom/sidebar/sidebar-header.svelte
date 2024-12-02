@@ -4,7 +4,7 @@
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import SettingsDialog from '../settings-dialog.svelte';
 	import { Moon, Sun } from 'svelte-radix';
-	import { resetMode, setMode } from 'mode-watcher';
+	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
@@ -64,7 +64,11 @@
 				<DropdownMenu.Content align="end">
 					<DropdownMenu.Item onclick={() => setModeAndColor('light')}>Light</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => setModeAndColor('dark')}>Dark</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
+					<DropdownMenu.Item
+						onclick={() => setModeAndColor($systemPrefersMode === 'light' ? 'light' : 'dark')}
+					>
+						System
+					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</div>
