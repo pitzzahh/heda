@@ -80,6 +80,7 @@
 	<div>
 		<p>Distribution Unit: MDP</p>
 		<p>Phase: 1P</p>
+		<p>Load Page</p>
 	</div>
 	<DataTable data={table_data} columns={onePhaseMainOrWyeCols(data.phase_main_load_form)} />
 </div>
