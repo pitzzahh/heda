@@ -10,14 +10,13 @@ type ThemeMode = 'dark' | 'light';
 
 export class SettingsState {
 	localStorage = new LocalStorage<Settings>('settings');
-	themeColor = $state<ThemeColor>('excel');
+	themeColor = $state<ThemeColor>(this.localStorage?.current?.color || 'excel');
 	font = $state<Font>('default');
 
-	constructor(color: ThemeColor, mode: ThemeMode, font: Font) {
+	constructor(mode: ThemeMode, font: Font) {
 		$effect(() => {
-			this.themeColor = color;
 			this.font = font;
-			setGlobalColorTheme(mode, color);
+			setGlobalColorTheme(mode, this.themeColor);
 		});
 	}
 
@@ -42,8 +41,8 @@ export class SettingsState {
 		this.localStorage.current = updatedData;
 	}
 }
-export function setSettingsState(color: ThemeColor, mode: ThemeMode, font: Font) {
-	return setState(new SettingsState(color, mode, font), THEME_COLOR_STATE_CTX);
+export function setSettingsState(mode: ThemeMode, font: Font) {
+	return setState(new SettingsState(mode, font), THEME_COLOR_STATE_CTX);
 }
 
 export function getSettingsState() {
