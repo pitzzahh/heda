@@ -6,20 +6,24 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { LocalStorage } from '@/hooks/storage.svelte';
 	import type { Panel } from '@/types/panel';
+	import { goto } from '$app/navigation';
+	import { getProjectState } from '@/hooks/project.svelte';
 
 	interface ProjectProps {
 		highest_unit_form: any;
 		tree: Panel[];
 	}
 
-	let { children } = $props();
+	let { children, uri }: { children: any; uri: string } = $props();
 	let panelName = $state('');
 	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
+	let context_menu_open = $state(false); // Add a reactive variable to control the dialog state
 	let localStorage = new LocalStorage<ProjectProps>('project');
+	let projectState = getProjectState();
 
 	function handleSubmit() {
 		// should normally work because its a signal
-		localStorage.current.tree.push({
+		projectState.addPanel({
 			id: Math.floor(Math.random() * 100) + 1,
 			name: panelName,
 			loads: [
@@ -52,13 +56,16 @@
 				}
 			]
 		});
+
+		// localStorage.current.tree.push();
 		// Close the dialog after submission
+		context_menu_open = false;
 		isDialogOpen = false;
 		panelName = ''; // Reset the input field
 	}
 </script>
 
-<ContextMenu.Root>
+<ContextMenu.Root bind:open={context_menu_open}>
 	<ContextMenu.Trigger>
 		{@render children?.()}
 	</ContextMenu.Trigger>
@@ -81,6 +88,6 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
-		<ContextMenu.Item inset>View Details</ContextMenu.Item>
+		<ContextMenu.Item inset onclick={() => goto(uri)}>View Details</ContextMenu.Item>
 	</ContextMenu.Content>
 </ContextMenu.Root>
