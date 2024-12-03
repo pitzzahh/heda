@@ -16,11 +16,6 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import AddPanelAndViewTrigger from './add-panel-and-view-trigger.svelte';
 
-	// let localStorage = new LocalStorage<ProjectProps>('project');
-	let projectState = getProjectState();
-
-	$inspect(projectState.project);
-
 	let {
 		ref = $bindable(null),
 		tree,
@@ -32,6 +27,8 @@
 	// let localStorage = new LocalStorage<ProjectProps>('project');
 	let projectState = getProjectState();
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+
+	$inspect(projectState.project);
 
 	// this causes the re-renders
 	// $effect(() => {
