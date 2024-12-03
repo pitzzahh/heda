@@ -9,7 +9,7 @@
 	import { toast } from 'svelte-sonner';
 	import { HighestUnitForm } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
-	import { PenLine } from 'lucide-svelte';
+	import { PenLine, Save } from '@/assets/icons/lucide';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let { data, children } = $props();
@@ -34,7 +34,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar tree={data.panels}/>
+	<AppSidebar tree={data.panels} />
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
@@ -53,7 +53,11 @@
 				<Tooltip>
 					<TooltipTrigger>
 						<Button size="icon" variant="outline" onclick={toggleEdit}>
-							<PenLine class="h-4 w-4" />
+							{#if is_editing}
+								<Save class="h-4 w-4" />
+							{:else}
+								<PenLine class="h-4 w-4" />
+							{/if}
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
