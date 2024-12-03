@@ -79,15 +79,15 @@
 			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem>
-			<Collapsible.Root
-				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
-			>
-				<Collapsible.Trigger>
-					{#snippet child({ props })}
-						<SidebarItemContextMenu
-							uri={`/workspace/${isPanel(item) ? 'panel' : 'load-schedule'}/${item.id}`}
-						>
+		<SidebarItemContextMenu
+			uri={`/workspace/${isPanel(item) ? 'panel' : 'load-schedule'}/${item.id}`}
+		>
+			<Sidebar.MenuItem>
+				<Collapsible.Root
+					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+				>
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
 							<Sidebar.MenuButton {...props}>
 								<ChevronRight class="transition-transform" />
 								<Folder />
@@ -97,18 +97,18 @@
 										item}</span
 								>
 							</Sidebar.MenuButton>
-						</SidebarItemContextMenu>
-					{/snippet}
-				</Collapsible.Trigger>
+						{/snippet}
+					</Collapsible.Trigger>
 
-				<Collapsible.Content class="w-full">
-					<Sidebar.MenuSub class="w-full">
-						{#each children as child, index (index)}
-							{@render Tree({ item: child, children: child.loads || [] })}
-						{/each}
-					</Sidebar.MenuSub>
-				</Collapsible.Content>
-			</Collapsible.Root>
-		</Sidebar.MenuItem>
+					<Collapsible.Content class="w-full">
+						<Sidebar.MenuSub class="w-full">
+							{#each children as child, index (index)}
+								{@render Tree({ item: child, children: child.loads || [] })}
+							{/each}
+						</Sidebar.MenuSub>
+					</Collapsible.Content>
+				</Collapsible.Root>
+			</Sidebar.MenuItem>
+		</SidebarItemContextMenu>
 	{/if}
 {/snippet}
