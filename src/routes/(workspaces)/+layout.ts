@@ -5,11 +5,11 @@ import type { Panel } from '@/types/panel';
 import { createDatabase } from '@/db';
 
 export const load = (async ({ url: { searchParams } }) => {
-  $inspect('INIT DB')
+  console.log('INIT DB')
 
   const database = createDatabase();
 
-  $inspect(database);
+  console.log(database);
 
   return {
     is_new_file: searchParams.get('new_file') === 'true',

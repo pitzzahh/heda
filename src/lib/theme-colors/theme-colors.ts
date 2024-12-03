@@ -125,9 +125,9 @@ const themes: Record<string, any> = {
 };
 
 export default function setGlobalColorTheme(themeMode: 'light' | 'dark', color: string) {
-	$inspect('color', color);
+	console.log('color', color);
 
-	$inspect('mode', themeMode);
+	console.log('mode', themeMode);
 	const theme = themes[color][themeMode] as {
 		[key: string]: string;
 	};
