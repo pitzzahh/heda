@@ -7,7 +7,7 @@
 	import { Label } from '@/components/ui/label/index.js';
 	import { mode } from 'mode-watcher';
 	import type { Settings } from '@/types/settings';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
 
 	const themeColors = [
@@ -15,9 +15,8 @@
 		{ name: 'Excel', value: 'excel', bg: 'bg-[#20B356]' }
 	] as const;
 
-	let selectedFont = $state('Verdana');
-
 	const settingsState = getSettingsState();
+	let selectedFont = $derived(settingsState.font);
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
 		if ($mode) {
@@ -25,10 +24,8 @@
 		}
 	}
 
-	// TODO: IMPLEMENT CHANGING OF FONTS
-	function handleFontChange(font: string) {
-		if (!font || font === selectedFont) return;
-		selectedFont = font;
+	function handleFontChange(font: Font) {
+		settingsState.setFont(font);
 	}
 </script>
 
@@ -62,13 +59,21 @@
 
 					<div class="flex flex-col gap-3">
 						<Label for="font-trigger">Font</Label>
-						<Select.Root type="single" bind:value={selectedFont} onValueChange={handleFontChange}>
+						<Select.Root
+							type="single"
+							value={selectedFont}
+							onValueChange={(value) => {
+								handleFontChange(value as Font);
+							}}
+						>
 							<Select.Trigger class="w-[180px]" id="font-trigger" placeholder="Select a font">
-								{selectedFont}
+								{selectedFont.charAt(0).toUpperCase().concat(selectedFont.slice(1))}
 							</Select.Trigger>
 							<Select.Content>
-								{#each ['Iscopuer', 'Verdana'] as item, index (index)}
-									<Select.Item disabled={selectedFont === item} value={item}>{item}</Select.Item>
+								{#each ['default', 'isocpeur', 'verdana'] as item, index (index)}
+									<Select.Item class={item} disabled={selectedFont === item} value={item}
+										>{item.charAt(0).toUpperCase().concat(item.slice(1))}</Select.Item
+									>
 								{/each}
 							</Select.Content>
 						</Select.Root>
