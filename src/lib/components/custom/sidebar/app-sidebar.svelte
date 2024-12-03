@@ -86,19 +86,19 @@
 				<Collapsible.Root
 					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 				>
-					<Collapsible.Trigger>
-						{#snippet child({ props })}
-							<Sidebar.MenuButton {...props}>
-								<ChevronRight class="transition-transform" />
-								<Folder />
-								<span
-									>{(isPanel(item) && item.name) ||
-										(!isPanel(item) && item.load_description) ||
-										item}</span
-								>
-							</Sidebar.MenuButton>
-						{/snippet}
-					</Collapsible.Trigger>
+					<Sidebar.MenuButton>
+						<Collapsible.Trigger>
+							{#snippet child({ props })}
+								<ChevronRight class="transition-transform" {...props} />
+							{/snippet}
+						</Collapsible.Trigger>
+						<Folder />
+						<span
+							>{(isPanel(item) && item.name) ||
+								(!isPanel(item) && item.load_description) ||
+								item}</span
+						>
+					</Sidebar.MenuButton>
 
 					<Collapsible.Content class="w-full">
 						<Sidebar.MenuSub class="w-full">
