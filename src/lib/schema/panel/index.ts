@@ -14,10 +14,10 @@ export const generic_panel_schema = z.object({
   panel_ambient_temperature: z
     .string()
     .refine((v) => v, { message: 'A panel ambient temperature is required.' }),
-  type: z.enum(['wye', 'delta', 'algo'], {
+  panel_type: z.enum(['wye', 'delta', 'algo'], {
     required_error: 'You need to select a 3P type'
   }).optional().nullable(),
-  phase: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
+  panel_phase: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
     required_error: 'You need to select a phase'
   }),
 });
