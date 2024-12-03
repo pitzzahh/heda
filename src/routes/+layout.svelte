@@ -12,7 +12,7 @@
 
 	let { children } = $props();
 
-	setSettingsState($mode === 'light' ? 'light' : 'dark', 'default');
+	setSettingsState($mode === 'light' ? 'light' : 'dark');
 	setProjectState();
 
 	const miscState = setState<MiscState>(
