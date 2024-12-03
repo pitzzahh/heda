@@ -74,19 +74,45 @@
 	}
 }
 
-@font-face {
-	font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-	font-family: 'Isocpeur';
+/* @font-face {
+	font-display: swap; 
+	font-family: 'ISOCPEUR';
 	font-style: normal;
-	/* font-weight: 400; */
-	src: url('./lib/fonts/isocpeur.ttf') format('ttf'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+	font-weight: normal;
+	src: url('./lib/fonts/isocpeur.ttf') format('ttf');
+} */
+
+@font-face {
+	font-family: 'ISOCPEUR';
+	src: url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.eot');
+	src:
+		url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.eot?#iefix')
+			format('embedded-opentype'),
+		url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.woff') format('woff'),
+		url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.woff2') format('woff2'),
+		url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.ttf') format('truetype'),
+		url('./lib/fonts/isocpeur/4b5ae315f5df148f0ab479a7cedc9832.svg#ISOCPEUR') format('svg');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
 }
 
-/* inter-700 - latin */
 @font-face {
 	font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
 	font-family: 'Verdana';
+	font-weight: normal;
 	font-style: normal;
-	/* font-weight: 700; */
-	src: url('./lib/fonts/verdana.ttf') format('ttf'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+	src: url('./lib/fonts/verdana.ttf') format('ttf');
+}
+
+.verdana {
+	font-family: 'Verdana', system-ui, sans-serif;
+}
+
+.isocpeur {
+	font-family: 'ISOCPEUR', system-ui, sans-serif;
+}
+
+.default {
+	font-family: sans-serif;
 }
