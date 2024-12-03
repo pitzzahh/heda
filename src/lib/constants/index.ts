@@ -1,3 +1,6 @@
+import { getEnumValues } from "@/utils/enum";
+import { toLabelValueArray } from "@/utils/mapper";
+
 export const ambient_temperatures = [
   { label: '60', value: '60' },
   { label: '75', value: '75' },
@@ -20,6 +23,22 @@ export const default_loads_description = [
   { label: 'Other', value: 'other' }
 ] as const;
 
+export const default_three_phase_types = {
+  WYE: 'wye',
+  DELTA: 'delta',
+  ALGO: 'algo'
+} as const;
+
+export const default_phases = {
+  ONE_PHASE: 'one_phase',
+  THREE_PHASE_WYE: 'three_phase_wye',
+  THREE_PHASE_DELTA: 'three_phase_delta'
+} as const;
+
+export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
+
+export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
+
 export const FIELD_VALIDATION = {
   TEST: {
     SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/.test(value),
@@ -29,12 +48,12 @@ export const FIELD_VALIDATION = {
     ALL_NUMBER: (value: string) => /^[0-9]+$/.test(value)
   },
   MSG: {
-    MIN_LEN: 'Password must be at least 8 characters long.',
-    SPECIAL_CHAR: 'Password must contain at least one special character.',
-    LOWERCASE: 'Password must contain at least one lowercase letter.',
-    UPPERCASE: 'Password must contain at least one uppercase letter.',
-    NUMBER: 'Password must contain at least one number.',
-    MATCH: 'Passwords must match.'
+    MIN_LEN: 'Must be at least 8 characters long.',
+    SPECIAL_CHAR: 'Must contain at least one special character.',
+    LOWERCASE: 'Must contain at least one lowercase letter.',
+    UPPERCASE: 'Must contain at least one uppercase letter.',
+    NUMBER: 'Must contain at least one number.',
+    MATCH: 'Must match.'
   }
 };
 
