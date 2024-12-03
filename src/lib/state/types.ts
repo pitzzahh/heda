@@ -11,11 +11,7 @@ export type RouteState = {
 };
 
 export type DialogState = {
-	logoutDialogOpen: boolean;
-	openNav: boolean;
-	totpDialogOpen: boolean;
-	openPermissionsSelect: boolean;
-	openSettings: boolean;
+	highestUnit: boolean;
 };
 
 export type CountState = {

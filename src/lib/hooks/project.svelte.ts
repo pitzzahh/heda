@@ -11,40 +11,40 @@ type Project = {
 
 export class ProjectState {
 	private localStorage = new LocalStorage<Project>('project');
-	storedProjectData = this.localStorage.current;
+	// localStorage.current = this.localStorage.current;
 	project = $state<Project | null>(this.localStorage.current || null);
 
 	constructor() {}
 
 	private updateProjectData(updatedData: Project) {
-		this.storedProjectData = updatedData;
+		this.localStorage.current = updatedData;
 		this.project = updatedData;
 	}
 
 	createProject(highestUnitFormData: any) {
-		this.storedProjectData = { highest_unit_form: highestUnitFormData, tree: [] };
+		console.log(highestUnitFormData);
+		this.localStorage.current = { highest_unit_form: highestUnitFormData, tree: [] };
 		this.project = { highest_unit_form: highestUnitFormData, tree: [] };
 	}
 
 	addPanel(panel: Panel) {
 		const updatedData = {
-			...this.storedProjectData,
-			tree: [...this.storedProjectData.tree, panel]
+			...this.localStorage.current,
+			tree: [...this.localStorage.current.tree, panel]
 		};
 		this.updateProjectData(updatedData);
 	}
 
+	// UNI NA TIG CHATGPT KO DAE KO PA NA TRY
 
-    // UNI NA TIG CHATGPT KO DAE KO PA NA TRY
-    
 	// Add a load to the specified panel or recursively to a load
 	addLoad(targetId: number | string, loadData: Load) {
-		const updatedTree = this.addLoadToTree(this.storedProjectData.tree, targetId, loadData);
+		const updatedTree = this.addLoadToTree(this.localStorage.current.tree, targetId, loadData);
 		if (!updatedTree) {
 			throw new Error(`Target with ID ${targetId} not found.`);
 		}
 		const updatedData: Project = {
-			...this.storedProjectData,
+			...this.localStorage.current,
 			tree: updatedTree
 		};
 		this.updateProjectData(updatedData);
@@ -75,10 +75,12 @@ export class ProjectState {
 	}
 }
 
+const key = Symbol.for('PROJECT_STATE_CTX');
+
 export function setProjectState() {
-	return setContext('PROJECT_STATE_CTX', new ProjectState());
+	return setContext(key, new ProjectState());
 }
 
 export function getProjectState() {
-	return getContext<ReturnType<typeof setProjectState>>('PROJECT_STATE_CTX');
+	return getContext<ReturnType<typeof setProjectState>>(key);
 }
