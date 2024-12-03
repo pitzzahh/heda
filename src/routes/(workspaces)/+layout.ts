@@ -2,9 +2,14 @@ import { highest_unit_schema } from '@/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Panel } from '@/types/panel';
+import { createDatabase } from '@/db';
 
 export const load = (async ({ url: { searchParams } }) => {
   $inspect('INIT DB')
+
+  const database = createDatabase();
+
+  $inspect(database);
 
   return {
     is_new_file: searchParams.get('new_file') === 'true',
