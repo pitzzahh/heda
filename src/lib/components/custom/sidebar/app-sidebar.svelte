@@ -6,21 +6,20 @@
 	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader } from '.';
-	import { LocalStorage } from '@/hooks/storage.svelte';
 	import type { Panel } from '@/types/panel';
-	import SidebarItemContextMenu from './sidebar-item-context-menu.svelte';
 	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
+	import Button from '@/components/ui/button/button.svelte';
+	import { PlusIcon } from 'lucide-svelte';
+	import type { DialogState } from '@/state/types';
+	import { getState } from '@/state/index.svelte';
+	import { DIALOG_STATE_CTX } from '@/state/constants';
+	import AddPanelAndViewTrigger from './add-panel-and-view-trigger.svelte';
 
 	interface ProjectProps {
 		highest_unit_form: any;
 		tree: Panel[];
 	}
-
-	// let localStorage = new LocalStorage<ProjectProps>('project');
-	let projectState = getProjectState();
-
-	console.log(projectState.project);
 
 	let {
 		ref = $bindable(null),
@@ -29,6 +28,10 @@
 	}: ComponentProps<typeof Sidebar.Root> & {
 		tree: Panel[];
 	} = $props();
+
+	// let localStorage = new LocalStorage<ProjectProps>('project');
+	let projectState = getProjectState();
+	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
 	// this causes the re-renders
 	// $effect(() => {
@@ -56,6 +59,24 @@
 							children: projectState.project.tree,
 							isRootNode: !!projectState.project?.highest_unit_form.distribution_unit
 						})}
+					{:else}
+						<div class="grid h-[85vh] place-content-center">
+							<div class="grid gap-2">
+								<div class="text-center">
+									<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
+									<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
+								</div>
+
+								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
+								<Button
+									size="sm"
+									onclick={() => (dialogs_state.highestUnit = true)}
+									href="/workspace?new_file=true"
+								>
+									<PlusIcon className="size-4 ml-3" /> Create a project
+								</Button>
+							</div>
+						</div>
 					{/if}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
@@ -83,23 +104,22 @@
 			<Collapsible.Root
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
-				<Collapsible.Trigger>
-					{#snippet child({ props })}
-						<SidebarItemContextMenu
-							uri={`/workspace/${isPanel(item) ? 'panel' : 'load-schedule'}/${item.id}`}
-						>
-							<Sidebar.MenuButton {...props}>
-								<ChevronRight class="transition-transform" />
-								<Folder />
-								<span
-									>{(isPanel(item) && item.name) ||
-										(!isPanel(item) && item.load_description) ||
-										item}</span
-								>
-							</Sidebar.MenuButton>
-						</SidebarItemContextMenu>
-					{/snippet}
-				</Collapsible.Trigger>
+				<Sidebar.MenuButton>
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
+							<ChevronRight class="transition-transform" {...props} />
+						{/snippet}
+					</Collapsible.Trigger>
+
+					<AddPanelAndViewTrigger
+						id={((isPanel(item) && item.name) ||
+							(!isPanel(item) && item.load_description) ||
+							item) as string}
+					>
+						<Folder class="size-4" />
+						{(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
+					</AddPanelAndViewTrigger>
+				</Sidebar.MenuButton>
 
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
