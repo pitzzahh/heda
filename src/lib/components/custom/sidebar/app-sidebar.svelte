@@ -77,7 +77,9 @@
 		<SidebarItemContextMenu
 			uri={`/workspace/${isPanel(item) ? 'panel' : 'load-schedule'}/${item.id}`}
 		>
-			<Sidebar.MenuItem>
+			{@const item_name =
+				(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
+			<Sidebar.MenuItem ondblclick={() => console.log(`Double clicked ${item_name}`)}>
 				<Collapsible.Root
 					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 				>
@@ -88,11 +90,7 @@
 							{/snippet}
 						</Collapsible.Trigger>
 						<Folder />
-						<span
-							>{(isPanel(item) && item.name) ||
-								(!isPanel(item) && item.load_description) ||
-								item}</span
-						>
+						<span>{item_name}</span>
 					</Sidebar.MenuButton>
 
 					<Collapsible.Content class="w-full">
