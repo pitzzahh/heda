@@ -21,7 +21,15 @@ const themes: Record<string, any> = {
 			border: '0 0% 89.8%',
 			input: '0 0% 89.8%',
 			ring: '0 72.2% 50.6%',
-			radius: '0rem'
+			radius: '0rem',
+			sidebarBackground: '0 0% 98%',
+			sidebarForeground: '240 5.3% 26.1%',
+			sidebarPrimary: '240 5.9% 10%',
+			sidebarPrimaryForeground: '0 0% 98%',
+			sidebarAccent: '240 4.8% 95.9%',
+			sidebarAccentForeground: '240 5.9% 10%',
+			sidebarBorder: '220 13% 91%',
+			sidebarRing: '217.2 91.2% 59.8%'
 		},
 		dark: {
 			background: '0 0% 3.9%',
@@ -42,7 +50,15 @@ const themes: Record<string, any> = {
 			destructiveForeground: '0 0% 98%',
 			border: '0 0% 14.9%',
 			input: '0 0% 14.9%',
-			ring: '0 72.2% 50.6%'
+			ring: '0 72.2% 50.6%',
+			sidebarBackground: '240 5.9% 10%',
+			sidebarForeground: '240 4.8% 95.9%',
+			sidebarPrimary: '224.3 76.3% 48%',
+			sidebarPrimaryForeground: '0 0% 100%',
+			sidebarAccent: '240 3.7% 15.9%',
+			sidebarAccentForeground: '240 4.8% 95.9%',
+			sidebarBorder: '240 3.7% 15.9%',
+			sidebarRing: '217.2 91.2% 59.8%'
 		}
 	},
 	excel: {
@@ -66,7 +82,15 @@ const themes: Record<string, any> = {
 			border: '240 5.9% 90%',
 			input: '240 5.9% 90%',
 			ring: '142.1 76.2% 36.3%',
-			radius: '0rem'
+			radius: '0rem',
+			sidebarBackground: '0 0% 98%',
+			sidebarForeground: '240 5.3% 26.1%',
+			sidebarPrimary: '240 5.9% 10%',
+			sidebarPrimaryForeground: '0 0% 98%',
+			sidebarAccent: '240 4.8% 95.9%',
+			sidebarAccentForeground: '240 5.9% 10%',
+			sidebarBorder: '220 13% 91%',
+			sidebarRing: '217.2 91.2% 59.8%'
 		},
 		dark: {
 			background: '20 14.3% 4.1%',
@@ -87,12 +111,23 @@ const themes: Record<string, any> = {
 			destructiveForeground: '0 85.7% 97.3%',
 			border: '240 3.7% 15.9%',
 			input: '240 3.7% 15.9%',
-			ring: '142.4 71.8% 29.2%'
+			ring: '142.4 71.8% 29.2%',
+			sidebarBackground: '240 5.9% 10%',
+			sidebarForeground: '240 4.8% 95.9%',
+			sidebarPrimary: '224.3 76.3% 48%',
+			sidebarPrimaryForeground: '0 0% 100%',
+			sidebarAccent: '240 3.7% 15.9%',
+			sidebarAccentForeground: '240 4.8% 95.9%',
+			sidebarBorder: '240 3.7% 15.9%',
+			sidebarRing: '217.2 91.2% 59.8%'
 		}
 	}
 };
 
 export default function setGlobalColorTheme(themeMode: 'light' | 'dark', color: string) {
+	console.log('color', color);
+
+	console.log('mode', themeMode);
 	const theme = themes[color][themeMode] as {
 		[key: string]: string;
 	};
