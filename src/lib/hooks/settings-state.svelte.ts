@@ -4,18 +4,24 @@ import setGlobalColorTheme from '@/theme-colors/theme-colors';
 import { setState, getState } from '@/state/index.svelte';
 import { THEME_COLOR_STATE_CTX } from '@/state/constants';
 
-type Font = 'isocpeur' | 'verdana' | 'default';
+export type Font = 'isocpeur' | 'verdana' | 'default';
 type ThemeColor = 'autocad' | 'excel';
 type ThemeMode = 'dark' | 'light';
 
 export class SettingsState {
 	localStorage = new LocalStorage<Settings>('settings');
 	themeColor = $state<ThemeColor>(this.localStorage?.current?.color || 'excel');
-	font = $state<Font>('default');
+	font = $state<Font>((this.localStorage?.current?.font as Font) || 'default');
 
-	constructor(mode: ThemeMode, font: Font) {
-		this.font = font;
+	constructor(mode: ThemeMode) {
 		setGlobalColorTheme(mode, this.themeColor);
+		this.setGlobalFont(this.font);
+	}
+
+	private setGlobalFont(font: Font) {
+		if (typeof document !== 'undefined') {
+			document.body.className = font;
+		}
 	}
 
 	setThemeColor(color: ThemeColor, mode: ThemeMode) {
@@ -37,12 +43,11 @@ export class SettingsState {
 
 		this.font = font;
 		this.localStorage.current = updatedData;
+		this.setGlobalFont(font);
 	}
 }
-export function setSettingsState(mode: ThemeMode, font: Font) {
-	console.log('RERENDERING SETTING STATE');
-
-	return setState(new SettingsState(mode, font), THEME_COLOR_STATE_CTX);
+export function setSettingsState(mode: ThemeMode) {
+	return setState(new SettingsState(mode), THEME_COLOR_STATE_CTX);
 }
 
 export function getSettingsState() {
