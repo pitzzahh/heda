@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends SuperValidated<GenericPanelSchema>">
+<script lang="ts" generics="T extends SuperValidated<GenericPhasePanelSchema>">
 	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
@@ -18,21 +18,23 @@
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import type { LoadType } from '@/types/load';
-	import { generic_panel_schema, type GenericPanelSchema } from '@/schema/panel';
+	import { generic_phase_panel_schema,GenericPhasePanelSchemaSchema } from '@/schema/panel';
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
+	import type { Phase } from '@/types/phase';
 
 	interface Props {
-		one_phase_main_load_form: T;
+		generic_phase_main_panel_form: T;
+		main_phase: Phase,
 		saved_path?: string;
 	}
 
-	let { one_phase_main_load_form }: Props = $props();
+	let { generic_phase_main_panel_form, main_phase }: Props = $props();
 
-	const form = superForm(one_phase_main_load_form, {
+	const form = superForm(generic_phase_main_panel_form, {
 		SPA: true,
-		validators: zodClient(generic_panel_schema),
+		validators: zodClient(generic_phase_panel_schema),
 		onUpdate: ({ form }) => {
 			// toast the values
 			if (form.valid) {
