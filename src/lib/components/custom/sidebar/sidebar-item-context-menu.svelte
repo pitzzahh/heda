@@ -4,22 +4,16 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { LocalStorage } from '@/hooks/storage.svelte';
-	import type { Panel } from '@/types/panel';
 	import { goto } from '$app/navigation';
 	import { getProjectState } from '@/hooks/project.svelte';
+	import type { Snippet } from 'svelte';
 
-	interface ProjectProps {
-		highest_unit_form: any;
-		tree: Panel[];
-	}
+	let { children, uri }: { children: Snippet; uri: string } = $props();
 
-	let { children, uri }: { children: any; uri: string } = $props();
-	let panelName = $state('');
-	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
-	let context_menu_open = $state(false); // Add a reactive variable to control the dialog state
-	let localStorage = new LocalStorage<ProjectProps>('project');
 	let projectState = getProjectState();
+	let context_menu_open = $state(false); // Add a reactive variable to control the dialog state
+	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
+	let panelName = $state('');
 
 	function handleSubmit() {
 		// should normally work because its a signal
