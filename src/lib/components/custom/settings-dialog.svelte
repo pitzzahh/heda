@@ -20,7 +20,9 @@
 	const settingsState = getSettingsState();
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
-		settingsState.setThemeColor(themeColor, $mode === 'light' ? 'light' : 'dark');
+		if ($mode) {
+			settingsState.setThemeColor(themeColor, $mode);
+		}
 	}
 
 	// TODO: IMPLEMENT CHANGING OF FONTS

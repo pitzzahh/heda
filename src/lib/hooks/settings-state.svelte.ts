@@ -14,10 +14,8 @@ export class SettingsState {
 	font = $state<Font>('default');
 
 	constructor(mode: ThemeMode, font: Font) {
-		$effect(() => {
-			this.font = font;
-			setGlobalColorTheme(mode, this.themeColor);
-		});
+		this.font = font;
+		setGlobalColorTheme(mode, this.themeColor);
 	}
 
 	setThemeColor(color: ThemeColor, mode: ThemeMode) {
@@ -42,6 +40,8 @@ export class SettingsState {
 	}
 }
 export function setSettingsState(mode: ThemeMode, font: Font) {
+	console.log('RERENDERING SETTING STATE');
+
 	return setState(new SettingsState(mode, font), THEME_COLOR_STATE_CTX);
 }
 
