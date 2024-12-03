@@ -24,14 +24,14 @@ export const default_loads_description = [
 ] as const;
 
 export const default_three_phase_types = {
-  WYE: 'wye',
-  DELTA: 'delta',
-  ALGO: 'algo'
+  WYE: 'WYE',
+  DELTA: 'DELTA',
+  ALGO: 'ALGO'
 } as const;
 
 export const default_phases = {
-  ONE_PHASE: 'one_phase',
-  THREE_PHASE_WYE: 'three_phase_wye',
+  ONE_PHASE: 'ONE_PHASE',
+  THREE_PHASE_WYE: 'THREE_PHASE_WYE',
   THREE_PHASE_DELTA: 'three_phase_delta'
 } as const;
 
