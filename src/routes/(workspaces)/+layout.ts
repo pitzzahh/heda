@@ -4,7 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import type { Panel } from '@/types/panel';
 
 export const load = (async ({ url: { searchParams } }) => {
-  console.log('INIT DB')
+  $inspect('INIT DB')
 
   return {
     is_new_file: searchParams.get('new_file') === 'true',

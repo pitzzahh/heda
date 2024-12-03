@@ -12,15 +12,10 @@
 	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
 
-	interface ProjectProps {
-		highest_unit_form: any;
-		tree: Panel[];
-	}
-
 	// let localStorage = new LocalStorage<ProjectProps>('project');
 	let projectState = getProjectState();
 
-	console.log(projectState.project);
+	$inspect(projectState.project);
 
 	let {
 		ref = $bindable(null),
