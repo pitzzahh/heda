@@ -7,7 +7,7 @@ import { createDatabase } from '@/db';
 export const load = (async ({ url: { searchParams } }) => {
   console.log('INIT DB')
 
-  const database = createDatabase();
+  const database = await createDatabase();
 
   console.log(database);
 
