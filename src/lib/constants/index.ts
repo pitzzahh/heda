@@ -39,6 +39,10 @@ export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_p
 
 export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
 
+export const DEFAULT_PHASES_ENUMS = toLabelValueArray(default_phases);
+
+export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
+
 export const FIELD_VALIDATION = {
   TEST: {
     SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/.test(value),
