@@ -18,7 +18,7 @@
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import type { LoadType } from '@/types/load';
-	import { generic_phase_panel_schema,GenericPhasePanelSchemaSchema } from '@/schema/panel';
+	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
@@ -26,7 +26,7 @@
 
 	interface Props {
 		generic_phase_main_panel_form: T;
-		main_phase: Phase,
+		main_phase: Phase;
 		saved_path?: string;
 	}
 
@@ -49,23 +49,20 @@
 	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
 	let open_panel_phase_popover = $state(false);
-	let open_panel_phase_type = $state(false);
+	let open_ambient_temp = $state(false);
+	let open_phase_type = $state(false);
+	const phase_trigger_id = useId();
 
-	let open_load_description = $state(false);
-
-	const panel_phase_trigger_id = useId();
 	const panel_phase_type_trigger_id = useId();
-
-	const load_description_trigger_id = useId();
-
-	let load_type = $state<LoadType | undefined>();
+	const ambient_temp_trigger_id = useId();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
+		open_ambient_temp = false;
 		open_panel_phase_popover = false;
-		open_panel_phase_type = false;
+		open_phase_type = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -110,25 +107,25 @@
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="panel_ambient_temperature" class="mt-2.5 flex flex-col">
-			<Popover.Root bind:open={open_panel_phase_popover}>
-				<Form.Control id={panel_phase_trigger_id}>
+		<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
+			<Popover.Root bind:open={open_ambient_temp}>
+				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
 						<Form.Label>Ambient Temperature</Form.Label>
 						<Popover.Trigger
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
 								'justify-between',
-								!$formData.panel_ambient_temperature && 'text-muted-foreground'
+								!$formData.ambient_temperature && 'text-muted-foreground'
 							)}
 							role="combobox"
 							{...props}
 						>
-							{ambient_temperatures.find((f) => f.value === $formData.panel_ambient_temperature)
-								?.label ?? 'Select an ambient temperature'}
+							{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)?.label ??
+								'Select an ambient temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
-						<input hidden value={$formData.panel_ambient_temperature} name={props.name} />
+						<input hidden value={$formData.ambient_temperature} name={props.name} />
 					{/snippet}
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
@@ -140,16 +137,15 @@
 								<Command.Item
 									value={ambient_temp.value}
 									onSelect={() => {
-										$formData.panel_ambient_temperature = ambient_temp.value;
-										closeAndFocusTrigger(panel_phase_trigger_id);
+										$formData.ambient_temperature = ambient_temp.value;
+										closeAndFocusTrigger(ambient_temp_trigger_id);
 									}}
 								>
 									{ambient_temp.label}
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp.value !== $formData.panel_ambient_temperature &&
-												'text-transparent'
+											ambient_temp.value !== $formData.ambient_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>
@@ -165,7 +161,7 @@
 		</Form.Field>
 	</div>
 	<div class="flex flex-col items-center gap-1">
-		{#if $formData.main_phase !== 'one_phase'}
+		{#if main_phase !== 'ONE_PHASE'}
 			<div class="row-start-1">
 				{@render PanelPhase()}
 			</div>
@@ -180,25 +176,25 @@
 </form>
 
 {#snippet PanelType()}
-	<Form.Field {form} name="panel_type" class="mt-2.5 flex flex-col">
-		<Popover.Root bind:open={open_panel_phase_type}>
-			<Form.Control id="panel_phase_trigger_id">
+	<Form.Field {form} name="type" class="mt-2.5 flex flex-col">
+		<Popover.Root bind:open={open_phase_type}>
+			<Form.Control id="phase_trigger_id">
 				{#snippet children({ props })}
 					<Form.Label>Type</Form.Label>
 					<Popover.Trigger
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'justify-between',
-							!$formData.panel_type && 'text-muted-foreground'
+							!$formData.type && 'text-muted-foreground'
 						)}
 						role="combobox"
 						{...props}
 					>
-						{DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.panel_type) ??
+						{DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type) ??
 							'Select a panel phase type'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
-					<input hidden value={$formData.panel_type} name={props.name} />
+					<input hidden value={$formData.type} name={props.name} />
 				{/snippet}
 			</Form.Control>
 			<Popover.Content class="w-auto p-0">
@@ -210,7 +206,7 @@
 							<Command.Item
 								value={phase_type_option}
 								onSelect={() => {
-									$formData.panel_type = phase_type_option;
+									$formData.type = phase_type_option;
 									closeAndFocusTrigger(panel_phase_type_trigger_id);
 								}}
 							>
@@ -218,7 +214,7 @@
 								<Check
 									class={cn(
 										'ml-auto size-4',
-										phase_type_option !== $formData.panel_type && 'text-transparent'
+										phase_type_option !== $formData.type && 'text-transparent'
 									)}
 								/>
 							</Command.Item>
@@ -233,7 +229,7 @@
 {/snippet}
 
 {#snippet PanelPhase()}
-	<Form.Field {form} name="panel_phase" class="mt-2.5 flex flex-col">
+	<Form.Field {form} name="phase" class="mt-2.5 flex flex-col">
 		<Popover.Root bind:open={open_panel_phase_popover}>
 			<Form.Control id="panel_phase_trigger_id">
 				{#snippet children({ props })}
@@ -242,16 +238,15 @@
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'justify-between',
-							!$formData.panel_phase && 'text-muted-foreground'
+							!$formData.phase && 'text-muted-foreground'
 						)}
 						role="combobox"
 						{...props}
 					>
-						{DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.panel_phase) ??
-							'Select a panel phase'}
+						{DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase) ?? 'Select a panel phase'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
-					<input hidden value={$formData.panel_phase} name={props.name} />
+					<input hidden value={$formData.phase} name={props.name} />
 				{/snippet}
 			</Form.Control>
 			<Popover.Content class="w-auto p-0">
@@ -263,15 +258,15 @@
 							<Command.Item
 								value={phase_option}
 								onSelect={() => {
-									$formData.panel_phase = phase_option;
-									closeAndFocusTrigger(panel_phase_trigger_id);
+									$formData.phase = phase_option;
+									closeAndFocusTrigger(phase_trigger_id);
 								}}
 							>
 								{phase_option}
 								<Check
 									class={cn(
 										'ml-auto size-4',
-										phase_option !== $formData.panel_phase && 'text-transparent'
+										phase_option !== $formData.phase && 'text-transparent'
 									)}
 								/>
 							</Command.Item>
