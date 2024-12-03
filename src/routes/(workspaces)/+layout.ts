@@ -4,6 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import type { Panel } from '@/types/panel';
 import { createDatabase } from '@/db';
 import { project_schema } from '@/db/schema/index.js';
+import { generic_phase_panel_schema } from '@/schema/panel';
 
 export const load = (async ({ url: { searchParams } }) => {
   console.log('INIT DB')
@@ -131,6 +132,7 @@ export const load = (async ({ url: { searchParams } }) => {
     is_new_file: searchParams.get('new_file') === 'true',
     is_load_file: searchParams.get('load_file') === 'true',
     highest_unit_form: await superValidate(zod(highest_unit_schema)),
+    generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
     panels: []
   };
 });

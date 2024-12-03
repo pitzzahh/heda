@@ -6,8 +6,14 @@
 	import type { Panel } from '@/types/panel';
 	import { getProjectState } from '@/hooks/project.svelte';
 	import { goto } from '$app/navigation';
+	import type { GenericPhasePanelSchema } from '@/schema/panel';
 
-	let { children, id }: { children: any; id: string } = $props();
+	let {
+		children,
+		id,
+		generic_phase_panel_form
+	}: { children: any; id: string; generic_phase_panel_form: GenericPhasePanelSchema } =
+		$props();
 	let panelName = $state('');
 	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
 	let projectState = getProjectState();
@@ -59,6 +65,7 @@
 			clickTimeout = null;
 			isDialogOpen = true;
 		} else {
+			// @ts-ignore
 			clickTimeout = setTimeout(() => {
 				clickTimeout = null;
 				goto(`/workspace/load-schedule/${id}`);
