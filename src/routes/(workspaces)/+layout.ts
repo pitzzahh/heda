@@ -12,13 +12,15 @@ export const load = (async ({ url: { searchParams } }) => {
 
   console.log(database);
 
-  const add_project_collections_result = await database.addCollections({
-    projects: {
-      schema: project_schema
-    }
-  });
-
-  console.log(add_project_collections_result);
+  // Create the projects collection if it doesn't already exist
+  if (!database.projects) {
+    const add_project_collections_result = await database.addCollections({
+      projects: {
+        schema: project_schema
+      }
+    });
+    console.log(add_project_collections_result);
+  }
 
   const init_insert = await database.projects.insert({
     id: new Date().toISOString(),
