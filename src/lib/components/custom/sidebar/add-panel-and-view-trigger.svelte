@@ -5,6 +5,7 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
+	import { Separator } from '@/components/ui/separator/index.js';
 
 	let {
 		children,
@@ -84,31 +85,32 @@
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
 			<div class="flex flex-col items-center justify-start">
-				<h3 class="scroll-m-20 text-2xl font-semibold tracking-tight">MAIN</h3>
+				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
 						<div class="flex gap-1">
-							<h4 class="scroll-m-20 text-xl font-semibold tracking-tight">Name:</h4>
-							<p class="leading-7">SAMPLE MAIN NAME</p>
+							<h4 class="font-semibold">Name:</h4>
+							<p>SAMPLE MAIN NAME</p>
 						</div>
 						<div class="flex gap-1">
-							<h4 class="scroll-m-20 text-xl font-semibold tracking-tight">Ambient temperature:</h4>
-							<p class="leading-7">SAMPLE MAIN AMBIENT TEMP</p>
+							<h4 class="font-semibold">Ambient temperature:</h4>
+							<p>SAMPLE MAIN AMBIENT TEMP</p>
 						</div>
 					</div>
 					<div>
 						<div class="flex gap-1">
-							<h4 class="scroll-m-20 text-xl font-semibold tracking-tight">Wire Length:</h4>
-							<p class="leading-7">SAMPLE MAIN Wire Length</p>
+							<h4 class="font-semibold">Wire Length:</h4>
+							<p>SAMPLE MAIN Wire Length</p>
 						</div>
 						<div class="flex gap-1">
-							<h4 class="scroll-m-20 text-xl font-semibold tracking-tight">Phase:</h4>
-							<p class="leading-7">SAMPLE MAIN PHASE</p>
+							<h4 class="font-semibold">Phase:</h4>
+							<p>SAMPLE MAIN PHASE</p>
 						</div>
 					</div>
 				</div>
 			</div>
 		</Dialog.Header>
+		<Separator class="my-1" />
 		<GenericPhaseMainPanelForm {generic_phase_panel_form} main_phase="ONE_PHASE" />
 	</Dialog.Content>
 </Dialog.Root>
