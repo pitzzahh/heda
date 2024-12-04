@@ -15,7 +15,7 @@
 	import type { DialogState } from '@/state/types.js';
 
 	let { data, children } = $props();
-	const { is_new_file, is_load_file, panels } = $derived(data);
+	const { is_new_file, is_load_file, panels, generic_phase_panel_form } = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
@@ -37,7 +37,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar tree={data.panels} />
+	<AppSidebar tree={data.panels} {generic_phase_panel_form} />
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"

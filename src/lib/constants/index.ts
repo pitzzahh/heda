@@ -32,7 +32,7 @@ export const default_three_phase_types = {
 export const default_phases = {
   ONE_PHASE: 'ONE_PHASE',
   THREE_PHASE_WYE: 'THREE_PHASE_WYE',
-  THREE_PHASE_DELTA: 'three_phase_delta'
+  THREE_PHASE_DELTA: 'THREE_PHASE_DELTA'
 } as const;
 
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);

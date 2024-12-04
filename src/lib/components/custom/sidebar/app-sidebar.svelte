@@ -5,7 +5,7 @@
 	import File from 'lucide-svelte/icons/file';
 	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
-	import { SidebarHeader } from '.';
+	import { SidebarHeader, AddPanelAndViewTrigger } from '.';
 	import type { Panel } from '@/types/panel';
 	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
@@ -14,24 +14,24 @@
 	import type { DialogState } from '@/state/types';
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants';
-	import AddPanelAndViewTrigger from './add-panel-and-view-trigger.svelte';
-
-	// let localStorage = new LocalStorage<ProjectProps>('project');
-	let projectState = getProjectState();
-
-	$inspect(projectState.project);
+	import type { GenericPhasePanelSchema } from '@/schema/panel';
+	import type { SuperValidated } from 'sveltekit-superforms';
 
 	let {
 		ref = $bindable(null),
 		tree,
+		generic_phase_panel_form,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		tree: Panel[];
+		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
 	// let localStorage = new LocalStorage<ProjectProps>('project');
 	let projectState = getProjectState();
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+
+	$inspect(projectState.project);
 
 	// this causes the re-renders
 	// $effect(() => {
@@ -99,25 +99,24 @@
 			<File />
 			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
-	{:else}s
+	{:else}
 		<Sidebar.MenuItem>
 			<Collapsible.Root
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
-				<Sidebar.MenuButton>
+				<Sidebar.MenuButton
+					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
+				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-
-					<AddPanelAndViewTrigger
-						id={((isPanel(item) && item.name) ||
-							(!isPanel(item) && item.load_description) ||
-							item) as string}
-					>
+					{@const item_name =
+						(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
+					<AddPanelAndViewTrigger id={item_name as string} {generic_phase_panel_form}>
 						<Folder class="size-4" />
-						{(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
+						{item_name}
 					</AddPanelAndViewTrigger>
 				</Sidebar.MenuButton>
 
