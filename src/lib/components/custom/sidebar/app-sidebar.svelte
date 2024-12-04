@@ -15,6 +15,7 @@
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
+	import type { SuperValidated } from 'sveltekit-superforms';
 
 	let {
 		ref = $bindable(null),
@@ -23,7 +24,7 @@
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		tree: Panel[];
-		generic_phase_panel_form: GenericPhasePanelSchema;
+		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
 	// let localStorage = new LocalStorage<ProjectProps>('project');
@@ -98,12 +99,14 @@
 			<File />
 			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
-	{:else}s
+	{:else}
 		<Sidebar.MenuItem>
 			<Collapsible.Root
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
-				<Sidebar.MenuButton>
+				<Sidebar.MenuButton
+					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
+				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
