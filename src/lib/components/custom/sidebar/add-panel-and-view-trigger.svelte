@@ -84,6 +84,6 @@
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
 		</Dialog.Header>
-		<GenericPhaseMainPanelForm {generic_phase_panel_form} main_phase="THREE_PHASE_WYE" />
+		<GenericPhaseMainPanelForm {generic_phase_panel_form} main_phase="ONE_PHASE" />
 	</Dialog.Content>
 </Dialog.Root>
