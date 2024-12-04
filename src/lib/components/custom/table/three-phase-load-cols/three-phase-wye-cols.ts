@@ -15,7 +15,8 @@ export function threePhaseWyeCols(
 				{
 					accessorKey: 'sets',
 					cell: (info) => info.getValue(),
-					header: () => 'Sets'
+					header: () => 'Sets',
+					footer: () => ''
 				},
 				{
 					header: 'P+P',
@@ -23,12 +24,14 @@ export function threePhaseWyeCols(
 						{
 							accessorKey: 'p_plus_p_size',
 							header: () => 'Size',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						},
 						{
 							accessorKey: 'p_plus_p_insulation',
 							header: 'INSULATION',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						}
 					]
 				},
@@ -38,12 +41,14 @@ export function threePhaseWyeCols(
 						{
 							accessorKey: 'three_phase_size',
 							header: () => 'Size',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						},
 						{
 							accessorKey: 'three_phase_insulation',
 							header: 'INSULATION',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						}
 					]
 				}

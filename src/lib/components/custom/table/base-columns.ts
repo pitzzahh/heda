@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // import { createRawSnippet } from 'svelte';
 import { renderComponent } from '@/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
@@ -16,19 +17,23 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				phase_main_load_form,
 				'aria-label': 'Select row',
 				class: 'translate-y-[2px]'
-			})
+			}),
+		footer: () => 'Total'
 	},
 	{
 		accessorKey: 'load_description',
-		header: 'Load Description'
+		header: 'Load Description',
+		footer: () => 'MAIN'
 	},
 	{
 		accessorKey: 'voltage',
-		header: 'Voltage'
+		header: 'Voltage',
+		footer: (props) => '440'
 	},
 	{
 		accessorKey: 'va',
-		header: 'VA'
+		header: 'VA',
+		footer: (props) => '6300'
 	},
 	{
 		header: 'CURRENT',
@@ -36,17 +41,20 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			{
 				accessorKey: 'ab',
 				cell: (info) => info.getValue(),
-				header: () => 'AB'
+				header: () => 'AB',
+				footer: (props) => '34'
 			},
 			{
 				accessorKey: 'bc',
 				cell: (info) => info.getValue(),
-				header: () => 'BC'
+				header: () => 'BC',
+				footer: (props) => '34'
 			},
 			{
 				accessorKey: 'ca',
 				cell: (info) => info.getValue(),
-				header: () => 'CA'
+				header: () => 'CA',
+				footer: (props) => '34'
 			}
 		]
 	},
@@ -56,17 +64,20 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			{
 				accessorKey: 'at',
 				cell: (info) => info.getValue(),
-				header: () => 'AF'
+				header: () => 'AF',
+				footer: (props) => '65'
 			},
 			{
 				accessorKey: 'pole',
 				cell: (info) => info.getValue(),
-				header: () => 'Pole'
+				header: () => 'Pole',
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
-				header: () => 'kAIC'
+				header: () => 'kAIC',
+				footer: (props) => '44'
 			}
 		]
 	}
@@ -79,12 +90,14 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): Colum
 			{
 				accessorKey: 'egc_size',
 				cell: (info) => info.getValue(),
-				header: () => 'SIZE'
+				header: () => 'SIZE',
+				footer: (props) => '24 AWG'
 			},
 			{
 				accessorKey: 'egc_insulation',
 				cell: (info) => info.getValue(),
-				header: () => 'INSULATION'
+				header: () => 'INSULATION',
+				footer: (props) => ''
 			}
 		]
 	},
@@ -94,12 +107,14 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): Colum
 			{
 				accessorKey: 'conduit_size',
 				cell: (info) => info.getValue(),
-				header: () => 'SIZE'
+				header: () => 'SIZE',
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'conduit_type',
 				cell: (info) => info.getValue(),
-				header: () => 'TYPE'
+				header: () => 'TYPE',
+				footer: (props) => ''
 			}
 		]
 	}

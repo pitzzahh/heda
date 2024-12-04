@@ -59,5 +59,29 @@
 				</Table.Row>
 			{/each}
 		</Table.Body>
+		<Table.Footer class="bg-muted/10">
+			{#each table.getFooterGroups() as footerGroup, i (i)}
+				{#if i === 0}
+					<Table.Row>
+						{#each footerGroup.headers as header, i (i)}
+							<Table.Head
+								colspan={header.colSpan}
+								class={cn('bg-muted/50', {
+									'border-r': i + 1 < footerGroup.headers.length,
+									'text-center font-semibold': i === 0
+								})}
+							>
+								{#if !header.isPlaceholder}
+									<FlexRender
+										content={header.column.columnDef.footer}
+										context={header.getContext()}
+									/>
+								{/if}
+							</Table.Head>
+						{/each}
+					</Table.Row>
+				{/if}
+			{/each}
+		</Table.Footer>
 	</Table.Root>
 </div>

@@ -15,7 +15,8 @@ export function onePhaseDeltaCols(
 				{
 					accessorKey: 'sets',
 					cell: (info) => info.getValue(),
-					header: () => 'Sets'
+					header: () => 'Sets',
+					footer: () => ''
 				},
 				{
 					header: 'P + P',
@@ -23,12 +24,14 @@ export function onePhaseDeltaCols(
 						{
 							accessorKey: 'p_plus_p_size',
 							header: () => 'SIZE',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						},
 						{
 							accessorKey: 'p_plus_p_insulation',
 							header: 'INSULATION',
-							cell: (info) => info.getValue()
+							cell: (info) => info.getValue(),
+							footer: () => ''
 						}
 					]
 				}
