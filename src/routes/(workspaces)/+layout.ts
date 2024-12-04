@@ -2,15 +2,32 @@ import { highest_unit_schema } from '@/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Panel } from '@/types/panel';
+import { createDatabase } from '@/db';
+import { project_schema } from '@/db/schema/index.js';
 
 export const load = (async ({ url: { searchParams } }) => {
   console.log('INIT DB')
 
-  return {
-    is_new_file: searchParams.get('new_file') === 'true',
-    is_load_file: searchParams.get('load_file') === 'true',
-    highest_unit_form: await superValidate(zod(highest_unit_schema)),
-    panels: [
+  const database = await createDatabase();
+
+  console.log(database);
+
+  // Create the projects collection if it doesn't already exist
+  if (!database.projects) {
+    const add_project_collections_result = await database.addCollections({
+      projects: {
+        schema: project_schema
+      }
+    });
+    console.log(add_project_collections_result);
+  }
+
+  const init_insert = await database.projects.insert({
+    id: new Date().toISOString(),
+    highest_unit_form: {
+      name: "Transformer"
+    },
+    tree: [
       {
         id: 1,
         name: "Panel A",
@@ -104,5 +121,16 @@ export const load = (async ({ url: { searchParams } }) => {
         ],
       },
     ] as Panel[]
+  })
+
+  await init_insert.patch({
+    done: true
+  });
+
+  return {
+    is_new_file: searchParams.get('new_file') === 'true',
+    is_load_file: searchParams.get('load_file') === 'true',
+    highest_unit_form: await superValidate(zod(highest_unit_schema)),
+    panels: []
   };
 });

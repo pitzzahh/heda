@@ -12,12 +12,12 @@
 
 	function handleSave() {
 		// Implement save functionality
-		console.log('Saving...');
+		$inspect('Saving...');
 	}
 
 	function handleNew() {
 		// Implement new document functionality
-		console.log('Creating new...');
+		$inspect('Creating new...');
 	}
 
 	function setModeAndColor(mode: 'dark' | 'light') {

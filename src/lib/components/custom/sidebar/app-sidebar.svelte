@@ -16,10 +16,10 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import AddPanelAndViewTrigger from './add-panel-and-view-trigger.svelte';
 
-	interface ProjectProps {
-		highest_unit_form: any;
-		tree: Panel[];
-	}
+	// let localStorage = new LocalStorage<ProjectProps>('project');
+	let projectState = getProjectState();
+
+	$inspect(projectState.project);
 
 	let {
 		ref = $bindable(null),
@@ -99,7 +99,7 @@
 			<File />
 			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
-	{:else}
+	{:else}s
 		<Sidebar.MenuItem>
 			<Collapsible.Root
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
