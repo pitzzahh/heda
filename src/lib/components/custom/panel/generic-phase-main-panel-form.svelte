@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends SuperValidated<GenericPhasePanelSchema>">
 	import { goto } from '$app/navigation';
-	import { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
@@ -24,6 +24,7 @@
 	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
+	import { dev } from '$app/environment';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -77,7 +78,7 @@
 </script>
 
 <form method="POST" use:enhance>
-	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
+	<div class="grid grid-cols-2 gap-2">
 		<div>
 			<Form.Field {form} name="name">
 				<Form.Control>
@@ -162,17 +163,17 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
-		<div class="w-full">
-			{#if main_phase !== 'ONE_PHASE'}
-				<div class="row-end-2">
-					{@render PanelType()}
-				</div>
-				<div class="row-end-3">
-					{@render PanelPhase()}
-				</div>
-			{/if}
-		</div>
+		{#if main_phase !== 'ONE_PHASE'}
+			<div>
+				{@render PanelType()}
+				{@render PanelPhase()}
+			</div>
+		{/if}
 	</div>
+
+	{#if dev}
+		<SuperDebug data={$formData} />
+	{/if}
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
 
