@@ -169,6 +169,9 @@
 				{@render PanelPhase()}
 			</div>
 		{/if}
+		<div>
+			{@render PanelPhase()}
+		</div>
 	</div>
 
 	{#if dev}
