@@ -1,6 +1,5 @@
 <script lang="ts" generics="T extends SuperValidated<GenericPhasePanelSchema>">
-	import { goto } from '$app/navigation';
-	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
@@ -17,21 +16,23 @@
 		DEFAULT_PHASES_OPTIONS,
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
-	import type { LoadType } from '@/types/load';
 	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
-	import { dev } from '$app/environment';
+	import { getProjectState } from '@/hooks/project.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
 		main_phase: Phase;
+		open_panel_dialog: boolean;
 	}
 
-	let { generic_phase_panel_form, main_phase }: Props = $props();
+	let { generic_phase_panel_form, main_phase, open_panel_dialog = $bindable() }: Props = $props();
+
+	const projectState = getProjectState();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -40,7 +41,40 @@
 			// toast the values
 			if (form.valid) {
 				toast.success('Form is valid');
-				goto('/home');
+				projectState.addPanel({
+					id: Math.floor(Math.random() * 100) + 1,
+					name: $formData.name,
+					loads: [
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'Lighting Circuit',
+							quantity: 10,
+							varies: 0,
+							is_panel: 1,
+							continuous: 1,
+							special: 'Main hallway lights'
+						},
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'Power Circuit',
+							quantity: 5,
+							varies: 1,
+							is_panel: 0,
+							continuous: 0,
+							special: 'Office power outlets'
+						},
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'HVAC Circuit',
+							quantity: 2,
+							varies: 0,
+							is_panel: 1,
+							continuous: 1,
+							special: 'Main HVAC system'
+						}
+					]
+				});
+				open_panel_dialog = false;
 			} else {
 				toast.error('Form is invalid');
 			}
@@ -173,10 +207,6 @@
 			{@render PanelPhase()}
 		</div>
 	</div>
-
-	{#if dev}
-		<SuperDebug data={$formData} />
-	{/if}
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
 
