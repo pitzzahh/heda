@@ -1,0 +1,1 @@
+export type LabelValuePair<T> = { label: keyof T; value: T[keyof T] };

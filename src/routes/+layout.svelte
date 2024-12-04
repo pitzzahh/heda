@@ -1,14 +1,26 @@
 <script lang="ts">
 	import '../app.css';
-	import { ModeWatcher } from 'mode-watcher';
+	import { ModeWatcher, mode } from 'mode-watcher';
 	import { Toaster } from '@/components/ui/sonner/index.js';
 	import { setState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
-	import { MISC_STATE_CTX } from '@/state/constants';
+	import type { DialogState, MiscState } from '@/state/types';
+	import { DIALOG_STATE_CTX, MISC_STATE_CTX } from '@/state/constants';
 	import SuperDebug from 'sveltekit-superforms';
 	import { dev } from '$app/environment';
+	import { setSettingsState } from '@/hooks/settings-state.svelte';
+	import { setProjectState } from '@/hooks/project.svelte';
 
 	let { children } = $props();
+
+	// INIT GLOBAL STATES
+	setSettingsState($mode === 'light' ? 'light' : 'dark');
+	setProjectState();
+	setState<DialogState>(
+		{
+			highestUnit: false
+		},
+		DIALOG_STATE_CTX
+	);
 
 	const miscState = setState<MiscState>(
 		{

@@ -1,9 +1,4 @@
-export type State =
-	| MainState
-	| RouteState
-	| DialogState
-	| CountState
-	| MiscState;
+export type State = MainState | RouteState | DialogState | CountState | MiscState | SettingsState;
 
 export type MainState = {
 	isArchiving: boolean;
@@ -16,11 +11,7 @@ export type RouteState = {
 };
 
 export type DialogState = {
-	logoutDialogOpen: boolean;
-	openNav: boolean;
-	totpDialogOpen: boolean;
-	openPermissionsSelect: boolean;
-	openSettings: boolean;
+	highestUnit: boolean;
 };
 
 export type CountState = {
@@ -41,5 +32,10 @@ export type MiscState = {
 	form_data?: {
 		data?: unknown;
 		label?: string;
-	}
-}
+	};
+};
+
+export type SettingsState = {
+	themeColor: 'excel' | 'autocad';
+	font: string;
+};

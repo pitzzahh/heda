@@ -1,40 +1,3 @@
-<script lang="ts" module>
-	// This is sample data.
-	const data = {
-		changes: [
-			{
-				file: 'README.md',
-				state: 'M'
-			},
-			{
-				file: 'routes/+page.svelte',
-				state: 'U'
-			},
-			{
-				file: 'routes/+layout.svelte',
-				state: 'M'
-			}
-		],
-		tree: [
-			['lib', ['components', 'button.svelte', 'card.svelte'], 'utils.ts'],
-			[
-				'routes',
-				['hello', '+page.svelte', '+page.ts'],
-				'+page.svelte',
-				'+page.server.ts',
-				'+layout.svelte'
-			],
-			['static', 'favicon.ico', 'svelte.svg'],
-			'eslint.config.js',
-			'.gitignore',
-			'svelte.config.js',
-			'tailwind.config.js',
-			'package.json',
-			'README.md'
-		]
-	};
-</script>
-
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -42,32 +5,45 @@
 	import File from 'lucide-svelte/icons/file';
 	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
-	import { SidebarHeader } from '.';
-	import { LocalStorage } from '@/hooks/storage.svelte';
+	import { SidebarHeader, AddPanelAndViewTrigger } from '.';
 	import type { Panel } from '@/types/panel';
-	import SidebarItemContextMenu from './sidebar-item-context-menu.svelte';
+	import type { Load } from '@/types/load';
+	import { getProjectState } from '@/hooks/project.svelte';
+	import Button from '@/components/ui/button/button.svelte';
+	import { PlusIcon } from 'lucide-svelte';
+	import type { DialogState } from '@/state/types';
+	import { getState } from '@/state/index.svelte';
+	import { DIALOG_STATE_CTX } from '@/state/constants';
+	import type { GenericPhasePanelSchema } from '@/schema/panel';
+	import type { SuperValidated } from 'sveltekit-superforms';
 
-	interface ProjectProps {
-		highest_unit_form: any;
-		panels: Panel[];
-	}
-
-	let localStorage = new LocalStorage<ProjectProps>('project');
-
-	// Props for Sidebar component
 	let {
 		ref = $bindable(null),
-		panels,
+		tree,
+		generic_phase_panel_form,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
-		panels: Panel[];
+		tree: Panel[];
+		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
-	let localStorageData = $derived(
-		localStorage.current || {
-			highest_unit_form: null,
-			panels
-		}
-	);
+
+	// let localStorage = new LocalStorage<ProjectProps>('project');
+	let projectState = getProjectState();
+	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+
+	$inspect(projectState.project);
+
+	// this causes the re-renders
+	// $effect(() => {
+	// 	localStorage.current = {
+	// 		...localStorage.current,
+	// 		tree
+	// 	};
+	// });
+
+	function isPanel(item: Panel | Load): item is Panel {
+		return (item as Panel).name !== undefined;
+	}
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -77,12 +53,31 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					<!-- Render the root node for the highest unit -->
-					{@render Tree({
-						item: localStorageData.highest_unit_form.distribution_unit,
-						children: localStorageData.panels,
-						isRootNode: !!localStorageData.highest_unit_form.distribution_unit
-					})}
+					{#if projectState.project?.highest_unit_form}
+						{@render Tree({
+							item: projectState.project?.highest_unit_form.distribution_unit,
+							children: projectState.project.tree,
+							isRootNode: !!projectState.project?.highest_unit_form.distribution_unit
+						})}
+					{:else}
+						<div class="grid h-[85vh] place-content-center">
+							<div class="grid gap-2">
+								<div class="text-center">
+									<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
+									<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
+								</div>
+
+								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
+								<Button
+									size="sm"
+									onclick={() => (dialogs_state.highestUnit = true)}
+									href="/workspace?new_file=true"
+								>
+									<PlusIcon className="size-4 ml-3" /> Create a project
+								</Button>
+							</div>
+						</div>
+					{/if}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
@@ -95,34 +90,38 @@
 	children = [],
 	isRootNode
 }: {
-	item: any;
-	children: any[];
+	item: Panel | Load;
+	children: Panel[] | Load[];
 	isRootNode?: boolean;
 })}
 	{#if children.length === 0 && !isRootNode}
 		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
 			<File />
-			<span>{item.description || item}</span>
+			<span>{isPanel(item) ? item.name : item.load_description}</span>
 		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem>
 			<Collapsible.Root
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
-				<Collapsible.Trigger>
-					{#snippet child({ props })}
-						<SidebarItemContextMenu>
-							<Sidebar.MenuButton {...props}>
-								<ChevronRight class="transition-transform" />
-								<Folder />
-								<span>{item.panel_name || item}</span>
-							</Sidebar.MenuButton>
-						</SidebarItemContextMenu>
-					{/snippet}
-				</Collapsible.Trigger>
+				<Sidebar.MenuButton
+					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
+				>
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
+							<ChevronRight class="transition-transform" {...props} />
+						{/snippet}
+					</Collapsible.Trigger>
+					{@const item_name =
+						(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
+					<AddPanelAndViewTrigger id={item_name as string} {generic_phase_panel_form}>
+						<Folder class="size-4" />
+						{item_name}
+					</AddPanelAndViewTrigger>
+				</Sidebar.MenuButton>
 
-				<Collapsible.Content>
-					<Sidebar.MenuSub>
+				<Collapsible.Content class="w-full">
+					<Sidebar.MenuSub class="w-full">
 						{#each children as child, index (index)}
 							{@render Tree({ item: child, children: child.loads || [] })}
 						{/each}

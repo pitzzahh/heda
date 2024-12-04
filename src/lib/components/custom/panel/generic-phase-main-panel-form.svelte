@@ -1,14 +1,9 @@
-<script lang="ts" generics="T extends SuperValidated<OnePhaseMainLoadSchema>">
-	import { goto } from '$app/navigation';
-	import { scale } from 'svelte/transition';
-	import { cubicInOut } from 'svelte/easing';
-	import { Separator } from '@/components/ui/separator/index.js';
+<script lang="ts" generics="T extends SuperValidated<GenericPhasePanelSchema>">
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import { Checkbox } from '@/components/ui/checkbox/index.js';
+	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
 	import * as Form from '@/components/ui/form/index.js';
@@ -16,28 +11,70 @@
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
-	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
-	import type { LoadType } from '@/types/load';
-	import { one_phase_main_load_schema, type OnePhaseMainLoadSchema } from '@/schema/load/one_phase';
+	import {
+		ambient_temperatures,
+		DEFAULT_PHASES_OPTIONS,
+		DEFAULT_THREE_PHASE_TYPES_OPTIONS
+	} from '@/constants';
+	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
+	import type { Phase } from '@/types/phase';
+	import { convertToNormalText } from '@/utils/text';
+	import { getProjectState } from '@/hooks/project.svelte';
 
 	interface Props {
-		one_phase_main_load_form: T;
-		saved_path?: string;
+		generic_phase_panel_form: T;
+		main_phase: Phase;
+		open_panel_dialog: boolean;
 	}
 
-	let { one_phase_main_load_form }: Props = $props();
+	let { generic_phase_panel_form, main_phase, open_panel_dialog = $bindable() }: Props = $props();
 
-	const form = superForm(one_phase_main_load_form, {
+	const projectState = getProjectState();
+
+	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
-		validators: zodClient(one_phase_main_load_schema),
+		validators: zodClient(generic_phase_panel_schema),
 		onUpdate: ({ form }) => {
 			// toast the values
 			if (form.valid) {
 				toast.success('Form is valid');
-				goto('/home');
+				projectState.addPanel({
+					id: Math.floor(Math.random() * 100) + 1,
+					name: $formData.name,
+					loads: [
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'Lighting Circuit',
+							quantity: 10,
+							varies: 0,
+							is_panel: 1,
+							continuous: 1,
+							special: 'Main hallway lights'
+						},
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'Power Circuit',
+							quantity: 5,
+							varies: 1,
+							is_panel: 0,
+							continuous: 0,
+							special: 'Office power outlets'
+						},
+						{
+							id: (Math.floor(Math.random() * 100) + 1).toString(),
+							load_description: 'HVAC Circuit',
+							quantity: 2,
+							varies: 0,
+							is_panel: 1,
+							continuous: 1,
+							special: 'Main HVAC system'
+						}
+					]
+				});
+				open_panel_dialog = false;
 			} else {
 				toast.error('Form is invalid');
 			}
@@ -46,20 +83,21 @@
 	const { form: formData, enhance } = form;
 	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
+	let open_panel_phase_popover = $state(false);
 	let open_ambient_temp = $state(false);
-	let open_special = $state(false);
-	let open_load_description = $state(false);
+	let open_phase_type = $state(false);
+	const phase_trigger_id = useId();
+
+	const panel_phase_type_trigger_id = useId();
 	const ambient_temp_trigger_id = useId();
-	const special_trigger_id = useId();
-	const load_description_trigger_id = useId();
-	let load_type = $state<LoadType | undefined>();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
 		open_ambient_temp = false;
-		open_special = false;
+		open_panel_phase_popover = false;
+		open_phase_type = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -74,176 +112,76 @@
 </script>
 
 <form method="POST" use:enhance>
-	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
-		<Form.Field {form} name="circuit_number">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Circuit number</Form.Label>
-					<Input
-						{...props}
-						type="number"
-						inputmode="numeric"
-						min={1}
-						bind:value={$formData.circuit_number}
-						placeholder="Enter the circuit number"
-					/>
-				{/snippet}
-			</Form.Control>
-			<Form.Description>
-				This is the circuit number that will determine the circuit number of the wire to the main.
-			</Form.Description>
-			<Form.FieldErrors />
-		</Form.Field>
-		<Form.Field {form} name="load_ambient_temperature" class="mt-2.5 flex flex-col">
-			<Popover.Root bind:open={open_ambient_temp}>
-				<Form.Control id={ambient_temp_trigger_id}>
-					{#snippet children({ props })}
-						<Form.Label>Ambient Temperature</Form.Label>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
-								!$formData.load_ambient_temperature && 'text-muted-foreground'
-							)}
-							role="combobox"
-							{...props}
-						>
-							{ambient_temperatures.find((f) => f.value === $formData.load_ambient_temperature)
-								?.label ?? 'Select an ambient temperature'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
-					{/snippet}
-				</Form.Control>
-				<Popover.Content class="w-auto p-0">
-					<Command.Root>
-						<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
-						<Command.Empty>No ambient temp found.</Command.Empty>
-						<Command.Group>
-							{#each ambient_temperatures as ambient_temp}
-								<Command.Item
-									value={ambient_temp.value}
-									onSelect={() => {
-										$formData.load_ambient_temperature = ambient_temp.value;
-										closeAndFocusTrigger(ambient_temp_trigger_id);
-									}}
-								>
-									{ambient_temp.label}
-									<Check
-										class={cn(
-											'ml-auto size-4',
-											ambient_temp.value !== $formData.load_ambient_temperature &&
-												'text-transparent'
-										)}
-									/>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
-			<Form.Description>
-				This is the ambient temp that will determine the ambient temp of the wire to the main.
-			</Form.Description>
-			<Form.FieldErrors />
-		</Form.Field>
-	</div>
-
-	{#if !load_type}
-		<div class="my-2 flex items-center justify-around gap-2">
-			<Button variant="outline" onclick={() => (load_type = 'DEFAULT')}>Default</Button>
-			<Button variant="outline" onclick={() => (load_type = 'CUSTOM')}>Custom</Button>
-		</div>
-	{/if}
-	<div
-		transition:scale={{
-			delay: 250,
-			duration: 200,
-			easing: cubicInOut
-		}}
-	>
-		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
-			{@render SubFields(load_type)}
-			<Separator class="my-2" />
-		{/if}
-	</div>
-
-	<Form.Button class="w-full">Save</Form.Button>
-</form>
-
-{#snippet SubFields(load_type: LoadType | undefined)}
-	<div class="flex justify-between gap-1">
-		<Form.Field {form} name="quantity" class="w-28 text-center">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>QTY</Form.Label>
-					<Input
-						{...props}
-						type="number"
-						min={1}
-						inputmode="numeric"
-						bind:value={$formData.quantity}
-						placeholder="Enter quantity"
-					/>
-				{/snippet}
-			</Form.Control>
-			<Form.FieldErrors />
-		</Form.Field>
-		{#if load_type === 'CUSTOM'}
-			<Form.Field {form} name="load_description" class="w-full text-center">
+	<div class="grid grid-cols-2 gap-2">
+		<div>
+			<Form.Field {form} name="name">
 				<Form.Control>
 					{#snippet children({ props })}
-						<Form.Label>Load description</Form.Label>
+						<Form.Label>Name</Form.Label>
+						<Input {...props} bind:value={$formData.name} placeholder="Enter panel name" />
+					{/snippet}
+				</Form.Control>
+				<Form.Description>This is the panel name.</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field {form} name="circuit_number">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Circuit number</Form.Label>
 						<Input
 							{...props}
-							bind:value={$formData.load_description}
-							placeholder="Enter load description"
+							type="number"
+							inputmode="numeric"
+							min={1}
+							bind:value={$formData.circuit_number}
+							placeholder="Enter the circuit number"
 						/>
 					{/snippet}
 				</Form.Control>
+				<Form.Description>
+					This is the circuit number that will determine the circuit number of the wire to the main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
-		{/if}
-		{#if load_type === 'DEFAULT'}
-			<Form.Field {form} name="load_description" class="mt-2 grid w-full text-center">
-				<Popover.Root bind:open={open_load_description}>
-					<Form.Control id={load_description_trigger_id}>
+			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
+				<Popover.Root bind:open={open_ambient_temp}>
+					<Form.Control id={ambient_temp_trigger_id}>
 						{#snippet children({ props })}
-							<Form.Label>Load description</Form.Label>
+							<Form.Label>Ambient Temperature</Form.Label>
 							<Popover.Trigger
 								class={cn(
 									buttonVariants({ variant: 'outline' }),
 									'justify-between',
-									!$formData.load_description && 'text-muted-foreground'
+									!$formData.ambient_temperature && 'text-muted-foreground'
 								)}
 								role="combobox"
 								{...props}
 							>
-								{default_loads_description.find((s) => s.value === $formData.load_description)
-									?.label ?? 'Select a load description'}
+								{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)
+									?.label ?? 'Select an ambient temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
-							<input hidden value={$formData.load_description} name={props.name} />
+							<input hidden value={$formData.ambient_temperature} name={props.name} />
 						{/snippet}
 					</Form.Control>
 					<Popover.Content class="w-auto p-0">
 						<Command.Root>
-							<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
-							<Command.Empty>No load description found.</Command.Empty>
+							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each default_loads_description as default_load}
+								{#each ambient_temperatures as ambient_temp}
 									<Command.Item
-										value={default_load.value}
+										value={ambient_temp.value}
 										onSelect={() => {
-											$formData.load_description = default_load.value;
-											closeAndFocusTrigger(load_description_trigger_id);
+											$formData.ambient_temperature = ambient_temp.value;
+											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
-										{default_load.label}
+										{ambient_temp.label}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												default_load.value !== $formData.load_description && 'text-transparent'
+												ambient_temp.value !== $formData.ambient_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -252,81 +190,129 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
+				<Form.Description>
+					This is the ambient temp that will determine the ambient temp of the panel wire to the
+					main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
+		</div>
+		{#if main_phase !== 'ONE_PHASE'}
+			<div>
+				{@render PanelType()}
+				{@render PanelPhase()}
+			</div>
 		{/if}
-		<Form.Field {form} name="varies" class="text-center">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Varies</Form.Label>
-					<Input
-						{...props}
-						type="number"
-						inputmode="numeric"
-						min={1}
-						bind:value={$formData.varies}
-						placeholder="Enter varies"
-					/>
-				{/snippet}
-			</Form.Control>
-			<Form.FieldErrors />
-		</Form.Field>
-		<Form.Field {form} name="continuous" class="mt-1.5 grid text-center">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Continuous</Form.Label>
-					<Checkbox {...props} bind:checked={$formData.continuous} />
-					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
-				{/snippet}
-			</Form.Control>
-		</Form.Field>
-		<Form.Field {form} name="special" class="mt-1.5 grid text-center">
-			<Popover.Root bind:open={open_special}>
-				<Form.Control id={special_trigger_id}>
-					{#snippet children({ props })}
-						<Form.Label>Special</Form.Label>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
-								!$formData.special && 'text-muted-foreground'
-							)}
-							role="combobox"
-							{...props}
-						>
-							{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<input hidden value={$formData.special} name={props.name} />
-					{/snippet}
-				</Form.Control>
-				<Popover.Content class="w-auto p-0">
-					<Command.Root>
-						<Command.Input autofocus placeholder="Search a special..." class="h-9" />
-						<Command.Empty>No special found.</Command.Empty>
-						<Command.Group>
-							{#each specials as special}
-								<Command.Item
-									value={special.value}
-									onSelect={() => {
-										$formData.special = special.value;
-										closeAndFocusTrigger(special_trigger_id);
-									}}
-								>
-									{special.label}
-									<Check
-										class={cn(
-											'ml-auto size-4',
-											special.value !== $formData.special && 'text-transparent'
-										)}
-									/>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
-			<Form.FieldErrors />
-		</Form.Field>
+		<div>
+			{@render PanelPhase()}
+		</div>
 	</div>
+	<Form.Button class="w-full">Save</Form.Button>
+</form>
+
+{#snippet PanelType()}
+	<Form.Field {form} name="type" class="mt-2.5 flex flex-col">
+		<Popover.Root bind:open={open_phase_type}>
+			<Form.Control id="phase_trigger_id">
+				{#snippet children({ props })}
+					<Form.Label>Type</Form.Label>
+					<Popover.Trigger
+						class={cn(
+							buttonVariants({ variant: 'outline' }),
+							'justify-between',
+							!$formData.type && 'text-muted-foreground'
+						)}
+						role="combobox"
+						{...props}
+					>
+						{convertToNormalText(
+							DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
+						) ?? 'Select a panel phase type'}
+						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+					</Popover.Trigger>
+					<input hidden value={$formData.type} name={props.name} />
+				{/snippet}
+			</Form.Control>
+			<Popover.Content class="w-auto p-0">
+				<Command.Root>
+					<Command.Input autofocus placeholder="Search panel phase type..." class="h-9" />
+					<Command.Empty>No panel phase type found.</Command.Empty>
+					<Command.Group>
+						{#each DEFAULT_THREE_PHASE_TYPES_OPTIONS as phase_type_option}
+							<Command.Item
+								value={phase_type_option}
+								onSelect={() => {
+									$formData.type = phase_type_option;
+									closeAndFocusTrigger(panel_phase_type_trigger_id);
+								}}
+							>
+								{convertToNormalText(phase_type_option)}
+								<Check
+									class={cn(
+										'ml-auto size-4',
+										phase_type_option !== $formData.type && 'text-transparent'
+									)}
+								/>
+							</Command.Item>
+						{/each}
+					</Command.Group>
+				</Command.Root>
+			</Popover.Content>
+		</Popover.Root>
+		<Form.Description>This is the type for the panel.</Form.Description>
+		<Form.FieldErrors />
+	</Form.Field>
+{/snippet}
+
+{#snippet PanelPhase()}
+	<Form.Field {form} name="phase" class="mt-2.5 flex flex-col">
+		<Popover.Root bind:open={open_panel_phase_popover}>
+			<Form.Control id="panel_phase_trigger_id">
+				{#snippet children({ props })}
+					<Form.Label>Phase</Form.Label>
+					<Popover.Trigger
+						class={cn(
+							buttonVariants({ variant: 'outline' }),
+							'justify-between',
+							!$formData.phase && 'text-muted-foreground'
+						)}
+						role="combobox"
+						{...props}
+					>
+						{convertToNormalText(DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)) ??
+							'Select a panel phase'}
+						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+					</Popover.Trigger>
+					<input hidden value={$formData.phase} name={props.name} />
+				{/snippet}
+			</Form.Control>
+			<Popover.Content class="w-auto p-0">
+				<Command.Root>
+					<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+					<Command.Empty>No ambient temp found.</Command.Empty>
+					<Command.Group>
+						{#each DEFAULT_PHASES_OPTIONS as phase_option}
+							<Command.Item
+								value={phase_option}
+								onSelect={() => {
+									$formData.phase = phase_option;
+									closeAndFocusTrigger(phase_trigger_id);
+								}}
+							>
+								{convertToNormalText(phase_option)}
+								<Check
+									class={cn(
+										'ml-auto size-4',
+										phase_option !== $formData.phase && 'text-transparent'
+									)}
+								/>
+							</Command.Item>
+						{/each}
+					</Command.Group>
+				</Command.Root>
+			</Popover.Content>
+		</Popover.Root>
+		<Form.Description>This is the phase for the panel.</Form.Description>
+		<Form.FieldErrors />
+	</Form.Field>
 {/snippet}

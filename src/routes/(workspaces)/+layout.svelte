@@ -1,28 +1,31 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { AppSidebar } from '@/components/custom/sidebar';
-	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
+	import { Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { HighestUnitForm } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
-	import { PenLine } from 'lucide-svelte';
+	import { PenLine, Save } from '@/assets/icons/lucide';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { getState } from '@/state/index.svelte';
+	import { DIALOG_STATE_CTX } from '@/state/constants.js';
+	import type { DialogState } from '@/state/types.js';
 
 	let { data, children } = $props();
-	const { is_new_file, is_load_file, panels } = $derived(data);
+	const { is_new_file, is_load_file, panels, generic_phase_panel_form } = $derived(data);
 
-	let highest_unit = $state(false);
+	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
+
 	// TODO: ADD A DEFAULT VALUE OF THE PROJECT
 	let project_title = $state('Untitled');
 
 	onMount(() => {
 		toast.info(`Is new file: ${is_new_file}\nIs load file: ${is_load_file}`);
-		highest_unit = is_new_file;
+		dialogs_state.highestUnit = is_new_file;
 	});
 
 	function toggleEdit() {
@@ -34,7 +37,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar {panels}/>
+	<AppSidebar tree={data.panels} {generic_phase_panel_form} />
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
@@ -53,7 +56,11 @@
 				<Tooltip>
 					<TooltipTrigger>
 						<Button size="icon" variant="outline" onclick={toggleEdit}>
-							<PenLine class="h-4 w-4" />
+							{#if is_editing}
+								<Save class="h-4 w-4" />
+							{:else}
+								<PenLine class="h-4 w-4" />
+							{/if}
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
@@ -66,8 +73,8 @@
 	</Sidebar.Inset>
 </Sidebar.Provider>
 
-<Dialog.Root bind:open={highest_unit}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Highest unit form</Dialog.Trigger>
+<Dialog.Root bind:open={dialogs_state.highestUnit}>
+	<!-- <Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Highest unit form</Dialog.Trigger> -->
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title class="text-center font-bold"
@@ -76,7 +83,7 @@
 		</Dialog.Header>
 		<HighestUnitForm
 			highest_unit_form={data.highest_unit_form}
-			closeDialog={() => (highest_unit = false)}
+			closeDialog={() => (dialogs_state.highestUnit = false)}
 		/>
 	</Dialog.Content>
 </Dialog.Root>
