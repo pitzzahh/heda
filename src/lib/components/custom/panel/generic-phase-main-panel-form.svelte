@@ -23,6 +23,7 @@
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
+	import { convertToNormalText } from '@/utils/text';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -190,8 +191,9 @@
 						role="combobox"
 						{...props}
 					>
-						{DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type) ??
-							'Select a panel phase type'}
+						{convertToNormalText(
+							DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
+						) ?? 'Select a panel phase type'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.type} name={props.name} />
@@ -210,7 +212,7 @@
 									closeAndFocusTrigger(panel_phase_type_trigger_id);
 								}}
 							>
-								{phase_type_option}
+								{convertToNormalText(phase_type_option)}
 								<Check
 									class={cn(
 										'ml-auto size-4',
@@ -243,7 +245,8 @@
 						role="combobox"
 						{...props}
 					>
-						{DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase) ?? 'Select a panel phase'}
+						{convertToNormalText(DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)) ??
+							'Select a panel phase'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.phase} name={props.name} />
@@ -262,7 +265,7 @@
 									closeAndFocusTrigger(phase_trigger_id);
 								}}
 							>
-								{phase_option}
+								{convertToNormalText(phase_option)}
 								<Check
 									class={cn(
 										'ml-auto size-4',
