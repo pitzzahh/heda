@@ -1,6 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { getProjectState } from '@/hooks/project.svelte';
 	import { goto } from '$app/navigation';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -12,60 +12,19 @@
 		id,
 		generic_phase_panel_form
 	}: {
-		children: any;
+		children: Snippet;
 		id: string;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
-	let panelName = $state('');
-	let isDialogOpen = $state(false); // Add a reactive variable to control the dialog state
-	let projectState = getProjectState();
+
+	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let clickTimeout: number | null = null; // To store the timeout for single-click
-
-	function handleSubmit() {
-		// should normally work because its a signal
-		projectState.addPanel({
-			id: Math.floor(Math.random() * 100) + 1,
-			name: panelName,
-			loads: [
-				{
-					id: (Math.floor(Math.random() * 100) + 1).toString(),
-					load_description: 'Lighting Circuit',
-					quantity: 10,
-					varies: 0,
-					is_panel: 1,
-					continuous: 1,
-					special: 'Main hallway lights'
-				},
-				{
-					id: (Math.floor(Math.random() * 100) + 1).toString(),
-					load_description: 'Power Circuit',
-					quantity: 5,
-					varies: 1,
-					is_panel: 0,
-					continuous: 0,
-					special: 'Office power outlets'
-				},
-				{
-					id: (Math.floor(Math.random() * 100) + 1).toString(),
-					load_description: 'HVAC Circuit',
-					quantity: 2,
-					varies: 0,
-					is_panel: 1,
-					continuous: 1,
-					special: 'Main HVAC system'
-				}
-			]
-		});
-
-		isDialogOpen = false;
-		panelName = '';
-	}
 
 	function handleClick() {
 		if (clickTimeout) {
 			clearTimeout(clickTimeout);
 			clickTimeout = null;
-			isDialogOpen = true;
+			open_panel_dialog = true;
 		} else {
 			// @ts-ignore
 			clickTimeout = setTimeout(() => {
@@ -80,7 +39,7 @@
 	{@render children?.()}
 </button>
 
-<Dialog.Root bind:open={isDialogOpen}>
+<Dialog.Root bind:open={open_panel_dialog}>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
@@ -111,6 +70,10 @@
 			</div>
 		</Dialog.Header>
 		<Separator class="my-1" />
-		<GenericPhaseMainPanelForm {generic_phase_panel_form} main_phase="ONE_PHASE" />
+		<GenericPhaseMainPanelForm
+			{generic_phase_panel_form}
+			main_phase="ONE_PHASE"
+			bind:open_panel_dialog
+		/>
 	</Dialog.Content>
 </Dialog.Root>
