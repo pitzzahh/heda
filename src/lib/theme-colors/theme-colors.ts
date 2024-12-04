@@ -21,7 +21,7 @@ const themes: Record<string, any> = {
 			border: '0 0% 89.8%',
 			input: '0 0% 89.8%',
 			ring: '0 72.2% 50.6%',
-			radius: '0rem',
+			radius: '0.3rem',
 			sidebarBackground: '0 0% 98%',
 			sidebarForeground: '240 5.3% 26.1%',
 			sidebarPrimary: '240 5.9% 10%',
