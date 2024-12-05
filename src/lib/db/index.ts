@@ -2,6 +2,7 @@ import { addRxPlugin, createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import type { MyDatabaseCollections } from '@/types/db';
+import { dev } from '$app/environment';
 
 let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 
@@ -15,7 +16,7 @@ export async function createDatabase(name: string = 'mydatabase'): Promise<RxDat
   if (dbInstance) {
     return dbInstance;
   }
-  addRxPlugin(RxDBDevModePlugin);
+  dev && addRxPlugin(RxDBDevModePlugin);
   dbInstance = await createRxDatabase({
     name,
     storage: getRxStorageDexie()
