@@ -1,10 +1,9 @@
 import { highest_unit_schema } from '@/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Panel } from '@/types/panel';
 import { createDatabase } from '@/db';
-import { generic_phase_panel_schema } from '@/schema/panel';
 import { project_schema, item_schema } from '@/db/schema/index.js';
+import { generic_phase_panel_schema } from '@/schema/panel';
 
 export const load = async ({ url: { searchParams } }) => {
 	console.log('INIT DB');
@@ -31,7 +30,7 @@ export const load = async ({ url: { searchParams } }) => {
 
 	if (!existingProject.length) {
 		// Create items
-		const item1 = await database.items.insert({
+		await database.items.insert({
 			id: 'item1',
 			is_panel: 1,
 			panel_data: {
@@ -40,7 +39,7 @@ export const load = async ({ url: { searchParams } }) => {
 				ambient_temperature: '25C',
 				phase: 'Single'
 			},
-			load_data: null,
+			load_data: undefined,
 			parent_id: 'project1', // Root item
 			child_ids: ['item2', 'item3'] // Points to children
 		});
@@ -48,7 +47,7 @@ export const load = async ({ url: { searchParams } }) => {
 		await database.items.insert({
 			id: 'item2',
 			is_panel: 0,
-			panel_data: null,
+			panel_data: undefined,
 			load_data: {
 				load_description: 'Light Load',
 				quantity: 10,
@@ -70,15 +69,15 @@ export const load = async ({ url: { searchParams } }) => {
 				ambient_temperature: '30C',
 				phase: 'Three'
 			},
-			load_data: null,
+			load_data: undefined,
 			parent_id: 'item1',
 			child_ids: []
 		});
 
-		 await database.items.insert({
+		await database.items.insert({
 			id: 'item4',
 			is_panel: 0,
-			panel_data: null,
+			panel_data: undefined,
 			load_data: {
 				load_description: 'Fan Load',
 				quantity: 5,
@@ -104,15 +103,14 @@ export const load = async ({ url: { searchParams } }) => {
 	}
 
 	const projs = database.projects.find();
-	const project = (await projs.exec()).at(0)
+	const project = (await projs.exec()).at(0);
 
 	const items = database.items.find({
 		selector: {
-			parent_id: project._data.id
+			parent_id: project?._data.id
 		}
-	})
+	});
 	console.log('items', await items.exec());
-
 
 	return {
 		is_new_file: searchParams.get('new_file') === 'true',
