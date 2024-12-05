@@ -1,29 +1,15 @@
 import { highest_unit_schema } from '@/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { createDatabase } from '@/db';
-import { project_schema, item_schema } from '@/db/schema/index.js';
+import { databaseInstance } from '@/db';
 import { generic_phase_panel_schema } from '@/schema/panel';
 
 export const load = async ({ url: { searchParams } }) => {
 	console.log('INIT DB');
 
-	const database = await createDatabase();
+	const database = await databaseInstance();
 
 	console.log(database);
-
-	// // Create the projects collection if it doesn't already exist
-	if (!database.projects) {
-		const added_collections_result = await database.addCollections({
-			projects: {
-				schema: project_schema
-			},
-			items: {
-				schema: item_schema
-			}
-		});
-		console.log(added_collections_result);
-	}
 
 	const query = database.projects.find();
 	const existingProject = await query.exec();
@@ -32,7 +18,7 @@ export const load = async ({ url: { searchParams } }) => {
 		// Create items
 		await database.items.insert({
 			id: 'item1',
-			is_panel: 1,
+			node_type: 'panel',
 			panel_data: {
 				name: 'Main Panel',
 				circuit_number: 1,
@@ -46,13 +32,12 @@ export const load = async ({ url: { searchParams } }) => {
 
 		await database.items.insert({
 			id: 'item2',
-			is_panel: 0,
+			node_type: 'load',
 			panel_data: undefined,
 			load_data: {
 				load_description: 'Light Load',
 				quantity: 10,
 				varies: 0,
-				is_panel: 0,
 				continuous: 1,
 				special: 'N/A'
 			},
@@ -62,7 +47,7 @@ export const load = async ({ url: { searchParams } }) => {
 
 		await database.items.insert({
 			id: 'item3',
-			is_panel: 1,
+			node_type: 'panel',
 			panel_data: {
 				name: 'Sub Panel',
 				circuit_number: 2,
@@ -76,13 +61,13 @@ export const load = async ({ url: { searchParams } }) => {
 
 		await database.items.insert({
 			id: 'item4',
-			is_panel: 0,
+			node_type: 'load',
 			panel_data: undefined,
 			load_data: {
 				load_description: 'Fan Load',
 				quantity: 5,
 				varies: 1,
-				is_panel: 0,
+
 				continuous: 1,
 				special: 'High Efficiency'
 			},
@@ -93,7 +78,12 @@ export const load = async ({ url: { searchParams } }) => {
 		// Create a project
 		const project = await database.projects.insert({
 			id: 'project1',
-			highest_unit_form: 'Panel-Based System',
+			highest_unit_form: {
+				distribution_unit: 'Transformer',
+				wire_length: 60,
+				ambient_temperature: '90',
+				phase: '1PWye'
+			},
 			tree: []
 		});
 
@@ -104,6 +94,8 @@ export const load = async ({ url: { searchParams } }) => {
 
 	const projs = database.projects.find();
 	const project = (await projs.exec()).at(0);
+
+	console.log('project', project);
 
 	const items = database.items.find({
 		selector: {
@@ -117,6 +109,7 @@ export const load = async ({ url: { searchParams } }) => {
 		is_load_file: searchParams.get('load_file') === 'true',
 		highest_unit_form: await superValidate(zod(highest_unit_schema)),
 		generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
-		panels: []
+		panels: [],
+		// project: 
 	};
 };
