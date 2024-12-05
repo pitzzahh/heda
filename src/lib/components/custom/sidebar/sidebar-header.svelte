@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { Save, FilePlus } from 'lucide-svelte';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { Save, FilePlus, Moon, Sun } from '@/assets/icons/lucide';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import SettingsDialog from '../settings-dialog.svelte';
-	import { Moon, Sun } from 'svelte-radix';
+	import { SettingsDialog } from '@/components/custom';
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
