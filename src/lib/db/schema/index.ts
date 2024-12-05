@@ -10,7 +10,16 @@ const project_schema_literal = {
 	type: 'object',
 	properties: {
 		id: { type: 'string', maxLength: 100 },
-		highest_unit_form: { type: 'any' },
+		highest_unit_form: {
+			type: 'object',
+			properties: {
+				distribution_unit: { type: 'string' },
+				wire_length: { type: 'number' },
+				ambient_temperature: { type: 'string' },
+				phase: { type: 'string' }
+			},
+			additionalProperties: false
+		},
 		tree: {
 			type: 'array',
 			items: { type: 'string' }
@@ -19,13 +28,13 @@ const project_schema_literal = {
 	required: ['id', 'highest_unit_form', 'tree']
 } as const;
 
-const item_literal = {
+const node_literal = {
 	version: 0,
 	primaryKey: 'id',
 	type: 'object',
 	properties: {
-		id: { type: 'string' },
-		is_panel: { type: 'number' },
+		id: { type: 'string', maxLength: 100 },
+		node_type: { type: 'string' },
 		panel_data: {
 			type: 'object',
 			properties: {
@@ -42,7 +51,6 @@ const item_literal = {
 				load_description: { type: 'string' },
 				quantity: { type: 'number' },
 				varies: { type: 'number' },
-				is_panel: { type: 'number' },
 				continuous: { type: 'number' },
 				special: { type: 'string' }
 			},
@@ -54,16 +62,16 @@ const item_literal = {
 			items: { type: 'string' }
 		}
 	},
-	required: ['id', 'is_panel', 'parent_id', 'child_ids']
+	required: ['id', 'node_type', 'parent_id', 'child_ids']
 } as const;
 
 const typed_project_schema = toTypedRxJsonSchema(project_schema_literal);
-const typed_item_schema = toTypedRxJsonSchema(item_literal);
+const typed_node_schema = toTypedRxJsonSchema(node_literal);
 
 // aggregate the document type from the schema
 export type ProjectDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_project_schema>;
-export type ItemDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_item_schema>;
+export type NodeDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_node_schema>;
 
 // create the typed RxJsonSchema from the literal typed object.
 export const project_schema: RxJsonSchema<ProjectDocType> = project_schema_literal;
-export const item_schema: RxJsonSchema<ItemDocType> = item_literal;
+export const node_schema: RxJsonSchema<NodeDocType> = node_literal;
