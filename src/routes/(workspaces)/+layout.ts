@@ -3,7 +3,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Panel } from '@/types/panel';
 import { createDatabase } from '@/db';
-import { project_schema } from '@/db/schema/index.js';
+import { project_schema_literal } from '@/db/schema/index.js';
 import { generic_phase_panel_schema } from '@/schema/panel';
 
 export const load = (async ({ url: { searchParams } }) => {
@@ -17,7 +17,7 @@ export const load = (async ({ url: { searchParams } }) => {
   if (!database.projects) {
     const add_project_collections_result = await database.addCollections({
       projects: {
-        schema: project_schema
+        schema: project_schema_literal
       }
     });
     console.log(add_project_collections_result);
@@ -127,6 +127,10 @@ export const load = (async ({ url: { searchParams } }) => {
   await init_insert.patch({
     done: true
   });
+
+  const result = await database.projects.find().exec();
+
+  console.log(result._data)
 
   return {
     is_new_file: searchParams.get('new_file') === 'true',

@@ -1,4 +1,4 @@
-export const project_schema = {
+export const project_schema_literal = {
   version: 0,
   primaryKey: 'id',
   type: 'object',
