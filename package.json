@@ -50,6 +50,7 @@
 		"vite": "^6.0.2"
 	},
 	"dependencies": {
+		"@paralleldrive/cuid2": "^2.2.2",
 		"@tanstack/table-core": "^8.20.5",
 		"@tauri-apps/api": "^2.1.1",
 		"@tauri-apps/plugin-fs": "^2.0.3",
