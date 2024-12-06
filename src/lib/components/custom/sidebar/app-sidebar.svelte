@@ -54,8 +54,8 @@
 						<SidebarTree
 							project_id={project.id}
 							node={project?.highest_unit_form.distribution_unit}
-							children={nodes}
 							isRootNode={!!project?.highest_unit_form.distribution_unit}
+							highest_unit={project.highest_unit_form}
 							{generic_phase_panel_form}
 						/>
 					{:else}
