@@ -1,5 +1,4 @@
 <script lang="ts" generics="T extends SuperValidated<PhaseMainLoadSchema>">
-	import { goto } from '$app/navigation';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
@@ -13,7 +12,7 @@
 	import * as Command from '@/components/ui/command/index.js';
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
@@ -22,32 +21,28 @@
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
-	import { LocalStorage } from '@/hooks/storage.svelte';
+	import { page } from '$app/stores';
+	import { addNode } from '@/db/mutations';
 
 	interface Props {
 		phase_main_load_form: T;
 		saved_path?: string;
+		closeDialog: () => void;
 	}
 
-	let { phase_main_load_form }: Props = $props();
-	let localStorage = new LocalStorage('project') as any;
+	let { phase_main_load_form, closeDialog }: Props = $props();
+	let params = $page.params;
+	let panel_id = params.id.split(' ').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
-		onUpdate: ({ form }) => {
-			// toast the values
-
-			// SAMPLE 
+		onUpdate: async ({ form }) => {
 			if (form.valid) {
-				localStorage.current = {
-					...localStorage.current,
-					panels: localStorage.current.panels.map((panel: any, idx: any) =>
-						idx === 0
-							? { ...panel, loads: [...panel.loads, { description: form.data.load_description }] }
-							: panel
-					)
-				};
+				if (panel_id) {
+					addNode({ load_data: form.data, parent_id: panel_id });
+				}
+				closeDialog();
 				toast.success('Form is valid');
 			} else {
 				toast.error('Form is invalid');
@@ -84,14 +79,14 @@
 		};
 	});
 
-	onMount(() => {
-		$formData.distribution_unit = 'SAMPLE DU';
-		$formData.wire_length = 50;
-	});
+	// onMount(() => {
+	// 	$formData.distribution_unit = 'SAMPLE DU';
+	// 	$formData.wire_length = 50;
+	// });
 </script>
 
 <form method="POST" use:enhance>
-	<Form.Field {form} name="distribution_unit" class="sr-only text-center">
+	<!-- <Form.Field {form} name="distribution_unit" class="sr-only text-center">
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Distribution unit</Form.Label>
@@ -106,7 +101,7 @@
 			{/snippet}
 		</Form.Control>
 		<Form.FieldErrors />
-	</Form.Field>
+	</Form.Field> -->
 	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>

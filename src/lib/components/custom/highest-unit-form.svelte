@@ -18,8 +18,7 @@
 	import { MISC_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
-	import { LocalStorage } from '@/hooks/storage.svelte';
-	import { getProjectState } from '@/hooks/project.svelte';
+	import { createProject } from '@/db/mutations/index';
 
 	interface Props {
 		highest_unit_form: T;
@@ -27,26 +26,16 @@
 	}
 
 	let { highest_unit_form, closeDialog }: Props = $props();
-	let localStorage = new LocalStorage('project');
-	let projectState = getProjectState();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
 		validators: zodClient(highest_unit_schema),
-		onUpdate: ({ form }) => {
+		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
+				await createProject(form.data);
 				toast.success('Form is valid');
 				goto(`/workspace/load-schedule/${form.data.distribution_unit}`);
-				// localStorage.current = {
-				// 	highest_unit_form: form.data,
-				// 	tree: [
-				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
-				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] },
-				// 		// { panel_name: 'panel', loads: [{ description: 'load' }, { description: 'load2' }] }
-				// 	]
-				// };
-				projectState.createProject(form.data);
 				closeDialog();
 			} else {
 				toast.error('Form is invalid');
@@ -93,7 +82,7 @@
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
-			<Form.Field {form} name="ambient_temp" class="col-span-2 flex flex-col">
+			<Form.Field {form} name="ambient_temperature" class="col-span-2 flex flex-col">
 				<Popover.Root bind:open={open_ambient_temp}>
 					<Form.Control id={ambient_temp_trigger_id}>
 						{#snippet children({ props })}
@@ -102,16 +91,16 @@
 								class={cn(
 									buttonVariants({ variant: 'outline' }),
 									'justify-between',
-									!$formData.ambient_temp && 'text-muted-foreground'
+									!$formData.ambient_temperature && 'text-muted-foreground'
 								)}
 								role="combobox"
 								{...props}
 							>
-								{ambient_temperatures.find((f) => f.value === $formData.ambient_temp)?.label ??
-									'Select an ambient temperature'}
+								{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)
+									?.label ?? 'Select an ambient temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
-							<input hidden value={$formData.ambient_temp} name={props.name} />
+							<input hidden value={$formData.ambient_temperature} name={props.name} />
 						{/snippet}
 					</Form.Control>
 					<Popover.Content class="w-auto p-0">
@@ -119,19 +108,20 @@
 							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
 							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each ambient_temperatures as ambient_temp}
+								{#each ambient_temperatures as ambient_temperature}
 									<Command.Item
-										value={ambient_temp.value}
+										value={ambient_temperature.value}
 										onSelect={() => {
-											$formData.ambient_temp = ambient_temp.value;
+											$formData.ambient_temperature = ambient_temperature.value;
 											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
-										{ambient_temp.label}
+										{ambient_temperature.label}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp.value !== $formData.ambient_temp && 'text-transparent'
+												ambient_temperature.value !== $formData.ambient_temperature &&
+													'text-transparent'
 											)}
 										/>
 									</Command.Item>

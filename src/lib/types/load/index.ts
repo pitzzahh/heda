@@ -10,3 +10,12 @@ export type Load = {
   special: string;
   loads?: Load[];
 };
+
+// ini pete su gagamiton tang type duman sa mga panel na hali sa db
+export type LoadLatest = {
+  load_description: string;
+  quantity: number;
+  varies: number;
+  continuous: number;
+  special: string;
+};

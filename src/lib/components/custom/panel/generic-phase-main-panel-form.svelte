@@ -22,58 +22,37 @@
 	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
-	import { getProjectState } from '@/hooks/project.svelte';
+	import { addNode } from '@/db/mutations';
 
 	interface Props {
 		generic_phase_panel_form: T;
 		main_phase: Phase;
 		open_panel_dialog: boolean;
+		parent_id?: string;
+		id?: string;
+		is_parent_root_node: boolean;
 	}
 
-	let { generic_phase_panel_form, main_phase, open_panel_dialog = $bindable() }: Props = $props();
-
-	const projectState = getProjectState();
+	let {
+		generic_phase_panel_form,
+		main_phase,
+		open_panel_dialog = $bindable(),
+		parent_id,
+		id,
+		is_parent_root_node = false
+	}: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
 		validators: zodClient(generic_phase_panel_schema),
-		onUpdate: ({ form }) => {
+		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
+				if (parent_id) {
+					addNode({ parent_id, is_parent_root_node, panel_data: form.data });
+				}
+
 				toast.success('Form is valid');
-				projectState.addPanel({
-					id: Math.floor(Math.random() * 100) + 1,
-					name: $formData.name,
-					loads: [
-						{
-							id: (Math.floor(Math.random() * 100) + 1).toString(),
-							load_description: 'Lighting Circuit',
-							quantity: 10,
-							varies: 0,
-							is_panel: 1,
-							continuous: 1,
-							special: 'Main hallway lights'
-						},
-						{
-							id: (Math.floor(Math.random() * 100) + 1).toString(),
-							load_description: 'Power Circuit',
-							quantity: 5,
-							varies: 1,
-							is_panel: 0,
-							continuous: 0,
-							special: 'Office power outlets'
-						},
-						{
-							id: (Math.floor(Math.random() * 100) + 1).toString(),
-							load_description: 'HVAC Circuit',
-							quantity: 2,
-							varies: 0,
-							is_panel: 1,
-							continuous: 1,
-							special: 'Main HVAC system'
-						}
-					]
-				});
 				open_panel_dialog = false;
 			} else {
 				toast.error('Form is invalid');
@@ -288,8 +267,8 @@
 			</Form.Control>
 			<Popover.Content class="w-auto p-0">
 				<Command.Root>
-					<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
-					<Command.Empty>No ambient temp found.</Command.Empty>
+					<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
+					<Command.Empty>No panel phase found.</Command.Empty>
 					<Command.Group>
 						{#each DEFAULT_PHASES_OPTIONS as phase_option}
 							<Command.Item

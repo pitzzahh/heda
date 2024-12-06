@@ -6,15 +6,24 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
 	import { Separator } from '@/components/ui/separator/index.js';
+	import type { Phase } from '@/types/phase';
 
 	let {
 		children,
 		id,
-		generic_phase_panel_form
+		generic_phase_panel_form,
+		parent_id,
+		main_phase,
+		panel_name,
+		is_parent_root_node = false
 	}: {
 		children: Snippet;
 		id: string;
+		panel_name: string;
+		main_phase: Phase;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
+		parent_id: string;
+		is_parent_root_node: boolean;
 	} = $props();
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
@@ -29,7 +38,7 @@
 			// @ts-ignore
 			clickTimeout = setTimeout(() => {
 				clickTimeout = null;
-				goto(`/workspace/load-schedule/${id}`);
+				goto(`/workspace/load-schedule/${panel_name + ' ' + id}`);
 			}, 300);
 		}
 	}
@@ -69,10 +78,13 @@
 				</div>
 			</div>
 		</Dialog.Header>
-		<Separator class="my-1" />
+		<Separator class="mt-0.5" />
 		<GenericPhaseMainPanelForm
+			{id}
+			{parent_id}
+			{is_parent_root_node}
 			{generic_phase_panel_form}
-			main_phase="ONE_PHASE"
+			{main_phase}
 			bind:open_panel_dialog
 		/>
 	</Dialog.Content>
