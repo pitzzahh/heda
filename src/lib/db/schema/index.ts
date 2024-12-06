@@ -20,6 +20,7 @@ const project_schema_literal = {
 			},
 			additionalProperties: false
 		},
+		project_name: { type: 'string', default: 'Untitled' },
 		tree: {
 			type: 'array',
 			items: { type: 'string' }
@@ -48,7 +49,9 @@ const node_literal = {
 		load_data: {
 			type: 'object',
 			properties: {
+				circuit_number: { type: 'number' },
 				load_description: { type: 'string' },
+				ambient_temperature: { type: 'string' },
 				quantity: { type: 'number' },
 				varies: { type: 'number' },
 				continuous: { type: 'number' },
