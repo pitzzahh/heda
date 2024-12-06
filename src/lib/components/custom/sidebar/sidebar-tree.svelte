@@ -9,15 +9,18 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import SidebarTree from './sidebar-tree.svelte';
 	import { getChildNodesByParentId } from '@/db/queries/index';
+	import type { ProjectDocType } from '@/db/schema';
 
 	let {
 		node,
 		isRootNode,
+		highest_unit,
 		generic_phase_panel_form,
 		project_id
 	}: {
 		node: Node | string;
 		isRootNode?: boolean;
+		highest_unit: ProjectDocType['highest_unit_form'];
 		project_id?: string;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
@@ -73,7 +76,7 @@
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
 						{#each children as unknown as Node[] as child, index (index)}
-							<SidebarTree node={child} {generic_phase_panel_form} />
+							<SidebarTree node={child} {generic_phase_panel_form} {highest_unit} />
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>
