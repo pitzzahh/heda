@@ -13,6 +13,7 @@
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
+	import type { Node, Project } from '@/types/project/index.js';
 
 	let { data, children } = $props();
 	const { is_new_file, is_load_file, panels, generic_phase_panel_form } = $derived(data);
@@ -34,10 +35,17 @@
 			document.getElementById('project-title-input')?.focus();
 		});
 	}
+
+	console.log(data.nodes);
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar tree={data.panels} {generic_phase_panel_form} />
+	<AppSidebar
+		tree={data.panels}
+		project={data.project as unknown as Project | undefined}
+		nodes={data.nodes as unknown as Node[]}
+		{generic_phase_panel_form}
+	/>
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
@@ -74,7 +82,6 @@
 </Sidebar.Provider>
 
 <Dialog.Root bind:open={dialogs_state.highestUnit}>
-	<!-- <Dialog.Trigger class={buttonVariants({ variant: 'outline' })}>Highest unit form</Dialog.Trigger> -->
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title class="text-center font-bold"
