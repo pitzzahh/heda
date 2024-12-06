@@ -1,11 +1,7 @@
 <script lang="ts">
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import File from 'lucide-svelte/icons/file';
-	import Folder from 'lucide-svelte/icons/folder';
 	import type { ComponentProps } from 'svelte';
-	import { SidebarHeader, AddPanelAndViewTrigger } from '.';
+	import { SidebarHeader } from '.';
 	import type { Panel } from '@/types/panel';
 	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
@@ -16,15 +12,22 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
+	import type { Project } from '@/types/project';
+	import type { Node } from '@/types/project';
+	import SidebarTree from './sidebar-tree.svelte';
 
 	let {
 		ref = $bindable(null),
 		tree,
 		generic_phase_panel_form,
+		project,
+		nodes,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		tree: Panel[];
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
+		project?: Project;
+		nodes: Node[];
 	} = $props();
 
 	// let localStorage = new LocalStorage<ProjectProps>('project');
@@ -33,16 +36,10 @@
 
 	$inspect(projectState.project);
 
-	// this causes the re-renders
-	// $effect(() => {
-	// 	localStorage.current = {
-	// 		...localStorage.current,
-	// 		tree
-	// 	};
-	// });
+	console.log(nodes);
 
-	function isPanel(item: Panel | Load): item is Panel {
-		return (item as Panel).name !== undefined;
+	function isPanel(node: Panel | Load): node is Panel {
+		return (node as Panel).name !== undefined;
 	}
 </script>
 
@@ -53,12 +50,14 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if projectState.project?.highest_unit_form}
-						{@render Tree({
-							item: projectState.project?.highest_unit_form.distribution_unit,
-							children: projectState.project.tree,
-							isRootNode: !!projectState.project?.highest_unit_form.distribution_unit
-						})}
+					{#if project?.highest_unit_form}
+						<SidebarTree
+							project_id={project.id}
+							node={project?.highest_unit_form.distribution_unit}
+							children={nodes}
+							isRootNode={!!project?.highest_unit_form.distribution_unit}
+							{generic_phase_panel_form}
+						/>
 					{:else}
 						<div class="grid h-[85vh] place-content-center">
 							<div class="grid gap-2">
@@ -85,19 +84,19 @@
 	<Sidebar.Rail />
 </Sidebar.Root>
 
-{#snippet Tree({
-	item,
+<!-- {#snippet Tree({
+	node,
 	children = [],
 	isRootNode
 }: {
-	item: Panel | Load;
-	children: Panel[] | Load[];
+	node: Node | string;
+	children: Node[];
 	isRootNode?: boolean;
 })}
-	{#if children.length === 0 && !isRootNode}
+	{#if children.length === 0 && !isRootNode && typeof node !== 'string' && node.node_type === 'load'}
 		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
 			<File />
-			<span>{isPanel(item) ? item.name : item.load_description}</span>
+			<span>{typeof node === 'string' ? node : node.load_data?.load_description}</span>
 		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem>
@@ -112,22 +111,22 @@
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-					{@const item_name =
-						(isPanel(item) && item.name) || (!isPanel(item) && item.load_description) || item}
-					<AddPanelAndViewTrigger id={item_name as string} {generic_phase_panel_form}>
+					{@const node_name =
+						(isPanel(node) && node.name) || (!isPanel(node) && node.load_description) || node}
+					<AddPanelAndViewTrigger id={node_name as string} {generic_phase_panel_form}>
 						<Folder class="size-4" />
-						{item_name}
+						{node_name}
 					</AddPanelAndViewTrigger>
 				</Sidebar.MenuButton>
 
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
 						{#each children as child, index (index)}
-							{@render Tree({ item: child, children: child.loads || [] })}
+							{@render Tree({ node: child, children: child.loads || [] })}
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>
 			</Collapsible.Root>
 		</Sidebar.MenuItem>
 	{/if}
-{/snippet}
+{/snippet} -->
