@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader } from '.';
 	import type { Panel } from '@/types/panel';
@@ -45,7 +45,7 @@
 
 <Sidebar.Root bind:ref {...restProps}>
 	<SidebarHeader />
-	<Sidebar.Content>
+	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
