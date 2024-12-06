@@ -14,9 +14,11 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
 	import type { Node, Project } from '@/types/project/index.js';
+	import { updateProjectTitle } from '@/db/mutations/index.js';
 
 	let { data, children } = $props();
 	const { is_new_file, is_load_file, generic_phase_panel_form } = $derived(data);
+	const { project } = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
@@ -35,6 +37,11 @@
 			document.getElementById('project-title-input')?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (!is_editing && !project?.id) return;
+		updateProjectTitle(project?.id, project_title);
+	});
 
 	console.log(data.nodes);
 </script>
