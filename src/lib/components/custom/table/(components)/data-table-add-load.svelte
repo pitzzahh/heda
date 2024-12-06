@@ -11,11 +11,12 @@
 	}
 
 	let { phase_main_load_form, ...props }: Props = $props();
+	let is_dialog_open = $state(false);
 </script>
 
 <div class="flex flex-col gap-2 p-1">
 	CRKT NO.
-	<Dialog.Root {...props}>
+	<Dialog.Root {...props} bind:open={is_dialog_open}>
 		<Dialog.Trigger
 			class={buttonVariants({
 				variant: 'outline',
@@ -29,7 +30,10 @@
 				<Dialog.Title>Test Main Load Form</Dialog.Title>
 				<Dialog.Description>Enter the load details.</Dialog.Description>
 			</Dialog.Header>
-			<GenericPhaseMainLoadForm {phase_main_load_form} />
+			<GenericPhaseMainLoadForm
+				closeDialog={() => (is_dialog_open = false)}
+				{phase_main_load_form}
+			/>
 		</Dialog.Content>
 	</Dialog.Root>
 </div>
