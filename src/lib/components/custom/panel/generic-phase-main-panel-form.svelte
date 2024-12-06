@@ -267,8 +267,8 @@
 			</Form.Control>
 			<Popover.Content class="w-auto p-0">
 				<Command.Root>
-					<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
-					<Command.Empty>No ambient temp found.</Command.Empty>
+					<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
+					<Command.Empty>No panel phase found.</Command.Empty>
 					<Command.Group>
 						{#each DEFAULT_PHASES_OPTIONS as phase_option}
 							<Command.Item
