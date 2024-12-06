@@ -10,6 +10,7 @@
 	import SidebarTree from './sidebar-tree.svelte';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import type { ProjectDocType } from '@/db/schema';
+	import type { Phase } from '@/types/phase';
 
 	let {
 		node,
@@ -65,6 +66,7 @@
 						id={isNode(node) ? node.id : ''}
 						panel_name={node_name}
 						{generic_phase_panel_form}
+						main_phase={highest_unit?.phase as Phase}
 						is_parent_root_node={typeof isRootNode === 'boolean' ? isRootNode : false}
 						parent_id={isRootNode && project_id ? project_id : isNode(node) ? node.id : ''}
 					>

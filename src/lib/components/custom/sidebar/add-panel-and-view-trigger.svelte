@@ -6,18 +6,21 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
 	import { Separator } from '@/components/ui/separator/index.js';
+	import type { Phase } from '@/types/phase';
 
 	let {
 		children,
 		id,
 		generic_phase_panel_form,
 		parent_id,
+		main_phase,
 		panel_name,
 		is_parent_root_node = false
 	}: {
 		children: Snippet;
 		id: string;
 		panel_name: string;
+		main_phase: Phase;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		is_parent_root_node: boolean;
@@ -81,7 +84,7 @@
 			{parent_id}
 			{is_parent_root_node}
 			{generic_phase_panel_form}
-			main_phase="ONE_PHASE"
+			{main_phase}
 			bind:open_panel_dialog
 		/>
 	</Dialog.Content>
