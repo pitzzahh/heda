@@ -75,7 +75,7 @@
 				</div>
 			</div>
 		</Dialog.Header>
-		<Separator class="my-1" />
+		<Separator class="mt-0.5" />
 		<GenericPhaseMainPanelForm
 			{id}
 			{parent_id}
