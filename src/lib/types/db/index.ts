@@ -16,5 +16,5 @@ export type NodeCollection = RxCollection<NodeDocType, NodeCollectionMethods>;
 
 export type MyDatabaseCollections = {
   projects: ProjectCollection,
-  items: NodeCollection
+  nodes: NodeCollection
 }
