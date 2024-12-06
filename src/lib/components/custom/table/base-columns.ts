@@ -11,7 +11,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
 ): ColumnDef<T>[] => [
 	{
-		accessorKey: 'crkt_num',
+		accessorKey: 'circuit_number',
 		header: () =>
 			renderComponent(DataTableAddLoad, {
 				phase_main_load_form,
