@@ -34,13 +34,13 @@ async function createDatabase(
 export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollections>> {
 	const database = await createDatabase();
 
-	if (!database.projects || !database.items) {
+	if (!database.projects || !database.nodes) {
 		try {
 			const added_collections_result = await database.addCollections({
 				projects: {
 					schema: project_schema
 				},
-				items: {
+				nodes: {
 					schema: node_schema
 				}
 			});
