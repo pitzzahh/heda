@@ -75,9 +75,15 @@
 				</Tooltip>
 			</div>
 		</header>
-		<div class="mt-14 flex flex-1 flex-col gap-4 p-4">
-			{@render children?.()}
-		</div>
+		<svelte:boundary>
+			<div class="mt-14 flex flex-1 flex-col justify-center gap-4 p-4">
+				{@render children?.()}
+			</div>
+			{#snippet failed(error, reset)}
+				<p class="text-sm text-muted-foreground">{error}</p>
+				<Button onclick={reset}>oops! try again</Button>
+			{/snippet}
+		</svelte:boundary>
 	</Sidebar.Inset>
 </Sidebar.Provider>
 
