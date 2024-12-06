@@ -16,7 +16,7 @@
 	import type { Node, Project } from '@/types/project/index.js';
 
 	let { data, children } = $props();
-	const { is_new_file, is_load_file, panels, generic_phase_panel_form } = $derived(data);
+	const { is_new_file, is_load_file, generic_phase_panel_form } = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
