@@ -90,10 +90,10 @@
 		<p>
 			Ambient Temparature: {project?.highest_unit_form.ambient_temperature}
 		</p>
-		<p>Panel: {params.id.split(' ').at(0)}</p>
+		<p>Panel: {params.id.split('_').at(0)}</p>
 	</div>
 	<DataTable
-		data={data?.nodes as PhaseLoadSchedule[]}
+		data={data?.nodes && data.nodes.length > 0 ? (data.nodes as PhaseLoadSchedule[]) : []}
 		columns={threePhaseWyeCols(data.phase_main_load_form)}
 	/>
 </div>
