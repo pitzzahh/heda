@@ -6,10 +6,10 @@
 	import { Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
-	import { HighestUnitForm } from '@/components/custom';
+	import { HighestUnitForm, PageProgress } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
 	import { PenLine, Save } from '@/assets/icons/lucide';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
@@ -46,6 +46,8 @@
 
 	console.log(data.nodes);
 </script>
+
+<PageProgress />
 
 <Sidebar.Provider>
 	<AppSidebar
