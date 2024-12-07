@@ -39,7 +39,7 @@
 </script>
 
 {#await getChildNodesByParentId(project_id || (isNode(node) && node.id) || '')}
-	<p style="color: red">loading</p>
+	<p></p>
 {:then children}
 	{#if !isRootNode && isNode(node) && node.node_type === 'load'}
 		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
