@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
-	import { SidebarHeader } from '.';
+	import { SidebarHeader, SidebarTree } from '.';
 	import type { Panel } from '@/types/panel';
 	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
@@ -14,7 +14,6 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { Project } from '@/types/project';
 	import type { Node } from '@/types/project';
-	import SidebarTree from './sidebar-tree.svelte';
 
 	let {
 		ref = $bindable(null),

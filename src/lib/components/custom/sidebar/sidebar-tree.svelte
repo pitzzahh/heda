@@ -5,16 +5,15 @@
 	import { File, Folder } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import type { Node } from '@/types/project';
-	import AddPanelAndViewTrigger from './add-panel-and-view-trigger.svelte';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
-	import SidebarTree from './sidebar-tree.svelte';
+	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import type { ProjectDocType } from '@/db/schema';
 	import type { Phase } from '@/types/phase';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
-
+	
 	let {
 		node,
 		isRootNode,
@@ -82,7 +81,6 @@
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-
 					<ContextMenu.Root>
 						<ContextMenu.Trigger class="w-full">
 							{@const node_name =

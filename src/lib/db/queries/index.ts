@@ -1,6 +1,6 @@
 import { databaseInstance } from '..';
 
-export async function getCurrentProject() {
+export async function getCurrentProject(project_id?: string) {
 	const db = await databaseInstance();
 
 	try {
