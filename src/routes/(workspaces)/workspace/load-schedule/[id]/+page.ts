@@ -11,10 +11,14 @@ export const entries = () => {
 export const load = async ({ params }) => {
 	const node_id = params.id.split('_').at(-1);
 	const project = await getCurrentProject();
-	const existingNode = await getNodeById(node_id as string);
 
-	if (!project || !existingNode) {
+	if (!project) {
 		goto('/workspace');
+	}
+
+	if (node_id) {
+		const existingNode = await getNodeById(node_id as string);
+		if (!existingNode) goto('/workspace');
 	}
 
 	// MAIIBA PA KANI ANG SHAPE, PETE DAHIL DUMAN SA COMPUTATION.
