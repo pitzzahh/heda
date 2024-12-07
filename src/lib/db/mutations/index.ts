@@ -151,3 +151,20 @@ export async function removeNode(id: string) {
 		return error;
 	}
 }
+
+export async function deleteProject(project_id: string) {
+	const database = await databaseInstance();
+
+	try {
+		// remove all the nodes of the root node
+		await removeNode(project_id);
+
+		const query = database.projects.findOne({ selector: { id: project_id } });
+		const removedProjectId = await query.remove();
+
+		return removedProjectId;
+	} catch (error) {
+		console.error(error);
+		return error;
+	}
+}
