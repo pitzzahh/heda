@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fix
 
+- Fix data sync issue
+
+## Add
+
+- Add delete heirarchy function
+
+## [0.1.5] - 2024-12-7
+
+## Fix
+
 - Fix adding loads and panels by adding rxdb update plugin
 
 ## [0.1.4] - 2024-12-7
