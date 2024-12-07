@@ -4,6 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { databaseInstance } from '@/db';
 import { generic_phase_panel_schema } from '@/schema/panel';
 import { getChildNodesByParentId, getCurrentProject } from '@/db/queries/index.js';
+import type { Project } from '@/types/project/index.js';
 
 export const load = async ({ url: { searchParams } }) => {
 	console.log('INIT DB');
@@ -151,7 +152,7 @@ export const load = async ({ url: { searchParams } }) => {
 	// 	});
 	// }
 
-	const project = await getCurrentProject();
+	const project = await getCurrentProject() as Project
 	const nodes = project ? await getChildNodesByParentId(project.id) : [];
 
 	console.log('from layout nodes', nodes);

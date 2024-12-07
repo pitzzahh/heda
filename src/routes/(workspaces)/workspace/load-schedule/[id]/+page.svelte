@@ -83,17 +83,35 @@
 </script>
 
 <div class="flex w-full flex-col gap-2">
-	<div>
-		<p>Distribution Unit: {project?.highest_unit_form.distribution_unit}</p>
-		<p>Phase: {phases[project?.highest_unit_form.phase as string] || ''}</p>
-		<p>Wire Length: {project?.highest_unit_form.wire_length}</p>
-		<p>
-			Ambient Temparature: {project?.highest_unit_form.ambient_temperature}
-		</p>
-		<p>Panel: {params.id.split(' ').at(0)}</p>
+	<div class="grid grid-cols-2">
+		<div>
+			<p class="font-semibold">
+				Distribution Unit: <span class="font-normal"
+					>{project?.highest_unit_form.distribution_unit}</span
+				>
+			</p>
+			<p class="font-semibold">
+				Phase: <span class="font-normal"
+					>{phases[project?.highest_unit_form.phase as string] || ''}</span
+				>
+			</p>
+			<p class="font-semibold">
+				Wire Length: <span class="font-normal">{project?.highest_unit_form.wire_length}</span>
+			</p>
+		</div>
+		<div>
+			<p class="font-semibold">
+				Ambient Temperature: <span class="font-normal"
+					>{project?.highest_unit_form.ambient_temperature}</span
+				>
+			</p>
+			<p class="font-semibold">
+				Panel: <span class="font-normal">{params.id.split('_').at(0)}</span>
+			</p>
+		</div>
 	</div>
 	<DataTable
-		data={data?.nodes as PhaseLoadSchedule[]}
+		data={data?.nodes && data.nodes.length > 0 ? (data.nodes as PhaseLoadSchedule[]) : []}
 		columns={threePhaseWyeCols(data.phase_main_load_form)}
 	/>
 </div>

@@ -23,6 +23,7 @@
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
+	import { invalidate, invalidateAll } from '$app/navigation';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -50,6 +51,7 @@
 			if (form.valid) {
 				if (parent_id) {
 					addNode({ parent_id, is_parent_root_node, panel_data: form.data });
+					await invalidate('/workspace');
 				}
 
 				toast.success('Form is valid');
@@ -181,10 +183,11 @@
 				{@render PanelType()}
 				{@render PanelPhase()}
 			</div>
+		{:else}
+			<div>
+				{@render PanelPhase()}
+			</div>
 		{/if}
-		<div>
-			{@render PanelPhase()}
-		</div>
 	</div>
 	<Form.Button class="w-full">Save</Form.Button>
 </form>

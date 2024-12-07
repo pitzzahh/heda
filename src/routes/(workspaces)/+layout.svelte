@@ -6,10 +6,10 @@
 	import { Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
-	import { HighestUnitForm } from '@/components/custom';
+	import { HighestUnitForm, PageProgress } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
 	import { PenLine, Save } from '@/assets/icons/lucide';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
@@ -39,12 +39,15 @@
 	}
 
 	$effect(() => {
-		if (!is_editing && !project?.id) return;
-		updateProjectTitle(project?.id, project_title);
+		if (is_editing && project?.id) {
+			updateProjectTitle(project.id, project_title);
+		}
 	});
 
 	console.log(data.nodes);
 </script>
+
+<PageProgress />
 
 <Sidebar.Provider>
 	<AppSidebar
@@ -82,8 +85,9 @@
 				</Tooltip>
 			</div>
 		</header>
+
 		<svelte:boundary>
-			<div class="mt-14 flex flex-1 flex-col justify-center gap-4 p-4">
+			<div class="mt-14 gap-4 p-4">
 				{@render children?.()}
 			</div>
 			{#snippet failed(error, reset)}
