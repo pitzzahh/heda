@@ -15,12 +15,12 @@ export const load = async ({ params }) => {
 		goto('/workspace');
 	}
 
-	const nodes = await getChildNodesByParentId(params.id.split(' ').at(-1) as string);
-	const loads = nodes?.map((node) => node.load_data);
+	const nodes = await getChildNodesByParentId(params.id.split('_').at(-1) as string);
+	const loads = nodes?.filter((node) => node.node_type === 'load').map((node) => node.load_data);
 
 	return {
 		phase_main_load_form: await superValidate(zod(phase_main_load_schema)),
 		project,
-		nodes: loads
+		nodes: loads && loads?.length > 0 ? loads : []
 	};
 };
