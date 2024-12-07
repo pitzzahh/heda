@@ -39,8 +39,9 @@
 	}
 
 	$effect(() => {
-		if (!is_editing && !project?.id) return;
-		updateProjectTitle(project?.id, project_title);
+		if (is_editing && project?.id) {
+			updateProjectTitle(project.id, project_title);
+		}
 	});
 
 	console.log(data.nodes);
@@ -83,7 +84,7 @@
 			</div>
 		</header>
 		<svelte:boundary>
-			<div class="mt-14 flex flex-1 flex-col justify-center gap-4 p-4">
+			<div class="mt-16 flex flex-1 flex-col gap-4 p-4">
 				{@render children?.()}
 			</div>
 			{#snippet failed(error, reset)}

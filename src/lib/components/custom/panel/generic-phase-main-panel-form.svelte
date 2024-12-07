@@ -181,10 +181,11 @@
 				{@render PanelType()}
 				{@render PanelPhase()}
 			</div>
+		{:else}
+			<div>
+				{@render PanelPhase()}
+			</div>
 		{/if}
-		<div>
-			{@render PanelPhase()}
-		</div>
 	</div>
 	<Form.Button class="w-full">Save</Form.Button>
 </form>
