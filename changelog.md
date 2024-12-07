@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Add
 
 - Main description (highest unit form) when adding new panel.
+- Add app icon
 - Etc.
 
 ## [0.1.7] - 2024-12-7
