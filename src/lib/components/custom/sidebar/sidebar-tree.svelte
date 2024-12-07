@@ -13,7 +13,7 @@
 	import type { Phase } from '@/types/phase';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
-	
+
 	let {
 		node,
 		isRootNode,
@@ -89,7 +89,7 @@
 								id={isNode(node) ? node.id : ''}
 								panel_name={node_name}
 								{generic_phase_panel_form}
-								main_phase={highest_unit?.phase as Phase}
+								{highest_unit}
 								is_parent_root_node={typeof isRootNode === 'boolean' ? isRootNode : false}
 								parent_id={isRootNode && project_id ? project_id : isNode(node) ? node.id : ''}
 							>
