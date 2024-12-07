@@ -1,15 +1,15 @@
 import { databaseInstance } from '..';
 
-export async function getCurrentProject() {
+export async function getCurrentProject(project_id?: string) {
 	const db = await databaseInstance();
-	const query = db.projects.find();
+	const query = db.projects.find({
+		selector: {
+			id: project_id
+		}
+	});
 	const project = (await query.exec()).at(0)?._data;
 
-	if (project) {
-		return project;
-	}
-
-	return null;
+	return project ?? null;
 }
 
 export async function getChildNodesByParentId(parent_id: string) {
