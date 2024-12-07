@@ -38,7 +38,7 @@
 			// @ts-ignore
 			clickTimeout = setTimeout(() => {
 				clickTimeout = null;
-				goto(`/workspace/load-schedule/${panel_name + ' ' + id}`);
+				goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
 			}, 300);
 		}
 	}
