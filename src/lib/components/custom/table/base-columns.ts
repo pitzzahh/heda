@@ -6,6 +6,7 @@ import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import { DataTableAddLoad } from '@/components/custom/table/(components)';
 import type { PhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
+import ColumnDropdown from './column-dropdown.svelte';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
@@ -117,5 +118,11 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): Colum
 				footer: (props) => ''
 			}
 		]
+	},
+	{
+		header: 'Actions',
+		cell: ({ row }) => {
+			return renderComponent(ColumnDropdown, { node_id: (row.original as any).id as string });
+		}
 	}
 ];
