@@ -38,10 +38,10 @@
 		});
 	}
 
-	$effect(() => {
-		if (!is_editing && !project?.id) return;
-		updateProjectTitle(project?.id, project_title);
-	});
+	// $effect(() => {
+	// 	if (!is_editing && !project?.id) return;
+	// 	updateProjectTitle(project?.id, project_title);
+	// });
 
 	console.log(data.nodes);
 </script>
@@ -82,7 +82,10 @@
 				</Tooltip>
 			</div>
 		</header>
-		<svelte:boundary>
+		<div class="mt-14 flex flex-1 flex-col justify-center gap-4 p-4">
+			{@render children?.()}
+		</div>
+		<!-- <svelte:boundary>
 			<div class="mt-14 flex flex-1 flex-col justify-center gap-4 p-4">
 				{@render children?.()}
 			</div>
@@ -90,7 +93,7 @@
 				<p class="text-sm text-muted-foreground">{error}</p>
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
-		</svelte:boundary>
+		</svelte:boundary> -->
 	</Sidebar.Inset>
 </Sidebar.Provider>
 
