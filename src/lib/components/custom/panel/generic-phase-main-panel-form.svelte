@@ -50,7 +50,7 @@
 			// toast the values
 			if (form.valid) {
 				if (parent_id) {
-					addNode({ parent_id, is_parent_root_node, panel_data: form.data });
+					await addNode({ parent_id, is_parent_root_node, panel_data: form.data });
 					await invalidate('/workspace');
 				}
 
