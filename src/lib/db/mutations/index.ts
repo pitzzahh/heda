@@ -4,25 +4,37 @@ import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { PhaseMainLoadSchema } from '@/schema/load';
 import type { NodeDocType } from '../schema';
+import type { Project } from '@/types/project';
 
 export async function createProject(highest_unit_form: HighestUnitSchema) {
 	const database = await databaseInstance();
 
 	try {
-		const project = await database.projects.insert({
+		// creation of root node first to be referenced in project data
+		const createdRootNode = await database.nodes.insert({
 			id: createId(),
+			node_type: 'root',
 			highest_unit_form,
-			tree: []
+			child_ids: []
 		});
 
-		return project;
+		const project = await database.projects.insert({
+			id: createId(),
+			root_node_id: createdRootNode._data.id,
+			project_name: 'Untitled'
+		});
+
+		return {
+			project: project as unknown as Project,
+			root_node_id: createdRootNode._data.id as string
+		};
 	} catch (error) {
 		console.log(error);
 		return error;
 	}
 }
 
-export async function updateProjectTitle(id: string, project_title: string) {
+export async function updateProjectTitle(id: string, project_name: string) {
 	const database = await databaseInstance();
 
 	try {
@@ -32,27 +44,28 @@ export async function updateProjectTitle(id: string, project_title: string) {
 			}
 		});
 
+		// Use $set to update the project_name field
 		const updatedProject = await query.update({
-			project_title
+			$set: {
+				project_name
+			}
 		});
 
 		return updatedProject;
 	} catch (error) {
-		console.log(error);
-		return error;
+		console.error('Error updating project title:', error);
+		throw error;
 	}
 }
 
 export async function addNode({
 	load_data,
 	panel_data,
-	parent_id,
-	is_parent_root_node
+	parent_id
 }: {
 	load_data?: PhaseMainLoadSchema;
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
-	is_parent_root_node?: boolean;
 }) {
 	const database = await databaseInstance();
 
@@ -60,38 +73,28 @@ export async function addNode({
 		const createdNode = await database.nodes.insert({
 			id: createId(),
 			node_type: load_data ? 'load' : 'panel',
+			circuit_number: load_data
+				? load_data.circuit_number
+				: panel_data
+					? panel_data.circuit_number
+					: 0,
 			panel_data,
 			load_data: load_data as NodeDocType['load_data'],
 			parent_id,
 			child_ids: []
 		});
 
-		if (is_parent_root_node && panel_data) {
-			const existingRootParent = database.projects.findOne({
-				selector: {
-					id: parent_id
-				}
-			});
-			const rootNodeData = await existingRootParent.exec();
-
-			if (rootNodeData) {
-				await existingRootParent.update({
-					tree: [...rootNodeData._data.tree, createdNode._data.id]
-				});
+		const existingParent = database.nodes.findOne({
+			selector: {
+				id: parent_id
 			}
-		} else {
-			const existingParent = database.nodes.findOne({
-				selector: {
-					id: parent_id
-				}
-			});
-			const parentNodeData = await existingParent.exec();
+		});
+		const parentNodeData = await existingParent.exec();
 
-			if (parentNodeData) {
-				await existingParent.update({
-					child_ids: [...parentNodeData._data.child_ids, createdNode._data.id]
-				});
-			}
+		if (parentNodeData) {
+			await existingParent.update({
+				child_ids: [...parentNodeData._data.child_ids, createdNode._data.id]
+			});
 		}
 
 		return createdNode;
@@ -120,8 +123,10 @@ export async function updateNode({
 		});
 
 		const updatedNode = await query.update({
-			panel_data,
-			load_data: load_data as NodeDocType['load_data']
+			$set: {
+				panel_data,
+				load_data: load_data as NodeDocType['load_data']
+			}
 		});
 
 		return updatedNode;
