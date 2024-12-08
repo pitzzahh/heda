@@ -8,9 +8,10 @@
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
-	import type { ProjectDocType } from '@/db/schema';
+	import type { NodeDocType, ProjectDocType } from '@/db/schema';
 	import { convertToNormalText } from '@/utils/text';
 	import { cn } from '@/utils';
+	import type { HighestUnitSchema } from '@/schema';
 
 	let {
 		children,
@@ -24,7 +25,7 @@
 		children: Snippet;
 		id: string;
 		panel_name: string;
-		highest_unit: ProjectDocType['highest_unit_form'];
+		highest_unit: HighestUnitSchema
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		is_parent_root_node: boolean;
