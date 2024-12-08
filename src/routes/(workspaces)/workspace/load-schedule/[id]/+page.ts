@@ -3,34 +3,36 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { getCurrentProject, getChildNodesByParentId, getNodeById } from '@/db/queries/index.js';
 import { goto } from '$app/navigation';
+import type { Node } from '@/types/project/index.js';
 
 export const entries = () => {
 	// TODO: Fetch entries from db
 	return [{ id: 'hello-world' }, { id: 'another-blog-post' }];
 };
 export const load = async ({ params }) => {
-	const node_id = params.id.split('_').at(-1);
+	const node_id = params.id.split('_').at(-1) as string;
 	const project = await getCurrentProject();
 
-	if (!project) {
+	if (!project || !node_id) {
 		goto('/workspace');
 	}
 
-	if (node_id) {
-		const existingNode = await getNodeById(node_id as string);
-		if (!existingNode) goto('/workspace');
-	}
+	const existingNode = await getNodeById(node_id);
+	if (!existingNode) goto('/workspace');
 
 	// MAIIBA PA KANI ANG SHAPE, PETE DAHIL DUMAN SA COMPUTATION.
 	//  PANSAMANTALA MUNA NA LOAD LANG MUNA I RENDER KANG TABLE
-	const nodes = await getChildNodesByParentId(node_id as string);
+	const nodes = await getChildNodesByParentId(node_id);
 	const loads = nodes
 		?.filter((node) => node.node_type === 'load')
 		.map((node) => ({ ...node.load_data, id: node.id }));
 
+	console.log(nodes);
+
 	return {
 		phase_main_load_form: await superValidate(zod(phase_main_load_schema)),
 		project,
-		nodes: loads && loads?.length > 0 ? loads : []
+		nodes: loads && loads?.length > 0 ? loads : [],
+		node: existingNode as Node
 	};
 };
