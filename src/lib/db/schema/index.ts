@@ -10,6 +10,42 @@ const project_schema_literal = {
 	type: 'object',
 	properties: {
 		id: { type: 'string', maxLength: 100 },
+		project_name: { type: 'string' },
+		root_node_id: { type: 'string' }
+	},
+	required: ['id', 'root_node_id']
+} as const;
+
+const node_literal = {
+	version: 0,
+	primaryKey: 'id',
+	type: 'object',
+	properties: {
+		id: { type: 'string', maxLength: 100 },
+		node_type: { type: 'string' },
+		circuit_number: { type: 'number' },
+		panel_data: {
+			type: 'object',
+			properties: {
+				name: { type: 'string' },
+				ambient_temperature: { type: 'string' },
+				phase: { type: 'string' }
+			},
+			additionalProperties: false
+		},
+		load_data: {
+			type: 'object',
+			properties: {
+				load_description: { type: 'string' },
+				ambient_temperature: { type: 'string' },
+				quantity: { type: 'number' },
+				varies: { type: 'number' },
+				continuous: { type: 'number' },
+				special: { type: 'string' }
+			},
+			additionalProperties: false
+		},
+		// this object should be present if it is root node
 		highest_unit_form: {
 			type: 'object',
 			properties: {
@@ -20,52 +56,13 @@ const project_schema_literal = {
 			},
 			additionalProperties: false
 		},
-		project_name: { type: 'string', default: 'Untitled' },
-		tree: {
-			type: 'array',
-			items: { type: 'string' }
-		}
-	},
-	required: ['id', 'highest_unit_form', 'tree']
-} as const;
-
-const node_literal = {
-	version: 0,
-	primaryKey: 'id',
-	type: 'object',
-	properties: {
-		id: { type: 'string', maxLength: 100 },
-		node_type: { type: 'string' },
-		panel_data: {
-			type: 'object',
-			properties: {
-				name: { type: 'string' },
-				circuit_number: { type: 'number' },
-				ambient_temperature: { type: 'string' },
-				phase: { type: 'string' }
-			},
-			additionalProperties: false
-		},
-		load_data: {
-			type: 'object',
-			properties: {
-				circuit_number: { type: 'number' },
-				load_description: { type: 'string' },
-				ambient_temperature: { type: 'string' },
-				quantity: { type: 'number' },
-				varies: { type: 'number' },
-				continuous: { type: 'number' },
-				special: { type: 'string' }
-			},
-			additionalProperties: false
-		},
-		parent_id: { type: ['string', 'null'] },
+		parent_id: { type: 'string' },
 		child_ids: {
 			type: 'array',
 			items: { type: 'string' }
 		}
 	},
-	required: ['id', 'node_type', 'parent_id', 'child_ids']
+	required: ['id', 'node_type', 'child_ids']
 } as const;
 
 const typed_project_schema = toTypedRxJsonSchema(project_schema_literal);
