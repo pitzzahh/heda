@@ -9,22 +9,17 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
-	import type { ProjectDocType } from '@/db/schema';
-	import type { Phase } from '@/types/phase';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
+	import type { HighestUnitSchema } from '@/schema';
 
 	let {
 		node,
-		isRootNode,
 		highest_unit,
-		generic_phase_panel_form,
-		project_id
+		generic_phase_panel_form
 	}: {
-		node: Node | string;
-		isRootNode?: boolean;
-		highest_unit: ProjectDocType['highest_unit_form'];
-		project_id?: string;
+		node: Node;
+		highest_unit: HighestUnitSchema;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
@@ -40,10 +35,10 @@
 	}
 </script>
 
-{#await getChildNodesByParentId(project_id || (isNode(node) && node.id) || '')}
+{#await getChildNodesByParentId(node.id)}
 	<p></p>
 {:then children}
-	{#if !isRootNode && isNode(node) && node.node_type === 'load'}
+	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
 			class=" flex w-full items-center justify-between data-[active=true]:bg-transparent"
 		>
@@ -83,18 +78,18 @@
 					</Collapsible.Trigger>
 					<ContextMenu.Root>
 						<ContextMenu.Trigger class="w-full">
-							{@const node_name =
-								typeof node === 'string' ? node : (node.panel_data?.name as string)}
+							{@const node_name = (node.highest_unit_form?.distribution_unit ||
+								node.panel_data?.name) as string}
 							<AddPanelAndViewTrigger
-								id={isNode(node) ? node.id : ''}
+								id={node.id}
 								panel_name={node_name}
 								{generic_phase_panel_form}
 								{highest_unit}
-								is_parent_root_node={typeof isRootNode === 'boolean' ? isRootNode : false}
-								parent_id={isRootNode && project_id ? project_id : isNode(node) ? node.id : ''}
+								is_parent_root_node={node.node_type === 'root'}
+								parent_id={node.id}
 							>
 								<Folder class="size-4" />
-								{typeof node === 'string' ? node : node.panel_data?.name}
+								{node_name}
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
 
@@ -102,18 +97,16 @@
 							<ContextMenu.Item
 								class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
 								onclick={async () => {
-									if (isNode(node) && !isRootNode) {
-										await removeNode(node.id);
-									}
+									await removeNode(node.id);
 
-									if (isRootNode && project_id) {
-										await deleteProject(project_id);
-									}
+									// if (isRootNode && project_id) {
+									// 	await deleteProject(project_id);
+									// }
 
 									await invalidateAll();
 								}}
 							>
-								{isRootNode ? 'Remove Project' : 'Remove Panel'}
+								{node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 							</ContextMenu.Item>
 						</ContextMenu.Content>
 					</ContextMenu.Root>
