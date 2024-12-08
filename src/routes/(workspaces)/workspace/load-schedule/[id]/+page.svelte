@@ -74,7 +74,7 @@
 	let { data } = $props();
 	let params = $derived($page.params);
 
-	const project = data?.project;
+	let node = data.node;
 	const phases: Record<string, string> = {
 		one_phase: '1P',
 		three_phase_wye: '3P-Y',
@@ -87,22 +87,22 @@
 		<div>
 			<p class="font-semibold">
 				Distribution Unit: <span class="font-normal"
-					>{project?.highest_unit_form.distribution_unit}</span
+					>{node?.highest_unit_form?.distribution_unit}</span
 				>
 			</p>
 			<p class="font-semibold">
 				Phase: <span class="font-normal"
-					>{phases[project?.highest_unit_form.phase as string] || ''}</span
+					>{phases[node?.highest_unit_form?.phase as string] || ''}</span
 				>
 			</p>
 			<p class="font-semibold">
-				Wire Length: <span class="font-normal">{project?.highest_unit_form.wire_length}</span>
+				Wire Length: <span class="font-normal">{node?.highest_unit_form?.wire_length}</span>
 			</p>
 		</div>
 		<div>
 			<p class="font-semibold">
 				Ambient Temperature: <span class="font-normal"
-					>{project?.highest_unit_form.ambient_temperature}</span
+					>{node?.highest_unit_form?.ambient_temperature}</span
 				>
 			</p>
 			<p class="font-semibold">
@@ -111,7 +111,9 @@
 		</div>
 	</div>
 	<DataTable
-		data={data?.nodes && data.nodes.length > 0 ? (data.nodes as PhaseLoadSchedule[]) : []}
+		data={data?.nodes && data.nodes.length > 0
+			? (data.nodes as unknown as PhaseLoadSchedule[])
+			: []}
 		columns={threePhaseWyeCols(data.phase_main_load_form)}
 	/>
 </div>
