@@ -41,7 +41,7 @@
 		onUpdate: async ({ form }) => {
 			if (form.valid) {
 				if (panel_id) {
-					addNode({ load_data: form.data, parent_id: panel_id });
+					await addNode({ load_data: form.data, parent_id: panel_id });
 					await invalidate('/workspace');
 				}
 				closeDialog();
