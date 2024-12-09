@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Save, FilePlus } from 'lucide-svelte';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { Save, FilePlus, Moon, Sun } from '@/assets/icons/lucide';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import SettingsDialog from '../settings-dialog.svelte';
-	import { Moon, Sun } from 'svelte-radix';
+	import { SettingsDialog } from '..';
+	import { toast } from 'svelte-sonner';
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -11,13 +11,13 @@
 	const settingsState = getSettingsState();
 
 	function handleSave() {
-		// Implement save functionality
-		$inspect('Saving...');
+		// TODO: Implement save functionality
+		toast.warning('This feature is not yet implemented');
 	}
 
 	function handleNew() {
-		// Implement new document functionality
-		$inspect('Creating new...');
+		// TODO: Implement new document functionality
+		toast.warning('This feature is not yet implemented');
 	}
 
 	function setModeAndColor(mode: 'dark' | 'light') {
@@ -28,24 +28,27 @@
 
 <div class="w-full p-2">
 	<div class="flex w-full items-center gap-2">
-		<Tooltip>
-			<TooltipTrigger>
-				<Button variant="default" size="sm" onclick={handleSave}>
-					<Save class="mr-2 h-4 w-4" />
-					Save
-				</Button>
-			</TooltipTrigger>
-			<TooltipContent>Save changes (Ctrl+S)</TooltipContent>
-		</Tooltip>
-
-		<Tooltip>
-			<TooltipTrigger>
-				<Button variant="outline" size="sm" onclick={handleNew}>
-					<FilePlus class="h-4 w-4" />
-				</Button>
-			</TooltipTrigger>
-			<TooltipContent>New document</TooltipContent>
-		</Tooltip>
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button variant="default" size="sm" onclick={handleSave}>
+						<Save class="h-4 w-4" />
+						Save
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button variant="outline" size="sm" onclick={handleNew}>
+						<FilePlus class="h-4 w-4" />
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content>New document</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 
 		<SettingsDialog />
 		<DropdownMenu.Root>

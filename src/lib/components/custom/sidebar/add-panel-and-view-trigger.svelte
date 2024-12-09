@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import { Button } from '@/components/ui/button/index.js';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -39,6 +40,7 @@
 		if (clickTimeout) {
 			clearTimeout(clickTimeout);
 			clickTimeout = null;
+			toast.info('Closign dialog in handleClick')
 			open_panel_dialog = true;
 		} else {
 			// @ts-ignore
