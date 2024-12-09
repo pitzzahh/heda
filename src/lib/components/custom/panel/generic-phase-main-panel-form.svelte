@@ -123,7 +123,11 @@
 								role="combobox"
 								{...props}
 							>
-								{convertToNormalText(DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find((f) => f === $formData.ambient_temperature)) ?? 'Select an ambient temperature'}
+								{convertToNormalText(
+									DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
+										(f) => f === $formData.ambient_temperature
+									)
+								) ?? 'Select an ambient temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.ambient_temperature} name={props.name} />
@@ -162,7 +166,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
-		{#if main_phase !== 'ONE_PHASE'}
+		{#if main_phase !== '1P'}
 			<div>
 				{@render PanelType()}
 				{@render PanelPhase()}
@@ -231,7 +235,7 @@
 {/snippet}
 
 {#snippet PanelPhase()}
-	{@const is_one_phase = main_phase === 'ONE_PHASE'}
+	{@const is_one_phase = main_phase === '1P'}
 	<Form.Field
 		{form}
 		name="phase"
@@ -253,8 +257,7 @@
 						role="combobox"
 						{...props}
 					>
-						{convertToNormalText(DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)) ??
-							'Select a panel phase'}
+						{DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase) ?? 'Select a phase'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.phase} name={props.name} />
@@ -273,7 +276,7 @@
 									closeAndFocusTrigger(phase_trigger_id);
 								}}
 							>
-								{convertToNormalText(phase_option)}
+								{phase_option}
 								<Check
 									class={cn(
 										'ml-auto size-4',
