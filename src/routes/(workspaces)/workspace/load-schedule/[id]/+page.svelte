@@ -76,9 +76,9 @@
 
 	let root_node = data.root_node;
 	const phases: Record<string, string> = {
-		one_phase: '1P',
-		three_phase_wye: '3P-Y',
-		three_phase_delta: '3P-Δ'
+		ONE_PHASE: '1P',
+		THREE_PHASE_WYE: '3P-Y',
+		THREE_PHASE_DELTA: '3P-Δ'
 	};
 </script>
 
