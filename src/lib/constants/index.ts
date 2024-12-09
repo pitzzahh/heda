@@ -23,9 +23,9 @@ export const default_three_phase_types = {
 } as const;
 
 export const default_phases = {
-	ONE_PHASE: 'ONE_PHASE',
-	THREE_PHASE_WYE: 'THREE_PHASE_WYE',
-	THREE_PHASE_DELTA: 'THREE_PHASE_DELTA'
+	ONE_PHASE: '1P',
+	THREE_PHASE_WYE: '3P-Y',
+	THREE_PHASE_DELTA: '3P-Δ'
 } as const;
 
 export const default_load_types = {
