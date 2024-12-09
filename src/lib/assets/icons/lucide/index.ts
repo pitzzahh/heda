@@ -5,3 +5,6 @@ export { default as Save } from 'lucide-svelte/icons/save';
 export { default as File } from 'lucide-svelte/icons/file';
 export { default as Folder } from 'lucide-svelte/icons/folder';
 export { default as ChevronRight } from 'lucide-svelte/icons/chevron-right';
+export { default as FilePlus } from 'lucide-svelte/icons/file-plus';
+export { default as Sun } from 'lucide-svelte/icons/sun';
+export { default as Moon } from 'lucide-svelte/icons/moon';
