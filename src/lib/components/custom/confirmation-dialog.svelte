@@ -8,6 +8,7 @@
 		onConfirm: () => void;
 		trigger_variant?: ButtonVariant;
 		trigger_text: string;
+
 	}
 
 	let {
@@ -21,7 +22,7 @@
 </script>
 
 <AlertDialog.Root {...rest}>
-	<AlertDialog.Trigger class={buttonVariants({ variant: trigger_variant, className: 'w-full' })}>
+	<AlertDialog.Trigger class={buttonVariants({ variant: trigger_variant, className: 'w-full', size:"sm" })}>
 		{trigger_text}
 	</AlertDialog.Trigger>
 	<AlertDialog.Content>
