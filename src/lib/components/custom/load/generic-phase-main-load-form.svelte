@@ -24,7 +24,7 @@
 	import { page } from '$app/stores';
 	import { addNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidate } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -39,18 +39,17 @@
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onUpdate: async ({ form }) => {
-			if (form.valid) {
-				if (panel_id) {
-					if (await checkNodeExists(form.data.circuit_number, panel_id)) {
-						return toast.warning('Circuit number already exists');
-					}
-					await addNode({ load_data: form.data, parent_id: panel_id });
-					await invalidate('/workspace');
-				}
-				closeDialog();
-			} else {
-				toast.error('Form is invalid');
+			if (!form.valid) {
+				return toast.error('Form is invalid');
 			}
+			if (panel_id) {
+				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
+					return toast.warning('Circuit number already exists');
+				}
+				await addNode({ load_data: form.data, parent_id: panel_id });
+				await invalidateAll();
+			}
+			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
