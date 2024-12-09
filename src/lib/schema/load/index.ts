@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { specials, MIN_VARIES, MAX_VARIES } from '@/constants';
-import type { Special } from '@/types/misc';
+import { DEFAULT_LOAD_TYPES_ENUMS, MIN_VARIES, MAX_VARIES } from '@/constants';
+import type { LoadType } from '@/types/load';
 
 export const phase_main_load_schema = z.object({
 	circuit_number: z
@@ -22,8 +22,8 @@ export const phase_main_load_schema = z.object({
 			message: `Varies must be less than or equal to ${MAX_VARIES}`
 		}),
 	continuous: z.boolean(),
-	special: z.enum(specials.map((f) => f.value) as [Special, ...Special[]], {
-		errorMap: () => ({ message: 'Please select a valid special.' })
+	load_type: z.enum(DEFAULT_LOAD_TYPES_ENUMS.map((f) => f.value) as [LoadType, ...LoadType[]], {
+		errorMap: () => ({ message: 'Please select a valid load type.' })
 	})
 });
 export type PhaseMainLoadSchema = z.infer<typeof phase_main_load_schema>;
