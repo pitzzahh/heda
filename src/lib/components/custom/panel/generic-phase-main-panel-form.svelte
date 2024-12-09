@@ -23,6 +23,7 @@
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
+	import { checkNodeExists } from '@/db/queries';
 	import { invalidate, invalidateAll } from '$app/navigation';
 
 	interface Props {
@@ -50,11 +51,12 @@
 			// toast the values
 			if (form.valid) {
 				if (parent_id) {
+					if (await checkNodeExists(form.data.circuit_number, parent_id)) {
+						return toast.warning('Circuit number already exists');
+					}
 					addNode({ parent_id, panel_data: form.data });
 					await invalidateAll();
 				}
-
-				toast.success('Form is valid');
 				open_panel_dialog = false;
 			} else {
 				toast.error('Form is invalid');
