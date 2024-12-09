@@ -94,7 +94,7 @@
 						<ContextMenu.Content>
 							{#snippet children()}
 								<ConfirmationDialog
-									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+									trigger_text={node.node_type === 'root' ? 'Remove Distribution Unit' : 'Remove Panel'}
 									trigger_variant="destructive"
 									onConfirm={async () => {
 										await removeNode(node.id);
