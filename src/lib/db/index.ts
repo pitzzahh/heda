@@ -1,9 +1,9 @@
-import { addRxPlugin, createRxDatabase, type RxDatabase } from 'rxdb';
+import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase} from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
-import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import type { MyDatabaseCollections } from '@/types/db';
 import { project_schema, node_schema } from '@/db/schema/index.js';
+import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { dev } from '$app/environment';
 
 let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
@@ -20,8 +20,12 @@ async function createDatabase(
 	if (dbInstance) {
 		return dbInstance;
 	}
-	if (dev) addRxPlugin(RxDBDevModePlugin);
+	if (dev) {
+		addRxPlugin(RxDBDevModePlugin);
+	} 
+	
 	addRxPlugin(RxDBUpdatePlugin);
+
 	dbInstance = await createRxDatabase({
 		name,
 		storage: getRxStorageDexie()
@@ -49,6 +53,8 @@ export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollectio
 			});
 			console.log('Collections added:', added_collections_result);
 		} catch (error) {
+			await removeRxDatabase("mydatabase", getRxStorageDexie())
+
 			console.error('Error adding collections:', error);
 			throw new Error('Failed to add collections');
 		}
