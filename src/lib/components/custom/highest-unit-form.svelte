@@ -14,9 +14,10 @@
 	import { buttonVariants } from '@/components/ui/button';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
-	import { ambient_temperatures } from '@/constants';
+	import { ambient_temperatures, DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project } from '@/types/project';
+	import { convertToNormalText } from '@/utils/text';
 
 	interface Props {
 		highest_unit_form: T;
@@ -153,7 +154,7 @@
 		<Form.Fieldset {form} name="phase" class="col-span-2 space-y-3">
 			<Form.Legend>Select a phase</Form.Legend>
 			<RadioGroup.Root bind:value={$formData.phase} class="flex flex-col space-y-1" name="phase">
-				<div class="flex items-center space-x-3 space-y-0">
+				{#each DEFAULT_PHASES_OPTIONS as phase_option}
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label
@@ -162,42 +163,12 @@
 									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
 								})}
 							>
-								<RadioGroup.Item value="one_phase" {...props} class="sr-only" />
-								1 Phase
+								<RadioGroup.Item value={phase_option} {...props} class="sr-only" />
+								{convertToNormalText(phase_option)}
 							</Form.Label>
 						{/snippet}
 					</Form.Control>
-				</div>
-				<div class="flex items-center space-x-3 space-y-0">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal  [&:has([data-state=checked])]:bg-muted'
-								})}
-							>
-								<RadioGroup.Item value="three_phase_wye" {...props} class="sr-only" />
-								3 Phase Wye
-							</Form.Label>
-						{/snippet}
-					</Form.Control>
-				</div>
-				<div class="flex items-center space-x-3 space-y-0">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
-								})}
-							>
-								<RadioGroup.Item value="three_phase_delta" {...props} class="sr-only" />
-								3 Phase Delta</Form.Label
-							>
-						{/snippet}
-					</Form.Control>
-				</div>
+				{/each}
 			</RadioGroup.Root>
 			<Form.FieldErrors />
 		</Form.Fieldset>
