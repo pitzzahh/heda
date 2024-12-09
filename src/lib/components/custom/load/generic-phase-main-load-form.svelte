@@ -330,9 +330,9 @@
 						{...props}
 						type="number"
 						inputmode="numeric"
-						readonly
+						readonly={load_type === 'DEFAULT'}
 						min={1}
-						class="cursor-not-allowed text-muted-foreground"
+						class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
 						bind:value={$formData.varies}
 						placeholder="Enter varies"
 					/>
@@ -344,12 +344,21 @@
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
-					<Checkbox disabled {...props} bind:checked={$formData.continuous} class="mx-auto mt-0" />
+					<Checkbox
+						disabled={load_type === 'DEFAULT'}
+						{...props}
+						bind:checked={$formData.continuous}
+						class="mx-auto mt-0"
+					/>
 					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
 				{/snippet}
 			</Form.Control>
 		</Form.Field>
-		<Form.Field {form} name="load_type" class={cn('mt-2 grid cursor-not-allowed text-center')}>
+		<Form.Field
+			{form}
+			name="load_type"
+			class={cn('mt-2 grid text-center', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
+		>
 			<Popover.Root bind:open={open_load_type}>
 				<Form.Control id={load_type_trigger_id}>
 					{#snippet children({ props })}
@@ -358,11 +367,12 @@
 							class={cn(
 								buttonVariants({
 									variant: 'outline',
-									className: 'cursor-not-allowed justify-between'
+									className: 'justify-between'
 								}),
-								!$formData.load_type && 'text-muted-foreground'
+								!$formData.load_type && 'text-muted-foreground',
+								{ 'cursor-not-allowed': load_type === 'DEFAULT' }
 							)}
-							disabled
+							disabled={load_type === 'DEFAULT'}
 							role="combobox"
 							{...props}
 						>
