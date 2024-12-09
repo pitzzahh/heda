@@ -68,6 +68,7 @@ class SidebarState {
 				// close the sidebar it hits the 180px
 				if (newWidth <= 180) {
 					this.setOpen(false);
+					onMouseUp()
 				}
 
 				if (newWidth <= SIDEBAR_MAX_WIDTH) {
