@@ -6,8 +6,7 @@ import { goto } from '$app/navigation';
 import type { Node } from '@/types/project/index.js';
 
 export const entries = () => {
-	// TODO: Fetch entries from db
-	return [{ id: 'hello-world' }, { id: 'another-blog-post' }];
+	return [{ id: 'some-id' }, { id: 'other-id' }];
 };
 export const load = async ({ params }) => {
 	const node_id = params.id.split('_').at(-1) as string;
