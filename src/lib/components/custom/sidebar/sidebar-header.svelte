@@ -11,14 +11,12 @@
 	const settingsState = getSettingsState();
 
 	function handleSave() {
-		// Implement save functionality
-		$inspect('Saving...');
+		// TODO: Implement save functionality
 		toast.warning('This feature is not yet implemented');
 	}
 
 	function handleNew() {
-		// Implement new document functionality
-		$inspect('Creating new...');
+		// TODO: Implement new document functionality
 		toast.warning('This feature is not yet implemented');
 	}
 
