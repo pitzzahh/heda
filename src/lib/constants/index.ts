@@ -1,3 +1,4 @@
+import type { DefaultLoad } from '@/types/load';
 import { getEnumValues } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
@@ -8,13 +9,87 @@ export const default_terminal_temperatures = {
 	STANDARD_TEMPERATURE: "STANDARD_TEMPERATURE"
 } as const;
 
-// TODO: Refactor to a better implementation
-export const default_loads_description = [
-	{ label: 'Lighting', value: 'Lighting' },
-	{ label: 'Receptacles', value: 'Receptacles' },
-	{ label: 'HVAC', value: 'HVAC' },
-	{ label: 'Other', value: 'Other' }
-] as const;
+
+export const DEFAULT_LOADS = [
+	{
+		description: 'Lighting Outlet (50W)',
+		varies: 50,
+		continous: true,
+		type: 'Lighting Load'
+	},
+	{
+		description: 'Lighting Outlet (100W)',
+		varies: 100,
+		continous: true,
+		type: 'Lighting Load'
+	},
+	{
+		description: "Small Appliance Load",
+		varies: 1500,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Laundry Circuit Load",
+		varies: 1500,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Bathroom Branch Circuit",
+		varies: 1500,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Garage Branch Circuit",
+		varies: 1500,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Convenience Outlet (Simplex)",
+		varies: 180,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Convenience Outlet (Duplex)",
+		varies: 180,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Convenience Outlet (Triplex)",
+		varies: 180,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Convenience Outlet - 4",
+		varies: 360,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Convenience Outlet - 5",
+		varies: 450,
+		continous: true,
+		type: 'Convenience Outlet'
+	},
+	{
+		description: "Dwelling Unit",
+		varies: 24,
+		continous: true,
+		type: 'General Lighting'
+	},
+	{
+		description: "Office Buildings",
+		varies: 28,
+		continous: true,
+		type: 'General Lighting'
+	}
+] as Readonly<DefaultLoad[]>;
 
 export const default_three_phase_types = {
 	WYE: 'WYE',
@@ -29,10 +104,12 @@ export const default_phases = {
 } as const;
 
 export const default_load_types = {
-	LIGHTING_LOAD: "LIGHTING_LOAD",
-	RECEPTACLE_LOAD: "RECEPTACLE_LOAD",
-	HVAC_LOAD: "HVAC_LOAD",
-	OTHER_LOAD: "OTHER_LOAD"
+	LIGHTING_LOAD: "Lighting Load",
+	CONVENIENCE_OUTLET: "Convenience Outlet",
+	GENERAL_LIGHTING: "General Lighting",
+	ONE_P_MOTOR__RATED_HORSE_POWER: "1P Motor - Rated Horse Power",
+	ONE_P_MOTOR__RATED_CURRENT: "1P Motor - Rated Current",
+	HEATING_EQUIPMENT: "Heating Equipment",
 } as const;
 
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
