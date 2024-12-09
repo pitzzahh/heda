@@ -44,6 +44,7 @@
 							node={root_node}
 							highest_unit={root_node.highest_unit_form}
 							{generic_phase_panel_form}
+							{project}
 						/>
 					{:else}
 						<div class="grid h-[85vh] place-content-center">

@@ -59,15 +59,15 @@
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
 		>
-					<Sidebar.Trigger class="-ml-1" />
-			
+			<Sidebar.Trigger class="-ml-1" />
+
 			<Separator orientation="vertical" class="mr-2 h-4" />
 			<div class="flex items-center gap-2">
 				{#if is_editing}
 					<Input bind:value={project_title} type="text" id="project-title-input" />
 				{:else}
 					<p>
-						{project_title}
+						{data.project?.project_name || 'Untitled'}
 					</p>
 				{/if}
 
