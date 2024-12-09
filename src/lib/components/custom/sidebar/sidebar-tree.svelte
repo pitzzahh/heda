@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { cn } from '@/utils';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import { File, Folder } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
@@ -61,7 +62,11 @@
 			</ContextMenu.Root>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem>
+		<Sidebar.MenuItem
+			class={cn({
+				'-translate-x-2': node.node_type !== 'root'
+			})}
+		>
 			<Collapsible.Root
 				open
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
