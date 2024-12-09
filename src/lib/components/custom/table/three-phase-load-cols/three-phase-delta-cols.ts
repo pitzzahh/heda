@@ -3,12 +3,14 @@ import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-c
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { PhaseMainLoadSchema } from '@/schema/load';
+import type { HighestUnitSchema } from '@/schema';
 
 export function threePhaseDeltaCols(
-	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
+	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
+	highest_unit: HighestUnitSchema
 ): ColumnDef<PhaseLoadSchedule>[] {
 	return [
-		...createLeftMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form),
+		...createLeftMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit),
 		{
 			header: 'CONDUCTOR',
 			columns: [

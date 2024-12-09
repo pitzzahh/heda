@@ -107,6 +107,6 @@
 		data={data?.nodes && data.nodes.length > 0
 			? (data.nodes as unknown as PhaseLoadSchedule[])
 			: []}
-		columns={threePhaseWyeCols(data.phase_main_load_form)}
+		columns={threePhaseWyeCols(data.phase_main_load_form, root_node?.highest_unit_form)}
 	/>
 </div>

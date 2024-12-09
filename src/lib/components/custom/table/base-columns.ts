@@ -7,15 +7,18 @@ import { DataTableAddLoad } from '@/components/custom/table/(components)';
 import type { PhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import ColumnDropdown from './column-dropdown.svelte';
+import type { HighestUnitSchema } from '@/schema';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
-	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
+	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
+	highest_unit: HighestUnitSchema
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
 		header: () =>
 			renderComponent(DataTableAddLoad, {
 				phase_main_load_form,
+				highest_unit,
 				'aria-label': 'Select row',
 				class: 'translate-y-[2px]'
 			}),
