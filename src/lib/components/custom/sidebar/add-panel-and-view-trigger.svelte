@@ -2,14 +2,12 @@
 	import type { Snippet } from 'svelte';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { goto } from '$app/navigation';
-	import { toast } from 'svelte-sonner';
 	import { Button } from '@/components/ui/button/index.js';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
-	import { convertToNormalText } from '@/utils/text';
 	import { cn } from '@/utils';
 	import type { HighestUnitSchema } from '@/schema';
 
@@ -40,7 +38,6 @@
 		if (clickTimeout) {
 			clearTimeout(clickTimeout);
 			clickTimeout = null;
-			toast.info('Closign dialog in handleClick')
 			open_panel_dialog = true;
 		} else {
 			// @ts-ignore
@@ -84,7 +81,7 @@
 						</div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{phase ? convertToNormalText(phase) : 'N/A'}</p>
+							<p>{phase ?? 'N/A'}</p>
 						</div>
 					</div>
 				</div>
