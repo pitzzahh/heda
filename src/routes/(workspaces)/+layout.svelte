@@ -16,7 +16,6 @@
 	import type { Project } from '@/types/project/index.js';
 	import { updateProjectTitle } from '@/db/mutations/index.js';
 	import { invalidateAll } from '$app/navigation';
-	import { useSidebar } from '@/components/ui/sidebar/index.js';
 
 	let { data, children } = $props();
 
