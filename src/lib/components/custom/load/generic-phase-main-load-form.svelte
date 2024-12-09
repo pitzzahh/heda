@@ -23,7 +23,8 @@
 	import type { MiscState } from '@/state/types';
 	import { page } from '$app/stores';
 	import { addNode } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
+	import { checkNodeExists } from '@/db/queries';
+	import { invalidateAll } from '$app/navigation';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -32,23 +33,23 @@
 	}
 
 	let { phase_main_load_form, closeDialog }: Props = $props();
-	let params = $page.params;
-	let panel_id = params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onUpdate: async ({ form }) => {
-			if (form.valid) {
-				if (panel_id) {
-					await addNode({ load_data: form.data, parent_id: panel_id });
-					await invalidate('/workspace');
-				}
-				closeDialog();
-				toast.success('Form is valid');
-			} else {
-				toast.error('Form is invalid');
+			if (!form.valid) {
+				return toast.error('Form is invalid');
 			}
+			if (panel_id) {
+				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
+					return toast.warning('Circuit number already exists');
+				}
+				await addNode({ load_data: form.data, parent_id: panel_id });
+				await invalidateAll();
+			}
+			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;

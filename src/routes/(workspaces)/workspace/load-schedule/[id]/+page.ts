@@ -28,7 +28,6 @@ export const load = async ({ params }) => {
 		?.filter((node) => node.node_type === 'load')
 		.map((node) => ({ ...node.load_data, id: node.id }));
 
-
 	return {
 		phase_main_load_form: await superValidate(zod(phase_main_load_schema)),
 		project,
