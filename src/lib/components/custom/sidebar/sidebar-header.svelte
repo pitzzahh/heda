@@ -34,7 +34,7 @@
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					<Button variant="default" size="sm" onclick={handleSave}>
-						<Save class="mr-2 h-4 w-4" />
+						<Save class="h-4 w-4" />
 						Save
 					</Button>
 				</Tooltip.Trigger>
