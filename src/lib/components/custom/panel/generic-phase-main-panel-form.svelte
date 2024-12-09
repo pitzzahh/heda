@@ -29,20 +29,11 @@
 	interface Props {
 		generic_phase_panel_form: T;
 		main_phase: Phase;
-		open_panel_dialog: boolean;
 		parent_id?: string;
-		id?: string;
-		is_parent_root_node: boolean;
+		closeDialog: () => void;
 	}
 
-	let {
-		generic_phase_panel_form,
-		main_phase,
-		open_panel_dialog = $bindable(),
-		parent_id,
-		id,
-		is_parent_root_node = false
-	}: Props = $props();
+	let { generic_phase_panel_form, main_phase, parent_id, closeDialog }: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -56,11 +47,10 @@
 				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
 					return toast.warning('Circuit number already exists');
 				}
-				addNode({ parent_id, panel_data: form.data });
+				await addNode({ parent_id, panel_data: form.data });
 				await invalidateAll();
 			}
-			toast.info('close dialog');
-			open_panel_dialog = false;
+			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
