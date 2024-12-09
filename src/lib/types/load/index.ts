@@ -1,4 +1,4 @@
-export type LoadType = "DEFAULT" | 'CUSTOM';
+import type { default_load_types } from "@/constants";
 
 export type Load = {
   id: string;
@@ -19,3 +19,5 @@ export type LoadLatest = {
   continuous: number;
   special: string;
 };
+
+export type LoadType = (typeof default_load_types)[keyof typeof default_load_types];
