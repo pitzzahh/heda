@@ -159,13 +159,13 @@ export async function deleteProject(project_id: string) {
 	const database = await databaseInstance();
 
 	try {
-		// remove all the nodes of the root node
-		await removeNode(project_id);
-
 		const query = database.projects.findOne({ selector: { id: project_id } });
-		const removedProjectId = await query.remove();
+		const project = await query.exec();
 
-		return removedProjectId;
+		// remove all the nodes of the root node
+		if (project) await removeNode(project?._data.root_node_id);
+
+		return await query.remove();
 	} catch (error) {
 		console.error(error);
 		return error;
