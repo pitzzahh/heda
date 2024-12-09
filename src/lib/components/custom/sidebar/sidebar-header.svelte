@@ -30,11 +30,12 @@
 	<div class="flex w-full items-center gap-2">
 		<Tooltip.Provider>
 			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<Button variant="default" size="sm" onclick={handleSave}>
-						<Save class="h-4 w-4" />
-						Save
-					</Button>
+				<Tooltip.Trigger
+					class={buttonVariants({ variant: 'default', size: 'sm' })}
+					onclick={handleSave}
+				>
+					<Save class="h-4 w-4" />
+					Save
 				</Tooltip.Trigger>
 				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
 			</Tooltip.Root>
