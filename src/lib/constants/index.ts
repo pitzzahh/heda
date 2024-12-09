@@ -1,14 +1,6 @@
 import { getEnumValues } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
-// TODO: Refactor to a better implementation
-export const ambient_temperatures = [
-	{ label: '60', value: '60' },
-	{ label: '75', value: '75' },
-	{ label: '90', value: '90' },
-	{ label: 'temparature limitation', value: 'default' }
-] as const;
-
 export const default_ambient_temperatures = {
 	60: "60",
 	75: '75',
