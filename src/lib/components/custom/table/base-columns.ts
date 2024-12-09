@@ -65,6 +65,12 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			{
 				accessorKey: 'at',
 				cell: (info) => info.getValue(),
+				header: () => 'AT',
+				footer: (props) => '65'
+			},
+			{
+				accessorKey: 'af',
+				cell: (info) => info.getValue(),
 				header: () => 'AF',
 				footer: (props) => '65'
 			},

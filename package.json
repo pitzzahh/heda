@@ -1,6 +1,6 @@
 {
 	"name": "heda",
-	"version": "0.1.8",
+	"version": "0.1.11",
 	"type": "module",
 	"private": true,
 	"author": {
@@ -27,7 +27,7 @@
 		"@tauri-apps/cli": "^2.1.0",
 		"@types/eslint": "^9.6.1",
 		"autoprefixer": "^10.4.20",
-		"bits-ui": "^1.0.0-next.65",
+		"bits-ui": "^1.0.0-next.69",
 		"clsx": "^2.1.1",
 		"eslint": "^9.16.0",
 		"eslint-config-prettier": "^9.1.0",
@@ -54,6 +54,7 @@
 		"@tanstack/table-core": "^8.20.5",
 		"@tauri-apps/api": "^2.1.1",
 		"@tauri-apps/plugin-fs": "^2.0.3",
+		"@tauri-apps/plugin-log": "~2",
 		"formsnap": "^2.0.0-next.1",
 		"mode-watcher": "^0.5.0",
 		"rxdb": "^15.39.0",

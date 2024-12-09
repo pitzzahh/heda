@@ -14,7 +14,47 @@ export async function getCurrentProject(project_id?: string) {
 		return null;
 	} catch (error) {
 		console.log(error);
-		return error;
+		throw error;
+	}
+}
+
+export async function getRootNode() {
+	const db = await databaseInstance();
+
+	try {
+		const query = db.nodes.find({
+			selector: {
+				node_type: 'root'
+			}
+		});
+		const node = (await query.exec()).at(0)?._data;
+
+		if (node) {
+			return node;
+		}
+
+		return null;
+	} catch (error) {
+		console.log(error);
+		throw error;
+	}
+}
+
+export async function checkNodeExists(circuit_number: number, parent_id: string) {
+	const db = await databaseInstance();
+	try {
+		const node = await db.nodes
+			.findOne({
+				selector: {
+					parent_id,
+					circuit_number
+				}
+			})
+			.exec();
+		return node ? true : false;
+	} catch (error) {
+		console.log(error);
+		return false;
 	}
 }
 
@@ -37,40 +77,33 @@ export async function getNodeById(id: string) {
 		return null;
 	} catch (error) {
 		console.log(error);
-		return error;
+		throw error;
 	}
 }
 
 export async function getChildNodesByParentId(parent_id: string) {
 	const db = await databaseInstance();
-	const query = db.nodes.find({
-		selector: {
-			parent_id
-		}
-	});
-	const children = (await query.exec()).map((doc) => doc._data);
 
-	// sorts the circuit number of every load node
-	const sortedChildren = children.sort((a, b) => {
-		// Extract circuit numbers for easier reference
-		const aLoadCircuit = a?.load_data?.circuit_number ?? Infinity; // Default to Infinity if not available
-		const bLoadCircuit = b?.load_data?.circuit_number ?? Infinity;
+	try {
+		const query = db.nodes.find({
+			selector: {
+				parent_id
+			}
+		});
+		const children = (await query.exec()).map((doc) => doc._data);
 
-		const aPanelCircuit = a?.panel_data?.circuit_number ?? Infinity; // Default to Infinity if not available
-		const bPanelCircuit = b?.panel_data?.circuit_number ?? Infinity;
+		// sorts the circuit number of every load node
+		const sortedChildren = children.sort((a, b) => {
+			return (a.circuit_number || 0) - (b.circuit_number || 0);
+		});
 
-		// Sort primarily by load_data, then by panel_data
-		if (aLoadCircuit !== bLoadCircuit) {
-			return aLoadCircuit - bLoadCircuit;
+		if (sortedChildren) {
+			return sortedChildren;
 		}
 
-		// If load_data circuit numbers are equal or unavailable, sort by panel_data
-		return aPanelCircuit - bPanelCircuit;
-	});
-
-	if (sortedChildren) {
-		return sortedChildren;
+		return null;
+	} catch (error) {
+		console.log(error);
+		throw error;
 	}
-
-	return null;
 }

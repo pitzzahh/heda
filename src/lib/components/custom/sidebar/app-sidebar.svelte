@@ -17,16 +17,14 @@
 
 	let {
 		ref = $bindable(null),
-		tree,
 		generic_phase_panel_form,
 		project,
-		nodes,
+		root_node,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
-		tree: Panel[];
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		project?: Project;
-		nodes: Node[];
+		root_node: Node;
 	} = $props();
 
 	// let localStorage = new LocalStorage<ProjectProps>('project');
@@ -34,12 +32,7 @@
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
 	$inspect(projectState.project);
-
-	console.log(nodes);
-
-	function isPanel(node: Panel | Load): node is Panel {
-		return (node as Panel).name !== undefined;
-	}
+	
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -49,12 +42,10 @@
 			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if project?.highest_unit_form}
+					{#if root_node?.highest_unit_form}
 						<SidebarTree
-							project_id={project.id}
-							node={project?.highest_unit_form.distribution_unit}
-							isRootNode={!!project?.highest_unit_form.distribution_unit}
-							highest_unit={project.highest_unit_form}
+							node={root_node}
+							highest_unit={root_node.highest_unit_form}
 							{generic_phase_panel_form}
 						/>
 					{:else}
@@ -82,50 +73,3 @@
 	</Sidebar.Content>
 	<Sidebar.Rail />
 </Sidebar.Root>
-
-<!-- {#snippet Tree({
-	node,
-	children = [],
-	isRootNode
-}: {
-	node: Node | string;
-	children: Node[];
-	isRootNode?: boolean;
-})}
-	{#if children.length === 0 && !isRootNode && typeof node !== 'string' && node.node_type === 'load'}
-		<Sidebar.MenuButton class="data-[active=true]:bg-transparent">
-			<File />
-			<span>{typeof node === 'string' ? node : node.load_data?.load_description}</span>
-		</Sidebar.MenuButton>
-	{:else}
-		<Sidebar.MenuItem>
-			<Collapsible.Root
-				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
-			>
-				<Sidebar.MenuButton
-					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
-				>
-					<Collapsible.Trigger>
-						{#snippet child({ props })}
-							<ChevronRight class="transition-transform" {...props} />
-						{/snippet}
-					</Collapsible.Trigger>
-					{@const node_name =
-						(isPanel(node) && node.name) || (!isPanel(node) && node.load_description) || node}
-					<AddPanelAndViewTrigger id={node_name as string} {generic_phase_panel_form}>
-						<Folder class="size-4" />
-						{node_name}
-					</AddPanelAndViewTrigger>
-				</Sidebar.MenuButton>
-
-				<Collapsible.Content class="w-full">
-					<Sidebar.MenuSub class="w-full">
-						{#each children as child, index (index)}
-							{@render Tree({ node: child, children: child.loads || [] })}
-						{/each}
-					</Sidebar.MenuSub>
-				</Collapsible.Content>
-			</Collapsible.Root>
-		</Sidebar.MenuItem>
-	{/if}
-{/snippet} -->

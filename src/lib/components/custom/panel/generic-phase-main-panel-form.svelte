@@ -23,42 +23,34 @@
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { checkNodeExists } from '@/db/queries';
+	import { invalidateAll } from '$app/navigation';
 
 	interface Props {
 		generic_phase_panel_form: T;
 		main_phase: Phase;
-		open_panel_dialog: boolean;
 		parent_id?: string;
-		id?: string;
-		is_parent_root_node: boolean;
+		closeDialog: () => void;
 	}
 
-	let {
-		generic_phase_panel_form,
-		main_phase,
-		open_panel_dialog = $bindable(),
-		parent_id,
-		id,
-		is_parent_root_node = false
-	}: Props = $props();
+	let { generic_phase_panel_form, main_phase, parent_id, closeDialog }: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
 		validators: zodClient(generic_phase_panel_schema),
 		onUpdate: async ({ form }) => {
 			// toast the values
-			if (form.valid) {
-				if (parent_id) {
-					addNode({ parent_id, is_parent_root_node, panel_data: form.data });
-					await invalidate('/workspace');
-				}
-
-				toast.success('Form is valid');
-				open_panel_dialog = false;
-			} else {
-				toast.error('Form is invalid');
+			if (!form.valid) {
+				return toast.error('Form is invalid');
 			}
+			if (parent_id) {
+				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
+					return toast.warning('Circuit number already exists');
+				}
+				await addNode({ parent_id, panel_data: form.data });
+				await invalidateAll();
+			}
+			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;

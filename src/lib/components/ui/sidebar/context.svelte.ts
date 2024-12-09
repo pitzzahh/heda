@@ -1,6 +1,11 @@
-import { IsMobile } from "$lib/hooks/is-mobile.svelte.js";
-import { getContext, setContext } from "svelte";
-import { SIDEBAR_KEYBOARD_SHORTCUT } from "./constants.js";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
+import { getContext, setContext } from 'svelte';
+import {
+	SIDEBAR_KEYBOARD_SHORTCUT,
+	SIDEBAR_MAX_WIDTH,
+	SIDEBAR_DEFAULT_WIDTH
+} from './constants.js';
 
 type Getter<T> = () => T;
 
@@ -24,9 +29,11 @@ class SidebarState {
 	readonly props: SidebarStateProps;
 	open = $derived.by(() => this.props.open());
 	openMobile = $state(false);
-	setOpen: SidebarStateProps["setOpen"];
+	setOpen: SidebarStateProps['setOpen'];
 	#isMobile: IsMobile;
-	state = $derived.by(() => (this.open ? "expanded" : "collapsed"));
+	state = $derived.by(() => (this.open ? 'expanded' : 'collapsed'));
+	sidebarWidth = $state(SIDEBAR_DEFAULT_WIDTH);
+	isResizing = $state(false);
 
 	constructor(props: SidebarStateProps) {
 		this.setOpen = props.setOpen;
@@ -48,18 +55,59 @@ class SidebarState {
 		}
 	};
 
+	handleMouseDown(e: any) {
+		this.isResizing = true;
+		document.body.style.cursor = 'ew-resize';
+
+		const startX = e.clientX;
+		const startWidth = this.sidebarWidth;
+
+		const onMouseMove = (e: any) => {
+			if (this.isResizing) {
+				const newWidth = startWidth + (e.clientX - startX);
+				// close the sidebar if it hits the 180px
+				if (newWidth <= 180) {
+					this.setOpen(false);
+					onMouseUp()
+				}
+
+				if (newWidth <= SIDEBAR_MAX_WIDTH) {
+					this.sidebarWidth = newWidth;
+				}
+			}
+		};
+
+		const onMouseUp = () => {
+			this.isResizing = false;
+
+			// Reset the cursor to default after resizing
+			document.body.style.cursor = 'default';
+
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
+
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+	}
+
 	setOpenMobile = (value: boolean) => {
 		this.openMobile = value;
 	};
 
 	toggle = () => {
-		return this.#isMobile.current
-			? (this.openMobile = !this.openMobile)
-			: this.setOpen(!this.open);
+		if (this.#isMobile.current) {
+			this.openMobile = !this.openMobile;
+		} else {
+			this.setOpen(!this.open);
+			if (this.open) {
+				this.sidebarWidth = SIDEBAR_DEFAULT_WIDTH;
+			}
+		}
 	};
 }
 
-const SYMBOL_KEY = "scn-sidebar";
+const SYMBOL_KEY = 'scn-sidebar';
 
 /**
  * Instantiates a new `SidebarState` instance and sets it in the context.

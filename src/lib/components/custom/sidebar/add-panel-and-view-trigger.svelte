@@ -8,9 +8,9 @@
 	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
-	import type { ProjectDocType } from '@/db/schema';
 	import { convertToNormalText } from '@/utils/text';
 	import { cn } from '@/utils';
+	import type { HighestUnitSchema } from '@/schema';
 
 	let {
 		children,
@@ -24,7 +24,7 @@
 		children: Snippet;
 		id: string;
 		panel_name: string;
-		highest_unit: ProjectDocType['highest_unit_form'];
+		highest_unit: HighestUnitSchema;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		is_parent_root_node: boolean;
@@ -91,12 +91,10 @@
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
 			<GenericPhaseMainPanelForm
-				{id}
 				{parent_id}
-				{is_parent_root_node}
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
-				bind:open_panel_dialog
+				closeDialog={() => (open_panel_dialog = false)}
 			/>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>

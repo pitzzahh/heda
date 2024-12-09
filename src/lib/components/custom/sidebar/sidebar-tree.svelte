@@ -4,48 +4,40 @@
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import { File, Folder } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { ConfirmationDialog } from '@/components/custom';
 	import type { Node } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
-	import type { ProjectDocType } from '@/db/schema';
-	import type { Phase } from '@/types/phase';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
+	import type { HighestUnitSchema } from '@/schema';
 
 	let {
 		node,
-		isRootNode,
 		highest_unit,
-		generic_phase_panel_form,
-		project_id
+		generic_phase_panel_form
 	}: {
-		node: Node | string;
-		isRootNode?: boolean;
-		highest_unit: ProjectDocType['highest_unit_form'];
-		project_id?: string;
+		node: Node;
+		highest_unit: HighestUnitSchema;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
 
-	function isNode(node: Node | string): node is Node {
-		return (node as Node).id !== undefined;
-	}
-
 	function toggle() {
 		collapsible_state = !collapsible_state;
 	}
 </script>
 
-{#await getChildNodesByParentId(project_id || (isNode(node) && node.id) || '')}
+{#await getChildNodesByParentId(node.id)}
 	<p></p>
 {:then children}
-	{#if !isRootNode && isNode(node) && node.node_type === 'load'}
+	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class=" flex w-full items-center justify-between data-[active=true]:bg-transparent"
+			class=" flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
@@ -55,15 +47,16 @@
 					</div>
 				</ContextMenu.Trigger>
 				<ContextMenu.Content>
-					<ContextMenu.Item
-						class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
-						onclick={async () => {
-							await removeNode(node.id);
-							await invalidateAll();
-						}}
-					>
-						Remove Load
-					</ContextMenu.Item>
+					{#snippet children()}
+						<ConfirmationDialog
+							trigger_text="Remove load"
+							trigger_variant="destructive"
+							onConfirm={async () => {
+								await removeNode(node.id);
+								await invalidateAll();
+							}}
+						/>
+					{/snippet}
 				</ContextMenu.Content>
 			</ContextMenu.Root>
 		</Sidebar.MenuButton>
@@ -83,38 +76,32 @@
 					</Collapsible.Trigger>
 					<ContextMenu.Root>
 						<ContextMenu.Trigger class="w-full">
-							{@const node_name =
-								typeof node === 'string' ? node : (node.panel_data?.name as string)}
+							{@const node_name = (node.highest_unit_form?.distribution_unit ||
+								node.panel_data?.name) as string}
 							<AddPanelAndViewTrigger
-								id={isNode(node) ? node.id : ''}
+								id={node.id}
 								panel_name={node_name}
 								{generic_phase_panel_form}
 								{highest_unit}
-								is_parent_root_node={typeof isRootNode === 'boolean' ? isRootNode : false}
-								parent_id={isRootNode && project_id ? project_id : isNode(node) ? node.id : ''}
+								is_parent_root_node={node.node_type === 'root'}
+								parent_id={node.id}
 							>
 								<Folder class="size-4" />
-								{typeof node === 'string' ? node : node.panel_data?.name}
+								{node_name}
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
 
 						<ContextMenu.Content>
-							<ContextMenu.Item
-								class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
-								onclick={async () => {
-									if (isNode(node) && !isRootNode) {
+							{#snippet children()}
+								<ConfirmationDialog
+									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+									trigger_variant="destructive"
+									onConfirm={async () => {
 										await removeNode(node.id);
-									}
-
-									if (isRootNode && project_id) {
-										await deleteProject(project_id);
-									}
-
-									await invalidateAll();
-								}}
-							>
-								{isRootNode ? 'Remove Project' : 'Remove Panel'}
-							</ContextMenu.Item>
+										await invalidateAll();
+									}}
+								/>
+							{/snippet}
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 				</Sidebar.MenuButton>

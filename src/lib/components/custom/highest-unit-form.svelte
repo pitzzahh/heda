@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -19,6 +19,7 @@
 	import { getState } from '@/state/index.svelte';
 	import type { MiscState } from '@/state/types';
 	import { createProject } from '@/db/mutations/index';
+	import type { Project } from '@/types/project';
 
 	interface Props {
 		highest_unit_form: T;
@@ -33,9 +34,16 @@
 		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
-				await createProject(form.data);
+				const created_proj = (await createProject(form.data)) as {
+					project: Project;
+					root_node_id: string;
+				};
+				await invalidateAll();
+
 				toast.success('Form is valid');
-				goto(`/workspace/load-schedule/${form.data.distribution_unit}`);
+				goto(
+					`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
+				);
 				closeDialog();
 			} else {
 				toast.error('Form is invalid');

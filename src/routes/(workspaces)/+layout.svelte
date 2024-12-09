@@ -13,18 +13,18 @@
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
-	import type { Node, Project } from '@/types/project/index.js';
+	import type { Project } from '@/types/project/index.js';
 	import { updateProjectTitle } from '@/db/mutations/index.js';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data, children } = $props();
+
 	const { is_new_file, is_load_file, generic_phase_panel_form } = $derived(data);
-	const { project } = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
 
-	// TODO: ADD A DEFAULT VALUE OF THE PROJECT
-	let project_title = $state('Untitled');
+	let project_title = $state(data.project?.project_name || 'Untitled');
 
 	onMount(() => {
 		toast.info(`Is new file: ${is_new_file}\nIs load file: ${is_load_file}`);
@@ -38,29 +38,29 @@
 		});
 	}
 
-	$effect(() => {
-		if (is_editing && project?.id) {
-			updateProjectTitle(project.id, project_title);
-		}
-	});
+	async function saveProjectTitle() {
+		await updateProjectTitle(data.project.id, project_title);
+		await invalidateAll();
+		toggleEdit();
+	}
 
-	console.log(data.nodes);
+	console.log(data.project);
 </script>
 
 <PageProgress />
 
 <Sidebar.Provider>
 	<AppSidebar
-		tree={data.panels}
 		project={data.project as unknown as Project | undefined}
-		nodes={data.nodes as unknown as Node[]}
+		root_node={data.root_node}
 		{generic_phase_panel_form}
 	/>
 	<Sidebar.Inset>
 		<header
 			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
 		>
-			<Sidebar.Trigger class="-ml-1" />
+					<Sidebar.Trigger class="-ml-1" />
+			
 			<Separator orientation="vertical" class="mr-2 h-4" />
 			<div class="flex items-center gap-2">
 				{#if is_editing}
@@ -71,18 +71,24 @@
 					</p>
 				{/if}
 
-				<Tooltip>
-					<TooltipTrigger>
-						<Button size="icon" variant="outline" onclick={toggleEdit}>
-							{#if is_editing}
-								<Save class="h-4 w-4" />
-							{:else}
-								<PenLine class="h-4 w-4" />
-							{/if}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
-				</Tooltip>
+				{#if data.project}
+					<Tooltip>
+						<TooltipTrigger>
+							<Button
+								size="icon"
+								variant="outline"
+								onclick={!is_editing ? toggleEdit : saveProjectTitle}
+							>
+								{#if is_editing}
+									<Save class="h-4 w-4" />
+								{:else}
+									<PenLine class="h-4 w-4" />
+								{/if}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
+					</Tooltip>
+				{/if}
 			</div>
 		</header>
 
