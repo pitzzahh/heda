@@ -3,6 +3,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import { SettingsDialog } from '..';
+	import { toast } from 'svelte-sonner';
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -12,11 +13,13 @@
 	function handleSave() {
 		// Implement save functionality
 		$inspect('Saving...');
+		toast.warning('This feature is not yet implemented');
 	}
 
 	function handleNew() {
 		// Implement new document functionality
 		$inspect('Creating new...');
+		toast.warning('This feature is not yet implemented');
 	}
 
 	function setModeAndColor(mode: 'dark' | 'light') {
