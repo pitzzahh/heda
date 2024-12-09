@@ -8,6 +8,14 @@ export const ambient_temperatures = [
 	{ label: '90', value: '90' },
 	{ label: 'temparature limitation', value: 'default' }
 ] as const;
+
+export const default_ambient_temperatures = {
+	60: "60",
+	75: '75',
+	90: "90",
+	TEMPARATURE_LIMITATION: "TEMPARATURE_LIMITATION"
+} as const;
+
 // TODO: Refactor to a better implementation
 export const specials = [
 	{ label: 'None', value: 'none' },
@@ -43,6 +51,10 @@ export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_pha
 export const DEFAULT_PHASES_ENUMS = toLabelValueArray(default_phases);
 
 export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
+
+export const DEFAULT_AMBIENT_TEMPERATURE_ENUMS = toLabelValueArray(default_ambient_temperatures);
+
+export const DEFAULT_AMBIENT_TEMPERATURE_OPTIONS = getEnumValues(default_ambient_temperatures);
 
 export const FIELD_VALIDATION = {
 	TEST: {
