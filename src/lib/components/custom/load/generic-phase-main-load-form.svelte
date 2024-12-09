@@ -16,7 +16,7 @@
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import {
-		DEFAULT_AMBIENT_TEMPERATURE_OPTIONS,
+		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		default_loads_description,
 		DEFAULT_LOAD_TYPES_OPTIONS
 	} from '@/constants';
@@ -88,22 +88,6 @@
 </script>
 
 <form method="POST" use:enhance>
-	<!-- <Form.Field {form} name="distribution_unit" class="sr-only text-center">
-		<Form.Control>
-			{#snippet children({ props })}
-				<Form.Label>Distribution unit</Form.Label>
-				<Input
-					{...props}
-					type="number"
-					min={1}
-					inputmode="numeric"
-					bind:value={$formData.distribution_unit}
-					placeholder="Enter distribution_unit"
-				/>
-			{/snippet}
-		</Form.Control>
-		<Form.FieldErrors />
-	</Form.Field> -->
 	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
@@ -140,7 +124,7 @@
 						>
 							{$formData.load_ambient_temperature
 								? convertToNormalText(
-										DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
+										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
 											(f) => f === $formData.load_ambient_temperature
 										)
 									)
@@ -155,7 +139,7 @@
 						<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
 						<Command.Empty>No ambient temp found.</Command.Empty>
 						<Command.Group>
-							{#each DEFAULT_AMBIENT_TEMPERATURE_OPTIONS as ambient_temp}
+							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 								<Command.Item
 									value={ambient_temp}
 									onSelect={() => {
