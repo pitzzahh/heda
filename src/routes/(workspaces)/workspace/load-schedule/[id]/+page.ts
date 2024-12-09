@@ -1,19 +1,20 @@
 import { phase_main_load_schema } from '@/schema/load';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { getCurrentProject, getChildNodesByParentId, getNodeById } from '@/db/queries/index.js';
+import { getCurrentProject, getChildNodesByParentId, getNodeById, getRootNode } from '@/db/queries/index.js';
 import { goto } from '$app/navigation';
 import type { Node } from '@/types/project/index.js';
 
 export const entries = () => {
-	// TODO: Fetch entries from db
-	return [{ id: 'hello-world' }, { id: 'another-blog-post' }];
+	return [{ id: 'some-id' }, { id: 'other-id' }];
 };
+
 export const load = async ({ params }) => {
 	const node_id = params.id.split('_').at(-1) as string;
 	const project = await getCurrentProject();
+	const rootNode = await getRootNode()
 
-	if (!project || !node_id) {
+	if (!project || !node_id || !rootNode) {
 		goto('/workspace');
 	}
 
@@ -27,12 +28,11 @@ export const load = async ({ params }) => {
 		?.filter((node) => node.node_type === 'load')
 		.map((node) => ({ ...node.load_data, id: node.id }));
 
-	console.log(nodes);
 
 	return {
 		phase_main_load_form: await superValidate(zod(phase_main_load_schema)),
 		project,
 		nodes: loads && loads?.length > 0 ? loads : [],
-		node: existingNode as Node
+		rootNode: rootNode as Node
 	};
 };
