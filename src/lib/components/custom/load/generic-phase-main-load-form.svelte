@@ -136,7 +136,7 @@
 			<Popover.Root bind:open={open_ambient_temp}>
 				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
-						<Form.Label class="mb-0.5">Ambient Temperature</Form.Label>
+						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
 						<Popover.Trigger
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
@@ -152,7 +152,7 @@
 											(f) => f === $formData.load_ambient_temperature
 										)
 									)
-								: 'Select an ambient temperature'}
+								: 'Select a terminal temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
@@ -160,7 +160,7 @@
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
 					<Command.Root>
-						<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 						<Command.Empty>No ambient temp found.</Command.Empty>
 						<Command.Group>
 							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}

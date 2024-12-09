@@ -10,7 +10,7 @@ export const phase_main_load_schema = z.object({
 		}),
 	load_ambient_temperature: z
 		.string()
-		.refine((v) => v, { message: 'An ambient temperature is required.' }),
+		.refine((v) => v, { message: 'An terminal temperature is required.' }),
 	quantity: z.number({ message: 'Please enter a valid quantity.' }).refine((value) => value > 0, {
 		message: 'Quantity must be greater than 0.'
 	}),

@@ -8,7 +8,7 @@ export const one_phase_main_load_schema = z.object({
   main_ambient_temp: z.enum(
     DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [Temperature, ...Temperature[]],
     {
-      errorMap: () => ({ message: 'Please select a valid ambient temperature.' })
+      errorMap: () => ({ message: 'Please select a valid terminal temperature.' })
     }
   ),
   wire_length: z
@@ -28,7 +28,7 @@ export const one_phase_main_load_schema = z.object({
     }),
   load_ambient_temperature: z
     .string()
-    .refine((v) => v, { message: 'An ambient temperature is required.' }),
+    .refine((v) => v, { message: 'An terminal temperature is required.' }),
   quantity: z
     .number({ message: "Please enter a valid quantity." })
     .refine((value) => value > 0, {

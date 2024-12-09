@@ -11,7 +11,7 @@ export const generic_phase_panel_schema = z.object({
     }),
   ambient_temperature: z
     .string()
-    .refine((v) => v, { message: 'A panel ambient temperature is required.' }),
+    .refine((v) => v, { message: 'A panel terminal temperature is required.' }),
   type: z.enum(DEFAULT_THREE_PHASE_TYPES_ENUMS.map((v) => v.value) as [PhaseType, ...PhaseType[]], {
     required_error: 'You need to select a 3P type'
   }).optional().nullable(),

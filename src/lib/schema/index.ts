@@ -8,7 +8,7 @@ export const highest_unit_schema = z.object({
 	ambient_temperature: z.enum(
 		DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [Temperature, ...Temperature[]],
 		{
-			errorMap: () => ({ message: 'Please select a valid ambient temperature.' })
+			errorMap: () => ({ message: 'Please select a valid terminal temperature.' })
 		}
 	),
 	wire_length: z

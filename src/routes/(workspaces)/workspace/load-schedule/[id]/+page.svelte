@@ -94,7 +94,7 @@
 		</div>
 		<div>
 			<p class="font-semibold">
-				Ambient Temperature: <span class="font-normal"
+				Terminal Temperature: <span class="font-normal"
 					>{root_node?.highest_unit_form?.ambient_temperature}</span
 				>
 			</p>
