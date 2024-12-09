@@ -74,12 +74,7 @@
 	let { data } = $props();
 	let params = $derived($page.params);
 
-	let root_node = data.root_node;
-	const phases: Record<string, string> = {
-		ONE_PHASE: '1P',
-		THREE_PHASE_WYE: '3P-Y',
-		THREE_PHASE_DELTA: '3P-Δ'
-	};
+	const { root_node } = data;
 </script>
 
 <div class="flex w-full flex-col gap-2">
@@ -91,9 +86,7 @@
 				>
 			</p>
 			<p class="font-semibold">
-				Phase: <span class="font-normal"
-					>{phases[root_node?.highest_unit_form?.phase as string] || ''}</span
-				>
+				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
 			</p>
 			<p class="font-semibold">
 				Wire Length: <span class="font-normal">{root_node?.highest_unit_form?.wire_length}</span>
