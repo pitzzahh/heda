@@ -65,7 +65,7 @@ class SidebarState {
 		const onMouseMove = (e: any) => {
 			if (this.isResizing) {
 				const newWidth = startWidth + (e.clientX - startX);
-				// close the sidebar it hits the 180px
+				// close the sidebar if it hits the 180px
 				if (newWidth <= 180) {
 					this.setOpen(false);
 					onMouseUp()
