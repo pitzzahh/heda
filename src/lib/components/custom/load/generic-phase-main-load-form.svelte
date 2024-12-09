@@ -138,11 +138,13 @@
 							role="combobox"
 							{...props}
 						>
-							{convertToNormalText(
-								DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
-									(f) => f === $formData.load_ambient_temperature
-								)
-							) ?? 'Select an ambient temperature'}
+							{$formData.load_ambient_temperature
+								? convertToNormalText(
+										DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
+											(f) => f === $formData.load_ambient_temperature
+										)
+									)
+								: 'Select an ambient temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
@@ -353,9 +355,11 @@
 							role="combobox"
 							{...props}
 						>
-							{convertToNormalText(
-								DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
-							) ?? 'Select an special'}
+							{$formData.load_type
+								? convertToNormalText(
+										DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
+									)
+								: 'Select an special'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_type} name={props.name} />
@@ -374,7 +378,7 @@
 										closeAndFocusTrigger(load_type_trigger_id);
 									}}
 								>
-									{load_type}
+									{convertToNormalText(load_type)}
 									<Check
 										class={cn(
 											'ml-auto size-4',
