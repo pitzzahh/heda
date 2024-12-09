@@ -62,17 +62,15 @@
 			</ContextMenu.Root>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem
-			class={cn({
-				'-translate-x-2': node.node_type !== 'root'
-			})}
-		>
+		<Sidebar.MenuItem>
 			<Collapsible.Root
 				open
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
-					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
+					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
+						'-translate-x-2': node.node_type === 'panel'
+					})}
 				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
@@ -91,7 +89,10 @@
 								is_parent_root_node={node.node_type === 'root'}
 								parent_id={node.id}
 							>
-								<Folder class="size-4" />
+								<!-- TODO: Palitan or retain this -->
+								{#if node.node_type === 'root'}
+									<Folder class="size-4" />
+								{/if}
 								{node_name}
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
