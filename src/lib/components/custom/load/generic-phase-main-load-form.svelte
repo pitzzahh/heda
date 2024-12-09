@@ -38,18 +38,22 @@
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
-		onUpdate: async ({ form }) => {
+		onUpdate: async ({ form, cancel }) => {
 			if (!form.valid) {
-				return toast.error('Form is invalid');
+				toast.error('Form is invalid');
+				return;
 			}
+
 			if (panel_id) {
 				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
-					return toast.warning('Circuit number already exists');
+					cancel();
+					toast.warning('Circuit number already exists');
+					return;
 				}
 				await addNode({ load_data: form.data, parent_id: panel_id });
 				await invalidateAll();
+				closeDialog();
 			}
-			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
@@ -214,7 +218,7 @@
 						: undefined}
 			</Button>
 		{/if}
-		<Form.Button class="w-full">Save</Form.Button>
+		<Form.Button class="w-full" type="submit">Save</Form.Button>
 	</div>
 </form>
 

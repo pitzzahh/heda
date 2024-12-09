@@ -38,19 +38,23 @@
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
 		validators: zodClient(generic_phase_panel_schema),
-		onUpdate: async ({ form }) => {
+		onUpdate: async ({ form, cancel }) => {
 			// toast the values
 			if (!form.valid) {
-				return toast.error('Form is invalid');
+				toast.error('Form is invalid');
+				return;
 			}
+
 			if (parent_id) {
 				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
-					return toast.warning('Circuit number already exists');
+					cancel();
+					toast.warning('Circuit number already exists');
+					return;
 				}
 				await addNode({ parent_id, panel_data: form.data });
 				await invalidateAll();
+				closeDialog();
 			}
-			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
@@ -181,7 +185,7 @@
 			</div>
 		{/if}
 	</div>
-	<Form.Button class="w-full">Save</Form.Button>
+	<Form.Button class="w-full" type="submit">Save</Form.Button>
 </form>
 
 {#snippet PanelType()}
