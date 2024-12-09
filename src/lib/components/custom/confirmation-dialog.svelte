@@ -21,7 +21,7 @@
 </script>
 
 <AlertDialog.Root {...rest}>
-	<AlertDialog.Trigger class={buttonVariants({ variant: trigger_variant })}>
+	<AlertDialog.Trigger class={buttonVariants({ variant: trigger_variant, className: 'w-full' })}>
 		{trigger_text}
 	</AlertDialog.Trigger>
 	<AlertDialog.Content>
