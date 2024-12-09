@@ -40,6 +40,24 @@ export async function getRootNode() {
 	}
 }
 
+export async function checkNodeExists(circuit_number: number, parent_id: string) {
+	const db = await databaseInstance();
+	try {
+		const node = await db.nodes
+			.findOne({
+				selector: {
+					parent_id,
+					circuit_number
+				}
+			})
+			.exec();
+		return node ? true : false;
+	} catch (error) {
+		console.log(error);
+		return false;
+	}
+}
+
 export async function getNodeById(id: string) {
 	const db = await databaseInstance();
 
