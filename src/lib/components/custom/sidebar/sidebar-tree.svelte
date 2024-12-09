@@ -27,10 +27,6 @@
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
 
-	function isNode(node: Node | string): node is Node {
-		return (node as Node).id !== undefined;
-	}
-
 	function toggle() {
 		collapsible_state = !collapsible_state;
 	}
@@ -41,7 +37,7 @@
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class=" flex w-full items-center justify-between data-[active=true]:bg-transparent"
+			class=" flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
