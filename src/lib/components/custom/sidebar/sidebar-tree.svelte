@@ -4,6 +4,7 @@
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import { File, Folder } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { ConfirmationDialog } from '@/components/custom';
 	import type { Node } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
@@ -94,20 +95,16 @@
 						</ContextMenu.Trigger>
 
 						<ContextMenu.Content>
-							<ContextMenu.Item
-								class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
-								onclick={async () => {
-									await removeNode(node.id);
-
-									// if (isRootNode && project_id) {
-									// 	await deleteProject(project_id);
-									// }
-
-									await invalidateAll();
-								}}
-							>
-								{node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
-							</ContextMenu.Item>
+							{#snippet children()}
+								<ConfirmationDialog
+									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+									trigger_variant="destructive"
+									onConfirm={async () => {
+										await removeNode(node.id);
+										await invalidateAll();
+									}}
+								/>
+							{/snippet}
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 				</Sidebar.MenuButton>
