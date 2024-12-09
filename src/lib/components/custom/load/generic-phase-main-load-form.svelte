@@ -17,7 +17,7 @@
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
-		default_loads_description,
+		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
@@ -40,6 +40,9 @@
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
+		onChange(event) {
+			toast.info('Form has changed');
+		},
 		onUpdate: async ({ form, cancel }) => {
 			if (!form.valid) {
 				toast.error('Form is invalid');
@@ -259,8 +262,8 @@
 								role="combobox"
 								{...props}
 							>
-								{default_loads_description.find((s) => s.value === $formData.load_description)
-									?.label ?? 'Select a load description'}
+								{DEFAULT_LOADS.find((s) => s.description === $formData.load_description)
+									?.description ?? 'Select a load description'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.load_description} name={props.name} />
@@ -271,19 +274,20 @@
 							<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
 							<Command.Empty>No load description found.</Command.Empty>
 							<Command.Group>
-								{#each default_loads_description as default_load}
+								{#each DEFAULT_LOADS as default_load}
 									<Command.Item
-										value={default_load.value}
+										value={default_load.description}
 										onSelect={() => {
-											$formData.load_description = default_load.value;
+											$formData.load_description = default_load.description;
 											closeAndFocusTrigger(load_description_trigger_id);
 										}}
 									>
-										{default_load.label}
+										{default_load.description}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												default_load.value !== $formData.load_description && 'text-transparent'
+												default_load.description !== $formData.load_description &&
+													'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -303,7 +307,9 @@
 						{...props}
 						type="number"
 						inputmode="numeric"
+						readonly
 						min={1}
+						class="cursor-not-allowed text-muted-foreground"
 						bind:value={$formData.varies}
 						placeholder="Enter varies"
 					/>
@@ -315,27 +321,25 @@
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
-					<Checkbox
-						disabled={load_type === 'DEFAULT'}
-						{...props}
-						bind:checked={$formData.continuous}
-						class="mx-auto mt-0"
-					/>
+					<Checkbox disabled {...props} bind:checked={$formData.continuous} class="mx-auto mt-0" />
 					<input name={props.name} value={$formData.continuous} hidden class="sr-only" />
 				{/snippet}
 			</Form.Control>
 		</Form.Field>
-		<Form.Field {form} name="load_type" class={cn('mt-2 grid text-center')}>
+		<Form.Field {form} name="load_type" class={cn('mt-2 grid cursor-not-allowed text-center')}>
 			<Popover.Root bind:open={open_load_type}>
 				<Form.Control id={load_type_trigger_id}>
 					{#snippet children({ props })}
 						<Form.Label>Load type</Form.Label>
 						<Popover.Trigger
 							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
+								buttonVariants({
+									variant: 'outline',
+									className: 'cursor-not-allowed justify-between'
+								}),
 								!$formData.load_type && 'text-muted-foreground'
 							)}
+							disabled
 							role="combobox"
 							{...props}
 						>
