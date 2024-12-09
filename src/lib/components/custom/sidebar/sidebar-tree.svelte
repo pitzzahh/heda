@@ -6,7 +6,7 @@
 	import { File, Folder } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { ConfirmationDialog } from '@/components/custom';
-	import type { Node } from '@/types/project';
+	import type { Node, Project } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
@@ -18,10 +18,12 @@
 	let {
 		node,
 		highest_unit,
-		generic_phase_panel_form
+		generic_phase_panel_form,
+		project
 	}: {
 		node: Node;
 		highest_unit: HighestUnitSchema;
+		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
@@ -100,10 +102,13 @@
 						<ContextMenu.Content>
 							{#snippet children()}
 								<ConfirmationDialog
-									trigger_text={node.node_type === 'root' ? 'Remove Distribution Unit' : 'Remove Panel'}
+									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
 									onConfirm={async () => {
-										await removeNode(node.id);
+										if (node.node_type === 'root' && project) {
+											await deleteProject(project.id);
+										} else await removeNode(node.id);
+
 										await invalidateAll();
 									}}
 								/>
