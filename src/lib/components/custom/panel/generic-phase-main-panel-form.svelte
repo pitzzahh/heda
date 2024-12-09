@@ -24,7 +24,7 @@
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -49,18 +49,18 @@
 		validators: zodClient(generic_phase_panel_schema),
 		onUpdate: async ({ form }) => {
 			// toast the values
-			if (form.valid) {
-				if (parent_id) {
-					if (await checkNodeExists(form.data.circuit_number, parent_id)) {
-						return toast.warning('Circuit number already exists');
-					}
-					addNode({ parent_id, panel_data: form.data });
-					await invalidateAll();
-				}
-				open_panel_dialog = false;
-			} else {
-				toast.error('Form is invalid');
+			if (!form.valid) {
+				return toast.error('Form is invalid');
 			}
+			if (parent_id) {
+				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
+					return toast.warning('Circuit number already exists');
+				}
+				addNode({ parent_id, panel_data: form.data });
+				await invalidateAll();
+			}
+			toast.info('close dialog');
+			open_panel_dialog = false;
 		}
 	});
 	const { form: formData, enhance } = form;
