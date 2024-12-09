@@ -51,15 +51,16 @@
 					</div>
 				</ContextMenu.Trigger>
 				<ContextMenu.Content>
-					<ContextMenu.Item
-						class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
-						onclick={async () => {
-							await removeNode(node.id);
-							await invalidateAll();
-						}}
-					>
-						Remove Load
-					</ContextMenu.Item>
+					{#snippet children()}
+						<ConfirmationDialog
+							trigger_text="Remove load"
+							trigger_variant="destructive"
+							onConfirm={async () => {
+								await removeNode(node.id);
+								await invalidateAll();
+							}}
+						/>
+					{/snippet}
 				</ContextMenu.Content>
 			</ContextMenu.Root>
 		</Sidebar.MenuButton>
