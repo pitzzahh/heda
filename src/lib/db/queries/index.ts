@@ -14,7 +14,7 @@ export async function getCurrentProject(project_id?: string) {
 		return null;
 	} catch (error) {
 		console.log(error);
-		return error;
+		throw error;
 	}
 }
 
@@ -36,7 +36,7 @@ export async function getRootNode() {
 		return null;
 	} catch (error) {
 		console.log(error);
-		return error;
+		throw error;
 	}
 }
 
@@ -59,27 +59,33 @@ export async function getNodeById(id: string) {
 		return null;
 	} catch (error) {
 		console.log(error);
-		return error;
+		throw error;
 	}
 }
 
 export async function getChildNodesByParentId(parent_id: string) {
 	const db = await databaseInstance();
-	const query = db.nodes.find({
-		selector: {
-			parent_id
+
+	try {
+		const query = db.nodes.find({
+			selector: {
+				parent_id
+			}
+		});
+		const children = (await query.exec()).map((doc) => doc._data);
+
+		// sorts the circuit number of every load node
+		const sortedChildren = children.sort((a, b) => {
+			return (a.circuit_number || 0) - (b.circuit_number || 0);
+		});
+
+		if (sortedChildren) {
+			return sortedChildren;
 		}
-	});
-	const children = (await query.exec()).map((doc) => doc._data);
 
-	// sorts the circuit number of every load node
-	const sortedChildren = children.sort((a, b) => {
-		return (a.circuit_number || 0) - (b.circuit_number || 0);
-	});
-
-	if (sortedChildren) {
-		return sortedChildren;
+		return null;
+	} catch (error) {
+		console.log(error);
+		throw error;
 	}
-
-	return null;
 }
