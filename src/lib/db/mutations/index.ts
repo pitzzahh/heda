@@ -45,13 +45,11 @@ export async function updateProjectTitle(id: string, project_name: string) {
 		});
 
 		// Use $set to update the project_name field
-		const updatedProject = await query.update({
+		return await query.update({
 			$set: {
 				project_name
 			}
 		});
-
-		return updatedProject;
 	} catch (error) {
 		console.error('Error updating project title:', error);
 		throw error;
