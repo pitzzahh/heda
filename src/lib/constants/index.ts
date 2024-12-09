@@ -43,9 +43,9 @@ export const DEFAULT_PHASES_ENUMS = toLabelValueArray(default_phases);
 
 export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
 
-export const DEFAULT_AMBIENT_TEMPERATURE_ENUMS = toLabelValueArray(default_terminal_temperatures);
+export const DEFAULT_TERMINAL_TEMPERATURE_ENUMS = toLabelValueArray(default_terminal_temperatures);
 
-export const DEFAULT_AMBIENT_TEMPERATURE_OPTIONS = getEnumValues(default_terminal_temperatures);
+export const DEFAULT_TERMINAL_TEMPERATURE_OPTIONS = getEnumValues(default_terminal_temperatures);
 
 export const DEFAULT_LOAD_TYPES_ENUMS = toLabelValueArray(default_load_types);
 

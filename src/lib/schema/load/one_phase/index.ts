@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { DEFAULT_AMBIENT_TEMPERATURE_ENUMS, DEFAULT_PHASES_ENUMS, specials, MIN_VARIES, MAX_VARIES, MIN_WIRE_LENGTH, MAX_WIRE_LENGTH } from '@/constants';
+import { DEFAULT_TERMINAL_TEMPERATURE_ENUMS, DEFAULT_PHASES_ENUMS, specials, MIN_VARIES, MAX_VARIES, MIN_WIRE_LENGTH, MAX_WIRE_LENGTH } from '@/constants';
 import type { Temperature, Special } from '@/types/misc';
 import type { Phase } from '@/types/phase';
 
 export const one_phase_main_load_schema = z.object({
   distribution_unit: z.string().refine((v) => v, { message: 'A distribution unit is required.' }),
   main_ambient_temp: z.enum(
-    DEFAULT_AMBIENT_TEMPERATURE_ENUMS.map((f) => f.value) as [Temperature, ...Temperature[]],
+    DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [Temperature, ...Temperature[]],
     {
       errorMap: () => ({ message: 'Please select a valid ambient temperature.' })
     }

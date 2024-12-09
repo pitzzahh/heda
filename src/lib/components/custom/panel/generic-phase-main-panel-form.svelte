@@ -12,7 +12,7 @@
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import {
-		DEFAULT_AMBIENT_TEMPERATURE_OPTIONS,
+		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_PHASES_OPTIONS,
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
@@ -125,7 +125,7 @@
 							>
 								{$formData.ambient_temperature
 									? convertToNormalText(
-											DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
+											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
 												(f) => f === $formData.ambient_temperature
 											)
 										)
@@ -140,7 +140,7 @@
 							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
 							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_AMBIENT_TEMPERATURE_OPTIONS as ambient_temp}
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 									<Command.Item
 										value={ambient_temp}
 										onSelect={() => {
