@@ -25,6 +25,6 @@ export type LoadType = (typeof default_load_types)[keyof typeof default_load_typ
 export type DefaultLoad = {
   description: string;
   varies: number;
-  continous: boolean;
+  continuous: boolean;
   type: LoadType;
 }
