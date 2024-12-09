@@ -12,7 +12,7 @@
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import {
-		ambient_temperatures,
+		DEFAULT_AMBIENT_TEMPERATURE_OPTIONS,
 		DEFAULT_PHASES_OPTIONS,
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
@@ -123,8 +123,7 @@
 								role="combobox"
 								{...props}
 							>
-								{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)
-									?.label ?? 'Select an ambient temperature'}
+								{convertToNormalText(DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find((f) => f === $formData.ambient_temperature)) ?? 'Select an ambient temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.ambient_temperature} name={props.name} />
@@ -135,19 +134,19 @@
 							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
 							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each ambient_temperatures as ambient_temp}
+								{#each DEFAULT_AMBIENT_TEMPERATURE_OPTIONS as ambient_temp}
 									<Command.Item
-										value={ambient_temp.value}
+										value={ambient_temp}
 										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp.value;
+											$formData.ambient_temperature = ambient_temp;
 											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
-										{ambient_temp.label}
+										{convertToNormalText(ambient_temp)}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp.value !== $formData.ambient_temperature && 'text-transparent'
+												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -232,12 +231,20 @@
 {/snippet}
 
 {#snippet PanelPhase()}
-	<Form.Field {form} name="phase" class="mt-2.5 flex flex-col">
+	{@const is_one_phase = main_phase === 'ONE_PHASE'}
+	<Form.Field
+		{form}
+		name="phase"
+		class={cn('mt-2.5 flex flex-col', {
+			'cursor-not-allowed': is_one_phase
+		})}
+	>
 		<Popover.Root bind:open={open_panel_phase_popover}>
 			<Form.Control id="panel_phase_trigger_id">
 				{#snippet children({ props })}
 					<Form.Label>Phase</Form.Label>
 					<Popover.Trigger
+						disabled={is_one_phase}
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'justify-between',
