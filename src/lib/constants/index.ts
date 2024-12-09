@@ -1,13 +1,14 @@
 import { getEnumValues } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
+// TODO: Refactor to a better implementation
 export const ambient_temperatures = [
 	{ label: '60', value: '60' },
 	{ label: '75', value: '75' },
 	{ label: '90', value: '90' },
 	{ label: 'temparature limitation', value: 'default' }
 ] as const;
-
+// TODO: Refactor to a better implementation
 export const specials = [
 	{ label: 'None', value: 'none' },
 	{ label: 'Motor', value: 'motor' },
@@ -15,7 +16,7 @@ export const specials = [
 	{ label: 'UPS', value: 'ups' },
 	{ label: 'Other', value: 'other' }
 ] as const;
-
+// TODO: Refactor to a better implementation
 export const default_loads_description = [
 	{ label: 'Lighting', value: 'Lighting' },
 	{ label: 'Receptacles', value: 'Receptacles' },
