@@ -8,7 +8,7 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { useId } from 'bits-ui';
 	import { cn } from '@/utils';
 	import { buttonVariants } from '@/components/ui/button';
@@ -62,6 +62,10 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		$formData.distribution_unit = untrack(() => 'Transformer');
+	});
 </script>
 
 <form method="POST" use:enhance>
@@ -74,7 +78,9 @@
 						<Input
 							{...props}
 							bind:value={$formData.distribution_unit}
+							defaultvalue="Transformer"
 							placeholder="Enter the distribution unit name"
+							readonly
 						/>
 					{/snippet}
 				</Form.Control>
@@ -160,13 +166,24 @@
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
-								})}
+								class={cn(
+									buttonVariants({
+										variant: 'outline',
+										className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
+									}),
+									{
+										'cursor-not-allowed': phase_option !== '1P'
+									}
+								)}
 							>
-								<RadioGroup.Item value={phase_option} {...props} class="sr-only" />
-								{convertToNormalText(phase_option)}
+								<!-- Currently disable other phases except 1P -->
+								<RadioGroup.Item
+									value={phase_option}
+									disabled={phase_option !== '1P'}
+									{...props}
+									class="sr-only"
+								/>
+								{phase_option}
 							</Form.Label>
 						{/snippet}
 					</Form.Control>
