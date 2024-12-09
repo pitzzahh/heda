@@ -21,3 +21,10 @@ export type LoadLatest = {
 };
 
 export type LoadType = (typeof default_load_types)[keyof typeof default_load_types];
+
+export type DefaultLoad = {
+  description: string;
+  varies: number;
+  continous: boolean;
+  type: LoadType;
+}
