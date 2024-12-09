@@ -2,6 +2,7 @@
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
+	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -42,6 +43,26 @@
 		validators: zodClient(phase_main_load_schema),
 		onChange(event) {
 			toast.info('Form has changed');
+			console.log(event);
+			if (load_type === 'DEFAULT') {
+				const { get, paths } = event;
+				if (paths.includes('load_description') && paths.length === 1) {
+					const selected_load_description = get('load_description');
+					const selected_load = DEFAULT_LOADS.find(
+						(f) => f.description === selected_load_description
+					);
+					if (!selected_load_description || !selected_load) {
+						// TODO: Log system error
+						return toast.warning('Failed to identify the load description data', {
+							description:
+								'This is a system error and should not be here, the error has been logged.'
+						});
+					}
+					$formData.varies = selected_load.varies;
+					$formData.continuous = selected_load.continuous;
+					$formData.load_type = selected_load.type;
+				}
+			}
 		},
 		onUpdate: async ({ form, cancel }) => {
 			if (!form.valid) {
@@ -274,24 +295,26 @@
 							<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
 							<Command.Empty>No load description found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_LOADS as default_load}
-									<Command.Item
-										value={default_load.description}
-										onSelect={() => {
-											$formData.load_description = default_load.description;
-											closeAndFocusTrigger(load_description_trigger_id);
-										}}
-									>
-										{default_load.description}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												default_load.description !== $formData.load_description &&
-													'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
+								<ScrollArea class="h-64 pr-2.5">
+									{#each DEFAULT_LOADS as default_load}
+										<Command.Item
+											value={default_load.description}
+											onSelect={() => {
+												$formData.load_description = default_load.description;
+												closeAndFocusTrigger(load_description_trigger_id);
+											}}
+										>
+											{default_load.description}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													default_load.description !== $formData.load_description &&
+														'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
 							</Command.Group>
 						</Command.Root>
 					</Popover.Content>
