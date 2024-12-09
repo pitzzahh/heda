@@ -9,14 +9,6 @@ export const default_ambient_temperatures = {
 } as const;
 
 // TODO: Refactor to a better implementation
-export const specials = [
-	{ label: 'None', value: 'none' },
-	{ label: 'Motor', value: 'motor' },
-	{ label: 'Welding', value: 'welding' },
-	{ label: 'UPS', value: 'ups' },
-	{ label: 'Other', value: 'other' }
-] as const;
-// TODO: Refactor to a better implementation
 export const default_loads_description = [
 	{ label: 'Lighting', value: 'Lighting' },
 	{ label: 'Receptacles', value: 'Receptacles' },
@@ -36,6 +28,13 @@ export const default_phases = {
 	THREE_PHASE_DELTA: 'THREE_PHASE_DELTA'
 } as const;
 
+export const default_load_types = {
+	LIGHTING_LOAD: "LIGHTING_LOAD",
+	RECEPTACLE_LOAD: "RECEPTACLE_LOAD",
+	HVAC_LOAD: "HVAC_LOAD",
+	OTHER_LOAD: "OTHER_LOAD"
+} as const;
+
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
 
 export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
@@ -47,6 +46,10 @@ export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
 export const DEFAULT_AMBIENT_TEMPERATURE_ENUMS = toLabelValueArray(default_ambient_temperatures);
 
 export const DEFAULT_AMBIENT_TEMPERATURE_OPTIONS = getEnumValues(default_ambient_temperatures);
+
+export const DEFAULT_LOAD_TYPES_ENUMS = toLabelValueArray(default_load_types);
+
+export const DEFAULT_LOAD_TYPES_OPTIONS = getEnumValues(default_load_types);
 
 export const FIELD_VALIDATION = {
 	TEST: {
