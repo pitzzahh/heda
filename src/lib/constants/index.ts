@@ -1,11 +1,11 @@
 import { getEnumValues } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
-export const default_ambient_temperatures = {
+export const default_terminal_temperatures = {
 	60: "60",
 	75: '75',
 	90: "90",
-	TEMPARATURE_LIMITATION: "TEMPARATURE_LIMITATION"
+	STANDARD_TEMPERATURE: "STANDARD_TEMPERATURE"
 } as const;
 
 // TODO: Refactor to a better implementation
@@ -43,9 +43,9 @@ export const DEFAULT_PHASES_ENUMS = toLabelValueArray(default_phases);
 
 export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
 
-export const DEFAULT_AMBIENT_TEMPERATURE_ENUMS = toLabelValueArray(default_ambient_temperatures);
+export const DEFAULT_AMBIENT_TEMPERATURE_ENUMS = toLabelValueArray(default_terminal_temperatures);
 
-export const DEFAULT_AMBIENT_TEMPERATURE_OPTIONS = getEnumValues(default_ambient_temperatures);
+export const DEFAULT_AMBIENT_TEMPERATURE_OPTIONS = getEnumValues(default_terminal_temperatures);
 
 export const DEFAULT_LOAD_TYPES_ENUMS = toLabelValueArray(default_load_types);
 
