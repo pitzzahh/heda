@@ -123,11 +123,13 @@
 								role="combobox"
 								{...props}
 							>
-								{convertToNormalText(
-									DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
-										(f) => f === $formData.ambient_temperature
-									)
-								) ?? 'Select an ambient temperature'}
+								{$formData.ambient_temperature
+									? convertToNormalText(
+											DEFAULT_AMBIENT_TEMPERATURE_OPTIONS.find(
+												(f) => f === $formData.ambient_temperature
+											)
+										)
+									: 'Select an ambient temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.ambient_temperature} name={props.name} />
@@ -195,9 +197,11 @@
 						role="combobox"
 						{...props}
 					>
-						{convertToNormalText(
-							DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
-						) ?? 'Select a panel phase type'}
+						{$formData.type
+							? convertToNormalText(
+									DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
+								)
+							: 'Select a panel phase type'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.type} name={props.name} />
@@ -257,7 +261,9 @@
 						role="combobox"
 						{...props}
 					>
-						{DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase) ?? 'Select a phase'}
+						{$formData.phase
+							? DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)
+							: 'Select a phase'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.phase} name={props.name} />
