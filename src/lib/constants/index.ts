@@ -14,79 +14,79 @@ export const DEFAULT_LOADS = [
 	{
 		description: 'Lighting Outlet (50W)',
 		varies: 50,
-		continous: true,
+		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: 'Lighting Outlet (100W)',
 		varies: 100,
-		continous: true,
+		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: "Small Appliance Load",
 		varies: 1500,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Laundry Circuit Load",
 		varies: 1500,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Bathroom Branch Circuit",
 		varies: 1500,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Garage Branch Circuit",
 		varies: 1500,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet (Simplex)",
 		varies: 180,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet (Duplex)",
 		varies: 180,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet (Triplex)",
 		varies: 180,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet - 4",
 		varies: 360,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet - 5",
 		varies: 450,
-		continous: true,
+		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Dwelling Unit",
 		varies: 24,
-		continous: true,
+		continuous: true,
 		type: 'General Lighting'
 	},
 	{
 		description: "Office Buildings",
 		varies: 28,
-		continous: true,
+		continuous: true,
 		type: 'General Lighting'
 	}
 ] as Readonly<DefaultLoad[]>;
