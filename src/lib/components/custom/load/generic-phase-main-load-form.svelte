@@ -18,9 +18,6 @@
 	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
 	import type { LoadType } from '@/types/load';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
 	import { page } from '$app/stores';
 	import { addNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
@@ -57,7 +54,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
 	let open_ambient_temp = $state(false);
 	let open_special = $state(false);
@@ -78,18 +74,6 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
-
-	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'One phase main load form'
-		};
-	});
-
-	// onMount(() => {
-	// 	$formData.distribution_unit = 'SAMPLE DU';
-	// 	$formData.wire_length = 50;
-	// });
 </script>
 
 <form method="POST" use:enhance>

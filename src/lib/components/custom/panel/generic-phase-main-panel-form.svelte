@@ -17,9 +17,6 @@
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
@@ -58,7 +55,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
 	let open_panel_phase_popover = $state(false);
 	let open_ambient_temp = $state(false);
@@ -79,13 +75,6 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
-
-	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'One phase main panel form'
-		};
-	});
 </script>
 
 <form method="POST" use:enhance>
