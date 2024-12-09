@@ -26,10 +26,6 @@
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
 
-	function isNode(node: Node | string): node is Node {
-		return (node as Node).id !== undefined;
-	}
-
 	function toggle() {
 		collapsible_state = !collapsible_state;
 	}
@@ -40,7 +36,7 @@
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class=" flex w-full items-center justify-between data-[active=true]:bg-transparent"
+			class=" flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
@@ -98,11 +94,6 @@
 								class="text-red-600 hover:!bg-red-600/20 hover:!text-red-600"
 								onclick={async () => {
 									await removeNode(node.id);
-
-									// if (isRootNode && project_id) {
-									// 	await deleteProject(project_id);
-									// }
-
 									await invalidateAll();
 								}}
 							>
