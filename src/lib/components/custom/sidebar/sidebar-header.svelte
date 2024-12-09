@@ -28,21 +28,25 @@
 <div class="w-full p-2">
 	<div class="flex w-full items-center gap-2">
 		<Tooltip.Provider>
-			<Tooltip.Trigger>
-				<Button variant="default" size="sm" onclick={handleSave}>
-					<Save class="mr-2 h-4 w-4" />
-					Save
-				</Button>
-			</Tooltip.Trigger>
-			<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button variant="default" size="sm" onclick={handleSave}>
+						<Save class="mr-2 h-4 w-4" />
+						Save
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+			</Tooltip.Root>
 		</Tooltip.Provider>
 		<Tooltip.Provider>
-			<Tooltip.Trigger>
-				<Button variant="outline" size="sm" onclick={handleNew}>
-					<FilePlus class="h-4 w-4" />
-				</Button>
-			</Tooltip.Trigger>
-			<Tooltip.Content>New document</Tooltip.Content>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button variant="outline" size="sm" onclick={handleNew}>
+						<FilePlus class="h-4 w-4" />
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content>New document</Tooltip.Content>
+			</Tooltip.Root>
 		</Tooltip.Provider>
 
 		<SettingsDialog />
