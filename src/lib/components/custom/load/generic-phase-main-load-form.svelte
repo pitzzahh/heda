@@ -123,7 +123,7 @@
 				circuit_number,
 				load_data: {
 					load_description,
-					load_ambient_temperature,
+					terminal_temperature,
 					load_type,
 					quantity,
 					varies,
@@ -133,7 +133,7 @@
 
 			$formData.circuit_number = circuit_number as number;
 			$formData.load_description = load_description;
-			$formData.load_ambient_temperature = load_ambient_temperature;
+			$formData.terminal_temperature = terminal_temperature;
 			$formData.load_type = load_type as LoadType;
 			$formData.quantity = quantity;
 			$formData.varies = varies;
@@ -185,7 +185,7 @@
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="load_ambient_temperature" class="mt-2 flex flex-col">
+		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
 			<Popover.Root bind:open={open_ambient_temp}>
 				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
@@ -194,21 +194,21 @@
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
 								'justify-between',
-								!$formData.load_ambient_temperature && 'text-muted-foreground'
+								!$formData.terminal_temperature && 'text-muted-foreground'
 							)}
 							role="combobox"
 							{...props}
 						>
-							{$formData.load_ambient_temperature
+							{$formData.terminal_temperature
 								? convertToNormalText(
 										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-											(f) => f === $formData.load_ambient_temperature
+											(f) => f === $formData.terminal_temperature
 										)
 									)
 								: 'Select a terminal temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
-						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
+						<input hidden value={$formData.terminal_temperature} name={props.name} />
 					{/snippet}
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
@@ -220,7 +220,7 @@
 								<Command.Item
 									value={ambient_temp}
 									onSelect={() => {
-										$formData.load_ambient_temperature = ambient_temp;
+										$formData.terminal_temperature = ambient_temp;
 										closeAndFocusTrigger(ambient_temp_trigger_id);
 									}}
 								>
@@ -228,7 +228,7 @@
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp !== $formData.load_ambient_temperature && 'text-transparent'
+											ambient_temp !== $formData.terminal_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>

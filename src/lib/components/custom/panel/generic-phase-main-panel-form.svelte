@@ -84,13 +84,12 @@
 		if (panel_to_edit && panel_to_edit.panel_data) {
 			const {
 				circuit_number,
-				panel_data: { ambient_temperature, type, phase, name }
+				panel_data: { terminal_temperature, phase, name }
 			} = panel_to_edit;
 
 			$formData.circuit_number = circuit_number as number;
-			$formData.type = type as PhaseType;
 			$formData.name = name;
-			$formData.ambient_temperature = ambient_temperature;
+			$formData.terminal_temperature = terminal_temperature;
 			$formData.phase = phase as Phase;
 		}
 	});
