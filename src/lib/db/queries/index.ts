@@ -85,7 +85,7 @@ export async function getNodeById(id: string) {
 			.exec();
 
 		if (node) {
-			return node;
+			return node._data;
 		}
 
 		return null;
