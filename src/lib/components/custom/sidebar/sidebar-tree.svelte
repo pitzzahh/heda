@@ -3,7 +3,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { cn } from '@/utils';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
-	import { File, Folder } from 'lucide-svelte';
+	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { Node, Project } from '@/types/project';
@@ -30,6 +30,8 @@
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
 
+	let open_context_menu = $state(false);
+
 	function toggle() {
 		collapsible_state = !collapsible_state;
 	}
@@ -45,7 +47,7 @@
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
 					<div class="flex w-full items-center gap-2">
-						<File class="size-4" />
+						<PlugZap class="size-4" />
 						<span>{typeof node === 'string' ? node : node.load_data?.load_description}</span>
 					</div>
 				</ContextMenu.Trigger>
@@ -54,6 +56,7 @@
 						<ConfirmationDialog
 							trigger_text="Remove load"
 							trigger_variant="destructive"
+							bind:some_open_state={open_context_menu}
 							onConfirm={async () => {
 								await removeNode(node.id);
 								await invalidateAll();
@@ -79,7 +82,7 @@
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-					<ContextMenu.Root>
+					<ContextMenu.Root bind:open={open_context_menu}>
 						<ContextMenu.Trigger class="w-full">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
@@ -93,7 +96,9 @@
 							>
 								<!-- TODO: Palitan or retain this -->
 								{#if node.node_type === 'root'}
-									<Folder class="size-4" />
+									<DatabaseZap class="size-4" />
+								{:else if node.node_type === 'panel'}
+									<PanelsLeftBottom class="size-4" />
 								{/if}
 								{node_name}
 							</AddPanelAndViewTrigger>
@@ -104,6 +109,7 @@
 								<ConfirmationDialog
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
+									bind:some_open_state={open_context_menu}
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
