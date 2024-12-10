@@ -4,6 +4,7 @@
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/stores';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
+	import { getNodeById } from '@/db/queries/index.js';
 
 	// FOR FUTURE REFERENCE
 	// const table_data: PhaseLoadSchedule[] = [
@@ -74,8 +75,23 @@
 
 	let { data } = $props();
 	let params = $derived($page.params);
-
 	const { root_node } = data;
+	let supply_from_name = $state('');
+
+	$effect(() => {
+		const nodeId = params.id.split('_').at(-1) as string;
+
+		getNodeById(nodeId).then((current_node) => {
+			const parentId = current_node?.parent_id;
+
+			if (parentId) {
+				getNodeById(parentId).then((node) => {
+					supply_from_name =
+						node?.panel_data?.name || node?.highest_unit_form?.distribution_unit || '';
+				});
+			} else supply_from_name = '';
+		});
+	});
 </script>
 
 <div class="flex w-full flex-col gap-2">
@@ -101,6 +117,13 @@
 			</p>
 			<p class="font-semibold">
 				Panel: <span class="font-normal">{params.id.split('_').at(0)}</span>
+			</p>
+
+			<p class="font-semibold">
+				Supply From:
+				<span class="font-normal">
+					{supply_from_name}
+				</span>
 			</p>
 		</div>
 	</div>
