@@ -1,5 +1,5 @@
-import type { LoadLatest } from '../load';
-import type { PanelLatest } from '../panel';
+import type { Load } from '../load';
+import type { Panel } from '../panel';
 import type { HighestUnitSchema } from '@/schema';
 
 export type Project = {
@@ -11,8 +11,8 @@ export type Project = {
 
 export type Node = {
 	id: string;
-	load_data?: LoadLatest;
-	panel_data?: PanelLatest;
+	load_data?: Load;
+	panel_data?: Panel;
 	highest_unit_form?: HighestUnitSchema;
 	circuit_number?: number;
 	parent_id: string | null;
