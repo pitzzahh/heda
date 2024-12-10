@@ -14,6 +14,8 @@
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import type { HighestUnitSchema } from '@/schema';
+	import { page } from '$app/stores';
+	import UpdatePanelDialog from './update-panel-dialog.svelte';
 
 	let {
 		node,
@@ -29,8 +31,8 @@
 
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
-
 	let open_context_menu = $state(false);
+	let params_node_id = $derived($page.params.id.split('_').at(-1));
 
 	function toggle() {
 		collapsible_state = !collapsible_state;
@@ -42,7 +44,7 @@
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class=" flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+			class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
@@ -74,7 +76,8 @@
 			>
 				<Sidebar.MenuButton
 					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
-						'-translate-x-2': node.node_type === 'panel'
+						'-translate-x-2': node.node_type === 'panel',
+						'bg-primary/20': params_node_id === node.id
 					})}
 				>
 					<Collapsible.Trigger>
@@ -104,8 +107,17 @@
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
 
-						<ContextMenu.Content>
+						<ContextMenu.Content class="grid gap-1">
 							{#snippet children()}
+								{#if node.node_type === 'panel' && node.parent_id}
+									<UpdatePanelDialog
+										panel_to_edit={node}
+										{generic_phase_panel_form}
+										{highest_unit}
+										parent_id={node.parent_id}
+									/>
+								{/if}
+
 								<ConfirmationDialog
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
