@@ -23,19 +23,23 @@
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
-	import { addNode } from '@/db/mutations';
+	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
+	import type { Node } from '@/types/project';
+	import type { LoadType } from '@/types/load';
 
 	interface Props {
 		phase_main_load_form: T;
 		saved_path?: string;
 		closeDialog: () => void;
+		load_to_edit?: Node;
+		action: 'add' | 'edit';
 	}
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog }: Props = $props();
+	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
 	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
@@ -71,18 +75,40 @@
 			}
 
 			if (panel_id) {
-				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
+				if (
+					await checkNodeExists({
+						circuit_number: form.data.circuit_number,
+						parent_id: panel_id,
+						node_id: load_to_edit?.id
+					})
+				) {
 					cancel();
 					toast.warning('Circuit number already exists');
 					return;
 				}
-				await addNode({
-					load_data: {
+
+				if (load_type) {
+					const loadData = {
 						...form.data,
-						load_description: `${form.data.quantity} - ${form.data.load_description}`
-					},
-					parent_id: panel_id
-				});
+						load_description: `${form.data.quantity} - ${form.data.load_description}`,
+						config_preference: load_type
+					};
+
+					if (action === 'add') {
+						await addNode({
+							load_data: loadData,
+							parent_id: panel_id
+						});
+					}
+
+					if (action === 'edit' && load_to_edit) {
+						await updateNode({
+							load_data: loadData,
+							id: load_to_edit.id
+						});
+					}
+				}
+
 				await invalidateAll();
 				closeDialog();
 			}
@@ -90,13 +116,39 @@
 	});
 	const { form: formData, enhance } = form;
 
+	$effect(() => {
+		if (load_to_edit && load_to_edit.load_data) {
+			const {
+				circuit_number,
+				load_data: {
+					load_description,
+					load_ambient_temperature,
+					load_type,
+					quantity,
+					varies,
+					continuous
+				}
+			} = load_to_edit;
+
+			$formData.circuit_number = circuit_number as number;
+			$formData.load_description = load_description;
+			$formData.load_ambient_temperature = load_ambient_temperature;
+			$formData.load_type = load_type as LoadType;
+			$formData.quantity = quantity;
+			$formData.varies = varies;
+			$formData.continuous = continuous;
+		}
+	});
+
 	let open_ambient_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
 	const ambient_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
-	let load_type = $state<FormLoadTypeOption | undefined>();
+	let load_type = $state<FormLoadTypeOption | undefined>(
+		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
+	);
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
