@@ -8,18 +8,16 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { useId } from 'bits-ui';
 	import { cn } from '@/utils';
 	import { buttonVariants } from '@/components/ui/button';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
-	import { ambient_temperatures } from '@/constants';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
+	import { DEFAULT_TERMINAL_TEMPERATURE_OPTIONS, DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project } from '@/types/project';
+	import { convertToNormalText } from '@/utils/text';
 
 	interface Props {
 		highest_unit_form: T;
@@ -51,7 +49,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
 	const ambient_temp_trigger_id = useId();
 
 	let open_ambient_temp = $state(false);
@@ -67,10 +64,7 @@
 	}
 
 	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'Highest unit form'
-		};
+		$formData.distribution_unit = untrack(() => 'Transformer');
 	});
 </script>
 
@@ -84,7 +78,9 @@
 						<Input
 							{...props}
 							bind:value={$formData.distribution_unit}
+							defaultvalue="Transformer"
 							placeholder="Enter the distribution unit name"
+							readonly
 						/>
 					{/snippet}
 				</Form.Control>
@@ -94,7 +90,7 @@
 				<Popover.Root bind:open={open_ambient_temp}>
 					<Form.Control id={ambient_temp_trigger_id}>
 						{#snippet children({ props })}
-							<Form.Label>Ambient Temperature</Form.Label>
+							<Form.Label>Terminal Temperature</Form.Label>
 							<Popover.Trigger
 								class={cn(
 									buttonVariants({ variant: 'outline' }),
@@ -104,8 +100,11 @@
 								role="combobox"
 								{...props}
 							>
-								{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)
-									?.label ?? 'Select an ambient temperature'}
+								{convertToNormalText(
+									DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
+										(f) => f === $formData.ambient_temperature
+									)
+								) ?? 'Select a terminal temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.ambient_temperature} name={props.name} />
@@ -113,23 +112,22 @@
 					</Form.Control>
 					<Popover.Content class="w-auto p-0">
 						<Command.Root>
-							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each ambient_temperatures as ambient_temperature}
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 									<Command.Item
-										value={ambient_temperature.value}
+										value={ambient_temp}
 										onSelect={() => {
-											$formData.ambient_temperature = ambient_temperature.value;
+											$formData.ambient_temperature = ambient_temp;
 											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
-										{ambient_temperature.label}
+										{convertToNormalText(ambient_temp)}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temperature.value !== $formData.ambient_temperature &&
-													'text-transparent'
+												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -164,51 +162,32 @@
 		<Form.Fieldset {form} name="phase" class="col-span-2 space-y-3">
 			<Form.Legend>Select a phase</Form.Legend>
 			<RadioGroup.Root bind:value={$formData.phase} class="flex flex-col space-y-1" name="phase">
-				<div class="flex items-center space-x-3 space-y-0">
+				{#each DEFAULT_PHASES_OPTIONS as phase_option}
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
-								})}
+								class={cn(
+									buttonVariants({
+										variant: 'outline',
+										className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
+									}),
+									{
+										'cursor-not-allowed': phase_option !== '1P'
+									}
+								)}
 							>
-								<RadioGroup.Item value="one_phase" {...props} class="sr-only" />
-								1 Phase
+								<!-- Currently disable other phases except 1P -->
+								<RadioGroup.Item
+									value={phase_option}
+									disabled={phase_option !== '1P'}
+									{...props}
+									class="sr-only"
+								/>
+								{phase_option}
 							</Form.Label>
 						{/snippet}
 					</Form.Control>
-				</div>
-				<div class="flex items-center space-x-3 space-y-0">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal  [&:has([data-state=checked])]:bg-muted'
-								})}
-							>
-								<RadioGroup.Item value="three_phase_wye" {...props} class="sr-only" />
-								3 Phase Wye
-							</Form.Label>
-						{/snippet}
-					</Form.Control>
-				</div>
-				<div class="flex items-center space-x-3 space-y-0">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label
-								class={buttonVariants({
-									variant: 'outline',
-									className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
-								})}
-							>
-								<RadioGroup.Item value="three_phase_delta" {...props} class="sr-only" />
-								3 Phase Delta</Form.Label
-							>
-						{/snippet}
-					</Form.Control>
-				</div>
+				{/each}
 			</RadioGroup.Root>
 			<Form.FieldErrors />
 		</Form.Fieldset>

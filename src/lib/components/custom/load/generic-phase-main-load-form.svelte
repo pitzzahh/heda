@@ -2,6 +2,7 @@
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
+	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -15,22 +16,24 @@
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
-	import { ambient_temperatures, default_loads_description, specials } from '@/constants';
-	import type { LoadType } from '@/types/load';
+	import {
+		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
+		DEFAULT_LOADS,
+		DEFAULT_LOAD_TYPES_OPTIONS
+	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
 	import { page } from '$app/stores';
 	import { addNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
+	import { convertToNormalText } from '@/utils/text';
 
 	interface Props {
 		phase_main_load_form: T;
 		saved_path?: string;
 		closeDialog: () => void;
 	}
+	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
 	let { phase_main_load_form, closeDialog }: Props = $props();
 	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
@@ -38,73 +41,77 @@
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
-		onUpdate: async ({ form }) => {
-			if (!form.valid) {
-				return toast.error('Form is invalid');
+		onChange(event) {
+			toast.info('Form has changed');
+			console.log(event);
+			if (load_type === 'DEFAULT') {
+				const { get, paths } = event;
+				if (paths.includes('load_description') && paths.length === 1) {
+					const selected_load_description = get('load_description');
+					const selected_load = DEFAULT_LOADS.find(
+						(f) => f.description === selected_load_description
+					);
+					if (!selected_load_description || !selected_load) {
+						// TODO: Log system error
+						return toast.warning('Failed to identify the load description data', {
+							description:
+								'This is a system error and should not be here, the error has been logged.'
+						});
+					}
+					$formData.varies = selected_load.varies;
+					$formData.continuous = selected_load.continuous;
+					$formData.load_type = selected_load.type;
+				}
 			}
+		},
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) {
+				toast.error('Form is invalid');
+				return;
+			}
+
 			if (panel_id) {
 				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
-					return toast.warning('Circuit number already exists');
+					cancel();
+					toast.warning('Circuit number already exists');
+					return;
 				}
-				await addNode({ load_data: form.data, parent_id: panel_id });
+				await addNode({
+					load_data: {
+						...form.data,
+						load_description: `${form.data.quantity} - ${form.data.load_description}`
+					},
+					parent_id: panel_id
+				});
 				await invalidateAll();
+				closeDialog();
 			}
-			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
 	let open_ambient_temp = $state(false);
-	let open_special = $state(false);
+	let open_load_type = $state(false);
 	let open_load_description = $state(false);
 	const ambient_temp_trigger_id = useId();
-	const special_trigger_id = useId();
+	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
-	let load_type = $state<LoadType | undefined>();
+	let load_type = $state<FormLoadTypeOption | undefined>();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
 		open_ambient_temp = false;
-		open_special = false;
+		open_load_type = false;
 		open_load_description = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
-
-	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'One phase main load form'
-		};
-	});
-
-	// onMount(() => {
-	// 	$formData.distribution_unit = 'SAMPLE DU';
-	// 	$formData.wire_length = 50;
-	// });
 </script>
 
 <form method="POST" use:enhance>
-	<!-- <Form.Field {form} name="distribution_unit" class="sr-only text-center">
-		<Form.Control>
-			{#snippet children({ props })}
-				<Form.Label>Distribution unit</Form.Label>
-				<Input
-					{...props}
-					type="number"
-					min={1}
-					inputmode="numeric"
-					bind:value={$formData.distribution_unit}
-					placeholder="Enter distribution_unit"
-				/>
-			{/snippet}
-		</Form.Control>
-		<Form.FieldErrors />
-	</Form.Field> -->
 	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
@@ -129,7 +136,7 @@
 			<Popover.Root bind:open={open_ambient_temp}>
 				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
-						<Form.Label class="mb-0.5">Ambient Temperature</Form.Label>
+						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
 						<Popover.Trigger
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
@@ -139,8 +146,13 @@
 							role="combobox"
 							{...props}
 						>
-							{ambient_temperatures.find((f) => f.value === $formData.load_ambient_temperature)
-								?.label ?? 'Select an ambient temperature'}
+							{$formData.load_ambient_temperature
+								? convertToNormalText(
+										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
+											(f) => f === $formData.load_ambient_temperature
+										)
+									)
+								: 'Select a terminal temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
@@ -148,23 +160,22 @@
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
 					<Command.Root>
-						<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 						<Command.Empty>No ambient temp found.</Command.Empty>
 						<Command.Group>
-							{#each ambient_temperatures as ambient_temp}
+							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 								<Command.Item
-									value={ambient_temp.value}
+									value={ambient_temp}
 									onSelect={() => {
-										$formData.load_ambient_temperature = ambient_temp.value;
+										$formData.load_ambient_temperature = ambient_temp;
 										closeAndFocusTrigger(ambient_temp_trigger_id);
 									}}
 								>
-									{ambient_temp.label}
+									{convertToNormalText(ambient_temp)}
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp.value !== $formData.load_ambient_temperature &&
-												'text-transparent'
+											ambient_temp !== $formData.load_ambient_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>
@@ -214,13 +225,13 @@
 						: undefined}
 			</Button>
 		{/if}
-		<Form.Button class="w-full">Save</Form.Button>
+		<Form.Button class="w-full" type="submit">Save</Form.Button>
 	</div>
 </form>
 
 <SuperDebug data={$formData} />
 
-{#snippet SubFields(load_type: LoadType | undefined)}
+{#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
 		<Form.Field {form} name="quantity" class="text-center">
 			<Form.Control>
@@ -272,8 +283,8 @@
 								role="combobox"
 								{...props}
 							>
-								{default_loads_description.find((s) => s.value === $formData.load_description)
-									?.label ?? 'Select a load description'}
+								{DEFAULT_LOADS.find((s) => s.description === $formData.load_description)
+									?.description ?? 'Select a load description'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.load_description} name={props.name} />
@@ -284,23 +295,26 @@
 							<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
 							<Command.Empty>No load description found.</Command.Empty>
 							<Command.Group>
-								{#each default_loads_description as default_load}
-									<Command.Item
-										value={default_load.value}
-										onSelect={() => {
-											$formData.load_description = default_load.value;
-											closeAndFocusTrigger(load_description_trigger_id);
-										}}
-									>
-										{default_load.label}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												default_load.value !== $formData.load_description && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
+								<ScrollArea class="h-64 pr-2.5">
+									{#each DEFAULT_LOADS as default_load}
+										<Command.Item
+											value={default_load.description}
+											onSelect={() => {
+												$formData.load_description = default_load.description;
+												closeAndFocusTrigger(load_description_trigger_id);
+											}}
+										>
+											{default_load.description}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													default_load.description !== $formData.load_description &&
+														'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
 							</Command.Group>
 						</Command.Root>
 					</Popover.Content>
@@ -316,7 +330,9 @@
 						{...props}
 						type="number"
 						inputmode="numeric"
+						readonly={load_type === 'DEFAULT'}
 						min={1}
+						class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
 						bind:value={$formData.varies}
 						placeholder="Enter varies"
 					/>
@@ -340,71 +356,62 @@
 		</Form.Field>
 		<Form.Field
 			{form}
-			name="special"
-			class={cn('text-center', {
-				'mt-2 grid': load_type === 'CUSTOM'
-			})}
+			name="load_type"
+			class={cn('mt-2 grid text-center', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
 		>
-			{#if load_type === 'DEFAULT'}
-				<Form.Control>
+			<Popover.Root bind:open={open_load_type}>
+				<Form.Control id={load_type_trigger_id}>
 					{#snippet children({ props })}
-						<Form.Label>Special</Form.Label>
-						<Input
-							disabled={true}
+						<Form.Label>Load type</Form.Label>
+						<Popover.Trigger
+							class={cn(
+								buttonVariants({
+									variant: 'outline',
+									className: 'justify-between'
+								}),
+								!$formData.load_type && 'text-muted-foreground',
+								{ 'cursor-not-allowed': load_type === 'DEFAULT' }
+							)}
+							disabled={load_type === 'DEFAULT'}
+							role="combobox"
 							{...props}
-							bind:value={$formData.special}
-							placeholder="Enter a special"
-						/>
+						>
+							{$formData.load_type
+								? convertToNormalText(
+										DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
+									)
+								: 'Select an special'}
+							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+						</Popover.Trigger>
+						<input hidden value={$formData.load_type} name={props.name} />
 					{/snippet}
 				</Form.Control>
-			{/if}
-			{#if load_type === 'CUSTOM'}
-				<Popover.Root bind:open={open_special}>
-					<Form.Control id={special_trigger_id}>
-						{#snippet children({ props })}
-							<Form.Label>Special</Form.Label>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!$formData.special && 'text-muted-foreground'
-								)}
-								role="combobox"
-								{...props}
-							>
-								{specials.find((s) => s.value === $formData.special)?.label ?? 'Select an special'}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<input hidden value={$formData.special} name={props.name} />
-						{/snippet}
-					</Form.Control>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search a special..." class="h-9" />
-							<Command.Empty>No special found.</Command.Empty>
-							<Command.Group>
-								{#each specials as special}
-									<Command.Item
-										value={special.value}
-										onSelect={() => {
-											$formData.special = special.value;
-											closeAndFocusTrigger(special_trigger_id);
-										}}
-									>
-										{special.label}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												special.value !== $formData.special && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-			{/if}
+				<Popover.Content class="w-auto p-0">
+					<Command.Root>
+						<Command.Input autofocus placeholder="Search a load type..." class="h-9" />
+						<Command.Empty>No load type found.</Command.Empty>
+						<Command.Group>
+							{#each DEFAULT_LOAD_TYPES_OPTIONS as load_type}
+								<Command.Item
+									value={load_type}
+									onSelect={() => {
+										$formData.load_type = load_type;
+										closeAndFocusTrigger(load_type_trigger_id);
+									}}
+								>
+									{convertToNormalText(load_type)}
+									<Check
+										class={cn(
+											'ml-auto size-4',
+											load_type !== $formData.load_type && 'text-transparent'
+										)}
+									/>
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					</Command.Root>
+				</Popover.Content>
+			</Popover.Root>
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>

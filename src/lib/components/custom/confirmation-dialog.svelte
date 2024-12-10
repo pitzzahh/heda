@@ -8,6 +8,7 @@
 		onConfirm: () => void;
 		trigger_variant?: ButtonVariant;
 		trigger_text: string;
+		some_open_state?: boolean;
 	}
 
 	let {
@@ -16,12 +17,15 @@
 		onConfirm,
 		trigger_variant = 'outline',
 		trigger_text,
+		some_open_state = $bindable(),
 		...rest
 	}: Props = $props();
 </script>
 
-<AlertDialog.Root {...rest}>
-	<AlertDialog.Trigger class={buttonVariants({ variant: trigger_variant, className: 'w-full' })}>
+<AlertDialog.Root {...rest} onOpenChange={(o) => (some_open_state = o === true)}>
+	<AlertDialog.Trigger
+		class={buttonVariants({ variant: trigger_variant, className: 'w-full', size: 'sm' })}
+	>
 		{trigger_text}
 	</AlertDialog.Trigger>
 	<AlertDialog.Content>

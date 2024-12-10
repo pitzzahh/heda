@@ -1,14 +1,14 @@
 import { z } from 'zod';
-
-import { ambient_temperatures, MIN_WIRE_LENGTH } from '@/constants';
+import { MIN_WIRE_LENGTH, DEFAULT_PHASES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS } from '@/constants';
 import type { Temperature } from '@/types/misc';
+import type { Phase } from '@/types/phase';
 
 export const highest_unit_schema = z.object({
 	distribution_unit: z.string().refine((v) => v, { message: 'A distribution unit is required.' }),
 	ambient_temperature: z.enum(
-		ambient_temperatures.map((f) => f.value) as [Temperature, ...Temperature[]],
+		DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [Temperature, ...Temperature[]],
 		{
-			errorMap: () => ({ message: 'Please select a valid ambient temperature.' })
+			errorMap: () => ({ message: 'Please select a valid terminal temperature.' })
 		}
 	),
 	wire_length: z
@@ -16,7 +16,7 @@ export const highest_unit_schema = z.object({
 		.refine((value) => value > MIN_WIRE_LENGTH, {
 			message: `Wire length must be greater than ${MIN_WIRE_LENGTH}.`
 		}),
-	phase: z.enum(['one_phase', 'three_phase_wye', 'three_phase_delta'], {
+	phase: z.enum(DEFAULT_PHASES_ENUMS.map((f) => f.value) as [Phase, ...Phase[]], {
 		required_error: 'You need to select a phase'
 	})
 });

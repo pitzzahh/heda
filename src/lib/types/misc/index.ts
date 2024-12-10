@@ -1,5 +1,5 @@
-import type { ambient_temperatures, specials } from "@/constants";
+import type { default_terminal_temperatures, specials } from "@/constants";
 
-export type Temperature = (typeof ambient_temperatures)[number]['value'];
+export type Temperature = (typeof default_terminal_temperatures)[keyof typeof default_terminal_temperatures];
 
 export type Special = (typeof specials)[number]['value'];

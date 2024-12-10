@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { specials, MIN_VARIES, MAX_VARIES } from '@/constants';
-import type { Special } from '@/types/misc';
+import { DEFAULT_LOAD_TYPES_ENUMS, MIN_VARIES } from '@/constants';
+import type { LoadType } from '@/types/load';
 
 export const phase_main_load_schema = z.object({
 	circuit_number: z
@@ -10,20 +10,17 @@ export const phase_main_load_schema = z.object({
 		}),
 	load_ambient_temperature: z
 		.string()
-		.refine((v) => v, { message: 'An ambient temperature is required.' }),
+		.refine((v) => v, { message: 'An terminal temperature is required.' }),
 	quantity: z.number({ message: 'Please enter a valid quantity.' }).refine((value) => value > 0, {
 		message: 'Quantity must be greater than 0.'
 	}),
 	load_description: z.string().refine((v) => v, { message: 'A load description is required.' }),
 	varies: z
 		.number()
-		.refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` })
-		.refine((v) => v <= MAX_VARIES, {
-			message: `Varies must be less than or equal to ${MAX_VARIES}`
-		}),
+		.refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` }),
 	continuous: z.boolean(),
-	special: z.enum(specials.map((f) => f.value) as [Special, ...Special[]], {
-		errorMap: () => ({ message: 'Please select a valid special.' })
+	load_type: z.enum(DEFAULT_LOAD_TYPES_ENUMS.map((f) => f.value) as [LoadType, ...LoadType[]], {
+		errorMap: () => ({ message: 'Please select a valid load type.' })
 	})
 });
 export type PhaseMainLoadSchema = z.infer<typeof phase_main_load_schema>;

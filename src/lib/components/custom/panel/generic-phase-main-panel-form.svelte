@@ -12,14 +12,11 @@
 	import { cn } from '@/utils';
 	import { CaretSort, Check } from '@/assets/icons/radix';
 	import {
-		ambient_temperatures,
+		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_PHASES_OPTIONS,
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
 	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode } from '@/db/mutations';
@@ -38,23 +35,26 @@
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
 		validators: zodClient(generic_phase_panel_schema),
-		onUpdate: async ({ form }) => {
+		onUpdate: async ({ form, cancel }) => {
 			// toast the values
 			if (!form.valid) {
-				return toast.error('Form is invalid');
+				toast.error('Form is invalid');
+				return;
 			}
+
 			if (parent_id) {
 				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
-					return toast.warning('Circuit number already exists');
+					cancel();
+					toast.warning('Circuit number already exists');
+					return;
 				}
 				await addNode({ parent_id, panel_data: form.data });
 				await invalidateAll();
+				closeDialog();
 			}
-			closeDialog();
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
 
 	let open_panel_phase_popover = $state(false);
 	let open_ambient_temp = $state(false);
@@ -75,13 +75,6 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
-
-	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'One phase main panel form'
-		};
-	});
 </script>
 
 <form method="POST" use:enhance>
@@ -120,7 +113,7 @@
 				<Popover.Root bind:open={open_ambient_temp}>
 					<Form.Control id={ambient_temp_trigger_id}>
 						{#snippet children({ props })}
-							<Form.Label>Ambient Temperature</Form.Label>
+							<Form.Label>Terminal Temperature</Form.Label>
 							<Popover.Trigger
 								class={cn(
 									buttonVariants({ variant: 'outline' }),
@@ -130,8 +123,13 @@
 								role="combobox"
 								{...props}
 							>
-								{ambient_temperatures.find((f) => f.value === $formData.ambient_temperature)
-									?.label ?? 'Select an ambient temperature'}
+								{$formData.ambient_temperature
+									? convertToNormalText(
+											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
+												(f) => f === $formData.ambient_temperature
+											)
+										)
+									: 'Select a terminal temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.ambient_temperature} name={props.name} />
@@ -139,22 +137,22 @@
 					</Form.Control>
 					<Popover.Content class="w-auto p-0">
 						<Command.Root>
-							<Command.Input autofocus placeholder="Search an ambient temp..." class="h-9" />
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No ambient temp found.</Command.Empty>
 							<Command.Group>
-								{#each ambient_temperatures as ambient_temp}
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 									<Command.Item
-										value={ambient_temp.value}
+										value={ambient_temp}
 										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp.value;
+											$formData.ambient_temperature = ambient_temp;
 											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
-										{ambient_temp.label}
+										{convertToNormalText(ambient_temp)}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp.value !== $formData.ambient_temperature && 'text-transparent'
+												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -170,7 +168,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
-		{#if main_phase !== 'ONE_PHASE'}
+		{#if main_phase !== '1P'}
 			<div>
 				{@render PanelType()}
 				{@render PanelPhase()}
@@ -181,7 +179,7 @@
 			</div>
 		{/if}
 	</div>
-	<Form.Button class="w-full">Save</Form.Button>
+	<Form.Button class="w-full" type="submit">Save</Form.Button>
 </form>
 
 {#snippet PanelType()}
@@ -199,9 +197,11 @@
 						role="combobox"
 						{...props}
 					>
-						{convertToNormalText(
-							DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
-						) ?? 'Select a panel phase type'}
+						{$formData.type
+							? convertToNormalText(
+									DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
+								)
+							: 'Select a panel phase type'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.type} name={props.name} />
@@ -239,12 +239,20 @@
 {/snippet}
 
 {#snippet PanelPhase()}
-	<Form.Field {form} name="phase" class="mt-2.5 flex flex-col">
+	{@const is_one_phase = main_phase === '1P'}
+	<Form.Field
+		{form}
+		name="phase"
+		class={cn('mt-2.5 flex flex-col', {
+			'cursor-not-allowed': is_one_phase
+		})}
+	>
 		<Popover.Root bind:open={open_panel_phase_popover}>
 			<Form.Control id="panel_phase_trigger_id">
 				{#snippet children({ props })}
 					<Form.Label>Phase</Form.Label>
 					<Popover.Trigger
+						disabled={is_one_phase}
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'justify-between',
@@ -253,8 +261,9 @@
 						role="combobox"
 						{...props}
 					>
-						{convertToNormalText(DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)) ??
-							'Select a panel phase'}
+						{$formData.phase
+							? DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)
+							: 'Select a phase'}
 						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.phase} name={props.name} />
@@ -273,7 +282,7 @@
 									closeAndFocusTrigger(phase_trigger_id);
 								}}
 							>
-								{convertToNormalText(phase_option)}
+								{phase_option}
 								<Check
 									class={cn(
 										'ml-auto size-4',

@@ -9,9 +9,8 @@
 </script>
 
 <script lang="ts" generics="T extends SuperValidated<NewFileSchema>">
-	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
@@ -19,10 +18,7 @@
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Form from '@/components/ui/form/index.js';
-	import { MISC_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { MiscState } from '@/state/types';
-
+	
 	interface Props {
 		new_file_form: T;
 		saved_path?: string;
@@ -45,14 +41,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const miscState = getState<MiscState>(MISC_STATE_CTX);
-
-	$effect(() => {
-		miscState.form_data = {
-			data: $formData,
-			label: 'New file form'
-		};
-	});
 </script>
 
 <form method="POST" use:enhance>

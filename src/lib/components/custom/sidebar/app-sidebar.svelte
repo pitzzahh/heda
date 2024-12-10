@@ -2,8 +2,6 @@
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader, SidebarTree } from '.';
-	import type { Panel } from '@/types/panel';
-	import type { Load } from '@/types/load';
 	import { getProjectState } from '@/hooks/project.svelte';
 	import Button from '@/components/ui/button/button.svelte';
 	import { PlusIcon } from 'lucide-svelte';
@@ -32,7 +30,6 @@
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
 	$inspect(projectState.project);
-	
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
@@ -47,6 +44,7 @@
 							node={root_node}
 							highest_unit={root_node.highest_unit_form}
 							{generic_phase_panel_form}
+							{project}
 						/>
 					{:else}
 						<div class="grid h-[85vh] place-content-center">

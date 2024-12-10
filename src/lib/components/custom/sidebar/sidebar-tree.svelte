@@ -1,11 +1,12 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { cn } from '@/utils';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
-	import { File, Folder } from 'lucide-svelte';
+	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { ConfirmationDialog } from '@/components/custom';
-	import type { Node } from '@/types/project';
+	import type { Node, Project } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
@@ -17,15 +18,19 @@
 	let {
 		node,
 		highest_unit,
-		generic_phase_panel_form
+		generic_phase_panel_form,
+		project
 	}: {
 		node: Node;
 		highest_unit: HighestUnitSchema;
+		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 	} = $props();
 
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
+
+	let open_context_menu = $state(false);
 
 	function toggle() {
 		collapsible_state = !collapsible_state;
@@ -42,7 +47,7 @@
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
 					<div class="flex w-full items-center gap-2">
-						<File class="size-4" />
+						<PlugZap class="size-4" />
 						<span>{typeof node === 'string' ? node : node.load_data?.load_description}</span>
 					</div>
 				</ContextMenu.Trigger>
@@ -51,6 +56,7 @@
 						<ConfirmationDialog
 							trigger_text="Remove load"
 							trigger_variant="destructive"
+							bind:some_open_state={open_context_menu}
 							onConfirm={async () => {
 								await removeNode(node.id);
 								await invalidateAll();
@@ -67,14 +73,16 @@
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
-					class="hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20"
+					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
+						'-translate-x-2': node.node_type === 'panel'
+					})}
 				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-					<ContextMenu.Root>
+					<ContextMenu.Root bind:open={open_context_menu}>
 						<ContextMenu.Trigger class="w-full">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
@@ -86,7 +94,12 @@
 								is_parent_root_node={node.node_type === 'root'}
 								parent_id={node.id}
 							>
-								<Folder class="size-4" />
+								<!-- TODO: Palitan or retain this -->
+								{#if node.node_type === 'root'}
+									<DatabaseZap class="size-4" />
+								{:else if node.node_type === 'panel'}
+									<PanelsLeftBottom class="size-4" />
+								{/if}
 								{node_name}
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
@@ -96,8 +109,12 @@
 								<ConfirmationDialog
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
+									bind:some_open_state={open_context_menu}
 									onConfirm={async () => {
-										await removeNode(node.id);
+										if (node.node_type === 'root' && project) {
+											await deleteProject(project.id);
+										} else await removeNode(node.id);
+
 										await invalidateAll();
 									}}
 								/>

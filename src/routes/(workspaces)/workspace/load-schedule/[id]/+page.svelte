@@ -74,12 +74,7 @@
 	let { data } = $props();
 	let params = $derived($page.params);
 
-	let root_node = data.root_node;
-	const phases: Record<string, string> = {
-		one_phase: '1P',
-		three_phase_wye: '3P-Y',
-		three_phase_delta: '3P-Δ'
-	};
+	const { root_node } = data;
 </script>
 
 <div class="flex w-full flex-col gap-2">
@@ -91,9 +86,7 @@
 				>
 			</p>
 			<p class="font-semibold">
-				Phase: <span class="font-normal"
-					>{phases[root_node?.highest_unit_form?.phase as string] || ''}</span
-				>
+				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
 			</p>
 			<p class="font-semibold">
 				Wire Length: <span class="font-normal">{root_node?.highest_unit_form?.wire_length}</span>
@@ -101,7 +94,7 @@
 		</div>
 		<div>
 			<p class="font-semibold">
-				Ambient Temperature: <span class="font-normal"
+				Terminal Temperature: <span class="font-normal"
 					>{root_node?.highest_unit_form?.ambient_temperature}</span
 				>
 			</p>
@@ -114,6 +107,6 @@
 		data={data?.nodes && data.nodes.length > 0
 			? (data.nodes as unknown as PhaseLoadSchedule[])
 			: []}
-		columns={threePhaseWyeCols(data.phase_main_load_form)}
+		columns={threePhaseWyeCols(data.phase_main_load_form, root_node?.highest_unit_form)}
 	/>
 </div>
