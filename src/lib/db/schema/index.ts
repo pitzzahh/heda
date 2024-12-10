@@ -40,8 +40,9 @@ const node_literal = {
 				terminal_temperature: { type: 'string' },
 				quantity: { type: 'number' },
 				varies: { type: 'number' },
-				continuous: { type: 'number' },
-				special: { type: 'string' }
+				continuous: { type: 'boolean' },
+				load_type: { type: 'string' },
+				config_preference: { type: 'string' } // bale ang magiging value kani is CUSTOM or DEFAULT para pag nag update, automatic naka set na sa form
 			},
 			additionalProperties: false
 		},

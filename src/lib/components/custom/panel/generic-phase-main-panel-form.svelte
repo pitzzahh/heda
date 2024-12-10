@@ -17,20 +17,30 @@
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
-	import type { Phase } from '@/types/phase';
+	import type { Phase, PhaseType } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
-	import { addNode } from '@/db/mutations';
+	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
+	import type { Node } from '@/types/project';
 
 	interface Props {
 		generic_phase_panel_form: T;
 		main_phase: Phase;
 		parent_id?: string;
 		closeDialog: () => void;
+		panel_to_edit?: Node;
+		action: 'add' | 'edit';
 	}
 
-	let { generic_phase_panel_form, main_phase, parent_id, closeDialog }: Props = $props();
+	let {
+		generic_phase_panel_form,
+		main_phase,
+		parent_id,
+		closeDialog,
+		panel_to_edit,
+		action
+	}: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -43,18 +53,46 @@
 			}
 
 			if (parent_id) {
-				if (await checkNodeExists(form.data.circuit_number, parent_id)) {
+				if (
+					await checkNodeExists({
+						circuit_number: form.data.circuit_number,
+						parent_id,
+						node_id: panel_to_edit?.id
+					})
+				) {
 					cancel();
 					toast.warning('Circuit number already exists');
 					return;
 				}
-				await addNode({ parent_id, panel_data: form.data });
+
+				if (action === 'add') await addNode({ parent_id, panel_data: form.data });
+				if (action === 'edit' && panel_to_edit) {
+					await updateNode({
+						panel_data: form.data,
+						id: panel_to_edit.id
+					});
+				}
+
 				await invalidateAll();
 				closeDialog();
 			}
 		}
 	});
 	const { form: formData, enhance } = form;
+
+	$effect(() => {
+		if (panel_to_edit && panel_to_edit.panel_data) {
+			const {
+				circuit_number,
+				panel_data: { terminal_temperature, phase, name }
+			} = panel_to_edit;
+
+			$formData.circuit_number = circuit_number as number;
+			$formData.name = name;
+			$formData.terminal_temperature = terminal_temperature;
+			$formData.phase = phase as Phase;
+		}
+	});
 
 	let open_panel_phase_popover = $state(false);
 	let open_ambient_temp = $state(false);

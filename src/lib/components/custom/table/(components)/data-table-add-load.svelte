@@ -58,6 +58,7 @@
 				</div>
 			</Dialog.Header>
 			<GenericPhaseMainLoadForm
+				action={"add"}
 				closeDialog={() => (is_dialog_open = false)}
 				{phase_main_load_form}
 			/>

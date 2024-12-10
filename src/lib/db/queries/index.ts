@@ -40,7 +40,15 @@ export async function getRootNode() {
 	}
 }
 
-export async function checkNodeExists(circuit_number: number, parent_id: string) {
+export async function checkNodeExists({
+	circuit_number,
+	parent_id,
+	node_id
+}: {
+	circuit_number: number;
+	parent_id: string;
+	node_id?: string;
+}) {
 	const db = await databaseInstance();
 	try {
 		const node = await db.nodes
@@ -51,6 +59,12 @@ export async function checkNodeExists(circuit_number: number, parent_id: string)
 				}
 			})
 			.exec();
+
+		// prevent conflict check for the same node when editing
+		if (node_id && node) {
+			return node_id === node._data.id ? false : true;
+		}
+
 		return node ? true : false;
 	} catch (error) {
 		console.log(error);
@@ -71,7 +85,7 @@ export async function getNodeById(id: string) {
 			.exec();
 
 		if (node) {
-			return node;
+			return node._data;
 		}
 
 		return null;

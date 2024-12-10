@@ -23,20 +23,24 @@
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
-	import { addNode } from '@/db/mutations';
+	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
+	import type { Node } from '@/types/project';
+	import type { LoadType } from '@/types/load';
 	import { dev } from '$app/environment';
 
 	interface Props {
 		phase_main_load_form: T;
 		saved_path?: string;
 		closeDialog: () => void;
+		load_to_edit?: Node;
+		action: 'add' | 'edit';
 	}
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog }: Props = $props();
+	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
 	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
@@ -72,18 +76,40 @@
 			}
 
 			if (panel_id) {
-				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
+				if (
+					await checkNodeExists({
+						circuit_number: form.data.circuit_number,
+						parent_id: panel_id,
+						node_id: load_to_edit?.id
+					})
+				) {
 					cancel();
 					toast.warning('Circuit number already exists');
 					return;
 				}
-				await addNode({
-					load_data: {
+
+				if (load_type) {
+					const loadData = {
 						...form.data,
-						load_description: `${form.data.quantity} - ${form.data.load_description}`
-					},
-					parent_id: panel_id
-				});
+						load_description: `${form.data.quantity} - ${form.data.load_description}`,
+						config_preference: load_type
+					};
+
+					if (action === 'add') {
+						await addNode({
+							load_data: loadData,
+							parent_id: panel_id
+						});
+					}
+
+					if (action === 'edit' && load_to_edit) {
+						await updateNode({
+							load_data: loadData,
+							id: load_to_edit.id
+						});
+					}
+				}
+
 				await invalidateAll();
 				closeDialog();
 			}
@@ -91,13 +117,39 @@
 	});
 	const { form: formData, enhance } = form;
 
+	$effect(() => {
+		if (load_to_edit && load_to_edit.load_data) {
+			const {
+				circuit_number,
+				load_data: {
+					load_description,
+					terminal_temperature,
+					load_type,
+					quantity,
+					varies,
+					continuous
+				}
+			} = load_to_edit;
+
+			$formData.circuit_number = circuit_number as number;
+			$formData.load_description = load_description;
+			$formData.terminal_temperature = terminal_temperature;
+			$formData.load_type = load_type as LoadType;
+			$formData.quantity = quantity;
+			$formData.varies = varies;
+			$formData.continuous = continuous;
+		}
+	});
+
 	let open_ambient_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
 	const ambient_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
-	let load_type = $state<FormLoadTypeOption | undefined>();
+	let load_type = $state<FormLoadTypeOption | undefined>(
+		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
+	);
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
@@ -133,7 +185,7 @@
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="load_ambient_temperature" class="mt-2 flex flex-col">
+		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
 			<Popover.Root bind:open={open_ambient_temp}>
 				<Form.Control id={ambient_temp_trigger_id}>
 					{#snippet children({ props })}
@@ -142,21 +194,21 @@
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
 								'justify-between',
-								!$formData.load_ambient_temperature && 'text-muted-foreground'
+								!$formData.terminal_temperature && 'text-muted-foreground'
 							)}
 							role="combobox"
 							{...props}
 						>
-							{$formData.load_ambient_temperature
+							{$formData.terminal_temperature
 								? convertToNormalText(
 										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-											(f) => f === $formData.load_ambient_temperature
+											(f) => f === $formData.terminal_temperature
 										)
 									)
 								: 'Select a terminal temperature'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
-						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
+						<input hidden value={$formData.terminal_temperature} name={props.name} />
 					{/snippet}
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
@@ -168,7 +220,7 @@
 								<Command.Item
 									value={ambient_temp}
 									onSelect={() => {
-										$formData.load_ambient_temperature = ambient_temp;
+										$formData.terminal_temperature = ambient_temp;
 										closeAndFocusTrigger(ambient_temp_trigger_id);
 									}}
 								>
@@ -176,7 +228,7 @@
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp !== $formData.load_ambient_temperature && 'text-transparent'
+											ambient_temp !== $formData.terminal_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>
