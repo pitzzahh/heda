@@ -86,6 +86,7 @@
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
 			<GenericPhaseMainPanelForm
+				action="add"
 				{parent_id}
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
