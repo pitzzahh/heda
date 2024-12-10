@@ -28,7 +28,7 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				name: { type: 'string' },
-				ambient_temperature: { type: 'string' },
+				terminal_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false
@@ -37,7 +37,7 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				load_description: { type: 'string' },
-				ambient_temperature: { type: 'string' },
+				terminal_temperature: { type: 'string' },
 				quantity: { type: 'number' },
 				varies: { type: 'number' },
 				continuous: { type: 'number' },
@@ -50,8 +50,6 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				distribution_unit: { type: 'string' },
-				wire_length: { type: 'number' },
-				ambient_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false

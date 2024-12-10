@@ -11,6 +11,6 @@ export type Panel = {
 export type PanelLatest = {
 	name: string;
 	circuit_number: number;
-	ambient_temperature: string;
+	terminal_temperature: string;
 	phase: string;
 };

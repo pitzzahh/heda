@@ -15,7 +15,7 @@
 
 	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
 
-	const { distribution_unit, ambient_temperature, phase } = highest_unit;
+	const { distribution_unit, terminal_temperature, phase } = highest_unit;
 
 	let is_dialog_open = $state(false);
 </script>
@@ -45,7 +45,7 @@
 							</div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Terminal temperature:</h4>
-								<p>{ambient_temperature ?? 'N/A'}</p>
+								<p>{terminal_temperature ?? 'N/A'}</p>
 							</div>
 						</div>
 						<div>
