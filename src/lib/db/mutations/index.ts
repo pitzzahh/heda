@@ -61,7 +61,7 @@ export async function addNode({
 	panel_data,
 	parent_id
 }: {
-	load_data?: PhaseMainLoadSchema;
+	load_data?: PhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
@@ -76,7 +76,7 @@ export async function addNode({
 				: panel_data
 					? panel_data.circuit_number
 					: 0,
-			panel_data,
+			panel_data: panel_data as NodeDocType['panel_data'],
 			load_data: load_data as NodeDocType['load_data'],
 			parent_id,
 			child_ids: []
@@ -91,7 +91,9 @@ export async function addNode({
 
 		if (parentNodeData) {
 			await existingParent.update({
-				child_ids: [...parentNodeData._data.child_ids, createdNode._data.id]
+				$set: {
+					child_ids: [...parentNodeData._data.child_ids, createdNode._data.id]
+				}
 			});
 		}
 
@@ -107,7 +109,7 @@ export async function updateNode({
 	panel_data,
 	id
 }: {
-	load_data?: PhaseMainLoadSchema;
+	load_data?: PhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
