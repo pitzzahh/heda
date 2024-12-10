@@ -27,6 +27,7 @@
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
+	import { dev } from '$app/environment';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -229,7 +230,9 @@
 	</div>
 </form>
 
-<SuperDebug data={$formData} />
+{#if dev}
+	<SuperDebug data={$formData} />
+{/if}
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
