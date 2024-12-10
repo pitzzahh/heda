@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2024-12-10
+
+## Fix
+
+- Fixed issue where the context menu dialog would not close after completing or canceling an action
+- Remove max varies limit
+
+## Add
+
+- Distinguishable heirarchy icon/label
+- Automatically repopulate varies/continuous/load type fields when the load description is changed on DEFAULT loads
+
 ## [0.1.11] - 2024-12-9
 
 ## Add
