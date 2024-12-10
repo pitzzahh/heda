@@ -7,6 +7,6 @@ export type Panel = Required<NonNullable<NodeDocType["panel_data"]>>;
 export type PanelLatest = {
 	name: string;
 	circuit_number: number;
-	ambient_temperature: string;
+	terminal_temperature: string;
 	phase: string;
 };

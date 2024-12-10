@@ -9,7 +9,7 @@ export const generic_phase_panel_schema = z.object({
     .refine((value) => value > 0, {
       message: 'Circuit number must be greater than 0.'
     }),
-  ambient_temperature: z
+  terminal_temperature: z
     .string()
     .refine((v) => v, { message: 'A panel terminal temperature is required.' }),
   type: z.enum(DEFAULT_THREE_PHASE_TYPES_ENUMS.map((v) => v.value) as [PhaseType, ...PhaseType[]], {

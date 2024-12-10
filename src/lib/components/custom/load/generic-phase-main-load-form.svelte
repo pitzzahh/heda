@@ -29,6 +29,7 @@
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/types/project';
 	import type { LoadType } from '@/types/load';
+	import { dev } from '$app/environment';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -281,7 +282,9 @@
 	</div>
 </form>
 
-<SuperDebug data={$formData} />
+{#if dev}
+	<SuperDebug data={$formData} />
+{/if}
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">

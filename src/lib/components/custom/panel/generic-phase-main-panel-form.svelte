@@ -148,7 +148,7 @@
 				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
-			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
+			<Form.Field {form} name="terminal_temperature" class="mt-2.5 flex flex-col">
 				<Popover.Root bind:open={open_ambient_temp}>
 					<Form.Control id={ambient_temp_trigger_id}>
 						{#snippet children({ props })}
@@ -157,21 +157,21 @@
 								class={cn(
 									buttonVariants({ variant: 'outline' }),
 									'justify-between',
-									!$formData.ambient_temperature && 'text-muted-foreground'
+									!$formData.terminal_temperature && 'text-muted-foreground'
 								)}
 								role="combobox"
 								{...props}
 							>
-								{$formData.ambient_temperature
+								{$formData.terminal_temperature
 									? convertToNormalText(
 											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-												(f) => f === $formData.ambient_temperature
+												(f) => f === $formData.terminal_temperature
 											)
 										)
 									: 'Select a terminal temperature'}
 								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
-							<input hidden value={$formData.ambient_temperature} name={props.name} />
+							<input hidden value={$formData.terminal_temperature} name={props.name} />
 						{/snippet}
 					</Form.Control>
 					<Popover.Content class="w-auto p-0">
@@ -183,7 +183,7 @@
 									<Command.Item
 										value={ambient_temp}
 										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp;
+											$formData.terminal_temperature = ambient_temp;
 											closeAndFocusTrigger(ambient_temp_trigger_id);
 										}}
 									>
@@ -191,7 +191,7 @@
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
+												ambient_temp !== $formData.terminal_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
