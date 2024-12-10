@@ -29,7 +29,7 @@
 		is_parent_root_node: boolean;
 	} = $props();
 
-	const { distribution_unit, terminal_temperature, phase } = highest_unit;
+	const { distribution_unit, phase } = highest_unit;
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let clickTimeout: number | null = null; // To store the timeout for single-click
@@ -69,10 +69,10 @@
 							<h4 class="font-semibold">Name:</h4>
 							<p>{distribution_unit ?? 'N/A'}</p>
 						</div>
-						<div class="flex gap-1">
+						<!-- <div class="flex gap-1">
 							<h4 class="font-semibold">Terminal temperature:</h4>
 							<p>{terminal_temperature ?? 'N/A'}</p>
-						</div>
+						</div> -->
 					</div>
 					<div>
 						<div class="flex gap-1">

@@ -49,8 +49,13 @@
 			<ContextMenu.Root>
 				<ContextMenu.Trigger class="w-full">
 					<div class="flex w-full items-center gap-2">
-						<PlugZap class="size-4" />
-						<span>{typeof node === 'string' ? node : node.load_data?.load_description}</span>
+						<div class="w-4">
+							<PlugZap class="size-4" />
+						</div>
+
+						<span class="truncate">
+							{typeof node === 'string' ? node : node.load_data?.load_description}
+						</span>
 					</div>
 				</ContextMenu.Trigger>
 				<ContextMenu.Content>
@@ -99,11 +104,16 @@
 							>
 								<!-- TODO: Palitan or retain this -->
 								{#if node.node_type === 'root'}
-									<DatabaseZap class="size-4" />
+									<div class="w-4">
+										<DatabaseZap class="size-4" />
+									</div>
 								{:else if node.node_type === 'panel'}
-									<PanelsLeftBottom class="size-4" />
+									<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
 								{/if}
-								{node_name}
+
+								<span class="truncate">
+									{node_name}
+								</span>
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
 
