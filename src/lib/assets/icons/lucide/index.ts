@@ -8,3 +8,6 @@ export { default as ChevronRight } from 'lucide-svelte/icons/chevron-right';
 export { default as FilePlus } from 'lucide-svelte/icons/file-plus';
 export { default as Sun } from 'lucide-svelte/icons/sun';
 export { default as Moon } from 'lucide-svelte/icons/moon';
+export { default as PlugZap } from 'lucide-svelte/icons/plug-zap';
+export { default as DatabaseZap } from 'lucide-svelte/icons/database-zap';
+export { default as PanelsLeftBottom } from 'lucide-svelte/icons/panels-left-bottom';
