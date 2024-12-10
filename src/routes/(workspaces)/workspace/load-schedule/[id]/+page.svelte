@@ -3,6 +3,7 @@
 	import { threePhaseWyeCols } from '@/components/custom/table/three-phase-load-cols/three-phase-wye-cols.js';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/stores';
+	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 
 	// FOR FUTURE REFERENCE
 	// const table_data: PhaseLoadSchedule[] = [
@@ -107,6 +108,6 @@
 		data={data?.nodes && data.nodes.length > 0
 			? (data.nodes as unknown as PhaseLoadSchedule[])
 			: []}
-		columns={threePhaseWyeCols(data.phase_main_load_form, root_node?.highest_unit_form)}
+		columns={onePhaseMainOrWyeCols(data.phase_main_load_form, root_node?.highest_unit_form)}
 	/>
 </div>
