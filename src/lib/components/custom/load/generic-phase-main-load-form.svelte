@@ -140,7 +140,7 @@
 	}
 
 	$effect(() => {
-		if (!load_to_edit || !load_to_edit.load_data) {
+		if ((action === 'edit' && !load_to_edit) || load_to_edit?.load_data === undefined) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the load to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
