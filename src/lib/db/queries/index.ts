@@ -1,4 +1,7 @@
+import { computeVoltAmphere } from '@/utils/computations';
 import { databaseInstance } from '..';
+import type { LoadType } from '@/types/load';
+import type { Node } from '@/types/project';
 
 export async function getCurrentProject(project_id?: string) {
 	const db = await databaseInstance();
@@ -118,6 +121,69 @@ export async function getChildNodesByParentId(parent_id: string) {
 		return null;
 	} catch (error) {
 		console.log(error);
+		throw error;
+	}
+}
+
+export async function getComputedLoads(
+	parent_id: string
+): Promise<(Node & { va: number; current: number; voltage: number; load_description: string })[]> {
+	const db = await databaseInstance();
+
+	try {
+		const childNodes = await db.nodes.find({ selector: { parent_id } }).exec();
+
+		const loadsWithComputedFields = await Promise.all(
+			childNodes.map(async (doc) => {
+				const data = doc._data;
+				const voltage = 230; // this may change depending on phase
+
+				const va =
+					computeVoltAmphere({
+						load_type: data.load_data?.load_type as LoadType,
+						quantity: data.load_data?.quantity ?? 0,
+						varies: data.load_data?.varies ?? 0
+					}) || 0;
+
+				const current = va / voltage;
+
+				if (data.panel_data) {
+					// Recursive fetch for panel's computed loads
+					const panelLoads = await getComputedLoads(data.id);
+
+					const totalLoads = panelLoads.reduce(
+						(totals, load) => ({
+							va: totals.va + (load.va || 0),
+							current: totals.current + (load.current || 0)
+						}),
+						{ va: 0, current: 0 } // Default initial values
+					);
+
+					return {
+						...data,
+						load_description: data.panel_data.name || '',
+						voltage,
+						va: totalLoads.va,
+						current: parseFloat(totalLoads.current.toFixed(2))
+					};
+				}
+
+				return {
+					...data,
+					load_description: data.load_data?.load_description || '',
+					voltage,
+					va,
+					current: parseFloat(current.toFixed(2))
+				};
+			})
+		);
+
+		// sorted loads by circuit_number
+		return loadsWithComputedFields.sort(
+			(a, b) => (a.circuit_number || 0) - (b.circuit_number || 0)
+		) as (Node & { va: number; current: number; voltage: number; load_description: string })[];
+	} catch (error) {
+		console.error('Error in getComputedLoads:', error);
 		throw error;
 	}
 }
