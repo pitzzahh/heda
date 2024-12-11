@@ -22,7 +22,7 @@
 		panel_to_edit: Node;
 	} = $props();
 
-	const { distribution_unit, ambient_temperature, phase } = highest_unit;
+	const { phase } = highest_unit;
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 </script>
