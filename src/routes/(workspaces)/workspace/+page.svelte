@@ -1,5 +1,5 @@
 <script>
-	import { Sheet } from '@/assets/icons/lucide';
+	import { Sheet } from '@/assets/icons';
 </script>
 
 <div class="grid h-[85vh] w-full place-content-center place-items-center gap-2">

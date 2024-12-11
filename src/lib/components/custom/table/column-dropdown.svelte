@@ -2,7 +2,7 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { Button } from '@/components/ui/button';
-	import { Ellipsis } from '@/assets/icons/lucide';
+	import { Ellipsis } from '@/assets/icons';
 	import { removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';

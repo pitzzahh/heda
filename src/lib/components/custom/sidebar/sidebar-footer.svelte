@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Cog, Sun, Moon } from '@/assets/icons/lucide';
+	import { Cog, Sun, Moon } from '@/assets/icons';
 	import { resetMode, setMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';

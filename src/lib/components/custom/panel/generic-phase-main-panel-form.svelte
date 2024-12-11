@@ -10,7 +10,7 @@
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
-	import { CaretSort, Check } from '@/assets/icons/radix';
+	import { ChevronsUpDown, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_PHASES_OPTIONS,
@@ -169,7 +169,7 @@
 											)
 										)
 									: 'Select a terminal temperature'}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.terminal_temperature} name={props.name} />
 						{/snippet}
@@ -241,7 +241,7 @@
 									DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
 								)
 							: 'Select a panel phase type'}
-						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+						<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.type} name={props.name} />
 				{/snippet}
@@ -303,7 +303,7 @@
 						{$formData.phase
 							? DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)
 							: 'Select a phase'}
-						<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+						<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<input hidden value={$formData.phase} name={props.name} />
 				{/snippet}

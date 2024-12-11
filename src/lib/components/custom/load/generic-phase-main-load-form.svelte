@@ -15,7 +15,7 @@
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
-	import { CaretSort, Check } from '@/assets/icons/radix';
+	import { ChevronsUpDown, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
@@ -220,7 +220,7 @@
 										)
 									)
 								: 'Select a terminal temperature'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.terminal_temperature} name={props.name} />
 					{/snippet}
@@ -354,7 +354,7 @@
 							>
 								{DEFAULT_LOADS.find((s) => s.description === $formData.load_description)
 									?.description ?? 'Select a load description'}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.load_description} name={props.name} />
 						{/snippet}
@@ -420,7 +420,7 @@
 								{$formData.varies
 									? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.varies)
 									: `Select a ${variesLabel.toLowerCase()}`}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.varies} name={props.name} />
 						{/snippet}
@@ -513,7 +513,7 @@
 							{$formData.load_type
 								? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
 								: 'Select a load type'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_type} name={props.name} />
 					{/snippet}

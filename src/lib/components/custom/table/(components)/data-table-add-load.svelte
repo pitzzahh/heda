@@ -2,7 +2,7 @@
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
-	import { CirclePlus } from '@/assets/icons/lucide';
+	import { CirclePlus } from '@/assets/icons';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { type PhaseMainLoadSchema } from '@/schema/load';
 	import type { HighestUnitSchema } from '@/schema';

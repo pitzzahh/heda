@@ -7,7 +7,7 @@
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { HighestUnitForm, PageProgress } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
-	import { PenLine, Save } from '@/assets/icons/lucide';
+	import { PenLine, Save } from '@/assets/icons';
 	import { getState } from '@/state/index.svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
