@@ -2,7 +2,7 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { Button } from '@/components/ui/button';
-	import { Ellipsis } from '@/assets/icons';
+	import { Ellipsis, Pencil, Trash2 } from '@/assets/icons';
 	import { removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
@@ -37,7 +37,8 @@
 			<DropdownMenu.Group>
 				<DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item onclick={() => (is_dialog_open = true)}>Update</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => (is_dialog_open = true)}>
+					<Pencil /> Update</DropdownMenu.Item>
 				<DropdownMenu.Item class="mt-0.5 p-0">
 					{#snippet children()}
 						<ConfirmationDialog
