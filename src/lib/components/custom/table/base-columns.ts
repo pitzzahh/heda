@@ -88,13 +88,13 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'at',
 				cell: (info) => info.getValue(),
 				header: () => 'AT',
-				footer: (props) => '65'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'af',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
-				footer: (props) => '65'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'pole',
@@ -106,7 +106,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
 				header: () => 'kAIC',
-				footer: (props) => '44'
+				footer: (props) => ''
 			}
 		]
 	}
@@ -122,7 +122,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'egc_size',
 				cell: (info) => info.getValue(),
 				header: () => 'SIZE',
-				footer: (props) => '24 AWG'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'egc_insulation',
