@@ -132,7 +132,7 @@
 			} = load_to_edit;
 
 			$formData.circuit_number = circuit_number as number;
-			$formData.load_description = load_description;
+			$formData.load_description = load_description.split('-').at(-1)?.trim() as string;
 			$formData.terminal_temperature = terminal_temperature;
 			$formData.load_type = load_type as LoadType;
 			$formData.quantity = quantity;
