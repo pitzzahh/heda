@@ -176,7 +176,7 @@
 					<Popover.Content class="w-auto p-0">
 						<Command.Root>
 							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-							<Command.Empty>No ambient temp found.</Command.Empty>
+							<Command.Empty>No terminal temp found.</Command.Empty>
 							<Command.Group>
 								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 									<Command.Item
@@ -200,7 +200,7 @@
 					</Popover.Content>
 				</Popover.Root>
 				<Form.Description>
-					This is the ambient temp that will determine the ambient temp of the panel wire to the
+					This is the terminal temp that will determine the terminal temp of the panel wire to the
 					main.
 				</Form.Description>
 				<Form.FieldErrors />
