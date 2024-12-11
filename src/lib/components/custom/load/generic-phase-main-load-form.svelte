@@ -28,7 +28,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/types/project';
-	import type { LoadType } from '@/types/load';
+	import type { LoadType, TerminalTemperature } from '@/types/load';
 	import { dev } from '$app/environment';
 
 	interface Props {
@@ -140,23 +140,24 @@
 	}
 
 	$effect(() => {
-		if ((action === 'edit' && !load_to_edit) || load_to_edit?.load_data === undefined) {
+		if (action !== 'edit') return;
+
+		if (!load_to_edit || !load_to_edit.load_data) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the load to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
 			return;
 		}
+
 		const {
 			circuit_number,
 			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
 		} = load_to_edit;
 
-		console.log(load_to_edit);
-
 		$formData.circuit_number = circuit_number as number;
 		$formData.load_description = load_description.split(' - ')[1];
-		$formData.terminal_temperature = terminal_temperature;
+		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 		$formData.load_type = load_type as LoadType;
 		$formData.quantity = quantity;
 		$formData.varies = varies;
@@ -214,7 +215,7 @@
 				<Popover.Content class="w-auto p-0">
 					<Command.Root>
 						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-						<Command.Empty>No ambient temp found.</Command.Empty>
+						<Command.Empty>No terminal temp found.</Command.Empty>
 						<Command.Group>
 							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 								<Command.Item
@@ -238,7 +239,7 @@
 				</Popover.Content>
 			</Popover.Root>
 			<Form.Description>
-				This is the ambient temp that will determine the ambient temp of the wire to the main.
+				This is the terminal temp that will determine the terminal temp of the wire to the main.
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
