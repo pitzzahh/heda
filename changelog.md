@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] - 2024-12-11
+
+## Fix
+
+- Inconsistent icons library(sticking with lucide-svelte)
+- Transformer distribution unit not being set to default value when first load.
+
+## Add
+
+- Panel total load to panel supplier.
+- Load type varying input/options.
+- Terminal temperature default value to "Standard temperature"
+
 ## [0.1.12] - 2024-12-10
 
 ## Fix
