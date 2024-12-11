@@ -8,6 +8,7 @@ import type { PhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import ColumnDropdown from './column-dropdown.svelte';
 import type { HighestUnitSchema } from '@/schema';
+import type { Node } from '@/types/project';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
@@ -93,7 +94,9 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	}
 ];
 
-export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): ColumnDef<T>[] => [
+export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
+	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
+): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
 		columns: [
@@ -131,7 +134,10 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(): Colum
 	{
 		header: 'Actions',
 		cell: ({ row }) => {
-			return renderComponent(ColumnDropdown, { node_id: (row.original as any).id as string });
+			return renderComponent(ColumnDropdown, {
+				node: row.original as any as Node,
+				phase_main_load_form
+			});
 		}
 	}
 ];

@@ -5,12 +5,11 @@
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import { Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { toast } from 'svelte-sonner';
 	import { HighestUnitForm, PageProgress } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
-	import { PenLine, Save } from '@/assets/icons/lucide';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+	import { PenLine, Save } from '@/assets/icons';
 	import { getState } from '@/state/index.svelte';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
 	import type { Project } from '@/types/project/index.js';
@@ -26,11 +25,7 @@
 
 	let project_title = $state(data.project?.project_name || 'Untitled');
 
-	onMount(() => {
-		toast.info(`Is new file: ${is_new_file}\nIs load file: ${is_load_file}`);
-		dialogs_state.highestUnit = is_new_file;
-	});
-
+	
 	function toggleEdit() {
 		is_editing = !is_editing;
 		tick().then(() => {
@@ -44,7 +39,7 @@
 		toggleEdit();
 	}
 
-	console.log(data.project);
+	onMount(() => (dialogs_state.highestUnit = is_new_file));
 </script>
 
 <PageProgress />

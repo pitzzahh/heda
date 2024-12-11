@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, FilePlus, Moon, Sun } from '@/assets/icons/lucide';
+	import { Save, FilePlus, Moon, Sun } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import { SettingsDialog } from '..';

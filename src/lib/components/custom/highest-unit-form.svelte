@@ -1,23 +1,19 @@
 <script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Form from '@/components/ui/form/index.js';
-	import * as Popover from '@/components/ui/popover/index.js';
-	import * as Command from '@/components/ui/command/index.js';
 	import { tick, untrack } from 'svelte';
 	import { useId } from 'bits-ui';
 	import { cn } from '@/utils';
 	import { buttonVariants } from '@/components/ui/button';
-	import { CaretSort, Check } from '@/assets/icons/radix';
 	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
-	import { DEFAULT_TERMINAL_TEMPERATURE_OPTIONS, DEFAULT_PHASES_OPTIONS } from '@/constants';
+	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project } from '@/types/project';
-	import { convertToNormalText } from '@/utils/text';
 
 	interface Props {
 		highest_unit_form: T;
@@ -36,12 +32,11 @@
 					project: Project;
 					root_node_id: string;
 				};
-				await invalidateAll();
+				await invalidate('app:workspace');
 
 				toast.success('Form is valid');
-				goto(
-					`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-				);
+				const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
+				goto(redirect_url);
 				closeDialog();
 			} else {
 				toast.error('Form is invalid');
@@ -49,117 +44,26 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const ambient_temp_trigger_id = useId();
-
-	let open_ambient_temp = $state(false);
-
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
-
-	$effect(() => {
-		$formData.distribution_unit = untrack(() => 'Transformer');
-	});
 </script>
 
 <form method="POST" use:enhance>
-	<div class="grid grid-cols-2 gap-2">
-		<div class="flex flex-col gap-1">
-			<Form.Field {form} name="distribution_unit">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Distribution unit</Form.Label>
-						<Input
-							{...props}
-							bind:value={$formData.distribution_unit}
-							defaultvalue="Transformer"
-							placeholder="Enter the distribution unit name"
-							readonly
-						/>
-					{/snippet}
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
-			<Form.Field {form} name="ambient_temperature" class="col-span-2 flex flex-col">
-				<Popover.Root bind:open={open_ambient_temp}>
-					<Form.Control id={ambient_temp_trigger_id}>
-						{#snippet children({ props })}
-							<Form.Label>Terminal Temperature</Form.Label>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!$formData.ambient_temperature && 'text-muted-foreground'
-								)}
-								role="combobox"
-								{...props}
-							>
-								{convertToNormalText(
-									DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-										(f) => f === $formData.ambient_temperature
-									)
-								) ?? 'Select a terminal temperature'}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<input hidden value={$formData.ambient_temperature} name={props.name} />
-						{/snippet}
-					</Form.Control>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-							<Command.Empty>No ambient temp found.</Command.Empty>
-							<Command.Group>
-								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
-									<Command.Item
-										value={ambient_temp}
-										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp;
-											closeAndFocusTrigger(ambient_temp_trigger_id);
-										}}
-									>
-										{convertToNormalText(ambient_temp)}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-				<Form.Description>
-					This is the ambient temp that will determine the ambient temp of the wire to the main.
-				</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
-		</div>
-		<div class="flex flex-col gap-1">
-			<Form.Field {form} name="wire_length">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Wire length (m)</Form.Label>
-						<Input
-							{...props}
-							type="number"
-							inputmode="numeric"
-							bind:value={$formData.wire_length}
-							placeholder="Enter the wire length"
-						/>
-					{/snippet}
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
-		</div>
-		<Form.Fieldset {form} name="phase" class="col-span-2 space-y-3">
+	<div class="grid gap-2">
+		<Form.Field {form} name="distribution_unit">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Distribution unit</Form.Label>
+					<Input
+						{...props}
+						value={$formData.distribution_unit}
+						defaultvalue="Transformer"
+						placeholder="Enter the distribution unit name"
+						readonly
+					/>
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+		<Form.Fieldset {form} name="phase" class="space-y-3">
 			<Form.Legend>Select a phase</Form.Legend>
 			<RadioGroup.Root bind:value={$formData.phase} class="flex flex-col space-y-1" name="phase">
 				{#each DEFAULT_PHASES_OPTIONS as phase_option}
@@ -169,7 +73,8 @@
 								class={cn(
 									buttonVariants({
 										variant: 'outline',
-										className: 'w-full font-normal [&:has([data-state=checked])]:bg-muted'
+										className:
+											'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'

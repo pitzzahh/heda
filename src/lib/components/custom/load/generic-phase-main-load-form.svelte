@@ -15,35 +15,40 @@
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
-	import { CaretSort, Check } from '@/assets/icons/radix';
+	import { ChevronsUpDown, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
-		DEFAULT_LOAD_TYPES_OPTIONS
+		DEFAULT_LOAD_TYPES_OPTIONS,
+		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
+		load_type_to_varies_label,
+		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
-	import { addNode } from '@/db/mutations';
+	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
+	import type { Node } from '@/types/project';
+	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
+	import { dev } from '$app/environment';
 
 	interface Props {
 		phase_main_load_form: T;
 		saved_path?: string;
 		closeDialog: () => void;
+		load_to_edit?: Node;
+		action: 'add' | 'edit';
 	}
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog }: Props = $props();
-	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onChange(event) {
-			toast.info('Form has changed');
-			console.log(event);
 			if (load_type === 'DEFAULT') {
 				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
@@ -71,18 +76,45 @@
 			}
 
 			if (panel_id) {
-				if (await checkNodeExists(form.data.circuit_number, panel_id)) {
+				if (
+					await checkNodeExists({
+						circuit_number: form.data.circuit_number,
+						parent_id: panel_id,
+						node_id: load_to_edit?.id
+					})
+				) {
 					cancel();
 					toast.warning('Circuit number already exists');
 					return;
 				}
-				await addNode({
-					load_data: {
+
+				if (load_type) {
+					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
+					const loadData = {
 						...form.data,
-						load_description: `${form.data.quantity} - ${form.data.load_description}`
-					},
-					parent_id: panel_id
-				});
+						load_description,
+						config_preference: load_type
+					};
+					switch (action) {
+						case 'add':
+							await addNode({
+								load_data: loadData,
+								parent_id: panel_id
+							});
+							toast.success(`${load_description} added successfully`);
+							break;
+						case 'edit':
+							if (load_to_edit) {
+								await updateNode({
+									load_data: loadData,
+									id: load_to_edit.id
+								});
+								toast.success('Load updated successfully');
+							}
+							break;
+					}
+				}
+
 				await invalidateAll();
 				closeDialog();
 			}
@@ -90,25 +122,61 @@
 	});
 	const { form: formData, enhance } = form;
 
-	let open_ambient_temp = $state(false);
+	const panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+
+	const variesLabel: VariesLabel | 'Varies' = $derived(
+		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
+
+	let open_horsepower_rating = $state(false);
+	let open_terminal_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
-	const ambient_temp_trigger_id = useId();
+	const terminal_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
-	let load_type = $state<FormLoadTypeOption | undefined>();
+	const horsepower_rating_trigger_id = useId();
+	let load_type = $state<FormLoadTypeOption | undefined>(
+		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
+	);
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
+		open_horsepower_rating = false;
+		open_terminal_temp = false;
 		open_load_type = false;
 		open_load_description = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (action !== 'edit') return;
+
+		if (!load_to_edit || !load_to_edit.load_data) {
+			// TODO: Log system error
+			toast.warning('Failed to identify the load to edit', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+
+		const {
+			circuit_number,
+			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
+		} = load_to_edit;
+
+		$formData.circuit_number = circuit_number as number;
+		$formData.load_description = load_description.split(' - ')[1];
+		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
+		$formData.load_type = load_type as LoadType;
+		$formData.quantity = quantity;
+		$formData.varies = varies;
+		$formData.continuous = continuous;
+	});
 </script>
 
 <form method="POST" use:enhance>
@@ -132,50 +200,50 @@
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="load_ambient_temperature" class="mt-2 flex flex-col">
-			<Popover.Root bind:open={open_ambient_temp}>
-				<Form.Control id={ambient_temp_trigger_id}>
+		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
+			<Popover.Root bind:open={open_terminal_temp}>
+				<Form.Control id={terminal_temp_trigger_id}>
 					{#snippet children({ props })}
 						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
 						<Popover.Trigger
 							class={cn(
 								buttonVariants({ variant: 'outline' }),
 								'justify-between',
-								!$formData.load_ambient_temperature && 'text-muted-foreground'
+								!$formData.terminal_temperature && 'text-muted-foreground'
 							)}
 							role="combobox"
 							{...props}
 						>
-							{$formData.load_ambient_temperature
+							{$formData.terminal_temperature
 								? convertToNormalText(
 										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-											(f) => f === $formData.load_ambient_temperature
+											(f) => f === $formData.terminal_temperature
 										)
 									)
 								: 'Select a terminal temperature'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
-						<input hidden value={$formData.load_ambient_temperature} name={props.name} />
+						<input hidden value={$formData.terminal_temperature} name={props.name} />
 					{/snippet}
 				</Form.Control>
 				<Popover.Content class="w-auto p-0">
 					<Command.Root>
 						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-						<Command.Empty>No ambient temp found.</Command.Empty>
+						<Command.Empty>No terminal temp found.</Command.Empty>
 						<Command.Group>
 							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 								<Command.Item
 									value={ambient_temp}
 									onSelect={() => {
-										$formData.load_ambient_temperature = ambient_temp;
-										closeAndFocusTrigger(ambient_temp_trigger_id);
+										$formData.terminal_temperature = ambient_temp;
+										closeAndFocusTrigger(terminal_temp_trigger_id);
 									}}
 								>
 									{convertToNormalText(ambient_temp)}
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp !== $formData.load_ambient_temperature && 'text-transparent'
+											ambient_temp !== $formData.terminal_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>
@@ -185,7 +253,7 @@
 				</Popover.Content>
 			</Popover.Root>
 			<Form.Description>
-				This is the ambient temp that will determine the ambient temp of the wire to the main.
+				This is the terminal temp that will determine the terminal temp of the wire to the main.
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -229,7 +297,9 @@
 	</div>
 </form>
 
-<SuperDebug data={$formData} />
+{#if dev}
+	<SuperDebug data={$formData} />
+{/if}
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
@@ -285,7 +355,7 @@
 							>
 								{DEFAULT_LOADS.find((s) => s.description === $formData.load_description)
 									?.description ?? 'Select a load description'}
-								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.load_description} name={props.name} />
 						{/snippet}
@@ -322,25 +392,95 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		{/if}
-		<Form.Field {form} name="varies" class="text-center">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Varies</Form.Label>
-					<Input
-						{...props}
-						type="number"
-						inputmode="numeric"
-						readonly={load_type === 'DEFAULT'}
-						min={1}
-						class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
-						bind:value={$formData.varies}
-						placeholder="Enter varies"
-					/>
-				{/snippet}
-			</Form.Control>
+		<Form.Field
+			{form}
+			name="varies"
+			class={cn('mt-2 grid w-1/3 text-center', {
+				'cursor-not-allowed': load_type === 'DEFAULT',
+				'text-center': variesLabel === 'Varies'
+			})}
+		>
+			{#if variesLabel === 'Horsepower Rating'}
+				<Popover.Root bind:open={open_horsepower_rating}>
+					<Form.Control id={horsepower_rating_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>{variesLabel}</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({
+										variant: 'outline',
+										className: 'justify-between'
+									}),
+									!$formData.varies && 'text-muted-foreground',
+									{ 'cursor-not-allowed': load_type === 'DEFAULT' }
+								)}
+								disabled={load_type === 'DEFAULT'}
+								role="combobox"
+								{...props}
+							>
+								{$formData.varies
+									? DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.map((e) => Number(e)).find(
+											(s) => s === $formData.varies
+										)
+									: `Select a ${variesLabel.toLowerCase()}`}
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.varies} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input
+								autofocus
+								placeholder="Search a {variesLabel.toLowerCase()}..."
+								class="h-9"
+							/>
+							<Command.Empty>No {variesLabel.toLowerCase()} found.</Command.Empty>
+							<Command.Group>
+								<ScrollArea class="h-64 pr-2.5">
+									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating}
+										{@const number_hp_current_rating = Number(hp_current_rating)}
+										<Command.Item
+											value={hp_current_rating}
+											onSelect={() => {
+												$formData.varies = number_hp_current_rating;
+												closeAndFocusTrigger(horsepower_rating_trigger_id);
+											}}
+										>
+											{hp_current_rating}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													number_hp_current_rating !== $formData.varies && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+			{:else}
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>{variesLabel}</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							readonly={load_type === 'DEFAULT'}
+							min={1}
+							class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
+							bind:value={$formData.varies}
+							placeholder="Enter {variesLabel.toLowerCase()}"
+						/>
+					{/snippet}
+				</Form.Control>
+			{/if}
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="continuous" class="mt-1.5 grid text-center">
+		<Form.Field {form} name="continuous" class="mt-[0.470rem] flex flex-col gap-2 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
@@ -377,11 +517,9 @@
 							{...props}
 						>
 							{$formData.load_type
-								? convertToNormalText(
-										DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
-									)
-								: 'Select an special'}
-							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+								? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
+								: 'Select a load type'}
+							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_type} name={props.name} />
 					{/snippet}
@@ -399,7 +537,7 @@
 										closeAndFocusTrigger(load_type_trigger_id);
 									}}
 								>
-									{convertToNormalText(load_type)}
+									{load_type}
 									<Check
 										class={cn(
 											'ml-auto size-4',

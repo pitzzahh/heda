@@ -28,7 +28,7 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				name: { type: 'string' },
-				ambient_temperature: { type: 'string' },
+				terminal_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false
@@ -37,11 +37,12 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				load_description: { type: 'string' },
-				ambient_temperature: { type: 'string' },
+				terminal_temperature: { type: 'string' },
 				quantity: { type: 'number' },
 				varies: { type: 'number' },
-				continuous: { type: 'number' },
-				special: { type: 'string' }
+				continuous: { type: 'boolean' },
+				load_type: { type: 'string' },
+				config_preference: { type: 'string' } // bale ang magiging value kani is CUSTOM or DEFAULT para pag nag update, automatic naka set na sa form
 			},
 			additionalProperties: false
 		},
@@ -50,8 +51,6 @@ const node_literal = {
 			type: 'object',
 			properties: {
 				distribution_unit: { type: 'string' },
-				wire_length: { type: 'number' },
-				ambient_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false

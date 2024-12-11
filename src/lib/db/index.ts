@@ -1,5 +1,8 @@
-import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase} from 'rxdb';
+import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+import {
+	getRxStorageMemory
+} from 'rxdb/plugins/storage-memory';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import type { MyDatabaseCollections } from '@/types/db';
 import { project_schema, node_schema } from '@/db/schema/index.js';
@@ -22,13 +25,14 @@ async function createDatabase(
 	}
 	if (dev) {
 		addRxPlugin(RxDBDevModePlugin);
-	} 
-	
+	}
+
 	addRxPlugin(RxDBUpdatePlugin);
 
 	dbInstance = await createRxDatabase({
 		name,
-		storage: getRxStorageDexie()
+		// @ts-ignore
+		storage: dev ? getRxStorageMemory() : getRxStorageDexie()
 	});
 	return dbInstance;
 }

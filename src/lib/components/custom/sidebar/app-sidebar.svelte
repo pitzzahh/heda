@@ -4,7 +4,7 @@
 	import { SidebarHeader, SidebarTree } from '.';
 	import { getProjectState } from '@/hooks/project.svelte';
 	import Button from '@/components/ui/button/button.svelte';
-	import { PlusIcon } from 'lucide-svelte';
+	import { PlusIcon } from '@/assets/icons';
 	import type { DialogState } from '@/state/types';
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants';
