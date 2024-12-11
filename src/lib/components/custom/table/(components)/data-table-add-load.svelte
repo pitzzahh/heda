@@ -15,7 +15,7 @@
 
 	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
 
-	const { distribution_unit, terminal_temperature, phase } = highest_unit;
+	const { distribution_unit, phase } = highest_unit;
 
 	let is_dialog_open = $state(false);
 </script>
@@ -43,10 +43,6 @@
 								<h4 class="font-semibold">Name:</h4>
 								<p>{distribution_unit ?? 'N/A'}</p>
 							</div>
-							<div class="flex gap-1">
-								<h4 class="font-semibold">Terminal temperature:</h4>
-								<p>{terminal_temperature ?? 'N/A'}</p>
-							</div>
 						</div>
 						<div>
 							<div class="flex gap-1">
@@ -58,7 +54,7 @@
 				</div>
 			</Dialog.Header>
 			<GenericPhaseMainLoadForm
-				action={"add"}
+				action={'add'}
 				closeDialog={() => (is_dialog_open = false)}
 				{phase_main_load_form}
 			/>
