@@ -1,5 +1,6 @@
 import type { Phase } from '@/types/phase';
 import type { LoadType } from '..';
+import type { Node } from '@/types/project';
 
 export type MainLoad = {
 	id: string;
@@ -49,4 +50,4 @@ export type PhaseLoadSchedule = {
 	// egc_insulation: string;
 	// conduit_size: string;
 	// conduit_type: string;
-};
+} & Node
