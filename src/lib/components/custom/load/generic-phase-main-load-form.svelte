@@ -471,7 +471,7 @@
 			{/if}
 			<Form.FieldErrors />
 		</Form.Field>
-		<Form.Field {form} name="continuous" class="mt-1.5 grid text-center">
+		<Form.Field {form} name="continuous" class="mt-[0.470rem] flex flex-col gap-2 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Continuous</Form.Label>
