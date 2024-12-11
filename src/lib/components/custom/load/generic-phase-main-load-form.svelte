@@ -47,8 +47,6 @@
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onChange(event) {
-			toast.info('Form has changed');
-			console.log(event);
 			if (load_type === 'DEFAULT') {
 				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
@@ -117,30 +115,6 @@
 	});
 	const { form: formData, enhance } = form;
 
-	$effect(() => {
-		if (load_to_edit && load_to_edit.load_data) {
-			const {
-				circuit_number,
-				load_data: {
-					load_description,
-					terminal_temperature,
-					load_type,
-					quantity,
-					varies,
-					continuous
-				}
-			} = load_to_edit;
-
-			$formData.circuit_number = circuit_number as number;
-			$formData.load_description = load_description;
-			$formData.terminal_temperature = terminal_temperature;
-			$formData.load_type = load_type as LoadType;
-			$formData.quantity = quantity;
-			$formData.varies = varies;
-			$formData.continuous = continuous;
-		}
-	});
-
 	let open_ambient_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
@@ -162,6 +136,32 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (load_to_edit && load_to_edit.load_data) {
+			const {
+				circuit_number,
+				load_data: {
+					load_description,
+					terminal_temperature,
+					load_type,
+					quantity,
+					varies,
+					continuous
+				}
+			} = load_to_edit;
+
+			console.log(load_to_edit);
+
+			$formData.circuit_number = circuit_number as number;
+			$formData.load_description = load_description.split(' - ')[1];
+			$formData.terminal_temperature = terminal_temperature;
+			$formData.load_type = load_type as LoadType;
+			$formData.quantity = quantity;
+			$formData.varies = varies;
+			$formData.continuous = continuous;
+		}
+	});
 </script>
 
 <form method="POST" use:enhance>
