@@ -26,12 +26,14 @@ export function computeVoltAmphere({
 		}
 
 		// load types with separate formula
-		switch (load_type) {
-			case '1P Motor - Rated Current':
-				return quantity * 230 * varies;
-			// case '1P Motor - Rated Horse Power':
-			// 	return quantity * 230 * output of the varies;
-		}
+		return quantity * 230 * varies;
+		
+		// switch (load_type) {
+		// 	case '1P Motor - Rated Current':
+		// 		return quantity * 230 * varies;
+		// 	// case '1P Motor - Rated Horse Power':
+		// 	// 	return quantity * 230 * output of the varies;
+		// }
 	}
 
 	console.log('Invalid load_type or varies is not a number');
