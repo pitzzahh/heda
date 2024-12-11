@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -14,7 +14,7 @@
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project } from '@/types/project';
-	
+
 	interface Props {
 		highest_unit_form: T;
 		closeDialog: () => void;
@@ -32,13 +32,13 @@
 					project: Project;
 					root_node_id: string;
 				};
-				await invalidateAll();
+				await invalidate('app:workspace');
 
 				toast.success('Form is valid');
-				goto(
-					`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-				);
-				closeDialog();
+				const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
+				console.log({ created_proj, form, redirect_url });
+				// TODO: Fix bug where it is not redirecting
+				goto(redirect_url).then(() => closeDialog());
 			} else {
 				toast.error('Form is invalid');
 			}
@@ -91,7 +91,8 @@
 								class={cn(
 									buttonVariants({
 										variant: 'outline',
-										className: 'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
+										className:
+											'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'
