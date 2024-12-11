@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { DataTable } from '@/components/custom/table';
-	import { threePhaseWyeCols } from '@/components/custom/table/three-phase-load-cols/three-phase-wye-cols.js';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/stores';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
