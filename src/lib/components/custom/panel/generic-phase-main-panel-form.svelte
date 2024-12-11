@@ -71,6 +71,7 @@
 						panel_data: form.data,
 						id: panel_to_edit.id
 					});
+					toast.success('Panel updated successfully');
 				}
 
 				await invalidateAll();
