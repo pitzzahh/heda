@@ -88,9 +88,10 @@
 				}
 
 				if (load_type) {
+					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
 					const loadData = {
 						...form.data,
-						load_description: `${form.data.quantity} - ${form.data.load_description}`,
+						load_description,
 						config_preference: load_type
 					};
 					switch (action) {
@@ -99,6 +100,7 @@
 								load_data: loadData,
 								parent_id: panel_id
 							});
+							toast.success(`${load_description} added successfully`);
 							break;
 						case 'edit':
 							if (load_to_edit) {
@@ -106,6 +108,7 @@
 									load_data: loadData,
 									id: load_to_edit.id
 								});
+								toast.success('Load updated successfully');
 							}
 							break;
 					}
