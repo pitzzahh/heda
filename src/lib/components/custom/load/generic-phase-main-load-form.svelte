@@ -21,7 +21,8 @@
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
-		load_type_to_varies_label
+		load_type_to_varies_label,
+		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -121,9 +122,9 @@
 	});
 	const { form: formData, enhance } = form;
 
-	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
-	let variesLabel: VariesLabel | 'Varies' = $derived(
+	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
 	);
 
@@ -418,7 +419,9 @@
 								{...props}
 							>
 								{$formData.varies
-									? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.varies)
+									? DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.map((e) => Number(e)).find(
+											(s) => s === $formData.varies
+										)
 									: `Select a ${variesLabel.toLowerCase()}`}
 								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
@@ -434,23 +437,26 @@
 							/>
 							<Command.Empty>No {variesLabel.toLowerCase()} found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_LOAD_TYPES_OPTIONS as load_type}
-									<Command.Item
-										value={load_type}
-										onSelect={() => {
-											$formData.varies = load_type;
-											closeAndFocusTrigger(horsepower_rating_trigger_id);
-										}}
-									>
-										{load_type}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												load_type !== $formData.varies && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
+								<ScrollArea class="h-64 pr-2.5">
+									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating}
+										{@const number_hp_current_rating = Number(hp_current_rating)}
+										<Command.Item
+											value={hp_current_rating}
+											onSelect={() => {
+												$formData.varies = number_hp_current_rating;
+												closeAndFocusTrigger(horsepower_rating_trigger_id);
+											}}
+										>
+											{hp_current_rating}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													number_hp_current_rating !== $formData.varies && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
 							</Command.Group>
 						</Command.Root>
 					</Popover.Content>
