@@ -31,7 +31,7 @@
 		>
 			<CirclePlus class="size-4" />
 		</Dialog.Trigger>
-		<Dialog.Content class="max-w-[70%]">
+		<Dialog.Content class="max-w-[85%]">
 			<Dialog.Header>
 				<Dialog.Title>Add load</Dialog.Title>
 				<Dialog.Description>Enter the load details.</Dialog.Description>
