@@ -19,7 +19,9 @@
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
-		DEFAULT_LOAD_TYPES_OPTIONS
+		DEFAULT_LOAD_TYPES_OPTIONS,
+		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
+		load_type_to_varies_label
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -41,7 +43,6 @@
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
 	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
-	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -116,6 +117,12 @@
 		}
 	});
 	const { form: formData, enhance } = form;
+
+	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+
+	let variesLabel = $derived(
+		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
 
 	let open_ambient_temp = $state(false);
 	let open_load_type = $state(false);
@@ -378,10 +385,10 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		{/if}
-		<Form.Field {form} name="varies" class="text-center">
+		<Form.Field {form} name="varies" class="w-1/2 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>Varies</Form.Label>
+					<Form.Label>{variesLabel}</Form.Label>
 					<Input
 						{...props}
 						type="number"
