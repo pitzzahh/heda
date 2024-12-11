@@ -19,7 +19,9 @@
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
-		DEFAULT_LOAD_TYPES_OPTIONS
+		DEFAULT_LOAD_TYPES_OPTIONS,
+		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
+		load_type_to_varies_label
 	} from '@/constants';
 	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -28,7 +30,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/types/project';
-	import type { LoadType } from '@/types/load';
+	import type { LoadType, TerminalTemperature } from '@/types/load';
 	import { dev } from '$app/environment';
 
 	interface Props {
@@ -41,14 +43,11 @@
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
 	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
-	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
 		validators: zodClient(phase_main_load_schema),
 		onChange(event) {
-			toast.info('Form has changed');
-			console.log(event);
 			if (load_type === 'DEFAULT') {
 				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
@@ -94,19 +93,21 @@
 						load_description: `${form.data.quantity} - ${form.data.load_description}`,
 						config_preference: load_type
 					};
-
-					if (action === 'add') {
-						await addNode({
-							load_data: loadData,
-							parent_id: panel_id
-						});
-					}
-
-					if (action === 'edit' && load_to_edit) {
-						await updateNode({
-							load_data: loadData,
-							id: load_to_edit.id
-						});
+					switch (action) {
+						case 'add':
+							await addNode({
+								load_data: loadData,
+								parent_id: panel_id
+							});
+							break;
+						case 'edit':
+							if (load_to_edit) {
+								await updateNode({
+									load_data: loadData,
+									id: load_to_edit.id
+								});
+							}
+							break;
 					}
 				}
 
@@ -117,29 +118,11 @@
 	});
 	const { form: formData, enhance } = form;
 
-	$effect(() => {
-		if (load_to_edit && load_to_edit.load_data) {
-			const {
-				circuit_number,
-				load_data: {
-					load_description,
-					terminal_temperature,
-					load_type,
-					quantity,
-					varies,
-					continuous
-				}
-			} = load_to_edit;
+	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
-			$formData.circuit_number = circuit_number as number;
-			$formData.load_description = load_description.split('-').at(-1)?.trim() as string;
-			$formData.terminal_temperature = terminal_temperature;
-			$formData.load_type = load_type as LoadType;
-			$formData.quantity = quantity;
-			$formData.varies = varies;
-			$formData.continuous = continuous;
-		}
-	});
+	let variesLabel = $derived(
+		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
 
 	let open_ambient_temp = $state(false);
 	let open_load_type = $state(false);
@@ -162,6 +145,31 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (action !== 'edit') return;
+
+		if (!load_to_edit || !load_to_edit.load_data) {
+			// TODO: Log system error
+			toast.warning('Failed to identify the load to edit', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+
+		const {
+			circuit_number,
+			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
+		} = load_to_edit;
+
+		$formData.circuit_number = circuit_number as number;
+		$formData.load_description = load_description.split(' - ')[1];
+		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
+		$formData.load_type = load_type as LoadType;
+		$formData.quantity = quantity;
+		$formData.varies = varies;
+		$formData.continuous = continuous;
+	});
 </script>
 
 <form method="POST" use:enhance>
@@ -214,7 +222,7 @@
 				<Popover.Content class="w-auto p-0">
 					<Command.Root>
 						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-						<Command.Empty>No ambient temp found.</Command.Empty>
+						<Command.Empty>No terminal temp found.</Command.Empty>
 						<Command.Group>
 							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
 								<Command.Item
@@ -238,7 +246,7 @@
 				</Popover.Content>
 			</Popover.Root>
 			<Form.Description>
-				This is the ambient temp that will determine the ambient temp of the wire to the main.
+				This is the terminal temp that will determine the terminal temp of the wire to the main.
 			</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -377,10 +385,10 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		{/if}
-		<Form.Field {form} name="varies" class="text-center">
+		<Form.Field {form} name="varies" class="w-1/2 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>Varies</Form.Label>
+					<Form.Label>{variesLabel}</Form.Label>
 					<Input
 						{...props}
 						type="number"

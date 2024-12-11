@@ -1,13 +1,8 @@
-import type { Load } from '../load';
-import type { Panel } from '../panel';
+import type { Load } from '@/types/load';
+import type { Panel } from '@/types/panel';
 import type { HighestUnitSchema } from '@/schema';
-
-export type Project = {
-	id: string;
-	highest_unit_form: HighestUnitSchema;
-	tree: string[];
-	project_name: string;
-};
+import type { ProjectDocType } from '@/db/schema'
+export type Project = ProjectDocType;
 
 export type Node = {
 	id: string;

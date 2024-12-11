@@ -7,7 +7,11 @@ export async function getCurrentProject(project_id?: string) {
 	const db = await databaseInstance();
 
 	try {
-		const query = db.projects.find();
+		const query = db.projects.find({
+			selector: project_id ? {
+				id: project_id
+			} : undefined
+		});
 		const project = (await query.exec()).at(0)?._data;
 
 		if (project) {

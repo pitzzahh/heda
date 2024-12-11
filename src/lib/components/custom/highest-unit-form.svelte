@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -14,7 +14,7 @@
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project } from '@/types/project';
-	
+
 	interface Props {
 		highest_unit_form: T;
 		closeDialog: () => void;
@@ -32,12 +32,11 @@
 					project: Project;
 					root_node_id: string;
 				};
-				await invalidateAll();
+				await invalidate('app:workspace');
 
 				toast.success('Form is valid');
-				goto(
-					`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-				);
+				const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
+				goto(redirect_url);
 				closeDialog();
 			} else {
 				toast.error('Form is invalid');
@@ -45,23 +44,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const ambient_temp_trigger_id = useId();
-
-	let open_ambient_temp = $state(false);
-
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
-
-	$effect(() => {
-		$formData.distribution_unit = untrack(() => 'Transformer');
-	});
 </script>
 
 <form method="POST" use:enhance>
@@ -72,7 +54,7 @@
 					<Form.Label>Distribution unit</Form.Label>
 					<Input
 						{...props}
-						bind:value={$formData.distribution_unit}
+						value={$formData.distribution_unit}
 						defaultvalue="Transformer"
 						placeholder="Enter the distribution unit name"
 						readonly
@@ -91,7 +73,8 @@
 								class={cn(
 									buttonVariants({
 										variant: 'outline',
-										className: 'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
+										className:
+											'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'

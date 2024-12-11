@@ -1,4 +1,4 @@
-import type { DefaultLoad } from '@/types/load';
+import type { DefaultLoad, LoadType, VariesLabel } from '@/types/load';
 import { getEnumValues } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
@@ -6,7 +6,7 @@ export const default_terminal_temperatures = {
 	60: "60",
 	75: '75',
 	90: "90",
-	STANDARD_TEMPERATURE: "STANDARD_TEMPERATURE"
+	STANDARD_TEMPERATURE: "Standard Temperature"
 } as const;
 
 
@@ -66,13 +66,13 @@ export const DEFAULT_LOADS = [
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet - 4",
+		description: "4-Gang Convenience Outlet",
 		varies: 360,
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet - 5",
+		description: "5-Gang Convenience Outlet",
 		varies: 450,
 		continuous: true,
 		type: 'Convenience Outlet'
@@ -112,6 +112,16 @@ export const default_load_types = {
 	HEATING_EQUIPMENT: "Heating Equipment",
 } as const;
 
+
+export const load_type_to_varies_label = {
+	[default_load_types.LIGHTING_LOAD]: 'Unit Wattage',
+	[default_load_types.CONVENIENCE_OUTLET]: 'Unit Wattage',
+	[default_load_types.GENERAL_LIGHTING]: 'Unit Load',
+	[default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER]: 'Horsepower Rating',
+	[default_load_types.ONE_P_MOTOR__RATED_CURRENT]: 'Current Rating',
+	[default_load_types.HEATING_EQUIPMENT]: 'Unit Wattage'
+} as const satisfies Record<LoadType, VariesLabel>;
+
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
 
 export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
@@ -127,6 +137,11 @@ export const DEFAULT_TERMINAL_TEMPERATURE_OPTIONS = getEnumValues(default_termin
 export const DEFAULT_LOAD_TYPES_ENUMS = toLabelValueArray(default_load_types);
 
 export const DEFAULT_LOAD_TYPES_OPTIONS = getEnumValues(default_load_types);
+
+export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_type_to_varies_label);
+
+export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
+
 
 export const FIELD_VALIDATION = {
 	TEST: {

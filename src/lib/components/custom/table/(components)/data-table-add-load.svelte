@@ -15,7 +15,7 @@
 
 	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
 
-	const { distribution_unit, terminal_temperature, phase } = highest_unit;
+	const { distribution_unit, phase } = highest_unit;
 
 	let is_dialog_open = $state(false);
 </script>
@@ -31,7 +31,7 @@
 		>
 			<CirclePlus class="size-4" />
 		</Dialog.Trigger>
-		<Dialog.Content class="max-w-[70%]">
+		<Dialog.Content class="max-w-[85%]">
 			<Dialog.Header>
 				<Dialog.Title>Add load</Dialog.Title>
 				<Dialog.Description>Enter the load details.</Dialog.Description>
@@ -42,10 +42,6 @@
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Name:</h4>
 								<p>{distribution_unit ?? 'N/A'}</p>
-							</div>
-							<div class="flex gap-1">
-								<h4 class="font-semibold">Terminal temperature:</h4>
-								<p>{terminal_temperature ?? 'N/A'}</p>
 							</div>
 						</div>
 						<div>
@@ -58,7 +54,7 @@
 				</div>
 			</Dialog.Header>
 			<GenericPhaseMainLoadForm
-				action={"add"}
+				action={'add'}
 				closeDialog={() => (is_dialog_open = false)}
 				{phase_main_load_form}
 			/>
