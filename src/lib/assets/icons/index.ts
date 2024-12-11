@@ -14,4 +14,6 @@ export { default as PanelsLeftBottom } from 'lucide-svelte/icons/panels-left-bot
 export { default as Sheet } from 'lucide-svelte/icons/sheet';
 export { default as Ellipsis } from 'lucide-svelte/icons/ellipsis';
 export { default as PlusIcon } from 'lucide-svelte/icons/plus';
-export { default as Cog } from 'lucide-svelte/icons/cog'
+export { default as Cog } from 'lucide-svelte/icons/cog';
+export { default as ChevronsUpDown } from 'lucide-svelte/icons/chevrons-up-down';
+export { default as Check } from 'lucide-svelte/icons/check';

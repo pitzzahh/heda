@@ -14,11 +14,13 @@
 		generic_phase_panel_form,
 		parent_id,
 		highest_unit,
+		some_open_state = $bindable(),
 		panel_to_edit
 	}: {
 		highest_unit: HighestUnitSchema;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
+		some_open_state?: boolean;
 		panel_to_edit: Node;
 	} = $props();
 
@@ -27,7 +29,7 @@
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 </script>
 
-<Dialog.Root bind:open={open_panel_dialog}>
+<Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
 	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update</Dialog.Trigger>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
