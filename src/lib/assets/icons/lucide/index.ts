@@ -12,3 +12,4 @@ export { default as PlugZap } from 'lucide-svelte/icons/plug-zap';
 export { default as DatabaseZap } from 'lucide-svelte/icons/database-zap';
 export { default as PanelsLeftBottom } from 'lucide-svelte/icons/panels-left-bottom';
 export { default as Sheet } from 'lucide-svelte/icons/sheet';
+export { default as Ellipsis } from 'lucide-svelte/icons/ellipsis';
