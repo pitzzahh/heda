@@ -31,8 +31,9 @@ export type OnePhaeLoadCustom = {
 export type PhaseLoadSchedule = {
 	circuit_number: number;
 	load_description: string;
-	// voltage: number;
-	// va: number;
+	voltage: number;
+	va: number;
+	current: number;
 	// ab: number;
 	// bc: number;
 	// ca: number;

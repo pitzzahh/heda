@@ -12,8 +12,8 @@ import type { Node } from '@/types/project';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema,
-	// phase: 
+	highest_unit: HighestUnitSchema
+	// phase:
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
@@ -34,17 +34,27 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'voltage',
 		header: 'Voltage',
-		footer: (props) => '440'
+		footer: (props) => {
+			// render the voltage of first index since all voltage cells are the same
+			return props.table.getFilteredRowModel().rows.at(0)?.original.voltage;
+		}
 	},
 	{
 		accessorKey: 'va',
 		header: 'VA',
-		footer: (props) => '6300'
+		footer: (props) => {
+			return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
+		}
 	},
 	{
 		accessorKey: 'current',
 		header: 'CURRENT',
-		footer: (props) => '6300'
+		footer: (props) => {
+			return props.table
+				.getFilteredRowModel()
+				.rows.reduce((sum, row) => sum + row.original.current, 0)
+				.toFixed(2);
+		}
 	},
 
 	// NOTE: SHOULD ONLY SHOW IF THE PHASE IS 3
