@@ -124,12 +124,14 @@
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
 	);
 
-	let open_ambient_temp = $state(false);
+	let open_horsepower_rating = $state(false);
+	let open_terminal_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
-	const ambient_temp_trigger_id = useId();
+	const terminal_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
+	const horsepower_rating_trigger_id = useId();
 	let load_type = $state<FormLoadTypeOption | undefined>(
 		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
 	);
@@ -138,7 +140,8 @@
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
+		open_horsepower_rating = false;
+		open_terminal_temp = false;
 		open_load_type = false;
 		open_load_description = false;
 		tick().then(() => {
@@ -194,8 +197,8 @@
 			<Form.FieldErrors />
 		</Form.Field>
 		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
-			<Popover.Root bind:open={open_ambient_temp}>
-				<Form.Control id={ambient_temp_trigger_id}>
+			<Popover.Root bind:open={open_terminal_temp}>
+				<Form.Control id={terminal_temp_trigger_id}>
 					{#snippet children({ props })}
 						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
 						<Popover.Trigger
@@ -229,7 +232,7 @@
 									value={ambient_temp}
 									onSelect={() => {
 										$formData.terminal_temperature = ambient_temp;
-										closeAndFocusTrigger(ambient_temp_trigger_id);
+										closeAndFocusTrigger(terminal_temp_trigger_id);
 									}}
 								>
 									{convertToNormalText(ambient_temp)}
@@ -393,21 +396,79 @@
 				'text-center': variesLabel === 'Varies'
 			})}
 		>
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>{variesLabel}</Form.Label>
-					<Input
-						{...props}
-						type="number"
-						inputmode="numeric"
-						readonly={load_type === 'DEFAULT'}
-						min={1}
-						class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
-						bind:value={$formData.varies}
-						placeholder="Enter varies"
-					/>
-				{/snippet}
-			</Form.Control>
+			{#if variesLabel === 'Horsepower Rating'}
+				<Popover.Root bind:open={open_horsepower_rating}>
+					<Form.Control id={horsepower_rating_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>{variesLabel}</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({
+										variant: 'outline',
+										className: 'justify-between'
+									}),
+									!$formData.varies && 'text-muted-foreground',
+									{ 'cursor-not-allowed': load_type === 'DEFAULT' }
+								)}
+								disabled={load_type === 'DEFAULT'}
+								role="combobox"
+								{...props}
+							>
+								{$formData.varies
+									? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.varies)
+									: `Select a ${variesLabel.toLowerCase()}`}
+								<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.varies} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input
+								autofocus
+								placeholder="Search a {variesLabel.toLowerCase()}..."
+								class="h-9"
+							/>
+							<Command.Empty>No {variesLabel.toLowerCase()} found.</Command.Empty>
+							<Command.Group>
+								{#each DEFAULT_LOAD_TYPES_OPTIONS as load_type}
+									<Command.Item
+										value={load_type}
+										onSelect={() => {
+											$formData.varies = load_type;
+											closeAndFocusTrigger(horsepower_rating_trigger_id);
+										}}
+									>
+										{load_type}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												load_type !== $formData.varies && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+			{:else}
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>{variesLabel}</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							readonly={load_type === 'DEFAULT'}
+							min={1}
+							class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
+							bind:value={$formData.varies}
+							placeholder="Enter {variesLabel.toLowerCase()}"
+						/>
+					{/snippet}
+				</Form.Control>
+			{/if}
 			<Form.FieldErrors />
 		</Form.Field>
 		<Form.Field {form} name="continuous" class="mt-1.5 grid text-center">
@@ -448,7 +509,7 @@
 						>
 							{$formData.load_type
 								? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
-								: 'Select an special'}
+								: 'Select a load type'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<input hidden value={$formData.load_type} name={props.name} />
