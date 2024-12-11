@@ -9,8 +9,7 @@ export const phase_main_load_schema = z.object({
 			message: 'Circuit number must be greater than 0.'
 		}),
 	terminal_temperature: z
-		.string()
-		.refine((v) => v, { message: 'An terminal temperature is required.' }),
+		.string({ message: 'An terminal temperature is required.' }),
 	quantity: z.number({ message: 'Please enter a valid quantity.' }).refine((value) => value > 0, {
 		message: 'Quantity must be greater than 0.'
 	}),
