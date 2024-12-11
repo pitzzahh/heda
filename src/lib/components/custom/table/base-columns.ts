@@ -12,7 +12,8 @@ import type { Node } from '@/types/project';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema
+	highest_unit: HighestUnitSchema,
+	// phase: 
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
@@ -41,28 +42,35 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		footer: (props) => '6300'
 	},
 	{
+		accessorKey: 'current',
 		header: 'CURRENT',
-		columns: [
-			{
-				accessorKey: 'ab',
-				cell: (info) => info.getValue(),
-				header: () => 'AB',
-				footer: (props) => '34'
-			},
-			{
-				accessorKey: 'bc',
-				cell: (info) => info.getValue(),
-				header: () => 'BC',
-				footer: (props) => '34'
-			},
-			{
-				accessorKey: 'ca',
-				cell: (info) => info.getValue(),
-				header: () => 'CA',
-				footer: (props) => '34'
-			}
-		]
+		footer: (props) => '6300'
 	},
+
+	// NOTE: SHOULD ONLY SHOW IF THE PHASE IS 3
+	// {
+	// 	header: 'CURRENT',
+	// 	columns: [
+	// 		{
+	// 			accessorKey: 'ab',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'AB',
+	// 			footer: (props) => '34'
+	// 		},
+	// 		{
+	// 			accessorKey: 'bc',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'BC',
+	// 			footer: (props) => '34'
+	// 		},
+	// 		{
+	// 			accessorKey: 'ca',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'CA',
+	// 			footer: (props) => '34'
+	// 		}
+	// 	]
+	// },
 	{
 		header: 'CIRCUIT BREAKER',
 		columns: [
