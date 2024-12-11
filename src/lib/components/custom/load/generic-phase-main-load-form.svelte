@@ -30,7 +30,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/types/project';
-	import type { LoadType, TerminalTemperature } from '@/types/load';
+	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 
 	interface Props {
@@ -120,7 +120,7 @@
 
 	let panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
-	let variesLabel = $derived(
+	let variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
 	);
 
@@ -385,7 +385,14 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		{/if}
-		<Form.Field {form} name="varies" class="w-1/2 text-center">
+		<Form.Field
+			{form}
+			name="varies"
+			class={cn('mt-2 grid w-1/3 text-center', {
+				'cursor-not-allowed': load_type === 'DEFAULT',
+				'text-center': variesLabel === 'Varies'
+			})}
+		>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>{variesLabel}</Form.Label>
@@ -440,9 +447,7 @@
 							{...props}
 						>
 							{$formData.load_type
-								? convertToNormalText(
-										DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
-									)
+								? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === $formData.load_type)
 								: 'Select an special'}
 							<CaretSort class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
@@ -462,7 +467,7 @@
 										closeAndFocusTrigger(load_type_trigger_id);
 									}}
 								>
-									{convertToNormalText(load_type)}
+									{load_type}
 									<Check
 										class={cn(
 											'ml-auto size-4',
