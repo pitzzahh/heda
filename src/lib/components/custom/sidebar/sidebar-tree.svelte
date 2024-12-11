@@ -124,6 +124,7 @@
 										panel_to_edit={node}
 										{generic_phase_panel_form}
 										{highest_unit}
+										bind:some_open_state={open_context_menu}
 										parent_id={node.parent_id}
 									/>
 								{/if}
