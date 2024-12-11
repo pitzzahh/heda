@@ -17,3 +17,5 @@ export { default as PlusIcon } from 'lucide-svelte/icons/plus';
 export { default as Cog } from 'lucide-svelte/icons/cog';
 export { default as ChevronsUpDown } from 'lucide-svelte/icons/chevrons-up-down';
 export { default as Check } from 'lucide-svelte/icons/check';
+export { default as Trash2 } from 'lucide-svelte/icons/trash-2';
+export { default as Pencil } from 'lucide-svelte/icons/pencil';
