@@ -123,19 +123,19 @@ export const load_type_to_varies_label = {
 } as const satisfies Record<LoadType, VariesLabel>;
 
 export const default_hp_current_relationship = {
-	'1/6': 2.2,
-	'1/4': 2.9,
-	'1/3': 3.6,
-	'1/2': 4.9,
-	'3/4': 6.9,
-	'1': 8,
-	'1 1/2': 10,
-	'2': 12,
-	'3': 17,
-	'5': 28,
-	'7 1/2': 40,
-	'10': 50
-};
+	'1/6': '2.2',
+	'1/4': '2.9',
+	'1/3': '3.6',
+	'1/2': '4.9',
+	'3/4': '6.9',
+	'1': '8',
+	'1 1/2': '10',
+	'2': '12',
+	'3': '17',
+	'5': '28',
+	'7 1/2': '40',
+	'10': '50'
+} as const;
 
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(default_hp_current_relationship).map(([hp, current]) => ({ hp, current }));
 
@@ -158,6 +158,8 @@ export const DEFAULT_LOAD_TYPES_OPTIONS = getEnumValues(default_load_types);
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_type_to_varies_label);
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
+
+export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumValues(default_hp_current_relationship);
 
 
 export const FIELD_VALIDATION = {
