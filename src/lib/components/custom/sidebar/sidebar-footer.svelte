@@ -1,7 +1,5 @@
 <script lang="ts">
-	import Sun from 'lucide-svelte/icons/sun';
-	import Moon from 'lucide-svelte/icons/moon';
-	import { Gear } from 'svelte-radix';
+	import { Cog, Sun, Moon } from '@/assets/icons/lucide';
 	import { resetMode, setMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
@@ -13,7 +11,7 @@
 <div class="flex justify-around">
 	<Dialog.Root>
 		<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
-			<Gear class="size-4" />
+			<Cog class="size-4" />
 		</Dialog.Trigger>
 		<Dialog.Content class="sm:max-w-[425px]">
 			<Dialog.Header>
