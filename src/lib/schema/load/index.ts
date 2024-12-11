@@ -16,7 +16,7 @@ export const phase_main_load_schema = z.object({
 	}),
 	load_description: z.string().refine((v) => v, { message: 'A load description is required.' }),
 	varies: z
-		.number()
+		.number({ message: 'This field is required' })
 		.refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` }),
 	continuous: z.boolean(),
 	load_type: z.enum(DEFAULT_LOAD_TYPES_ENUMS.map((f) => f.value) as [LoadType, ...LoadType[]], {
