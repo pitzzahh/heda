@@ -6,7 +6,7 @@ export const default_terminal_temperatures = {
 	60: "60",
 	75: '75',
 	90: "90",
-	STANDARD_TEMPERATURE: "STANDARD_TEMPERATURE"
+	STANDARD_TEMPERATURE: "Standard Temperature"
 } as const;
 
 
