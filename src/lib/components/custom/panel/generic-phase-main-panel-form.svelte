@@ -95,18 +95,18 @@
 	});
 
 	let open_panel_phase_popover = $state(false);
-	let open_ambient_temp = $state(false);
+	let open_terminal_temp = $state(false);
 	let open_phase_type = $state(false);
 	const phase_trigger_id = useId();
 
 	const panel_phase_type_trigger_id = useId();
-	const ambient_temp_trigger_id = useId();
+	const terminal_temp_trigger_id = useId();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
+		open_terminal_temp = false;
 		open_panel_phase_popover = false;
 		open_phase_type = false;
 		tick().then(() => {
@@ -148,8 +148,8 @@
 				<Form.FieldErrors />
 			</Form.Field>
 			<Form.Field {form} name="terminal_temperature" class="mt-2.5 flex flex-col">
-				<Popover.Root bind:open={open_ambient_temp}>
-					<Form.Control id={ambient_temp_trigger_id}>
+				<Popover.Root bind:open={open_terminal_temp}>
+					<Form.Control id={terminal_temp_trigger_id}>
 						{#snippet children({ props })}
 							<Form.Label>Terminal Temperature</Form.Label>
 							<Popover.Trigger
@@ -183,7 +183,7 @@
 										value={ambient_temp}
 										onSelect={() => {
 											$formData.terminal_temperature = ambient_temp;
-											closeAndFocusTrigger(ambient_temp_trigger_id);
+											closeAndFocusTrigger(terminal_temp_trigger_id);
 										}}
 									>
 										{convertToNormalText(ambient_temp)}
