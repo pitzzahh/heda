@@ -105,16 +105,8 @@
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
 			</p>
-			<p class="font-semibold">
-				Wire Length: <span class="font-normal">{root_node?.highest_unit_form?.wire_length}</span>
-			</p>
 		</div>
 		<div>
-			<p class="font-semibold">
-				Terminal Temperature: <span class="font-normal"
-					>{root_node?.highest_unit_form?.terminal_temperature}</span
-				>
-			</p>
 			<p class="font-semibold">
 				Panel: <span class="font-normal">{params.id.split('_').at(0)}</span>
 			</p>
