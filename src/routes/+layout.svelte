@@ -28,6 +28,6 @@
 	);
 </script>
 
-<Toaster richColors={true} />
+<Toaster richColors />
 <ModeWatcher />
 {@render children?.()}
