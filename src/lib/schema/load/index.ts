@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { DEFAULT_LOAD_TYPES_ENUMS, MIN_VARIES } from '@/constants';
-import type { LoadType } from '@/types/load';
+import { DEFAULT_LOAD_TYPES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS, MIN_VARIES } from '@/constants';
+import type { LoadType, TerminalTemperature } from '@/types/load';
 
 export const phase_main_load_schema = z.object({
 	circuit_number: z
@@ -8,8 +8,9 @@ export const phase_main_load_schema = z.object({
 		.refine((value) => value > 0, {
 			message: 'Circuit number must be greater than 0.'
 		}),
-	terminal_temperature: z
-		.string({ message: 'An terminal temperature is required.' }),
+	terminal_temperature: z.enum(DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [TerminalTemperature, ...TerminalTemperature[]], {
+		errorMap: () => ({ message: 'Please select a valid terminal temperature.' })
+	}).default('Standard Temperature'),
 	quantity: z.number({ message: 'Please enter a valid quantity.' }).refine((value) => value > 0, {
 		message: 'Quantity must be greater than 0.'
 	}),
