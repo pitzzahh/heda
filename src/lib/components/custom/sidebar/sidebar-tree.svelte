@@ -32,8 +32,7 @@
 	//TODO: FIX the collapsible to not close when a panel is added
 	let collapsible_state = $state(false);
 	let open_context_menu = $state(false);
-	let params_node_id = $derived($page.params.id.split('_').at(-1));
-
+	let params_node_id = $derived($page.params.id.split('_').at(-1) || '');
 	function toggle() {
 		collapsible_state = !collapsible_state;
 	}

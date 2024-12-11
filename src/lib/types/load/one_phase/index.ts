@@ -1,5 +1,6 @@
 import type { Phase } from '@/types/phase';
 import type { LoadType } from '..';
+import type { Node } from '@/types/project';
 
 export type MainLoad = {
 	id: string;
@@ -31,8 +32,9 @@ export type OnePhaeLoadCustom = {
 export type PhaseLoadSchedule = {
 	circuit_number: number;
 	load_description: string;
-	// voltage: number;
-	// va: number;
+	voltage: number;
+	va: number;
+	current: number;
 	// ab: number;
 	// bc: number;
 	// ca: number;
@@ -48,4 +50,4 @@ export type PhaseLoadSchedule = {
 	// egc_insulation: string;
 	// conduit_size: string;
 	// conduit_type: string;
-};
+} & Node

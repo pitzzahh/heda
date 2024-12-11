@@ -36,7 +36,7 @@
 	<SidebarHeader />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Distribution Unit</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel>Unit Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#if root_node?.highest_unit_form}

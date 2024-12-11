@@ -13,6 +13,7 @@ import type { Node } from '@/types/project';
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
 	highest_unit: HighestUnitSchema
+	// phase:
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
@@ -33,36 +34,53 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'voltage',
 		header: 'Voltage',
-		footer: (props) => '440'
+		footer: (props) => {
+			// render the voltage of first index since all voltage cells are the same
+			return props.table.getFilteredRowModel().rows.at(0)?.original.voltage;
+		}
 	},
 	{
 		accessorKey: 'va',
 		header: 'VA',
-		footer: (props) => '6300'
+		footer: (props) => {
+			return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
+		}
 	},
 	{
+		accessorKey: 'current',
 		header: 'CURRENT',
-		columns: [
-			{
-				accessorKey: 'ab',
-				cell: (info) => info.getValue(),
-				header: () => 'AB',
-				footer: (props) => '34'
-			},
-			{
-				accessorKey: 'bc',
-				cell: (info) => info.getValue(),
-				header: () => 'BC',
-				footer: (props) => '34'
-			},
-			{
-				accessorKey: 'ca',
-				cell: (info) => info.getValue(),
-				header: () => 'CA',
-				footer: (props) => '34'
-			}
-		]
+		footer: (props) => {
+			return props.table
+				.getFilteredRowModel()
+				.rows.reduce((sum, row) => sum + row.original.current, 0)
+				.toFixed(2);
+		}
 	},
+
+	// NOTE: SHOULD ONLY SHOW IF THE PHASE IS 3
+	// {
+	// 	header: 'CURRENT',
+	// 	columns: [
+	// 		{
+	// 			accessorKey: 'ab',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'AB',
+	// 			footer: (props) => '34'
+	// 		},
+	// 		{
+	// 			accessorKey: 'bc',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'BC',
+	// 			footer: (props) => '34'
+	// 		},
+	// 		{
+	// 			accessorKey: 'ca',
+	// 			cell: (info) => info.getValue(),
+	// 			header: () => 'CA',
+	// 			footer: (props) => '34'
+	// 		}
+	// 	]
+	// },
 	{
 		header: 'CIRCUIT BREAKER',
 		columns: [
@@ -70,13 +88,13 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'at',
 				cell: (info) => info.getValue(),
 				header: () => 'AT',
-				footer: (props) => '65'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'af',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
-				footer: (props) => '65'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'pole',
@@ -88,7 +106,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
 				header: () => 'kAIC',
-				footer: (props) => '44'
+				footer: (props) => ''
 			}
 		]
 	}
@@ -104,7 +122,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'egc_size',
 				cell: (info) => info.getValue(),
 				header: () => 'SIZE',
-				footer: (props) => '24 AWG'
+				footer: (props) => ''
 			},
 			{
 				accessorKey: 'egc_insulation',
@@ -134,8 +152,10 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		header: 'Actions',
 		cell: ({ row }) => {
+			if (row.original.node_type === 'panel') return;
+
 			return renderComponent(ColumnDropdown, {
-				node: row.original as any as Node,
+				node: row.original,
 				phase_main_load_form
 			});
 		}

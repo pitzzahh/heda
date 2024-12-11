@@ -86,9 +86,9 @@
 			if (parentId) {
 				getNodeById(parentId).then((node) => {
 					supply_from_name =
-						node?.panel_data?.name || node?.highest_unit_form?.distribution_unit || '';
+						node?.panel_data?.name || node?.highest_unit_form?.distribution_unit || '--';
 				});
-			} else supply_from_name = '';
+			} else supply_from_name = '--';
 		});
 	});
 </script>
@@ -104,11 +104,22 @@
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
 			</p>
+			<!-- <p class="font-semibold">
+				Wire Length: <span class="font-normal">{root_node?.highest_unit_form?.wire_length}</span>
+			</p> -->
+		</div>
+		<div>
+			<!-- <p class="font-semibold">
+				Terminal Temperature: <span class="font-normal"
+					>{root_node?.highest_unit_form?.terminal_temperature}</span
+				>
+			</p> -->
+			<!-- <p class="font-semibold">
 		</div>
 		<div>
 			<p class="font-semibold">
 				Panel: <span class="font-normal">{params.id.split('_').at(0)}</span>
-			</p>
+			</p> -->
 
 			<p class="font-semibold">
 				Supply From:

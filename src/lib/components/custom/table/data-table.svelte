@@ -67,7 +67,7 @@
 		</Table.Body>
 
 		{#if data.length > 0}
-			<Table.Footer class="bg-muted/10">
+			<Table.Footer class="bg-muted/10 border-t">
 				{#each table.getFooterGroups() as footerGroup, i (i)}
 					{#if i === 0}
 						<Table.Row>
