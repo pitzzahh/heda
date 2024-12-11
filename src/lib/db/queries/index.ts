@@ -5,9 +5,9 @@ export async function getCurrentProject(project_id?: string) {
 
 	try {
 		const query = db.projects.find({
-			selector: {
+			selector: project_id ? {
 				id: project_id
-			}
+			} : undefined
 		});
 		const project = (await query.exec()).at(0)?._data;
 
