@@ -92,19 +92,21 @@
 						load_description: `${form.data.quantity} - ${form.data.load_description}`,
 						config_preference: load_type
 					};
-
-					if (action === 'add') {
-						await addNode({
-							load_data: loadData,
-							parent_id: panel_id
-						});
-					}
-
-					if (action === 'edit' && load_to_edit) {
-						await updateNode({
-							load_data: loadData,
-							id: load_to_edit.id
-						});
+					switch (action) {
+						case 'add':
+							await addNode({
+								load_data: loadData,
+								parent_id: panel_id
+							});
+							break;
+						case 'edit':
+							if (load_to_edit) {
+								await updateNode({
+									load_data: loadData,
+									id: load_to_edit.id
+								});
+							}
+							break;
 					}
 				}
 
@@ -138,29 +140,27 @@
 	}
 
 	$effect(() => {
-		if (load_to_edit && load_to_edit.load_data) {
-			const {
-				circuit_number,
-				load_data: {
-					load_description,
-					terminal_temperature,
-					load_type,
-					quantity,
-					varies,
-					continuous
-				}
-			} = load_to_edit;
-
-			console.log(load_to_edit);
-
-			$formData.circuit_number = circuit_number as number;
-			$formData.load_description = load_description.split(' - ')[1];
-			$formData.terminal_temperature = terminal_temperature;
-			$formData.load_type = load_type as LoadType;
-			$formData.quantity = quantity;
-			$formData.varies = varies;
-			$formData.continuous = continuous;
+		if (!load_to_edit || !load_to_edit.load_data) {
+			// TODO: Log system error
+			toast.warning('Failed to identify the load to edit', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
 		}
+		const {
+			circuit_number,
+			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
+		} = load_to_edit;
+
+		console.log(load_to_edit);
+
+		$formData.circuit_number = circuit_number as number;
+		$formData.load_description = load_description.split(' - ')[1];
+		$formData.terminal_temperature = terminal_temperature;
+		$formData.load_type = load_type as LoadType;
+		$formData.quantity = quantity;
+		$formData.varies = varies;
+		$formData.continuous = continuous;
 	});
 </script>
 
