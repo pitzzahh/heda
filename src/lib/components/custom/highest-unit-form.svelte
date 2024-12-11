@@ -44,23 +44,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-	const ambient_temp_trigger_id = useId();
-
-	let open_ambient_temp = $state(false);
-
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
-
-	$effect(() => {
-		$formData.distribution_unit = untrack(() => 'Transformer');
-	});
 </script>
 
 <form method="POST" use:enhance>
