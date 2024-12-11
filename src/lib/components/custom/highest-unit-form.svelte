@@ -36,9 +36,8 @@
 
 				toast.success('Form is valid');
 				const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
-				console.log({ created_proj, form, redirect_url });
-				// TODO: Fix bug where it is not redirecting
-				goto(redirect_url).then(() => closeDialog());
+				goto(redirect_url);
+				closeDialog();
 			} else {
 				toast.error('Form is invalid');
 			}
@@ -72,7 +71,7 @@
 					<Form.Label>Distribution unit</Form.Label>
 					<Input
 						{...props}
-						bind:value={$formData.distribution_unit}
+						value={$formData.distribution_unit}
 						defaultvalue="Transformer"
 						placeholder="Enter the distribution unit name"
 						readonly
