@@ -152,8 +152,10 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		header: 'Actions',
 		cell: ({ row }) => {
+			if (row.original.node_type === 'panel') return;
+
 			return renderComponent(ColumnDropdown, {
-				node: row.original as any as Node,
+				node: row.original,
 				phase_main_load_form
 			});
 		}
