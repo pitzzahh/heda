@@ -66,13 +66,13 @@ export const DEFAULT_LOADS = [
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet - 4",
+		description: "4-Gang Convenience Outlet",
 		varies: 360,
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet - 5",
+		description: "5-Gang Convenience Outlet",
 		varies: 450,
 		continuous: true,
 		type: 'Convenience Outlet'
