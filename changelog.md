@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Alert in form when circuit number is already taken by a panel/load.
 
+## Fix
+
+- Fix remove load context menu state on heirarchy.
+
 ## [0.1.14] - 2024-12-12
 
 ## Fix
