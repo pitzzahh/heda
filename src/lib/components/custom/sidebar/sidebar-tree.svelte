@@ -2,6 +2,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { cn } from '@/utils';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
@@ -38,7 +39,13 @@
 </script>
 
 {#await getChildNodesByParentId(node.id)}
-	<p></p>
+	<Sidebar.MenuButton
+		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+	>
+		{#snippet children()}
+			<Skeleton class="h-6 w-full" />
+		{/snippet}
+	</Sidebar.MenuButton>
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
@@ -56,7 +63,7 @@
 						</span>
 					</div>
 				</ContextMenu.Trigger>
-				<ContextMenu.Content>
+				<ContextMenu.Content class="grid gap-1">
 					{#snippet children()}
 						<UpdateLoadDialog
 							node_id={node.id}
