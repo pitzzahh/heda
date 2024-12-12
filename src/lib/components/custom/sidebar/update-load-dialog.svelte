@@ -9,7 +9,7 @@
 	import { cn } from '@/utils';
 	import type { HighestUnitSchema } from '@/schema';
 	import type { Node } from '@/types/project';
-	import type { PhaseMainLoadSchema } from '@/schema/load';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		node_id,
@@ -18,7 +18,7 @@
 		load_to_edit
 	}: {
 		node_id: string;
-		phase_main_load_form: SuperValidated<PhaseMainLoadSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		some_open_state?: boolean;
 		load_to_edit: Node;
 	} = $props();

@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends SuperValidated<PhaseMainLoadSchema>">
+<script lang="ts" generics="T extends SuperValidated<GenericPhaseMainLoadSchema>">
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
@@ -24,7 +24,7 @@
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
 	} from '@/constants';
-	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
+	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
@@ -47,7 +47,7 @@
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
-		validators: zodClient(phase_main_load_schema),
+		validators: zodClient(generic_phase_main_load_schema),
 		onChange(event) {
 			is_circuit_number_taken_state = {
 				is_circuit_number_taken: false,

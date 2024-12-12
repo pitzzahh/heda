@@ -9,13 +9,13 @@
 	import type { Node } from '@/types/project';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
-	import type { PhaseMainLoadSchema } from '@/schema/load';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		node,
 		phase_main_load_form,
 		...props
-	}: { node: Node; phase_main_load_form: SuperValidated<PhaseMainLoadSchema> } = $props();
+	}: { node: Node; phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema> } = $props();
 	let is_dialog_open = $state(false);
 
 	let open_dropdown_menu = $state(false);
@@ -38,7 +38,8 @@
 				<DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={() => (is_dialog_open = true)}>
-					<Pencil /> Update</DropdownMenu.Item>
+					<Pencil /> Update</DropdownMenu.Item
+				>
 				<DropdownMenu.Item class="mt-0.5 p-0">
 					{#snippet children()}
 						<ConfirmationDialog

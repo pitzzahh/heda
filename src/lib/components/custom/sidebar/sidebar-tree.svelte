@@ -17,7 +17,7 @@
 	import type { HighestUnitSchema } from '@/schema';
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
-	import type { PhaseMainLoadSchema } from '@/schema/load';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		node,
@@ -30,7 +30,7 @@
 		highest_unit: HighestUnitSchema;
 		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
-		phase_main_load_form: SuperValidated<PhaseMainLoadSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
 	let open_panel_context_menu = $state(false);
@@ -68,7 +68,7 @@
 						<UpdateLoadDialog
 							node_id={node.id}
 							{phase_main_load_form}
-							bind:some_open_state={open_panel_context_menu}
+							bind:some_open_state={open_load_context_menu}
 							load_to_edit={node}
 						/>
 						<ConfirmationDialog

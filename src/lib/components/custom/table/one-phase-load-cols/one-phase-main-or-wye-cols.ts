@@ -1,12 +1,12 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-columns';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import type { PhaseMainLoadSchema } from '@/schema/load';
+import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { HighestUnitSchema } from '@/schema';
 
 export function onePhaseMainOrWyeCols(
-	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
+	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
 	highest_unit: HighestUnitSchema
 ): ColumnDef<PhaseLoadSchedule>[] {
 	return [
