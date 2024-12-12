@@ -21,7 +21,6 @@
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
-		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
 	} from '@/constants';
@@ -53,7 +52,7 @@
 			is_circuit_number_taken_state = {
 				is_circuit_number_taken: false,
 				circuit_number: 0
-			}
+			};
 			if (load_type === 'DEFAULT') {
 				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
