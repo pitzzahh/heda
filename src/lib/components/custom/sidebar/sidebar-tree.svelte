@@ -15,18 +15,21 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { HighestUnitSchema } from '@/schema';
 	import { page } from '$app/stores';
-	import UpdatePanelDialog from './update-panel-dialog.svelte';
+	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
+	import type { PhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		node,
 		highest_unit,
 		generic_phase_panel_form,
+		phase_main_load_form,
 		project
 	}: {
 		node: Node;
 		highest_unit: HighestUnitSchema;
 		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
+		phase_main_load_form: SuperValidated<PhaseMainLoadSchema>;
 	} = $props();
 
 	let open_panel_context_menu = $state(false);
@@ -55,6 +58,12 @@
 				</ContextMenu.Trigger>
 				<ContextMenu.Content>
 					{#snippet children()}
+						<UpdateLoadDialog
+							node_id={node.id}
+							{phase_main_load_form}
+							bind:some_open_state={open_panel_context_menu}
+							load_to_edit={node}
+						/>
 						<ConfirmationDialog
 							trigger_text="Remove load"
 							trigger_variant="destructive"
@@ -144,7 +153,12 @@
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
 						{#each children as unknown as Node[] as child, index (index)}
-							<SidebarTree node={child} {generic_phase_panel_form} {highest_unit} />
+							<SidebarTree
+								node={child}
+								{generic_phase_panel_form}
+								{phase_main_load_form}
+								{highest_unit}
+							/>
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>
