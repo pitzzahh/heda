@@ -25,7 +25,7 @@ jobs:
 
       - name: build
         env:
-          BASE_PATH: "/counter"
+          BASE_PATH: "/heda"
         run: |
           bun run build
           touch build/.nojekyll
