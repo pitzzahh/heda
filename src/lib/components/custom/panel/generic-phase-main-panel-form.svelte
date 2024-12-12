@@ -6,11 +6,12 @@
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
-	import { ChevronsUpDown, Check } from '@/assets/icons';
+	import { ChevronsUpDown, Check, CircleAlert } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_PHASES_OPTIONS,
@@ -23,6 +24,7 @@
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import type { Node } from '@/types/project';
+	import type { TerminalTemperature } from '@/types/load';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -53,15 +55,15 @@
 			}
 
 			if (parent_id) {
-				if (
-					await checkNodeExists({
-						circuit_number: form.data.circuit_number,
-						parent_id,
-						node_id: panel_to_edit?.id
-					})
-				) {
+				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
+					circuit_number: form.data.circuit_number,
+					parent_id,
+					node_id: panel_to_edit?.id
+				});
+				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
+					is_circuit_number_taken_state.circuit_number = form.data.circuit_number;
 					return;
 				}
 
@@ -90,7 +92,7 @@
 
 			$formData.circuit_number = circuit_number as number;
 			$formData.name = name;
-			$formData.terminal_temperature = terminal_temperature;
+			$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 			$formData.phase = phase as Phase;
 		}
 	});
@@ -98,8 +100,12 @@
 	let open_panel_phase_popover = $state(false);
 	let open_terminal_temp = $state(false);
 	let open_phase_type = $state(false);
-	const phase_trigger_id = useId();
+	let is_circuit_number_taken_state = $state({
+		is_circuit_number_taken: false,
+		circuit_number: 0
+	});
 
+	const phase_trigger_id = useId();
 	const panel_phase_type_trigger_id = useId();
 	const terminal_temp_trigger_id = useId();
 
@@ -117,6 +123,14 @@
 </script>
 
 <form method="POST" use:enhance>
+	{#if is_circuit_number_taken_state.is_circuit_number_taken}
+		<Alert.Root variant="warning">
+			<CircleAlert class="size-4" />
+			<Alert.Description
+				>Circuit number: {is_circuit_number_taken_state.circuit_number} is already present.</Alert.Description
+			>
+		</Alert.Root>
+	{/if}
 	<div class="grid grid-cols-2 gap-2">
 		<div>
 			<Form.Field {form} name="name">
