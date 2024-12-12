@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends SuperValidated<PhaseMainLoadSchema>">
+<script lang="ts" generics="T extends SuperValidated<GenericPhaseMainLoadSchema>">
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
@@ -11,20 +11,20 @@
 	import { Checkbox } from '@/components/ui/checkbox/index.js';
 	import * as Popover from '@/components/ui/popover/index.js';
 	import * as Command from '@/components/ui/command/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from '@/utils';
-	import { ChevronsUpDown, Check } from '@/assets/icons';
+	import { ChevronsUpDown, CircleAlert, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
-		DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS,
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
 	} from '@/constants';
-	import { phase_main_load_schema, type PhaseMainLoadSchema } from '@/schema/load';
+	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
@@ -47,8 +47,12 @@
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
-		validators: zodClient(phase_main_load_schema),
+		validators: zodClient(generic_phase_main_load_schema),
 		onChange(event) {
+			is_circuit_number_taken_state = {
+				is_circuit_number_taken: false,
+				circuit_number: 0
+			};
 			if (load_type === 'DEFAULT') {
 				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
@@ -76,15 +80,15 @@
 			}
 
 			if (panel_id) {
-				if (
-					await checkNodeExists({
-						circuit_number: form.data.circuit_number,
-						parent_id: panel_id,
-						node_id: load_to_edit?.id
-					})
-				) {
+				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
+					circuit_number: form.data.circuit_number,
+					parent_id: panel_id,
+					node_id: load_to_edit?.id
+				});
+				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
+					is_circuit_number_taken_state.circuit_number = form.data.circuit_number;
 					return;
 				}
 
@@ -132,6 +136,10 @@
 	let open_terminal_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
+	let is_circuit_number_taken_state = $state({
+		is_circuit_number_taken: false,
+		circuit_number: 0
+	});
 	const terminal_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
@@ -180,6 +188,14 @@
 </script>
 
 <form method="POST" use:enhance>
+	{#if is_circuit_number_taken_state.is_circuit_number_taken}
+		<Alert.Root variant="warning">
+			<CircleAlert class="size-4" />
+			<Alert.Description
+				>Circuit number: {is_circuit_number_taken_state.circuit_number} is already present.</Alert.Description
+			>
+		</Alert.Root>
+	{/if}
 	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>

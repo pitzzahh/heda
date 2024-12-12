@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] - 2024-12-12
+
+## Add
+
+- Alert in form when circuit number is already taken by a panel/load.
+
+## Fix
+
+- Fix remove load context menu state on heirarchy.
+
 ## [0.1.14] - 2024-12-12
 
 ## Fix

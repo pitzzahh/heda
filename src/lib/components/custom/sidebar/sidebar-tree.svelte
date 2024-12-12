@@ -2,6 +2,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { cn } from '@/utils';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
@@ -12,40 +13,45 @@
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { deleteProject, removeNode } from '@/db/mutations';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import type { HighestUnitSchema } from '@/schema';
 	import { page } from '$app/stores';
-	import UpdatePanelDialog from './update-panel-dialog.svelte';
+	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		node,
 		highest_unit,
 		generic_phase_panel_form,
+		phase_main_load_form,
 		project
 	}: {
 		node: Node;
 		highest_unit: HighestUnitSchema;
 		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
-	//TODO: FIX the collapsible to not close when a panel is added
-	let collapsible_state = $state(false);
-	let open_context_menu = $state(false);
-	let params_node_id = $derived($page.params.id.split('_').at(-1) || '');
-	function toggle() {
-		collapsible_state = !collapsible_state;
-	}
+	let open_panel_context_menu = $state(false);
+	let open_load_context_menu = $state(false);
+	let params_node_id = $derived($page.params?.id?.split('_')?.at(-1) ?? '');
 </script>
 
 {#await getChildNodesByParentId(node.id)}
-	<p></p>
+	<Sidebar.MenuButton
+		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+	>
+		{#snippet children()}
+			<Skeleton class="h-6 w-full" />
+		{/snippet}
+	</Sidebar.MenuButton>
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
 			class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 		>
-			<ContextMenu.Root>
+			<ContextMenu.Root bind:open={open_load_context_menu}>
 				<ContextMenu.Trigger class="w-full">
 					<div class="flex w-full items-center gap-2">
 						<div class="w-4">
@@ -57,12 +63,18 @@
 						</span>
 					</div>
 				</ContextMenu.Trigger>
-				<ContextMenu.Content>
+				<ContextMenu.Content class="grid gap-1">
 					{#snippet children()}
+						<UpdateLoadDialog
+							node_id={node.id}
+							{phase_main_load_form}
+							bind:some_open_state={open_load_context_menu}
+							load_to_edit={node}
+						/>
 						<ConfirmationDialog
 							trigger_text="Remove load"
 							trigger_variant="destructive"
-							bind:some_open_state={open_context_menu}
+							bind:some_open_state={open_load_context_menu}
 							onConfirm={async () => {
 								await removeNode(node.id);
 								await invalidateAll();
@@ -89,7 +101,7 @@
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
-					<ContextMenu.Root bind:open={open_context_menu}>
+					<ContextMenu.Root bind:open={open_panel_context_menu}>
 						<ContextMenu.Trigger class="w-full">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
@@ -123,7 +135,7 @@
 										panel_to_edit={node}
 										{generic_phase_panel_form}
 										{highest_unit}
-										bind:some_open_state={open_context_menu}
+										bind:some_open_state={open_panel_context_menu}
 										parent_id={node.parent_id}
 									/>
 								{/if}
@@ -131,12 +143,12 @@
 								<ConfirmationDialog
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
-									bind:some_open_state={open_context_menu}
+									bind:some_open_state={open_panel_context_menu}
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-
+										goto('/workspace');
 										await invalidateAll();
 									}}
 								/>
@@ -148,7 +160,12 @@
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
 						{#each children as unknown as Node[] as child, index (index)}
-							<SidebarTree node={child} {generic_phase_panel_form} {highest_unit} />
+							<SidebarTree
+								node={child}
+								{generic_phase_panel_form}
+								{phase_main_load_form}
+								{highest_unit}
+							/>
 						{/each}
 					</Sidebar.MenuSub>
 				</Collapsible.Content>

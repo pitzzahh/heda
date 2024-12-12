@@ -2,7 +2,7 @@ import type { HighestUnitSchema } from '@/schema';
 import { databaseInstance } from '..';
 import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
-import type { PhaseMainLoadSchema } from '@/schema/load';
+import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { NodeDocType } from '../schema';
 import type { Project } from '@/types/project';
 
@@ -61,7 +61,7 @@ export async function addNode({
 	panel_data,
 	parent_id
 }: {
-	load_data?: PhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
+	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
@@ -109,7 +109,7 @@ export async function updateNode({
 	panel_data,
 	id
 }: {
-	load_data?: PhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
+	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
