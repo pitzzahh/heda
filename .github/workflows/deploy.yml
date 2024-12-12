@@ -23,16 +23,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
+          cache: bun
 
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
-        run: npm install
+        run: bun run install
 
       - name: build
         env:
           BASE_PATH: "/counter"
         run: |
-          npm run build
+          bun run build
           touch build/.nojekyll
 
       - name: Upload Artifacts
