@@ -18,7 +18,7 @@
 		DEFAULT_THREE_PHASE_TYPES_OPTIONS
 	} from '@/constants';
 	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
-	import type { Phase, PhaseType } from '@/types/phase';
+	import type { Phase } from '@/types/phase';
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
