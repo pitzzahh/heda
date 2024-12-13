@@ -10,6 +10,7 @@
 	import type { Phase } from '@/types/phase';
 	import { cn } from '@/utils';
 	import type { HighestUnitSchema } from '@/schema';
+	import { getNodeById } from '@/db/queries';
 
 	let {
 		children,
@@ -29,7 +30,7 @@
 		is_parent_root_node: boolean;
 	} = $props();
 
-	const { distribution_unit, phase } = highest_unit;
+	const { phase } = highest_unit;
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let clickTimeout: number | null = null; // To store the timeout for single-click
@@ -59,25 +60,29 @@
 			<Dialog.Title>Add a Panel</Dialog.Title>
 			<div
 				class={cn('flex flex-col items-center justify-start', {
-					hidden: !is_parent_root_node
+					hidden: is_parent_root_node
 				})}
 			>
 				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
 						<div class="flex gap-1">
-							<h4 class="font-semibold">Name:</h4>
-							<p>{distribution_unit ?? 'N/A'}</p>
+							<h4 class="font-semibold">Supply From:</h4>
+							{#await getNodeById(parent_id)}
+								<p></p>
+							{:then parent_node}
+								<p>
+									{parent_node?.highest_unit_form?.distribution_unit ||
+										parent_node?.panel_data?.name ||
+										'N/A'}
+								</p>
+							{/await}
 						</div>
-						<!-- <div class="flex gap-1">
-							<h4 class="font-semibold">Terminal temperature:</h4>
-							<p>{terminal_temperature ?? 'N/A'}</p>
-						</div> -->
 					</div>
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{phase ?? 'N/A'}</p>
+							<p>{highest_unit.phase ?? 'N/A'}</p>
 						</div>
 					</div>
 				</div>
