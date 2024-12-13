@@ -8,9 +8,11 @@ export async function getCurrentProject(project_id?: string) {
 
 	try {
 		const query = db.projects.find({
-			selector: project_id ? {
-				id: project_id
-			} : undefined
+			selector: project_id
+				? {
+						id: project_id
+					}
+				: undefined
 		});
 		const project = (await query.exec()).at(0)?._data;
 
@@ -79,14 +81,14 @@ export async function checkNodeExists({
 	}
 }
 
-export async function getNodeById(id: string) {
+export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
 
 	try {
 		const node = await db.nodes
 			.findOne({
 				selector: {
-					id
+					id: target_id
 				}
 			})
 			.exec();
@@ -118,11 +120,38 @@ export async function getChildNodesByParentId(parent_id: string) {
 			return (a.circuit_number || 0) - (b.circuit_number || 0);
 		});
 
-		if (sortedChildren) {
-			return sortedChildren;
-		}
+		return sortedChildren;
+	} catch (error) {
+		console.log(error);
+		throw error;
+	}
+}
 
-		return null;
+export async function getParentNodes(excluded_id?: string) {
+	const db = await databaseInstance();
+
+	try {
+		const query = db.nodes.find({
+			selector: {
+				node_type: { $in: ['panel', 'root'] },
+				...(excluded_id && { id: { $ne: excluded_id } })
+			}
+		});
+
+		const parent_nodes = (await query.exec())
+			.map((doc) => {
+				const data = doc._data;
+				if (data.panel_data) {
+					return { name: data.panel_data.name || '', id: data.id };
+				}
+
+				if (data.highest_unit_form) {
+					return { name: data.highest_unit_form.distribution_unit || '', id: data.id };
+				}
+			})
+			.filter(Boolean);
+
+		return parent_nodes;
 	} catch (error) {
 		console.log(error);
 		throw error;

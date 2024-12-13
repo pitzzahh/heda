@@ -38,12 +38,14 @@
 		phase_main_load_form: T;
 		saved_path?: string;
 		closeDialog: () => void;
+		selected_parent_id?: string;
 		load_to_edit?: Node;
 		action: 'add' | 'edit';
 	}
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
+	let { phase_main_load_form, closeDialog, load_to_edit, action, selected_parent_id }: Props =
+		$props();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -82,9 +84,11 @@
 			if (panel_id) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
-					parent_id: panel_id,
+					//we want to check if the circuit number is alrdy existing in the parent we want to move in
+					parent_id: selected_parent_id || panel_id,
 					node_id: load_to_edit?.id
 				});
+
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
@@ -94,7 +98,7 @@
 
 				if (load_type) {
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
-					const loadData = {
+					const load_data = {
 						...form.data,
 						load_description,
 						config_preference: load_type
@@ -102,16 +106,17 @@
 					switch (action) {
 						case 'add':
 							await addNode({
-								load_data: loadData,
+								load_data,
 								parent_id: panel_id
 							});
 							toast.success(`${load_description} added successfully`);
 							break;
 						case 'edit':
-							if (load_to_edit) {
+							if (load_to_edit && selected_parent_id) {
 								await updateNode({
-									load_data: loadData,
-									id: load_to_edit.id
+									load_data,
+									id: load_to_edit.id,
+									parent_id: selected_parent_id
 								});
 								toast.success('Load updated successfully');
 							}
@@ -196,7 +201,7 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
+	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
 				{#snippet children({ props })}

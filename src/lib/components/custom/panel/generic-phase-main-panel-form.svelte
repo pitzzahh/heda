@@ -33,6 +33,7 @@
 		closeDialog: () => void;
 		panel_to_edit?: Node;
 		action: 'add' | 'edit';
+		selected_parent_id?: string;
 	}
 
 	let {
@@ -41,7 +42,8 @@
 		parent_id,
 		closeDialog,
 		panel_to_edit,
-		action
+		action,
+		selected_parent_id
 	}: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
@@ -57,9 +59,11 @@
 			if (parent_id) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
-					parent_id,
+					//we want to check if the circuit number is alrdy existing in the parent we want to move in
+					parent_id: selected_parent_id || parent_id,
 					node_id: panel_to_edit?.id
 				});
+
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
@@ -67,13 +71,20 @@
 					return;
 				}
 
-				if (action === 'add') await addNode({ parent_id, panel_data: form.data });
-				if (action === 'edit' && panel_to_edit) {
-					await updateNode({
-						panel_data: form.data,
-						id: panel_to_edit.id
-					});
-					toast.success('Panel updated successfully');
+				switch (action) {
+					case 'add':
+						await addNode({ parent_id, panel_data: form.data });
+						break;
+					case 'edit':
+						if (panel_to_edit && selected_parent_id) {
+							await updateNode({
+								panel_data: form.data,
+								id: panel_to_edit.id,
+								parent_id: selected_parent_id
+							});
+							toast.success('Panel updated successfully');
+						}
+						break;
 				}
 
 				await invalidateAll();

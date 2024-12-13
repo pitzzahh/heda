@@ -43,13 +43,20 @@
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#if root_node?.highest_unit_form}
-						<SidebarTree
-							node={root_node}
-							highest_unit={root_node.highest_unit_form}
-							{generic_phase_panel_form}
-							{phase_main_load_form}
-							{project}
-						/>
+						<svelte:boundary>
+							<SidebarTree
+								node={root_node}
+								highest_unit={root_node.highest_unit_form}
+								{phase_main_load_form}
+								{generic_phase_panel_form}
+								{project}
+							/>
+
+							{#snippet failed(error, reset)}
+								<p class="text-sm text-muted-foreground">{error}</p>
+								<Button onclick={reset}>oops! try again</Button>
+							{/snippet}
+						</svelte:boundary>
 					{:else}
 						<div class="grid h-[85vh] place-content-center">
 							<div class="grid gap-2">

@@ -107,10 +107,12 @@ export async function addNode({
 export async function updateNode({
 	load_data,
 	panel_data,
+	parent_id,
 	id
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
+	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
 	const database = await databaseInstance();
@@ -124,7 +126,9 @@ export async function updateNode({
 
 		const updatedNode = await query.update({
 			$set: {
+				parent_id,
 				panel_data,
+				circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
 				load_data: load_data as NodeDocType['load_data']
 			}
 		});
@@ -144,7 +148,7 @@ export async function removeNode(id: string) {
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child.id);
+			await removeNode(child._data.id);
 		}
 
 		const query = database.nodes.findOne({ selector: { id } });

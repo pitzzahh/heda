@@ -7,6 +7,9 @@
 	import { type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import type { HighestUnitSchema } from '@/schema';
 	import { cn } from '@/utils';
+	import Separator from '@/components/ui/separator/separator.svelte';
+	import { getNodeById } from '@/db/queries';
+	import { page } from '$app/stores';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
@@ -14,9 +17,7 @@
 	}
 
 	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
-
-	const { distribution_unit, phase } = highest_unit;
-
+	let params = $derived($page.params);
 	let is_dialog_open = $state(false);
 </script>
 
@@ -40,19 +41,28 @@
 					<div class="grid w-full grid-cols-2 justify-items-start">
 						<div>
 							<div class="flex gap-1">
-								<h4 class="font-semibold">Name:</h4>
-								<p>{distribution_unit ?? 'N/A'}</p>
+								<h4 class="font-semibold">Supply From:</h4>
+								{#await getNodeById(params.id.split('_').at(-1) || '')}
+									<p></p>
+								{:then parent_node}
+									<p>
+										{parent_node?.highest_unit_form?.distribution_unit ||
+											parent_node?.panel_data?.name ||
+											'N/A'}
+									</p>
+								{/await}
 							</div>
 						</div>
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Phase:</h4>
-								<p>{phase ?? 'N/A'}</p>
+								<p>{highest_unit.phase ?? 'N/A'}</p>
 							</div>
 						</div>
 					</div>
 				</div>
 			</Dialog.Header>
+			<Separator class="mt-0.5" />
 			<GenericPhaseMainLoadForm
 				action={'add'}
 				closeDialog={() => (is_dialog_open = false)}

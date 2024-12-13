@@ -33,9 +33,16 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
+	//TODO: FIX the collapsible to not close when a panel is added
+	let collapsible_state = $state(false);
+	let open_context_menu = $state(false);
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
-	let params_node_id = $derived($page.params?.id?.split('_')?.at(-1) ?? '');
+	let params = $derived($page.params);
+
+	function toggle() {
+		collapsible_state = !collapsible_state;
+	}
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -49,7 +56,7 @@
 {:then children}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+			class="flex w-full items-center justify-between hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root bind:open={open_load_context_menu}>
 				<ContextMenu.Trigger class="w-full">
@@ -93,7 +100,7 @@
 				<Sidebar.MenuButton
 					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
 						'-translate-x-2': node.node_type === 'panel',
-						'bg-primary/20': params_node_id === node.id
+						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
 					})}
 				>
 					<Collapsible.Trigger>
@@ -148,7 +155,7 @@
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-										goto('/workspace');
+
 										await invalidateAll();
 									}}
 								/>
