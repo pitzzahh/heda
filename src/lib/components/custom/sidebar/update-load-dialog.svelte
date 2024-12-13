@@ -1,41 +1,79 @@
 <script lang="ts">
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
 	import { Separator } from '@/components/ui/separator/index.js';
-	import type { Phase } from '@/types/phase';
-	import { cn } from '@/utils';
-	import type { HighestUnitSchema } from '@/schema';
 	import type { Node } from '@/types/project';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
+	import { getNodeById } from '@/db/queries';
+	import ParentPanelPopover from '../parent-panel-popover.svelte';
+	import { cn } from '@/utils';
+	import type { HighestUnitSchema } from '@/schema';
 
 	let {
-		node_id,
 		phase_main_load_form,
 		some_open_state = $bindable(),
-		load_to_edit
+		load_to_edit,
+		highest_unit
 	}: {
-		node_id: string;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		some_open_state?: boolean;
 		load_to_edit: Node;
+		highest_unit: HighestUnitSchema;
 	} = $props();
 
+	const { phase } = highest_unit;
+
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
+	let selected_parent = $state<{ name: string; id: string } | null>(null);
+
+	$effect(() => {
+		if (load_to_edit.parent_id) {
+			getNodeById(load_to_edit.parent_id).then((node) => {
+				selected_parent = {
+					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
+					id: node?.id || ''
+				};
+			});
+		}
+	});
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update Load</Dialog.Trigger>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update Load</Dialog.Title>
+			<div class={cn('flex flex-col items-center justify-start')}>
+				<h4 class="mb-1 font-bold">MAIN</h4>
+				<div class="grid w-full grid-cols-2 justify-items-start">
+					<div>
+						<div class="flex items-center gap-1">
+							<h4 class="font-semibold">Supply From:</h4>
+							{#if selected_parent}
+								<ParentPanelPopover
+									current_parent_id={load_to_edit.parent_id || ''}
+									bind:selected_parent
+									excluded_node_id={load_to_edit.id}
+								/>
+							{/if}
+						</div>
+					</div>
+					<div>
+						<div class="flex gap-1">
+							<h4 class="font-semibold">Phase:</h4>
+							<p>{phase ?? 'N/A'}</p>
+						</div>
+					</div>
+				</div>
+			</div>
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
 			<GenericPhaseMainLoadForm
 				{phase_main_load_form}
+				selected_parent_id={selected_parent?.id}
 				closeDialog={() => (open_panel_dialog = false)}
 				{load_to_edit}
 				action="edit"

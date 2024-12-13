@@ -30,7 +30,7 @@
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
-	
+
 	$effect(() => {
 		if (panel_to_edit.parent_id) {
 			getNodeById(panel_to_edit.parent_id).then((node) => {
@@ -44,7 +44,7 @@
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update Panel</Dialog.Trigger>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>

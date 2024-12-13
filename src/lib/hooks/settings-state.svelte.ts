@@ -9,13 +9,17 @@ type ThemeColor = 'autocad' | 'excel';
 type ThemeMode = 'dark' | 'light';
 
 export class SettingsState {
-	localStorage = new LocalStorage<Settings>('settings');
-	themeColor = $state<ThemeColor>(this.localStorage?.current?.color || 'excel');
-	font = $state<Font>((this.localStorage?.current?.font as Font) || 'default');
+	localStorage: LocalStorage<Settings>;
+
+	themeColor = $state<ThemeColor>('excel');
+	font = $state<Font>('default');
 
 	constructor(mode: ThemeMode) {
-		setGlobalColorTheme(mode, this.themeColor);
-		this.setGlobalFont(this.font);
+		const localStorage = new LocalStorage<Settings>('settings');
+
+		setGlobalColorTheme(mode, localStorage?.current?.color || 'excel');
+		this.setGlobalFont(localStorage?.current?.font || 'default');
+		this.localStorage = localStorage;
 	}
 
 	private setGlobalFont(font: Font) {
