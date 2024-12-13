@@ -4,12 +4,11 @@ import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import { DataTableAddLoad, ColumnDropdown } from '@/components/custom/table/(components)';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
-import type { HighestUnitSchema } from '@/schema';
-import type { Node } from '@/types/project';
+import type { Node } from '@/db/schema';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema,
+	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<T>[] => [
 		{
@@ -112,7 +111,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema
+	highest_unit?: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<T>[] => [
 		{
 			header: 'EGC',
