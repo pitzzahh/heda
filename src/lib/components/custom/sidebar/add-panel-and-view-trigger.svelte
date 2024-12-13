@@ -11,6 +11,7 @@
 	import { cn } from '@/utils';
 	import type { HighestUnitSchema } from '@/schema';
 	import { getNodeById } from '@/db/queries';
+	import type { Node } from '@/types/project';
 
 	let {
 		children,
@@ -19,7 +20,8 @@
 		parent_id,
 		highest_unit,
 		panel_name,
-		is_parent_root_node = false
+		is_parent_root_node = false,
+		latest_circuit_node
 	}: {
 		children: Snippet;
 		id: string;
@@ -28,6 +30,7 @@
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		is_parent_root_node: boolean;
+		latest_circuit_node?: Node;
 	} = $props();
 
 	const { phase } = highest_unit;
@@ -96,6 +99,7 @@
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
 				closeDialog={() => (open_panel_dialog = false)}
+				{latest_circuit_node}
 			/>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>
