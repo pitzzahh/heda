@@ -1,12 +1,10 @@
-import type { HighestUnitSchema } from '@/schema';
 import { databaseInstance } from '..';
 import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-import type { NodeDocType } from '../schema';
-import type { Project } from '@/types/project';
+import type { Project, Node } from '@/db/schema';
 
-export async function createProject(highest_unit_form: HighestUnitSchema) {
+export async function createProject(highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
 
 	try {
@@ -76,8 +74,8 @@ export async function addNode({
 				: panel_data
 					? panel_data.circuit_number
 					: 0,
-			panel_data: panel_data as NodeDocType['panel_data'],
-			load_data: load_data as NodeDocType['load_data'],
+			panel_data: panel_data as Node['panel_data'],
+			load_data: load_data as Node['load_data'],
 			parent_id,
 			child_ids: []
 		});
@@ -129,7 +127,7 @@ export async function updateNode({
 				parent_id,
 				panel_data,
 				circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-				load_data: load_data as NodeDocType['load_data']
+				load_data: load_data as Node['load_data']
 			}
 		});
 
