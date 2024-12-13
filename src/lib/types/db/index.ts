@@ -1,4 +1,4 @@
-import type { ProjectDocType, NodeDocType } from "@/db/schema";
+import type { Project, Node } from "@/db/schema";
 import type { RxCollection } from "rxdb";
 
 // we declare one static ORM-method for the collection
@@ -11,8 +11,8 @@ export type NodeCollectionMethods = {
   countAllDocuments: () => Promise<number>;
 }
 
-export type ProjectCollection = RxCollection<ProjectDocType, ProjectCollectionMethods>;
-export type NodeCollection = RxCollection<NodeDocType, NodeCollectionMethods>;
+export type ProjectCollection = RxCollection<Project, ProjectCollectionMethods>;
+export type NodeCollection = RxCollection<Node, NodeCollectionMethods>;
 
 export type MyDatabaseCollections = {
   projects: ProjectCollection,
