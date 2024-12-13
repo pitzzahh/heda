@@ -16,10 +16,12 @@
 		selected_parent: { name: string; id: string };
 		excluded_node_id: string;
 	} = $props();
+
+	let is_popover_open = $state(false);
 </script>
 
 {#await getParentNodes(excluded_node_id) then parent_nodes}
-	<Popover.Root>
+	<Popover.Root bind:open={is_popover_open}>
 		<Popover.Trigger
 			class={cn(buttonVariants({ variant: 'outline' }), 'min-w-[150px]  justify-between')}
 			role="combobox"
@@ -39,6 +41,7 @@
 							value={parent_node?.name}
 							onSelect={() => {
 								if (parent_node) selected_parent = parent_node;
+								is_popover_open = false;
 							}}
 							class={parent_node?.id === current_parent_id
 								? '!text-primary hover:!text-primary'
