@@ -10,13 +10,15 @@
 	import Separator from '@/components/ui/separator/separator.svelte';
 	import { getNodeById } from '@/db/queries';
 	import { page } from '$app/stores';
+	import type { Node } from '@/types/project';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		highest_unit: HighestUnitSchema;
+		latest_circuit_node?: Node;
 	}
 
-	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
+	let { phase_main_load_form, highest_unit, latest_circuit_node, ...props }: Props = $props();
 	let params = $derived($page.params);
 	let is_dialog_open = $state(false);
 </script>
@@ -67,6 +69,7 @@
 				action={'add'}
 				closeDialog={() => (is_dialog_open = false)}
 				{phase_main_load_form}
+				{latest_circuit_node}
 			/>
 		</Dialog.Content>
 	</Dialog.Root>
