@@ -17,12 +17,14 @@
 		parent_id,
 		highest_unit,
 		some_open_state = $bindable(),
+		latest_circuit_node,
 		panel_to_edit
 	}: {
 		highest_unit: HighestUnitSchema;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		some_open_state?: boolean;
+		latest_circuit_node?: Node;
 		panel_to_edit: Node;
 	} = $props();
 
