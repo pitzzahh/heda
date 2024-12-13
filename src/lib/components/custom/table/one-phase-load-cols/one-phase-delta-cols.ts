@@ -39,6 +39,6 @@ export function onePhaseDeltaCols(
 				}
 			]
 		},
-		...createRightMostBaseColumns<PhaseLoadSchedule>()
+		...createRightMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit)
 	];
 }
