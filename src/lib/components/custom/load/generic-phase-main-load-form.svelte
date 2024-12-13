@@ -30,7 +30,7 @@
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 
@@ -38,7 +38,7 @@
 		phase_main_load_form: T;
 		closeDialog: () => void;
 		selected_parent_id?: string;
-		load_to_edit?: Node;
+		node_to_edit?: Node;
 		action: 'add' | 'edit';
 		latest_circuit_node?: Node;
 	}
@@ -48,7 +48,7 @@
 	let {
 		phase_main_load_form,
 		closeDialog,
-		load_to_edit,
+		node_to_edit,
 		action,
 		selected_parent_id,
 		latest_circuit_node
@@ -93,7 +93,7 @@
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
 					parent_id: selected_parent_id || panel_id,
-					node_id: load_to_edit?.id
+					node_id: node_to_edit?.id
 				});
 
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
@@ -119,10 +119,10 @@
 							toast.success(`${load_description} added successfully`);
 							break;
 						case 'edit':
-							if (load_to_edit && selected_parent_id) {
+							if (node_to_edit && selected_parent_id) {
 								await updateNode({
 									load_data,
-									id: load_to_edit.id,
+									id: node_to_edit.id,
 									parent_id: selected_parent_id
 								});
 								toast.success('Load updated successfully');
@@ -157,7 +157,7 @@
 	const load_description_trigger_id = useId();
 	const horsepower_rating_trigger_id = useId();
 	let load_type = $state<FormLoadTypeOption | undefined>(
-		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
+		node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
 	);
 
 	// We want to refocus the trigger button when the user selects
@@ -179,7 +179,7 @@
 			return;
 		}
 
-		if (!load_to_edit || !load_to_edit.load_data) {
+		if (!node_to_edit || !node_to_edit.load_data) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the load to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
@@ -190,7 +190,7 @@
 		const {
 			circuit_number,
 			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
-		} = load_to_edit;
+		} = node_to_edit;
 
 		$formData.circuit_number = circuit_number as number;
 		$formData.load_description = load_description.split(' - ')[1];
