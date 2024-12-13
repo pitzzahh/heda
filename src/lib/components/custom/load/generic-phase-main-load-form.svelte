@@ -205,12 +205,16 @@
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>Circuit number</Form.Label>
+					<Form.Label
+						class={cn({ 'text-red': is_circuit_number_taken_state.is_circuit_number_taken })}
+						>Circuit number</Form.Label
+					>
 					<Input
 						{...props}
 						type="number"
 						inputmode="numeric"
 						min={1}
+						class={cn({ 'border-red': is_circuit_number_taken_state.is_circuit_number_taken })}
 						bind:value={$formData.circuit_number}
 						placeholder="Enter the circuit number"
 					/>
@@ -252,19 +256,19 @@
 						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 						<Command.Empty>No terminal temp found.</Command.Empty>
 						<Command.Group>
-							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
+							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
 								<Command.Item
-									value={ambient_temp}
+									value={terminal_temp}
 									onSelect={() => {
-										$formData.terminal_temperature = ambient_temp;
+										$formData.terminal_temperature = terminal_temp;
 										closeAndFocusTrigger(terminal_temp_trigger_id);
 									}}
 								>
-									{convertToNormalText(ambient_temp)}
+									{convertToNormalText(terminal_temp)}
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp !== $formData.terminal_temperature && 'text-transparent'
+											terminal_temp !== $formData.terminal_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>
