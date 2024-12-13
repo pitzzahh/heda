@@ -7,8 +7,7 @@
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
 	import { cn } from '@/utils';
-	import type { HighestUnitSchema } from '@/schema';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { getNodeById } from '@/db/queries';
 
@@ -19,7 +18,7 @@
 		some_open_state = $bindable(),
 		panel_to_edit
 	}: {
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		some_open_state?: boolean;
@@ -45,7 +44,9 @@
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update Panel</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
+		>Update Panel</Dialog.Trigger
+	>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>
@@ -82,7 +83,7 @@
 				main_phase={phase as Phase}
 				selected_parent_id={selected_parent?.id}
 				closeDialog={() => (open_panel_dialog = false)}
-				{panel_to_edit}
+				node_to_edit={panel_to_edit}
 			/>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>
