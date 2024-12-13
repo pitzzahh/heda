@@ -73,7 +73,7 @@
 				<ContextMenu.Content class="grid gap-1">
 					{#snippet children()}
 						<UpdateLoadDialog
-							node_id={node.id}
+							{highest_unit}
 							{phase_main_load_form}
 							bind:some_open_state={open_load_context_menu}
 							load_to_edit={node}
