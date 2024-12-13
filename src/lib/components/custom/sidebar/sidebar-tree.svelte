@@ -53,7 +53,7 @@
 			<Skeleton class="h-6 w-full" />
 		{/snippet}
 	</Sidebar.MenuButton>
-{:then children}
+{:then child_nodes}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
 			class="flex w-full items-center justify-between hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
@@ -119,6 +119,7 @@
 								{highest_unit}
 								is_parent_root_node={node.node_type === 'root'}
 								parent_id={node.id}
+								latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 							>
 								<!-- TODO: Palitan or retain this -->
 								{#if node.node_type === 'root'}
@@ -144,6 +145,9 @@
 										{highest_unit}
 										bind:some_open_state={open_panel_context_menu}
 										parent_id={node.parent_id}
+										latest_circuit_node={child_nodes
+											? child_nodes[child_nodes.length - 1]
+											: undefined}
 									/>
 								{/if}
 
@@ -166,7 +170,7 @@
 
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
-						{#each children as Node[] as child, index (index)}
+						{#each child_nodes as child, index (index)}
 							<SidebarTree
 								node={child}
 								{generic_phase_panel_form}
