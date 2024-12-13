@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// import { createRawSnippet } from 'svelte';
 import { renderComponent } from '@/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
@@ -7,11 +5,12 @@ import { DataTableAddLoad, ColumnDropdown } from '@/components/custom/table/(com
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { HighestUnitSchema } from '@/schema';
+import type { Node } from '@/types/project';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema
-	// phase:
+	highest_unit: HighestUnitSchema,
+	latest_circuit_node?: Node
 ): ColumnDef<T>[] => [
 		{
 			accessorKey: 'circuit_number',
@@ -19,6 +18,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				renderComponent(DataTableAddLoad, {
 					phase_main_load_form,
 					highest_unit,
+					latest_circuit_node,
 					'aria-label': 'Select row',
 					class: 'translate-y-[2px]'
 				}),
