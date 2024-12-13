@@ -1,5 +1,5 @@
 <script>
-	import { Button } from '@/components/ui/button/index.js';
+	import { Button } from '@/components/ui/button';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
