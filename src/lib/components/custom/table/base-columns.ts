@@ -3,12 +3,10 @@
 import { renderComponent } from '@/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import { DataTableAddLoad } from '@/components/custom/table/(components)';
+import { DataTableAddLoad, ColumnDropdown } from '@/components/custom/table/(components)';
 import type { PhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
-import ColumnDropdown from './column-dropdown.svelte';
 import type { HighestUnitSchema } from '@/schema';
-import type { Node } from '@/types/project';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
@@ -113,7 +111,8 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 ];
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
-	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>
+	phase_main_load_form: SuperValidated<PhaseMainLoadSchema>,
+	highest_unit: HighestUnitSchema
 ): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
@@ -156,7 +155,8 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 
 			return renderComponent(ColumnDropdown, {
 				node: row.original,
-				phase_main_load_form
+				phase_main_load_form,
+				highest_unit
 			});
 		}
 	}
