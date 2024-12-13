@@ -9,9 +9,8 @@
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
 	import { cn } from '@/utils';
-	import type { HighestUnitSchema } from '@/schema';
+	import type { Node } from '@/db/schema';
 	import { getNodeById } from '@/db/queries';
-	import type { Node } from '@/types/project';
 
 	let {
 		children,
@@ -26,7 +25,7 @@
 		children: Snippet;
 		id: string;
 		panel_name: string;
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		is_parent_root_node: boolean;
