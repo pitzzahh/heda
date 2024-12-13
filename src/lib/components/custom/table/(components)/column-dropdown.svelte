@@ -6,11 +6,10 @@
 	import { removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import type { HighestUnitSchema } from '@/schema';
 	import { getNodeById } from '@/db/queries';
 	import ParentPanelPopover from '../../parent-panel-popover.svelte';
 	import { cn } from '@/utils';
@@ -24,9 +23,9 @@
 	}: {
 		node: Node;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
-		highest_unit: HighestUnitSchema;
+		highest_unit?: NonNullable<Node['highest_unit_form']>;
 	} = $props();
-	const { phase } = highest_unit;
+	const phase = highest_unit?.phase;
 
 	let is_dialog_open = $state(false);
 	let open_dropdown_menu = $state(false);
@@ -115,7 +114,7 @@
 			selected_parent_id={selected_parent?.id}
 			closeDialog={() => (is_dialog_open = false)}
 			{phase_main_load_form}
-			load_to_edit={node}
+			node_to_edit={node}
 		/>
 	</Dialog.Content>
 </Dialog.Root>
