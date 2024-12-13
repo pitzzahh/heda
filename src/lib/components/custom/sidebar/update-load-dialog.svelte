@@ -4,12 +4,11 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
 	import { Separator } from '@/components/ui/separator/index.js';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { getNodeById } from '@/db/queries';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { cn } from '@/utils';
-	import type { HighestUnitSchema } from '@/schema';
 
 	let {
 		phase_main_load_form,
@@ -20,7 +19,7 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		some_open_state?: boolean;
 		load_to_edit: Node;
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 	} = $props();
 
 	const { phase } = highest_unit;
@@ -41,7 +40,9 @@
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update Load</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
+		>Update Load</Dialog.Trigger
+	>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update Load</Dialog.Title>
@@ -75,7 +76,7 @@
 				{phase_main_load_form}
 				selected_parent_id={selected_parent?.id}
 				closeDialog={() => (open_panel_dialog = false)}
-				{load_to_edit}
+				node_to_edit={load_to_edit}
 				action="edit"
 			/>
 			{#snippet failed(error, reset)}
