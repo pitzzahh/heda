@@ -1,5 +1,5 @@
 import type { DefaultLoad, LoadType, VariesLabel } from '@/types/load';
-import { getEnumValues } from '@/utils/enum';
+import { getEnumValues, getEnumKeys } from '@/utils/enum';
 import { toLabelValueArray } from '@/utils/mapper';
 
 export const default_terminal_temperatures = {
@@ -159,8 +159,7 @@ export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_ty
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
 
-export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumValues(default_hp_current_relationship);
-
+export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 
 export const FIELD_VALIDATION = {
 	TEST: {
