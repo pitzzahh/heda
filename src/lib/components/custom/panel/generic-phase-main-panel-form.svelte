@@ -34,6 +34,7 @@
 		panel_to_edit?: Node;
 		action: 'add' | 'edit';
 		selected_parent_id?: string;
+		latest_circuit_node?: Node;
 	}
 
 	let {
@@ -43,6 +44,7 @@
 		closeDialog,
 		panel_to_edit,
 		action,
+		latest_circuit_node,
 		selected_parent_id
 	}: Props = $props();
 
@@ -94,20 +96,6 @@
 	});
 	const { form: formData, enhance } = form;
 
-	$effect(() => {
-		if (panel_to_edit && panel_to_edit.panel_data) {
-			const {
-				circuit_number,
-				panel_data: { terminal_temperature, phase, name }
-			} = panel_to_edit;
-
-			$formData.circuit_number = circuit_number as number;
-			$formData.name = name;
-			$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
-			$formData.phase = phase as Phase;
-		}
-	});
-
 	let open_panel_phase_popover = $state(false);
 	let open_terminal_temp = $state(false);
 	let open_phase_type = $state(false);
@@ -131,6 +119,22 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (panel_to_edit && panel_to_edit.panel_data) {
+			const {
+				circuit_number,
+				panel_data: { terminal_temperature, phase, name }
+			} = panel_to_edit;
+
+			$formData.circuit_number = circuit_number as number;
+			$formData.name = name;
+			$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
+			$formData.phase = phase as Phase;
+		} else {
+			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
+		}
+	});
 </script>
 
 <form method="POST" use:enhance>
