@@ -1,6 +1,6 @@
 {
 	"name": "heda",
-	"version": "0.1.12",
+	"version": "0.1.15",
 	"type": "module",
 	"private": true,
 	"author": {
@@ -21,13 +21,13 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
 		"@sveltejs/adapter-static": "^3.0.6",
-		"@sveltejs/kit": "^2.9.1",
+		"@sveltejs/kit": "^2.10.1",
 		"@sveltejs/vite-plugin-svelte": "^5.0.1",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tauri-apps/cli": "^2.1.0",
 		"@types/eslint": "^9.6.1",
 		"autoprefixer": "^10.4.20",
-		"bits-ui": "^1.0.0-next.69",
+		"bits-ui": "^1.0.0-next.71",
 		"clsx": "^2.1.1",
 		"eslint": "^9.16.0",
 		"eslint-config-prettier": "^9.1.0",
@@ -37,7 +37,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.2",
 		"prettier-plugin-tailwindcss": "^0.6.9",
-		"svelte": "^5.10.0",
+		"svelte": "^5.11.2",
 		"svelte-check": "^4.1.1",
 		"svelte-radix": "^2.0.1",
 		"svelte-sonner": "^0.3.28",
@@ -60,6 +60,6 @@
 		"rxdb": "^15.39.0",
 		"rxjs": "^7.8.1",
 		"sveltekit-superforms": "^2.21.1",
-		"zod": "^3.23.8"
+		"zod": "v3.23.8"
 	}
 }

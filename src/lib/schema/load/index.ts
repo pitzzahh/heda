@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DEFAULT_LOAD_TYPES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS, MIN_VARIES } from '@/constants';
 import type { LoadType, TerminalTemperature } from '@/types/load';
 
-export const phase_main_load_schema = z.object({
+export const generic_phase_main_load_schema = z.object({
 	circuit_number: z
 		.number({ message: 'Please enter a valid circuit number.' })
 		.refine((value) => value > 0, {
@@ -23,4 +23,4 @@ export const phase_main_load_schema = z.object({
 		errorMap: () => ({ message: 'Please select a valid load type.' })
 	})
 });
-export type PhaseMainLoadSchema = z.infer<typeof phase_main_load_schema>;
+export type GenericPhaseMainLoadSchema = z.infer<typeof generic_phase_main_load_schema>;

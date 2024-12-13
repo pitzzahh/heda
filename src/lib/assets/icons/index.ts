@@ -19,3 +19,4 @@ export { default as ChevronsUpDown } from 'lucide-svelte/icons/chevrons-up-down'
 export { default as Check } from 'lucide-svelte/icons/check';
 export { default as Trash2 } from 'lucide-svelte/icons/trash-2';
 export { default as Pencil } from 'lucide-svelte/icons/pencil';
+export { default as CircleAlert } from 'lucide-svelte/icons/circle-alert';

@@ -18,7 +18,7 @@
 
 	let { data, children } = $props();
 
-	const { is_new_file, is_load_file, generic_phase_panel_form } = $derived(data);
+	const { is_new_file, is_load_file, generic_phase_panel_form, phase_main_load_form } = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
@@ -49,6 +49,7 @@
 		project={data.project as unknown as Project | undefined}
 		root_node={data.root_node}
 		{generic_phase_panel_form}
+		{phase_main_load_form}
 	/>
 	<Sidebar.Inset>
 		<header

@@ -4,21 +4,20 @@
 	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
 	import { CirclePlus } from '@/assets/icons';
 	import type { SuperValidated } from 'sveltekit-superforms';
-	import { type PhaseMainLoadSchema } from '@/schema/load';
-	import { highest_unit_schema, type HighestUnitSchema } from '@/schema';
+	import { type GenericPhaseMainLoadSchema } from '@/schema/load';
+	import type { HighestUnitSchema } from '@/schema';
 	import { cn } from '@/utils';
 	import Separator from '@/components/ui/separator/separator.svelte';
 	import { getNodeById } from '@/db/queries';
 	import { page } from '$app/stores';
 
 	interface Props {
-		phase_main_load_form: SuperValidated<PhaseMainLoadSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		highest_unit: HighestUnitSchema;
 	}
 
 	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
 	let params = $derived($page.params);
-
 	let is_dialog_open = $state(false);
 </script>
 

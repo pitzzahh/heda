@@ -1,4 +1,4 @@
-import { phase_main_load_schema } from '@/schema/load';
+import { generic_phase_main_load_schema } from '@/schema/load';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import {
@@ -35,7 +35,7 @@ export const load = async ({ params }) => {
 	// const loads = nodes?.filter((node) => node.node_type === 'load');
 
 	return {
-		phase_main_load_form: await superValidate(zod(phase_main_load_schema)),
+		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		project,
 		nodes: nodes && nodes?.length > 0 ? nodes : [],
 		root_node: root_node as Node

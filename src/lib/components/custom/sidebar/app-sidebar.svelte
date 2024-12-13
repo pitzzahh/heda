@@ -12,15 +12,18 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { Project } from '@/types/project';
 	import type { Node } from '@/types/project';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
 		ref = $bindable(null),
 		generic_phase_panel_form,
+		phase_main_load_form,
 		project,
 		root_node,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		project?: Project;
 		root_node: Node;
 	} = $props();
@@ -44,6 +47,7 @@
 							<SidebarTree
 								node={root_node}
 								highest_unit={root_node.highest_unit_form}
+								{phase_main_load_form}
 								{generic_phase_panel_form}
 								{project}
 							/>

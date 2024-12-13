@@ -9,7 +9,7 @@
 	import type { Node } from '@/types/project';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
-	import type { PhaseMainLoadSchema } from '@/schema/load';
+	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import type { HighestUnitSchema } from '@/schema';
 	import { getNodeById } from '@/db/queries';
 	import ParentPanelPopover from '../../parent-panel-popover.svelte';
@@ -23,7 +23,7 @@
 		...props
 	}: {
 		node: Node;
-		phase_main_load_form: SuperValidated<PhaseMainLoadSchema>;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		highest_unit: HighestUnitSchema;
 	} = $props();
 	const { phase } = highest_unit;
@@ -63,6 +63,7 @@
 					<Pencil class="ml-2 size-4" />
 					Update
 				</DropdownMenu.Item>
+
 				<DropdownMenu.Item class="mt-0.5 p-0">
 					{#snippet children()}
 						<ConfirmationDialog

@@ -74,7 +74,7 @@
 									buttonVariants({
 										variant: 'outline',
 										className:
-											'w-full font-normal hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20'
+											'w-full font-normal hover:bg-primary/20 hover:text-white [&:has([data-state=checked])]:bg-primary/20'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'
