@@ -121,19 +121,27 @@
 	}
 
 	$effect(() => {
-		if (panel_to_edit && panel_to_edit.panel_data) {
-			const {
-				circuit_number,
-				panel_data: { terminal_temperature, phase, name }
-			} = panel_to_edit;
-
-			$formData.circuit_number = circuit_number as number;
-			$formData.name = name;
-			$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
-			$formData.phase = phase as Phase;
-		} else {
+		if (action !== 'edit') {
 			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
+			return;
 		}
+
+		if (!panel_to_edit || !panel_to_edit.panel_data) {
+			// TODO: Log system error
+			toast.warning('Failed to identify the panel to edit', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+		const {
+			circuit_number,
+			panel_data: { terminal_temperature, phase, name }
+		} = panel_to_edit;
+
+		$formData.circuit_number = circuit_number as number;
+		$formData.name = name;
+		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
+		$formData.phase = phase as Phase;
 	});
 </script>
 
