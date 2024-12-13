@@ -166,7 +166,7 @@
 
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
-						{#each children as unknown as Node[] as child, index (index)}
+						{#each children as Node[] as child, index (index)}
 							<SidebarTree
 								node={child}
 								{generic_phase_panel_form}
