@@ -31,7 +31,9 @@ const node_literal = {
 				terminal_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
-			additionalProperties: false
+			additionalProperties: false,
+			required: ['name', 'terminal_temperature', 'terminal_temperature', 'phase']
+
 		},
 		load_data: {
 			type: 'object',
