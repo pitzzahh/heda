@@ -1,13 +1,3 @@
-<script module>
-	import { z } from 'zod';
-
-	export const newFileSchema = z.object({
-		id: z.string().optional(),
-		file_name: z.string().refine((v) => v, { message: 'An file_name is required.' })
-	});
-	export type NewFileSchema = z.infer<typeof newFileSchema>;
-</script>
-
 <script lang="ts" generics="T extends SuperValidated<NewFileSchema>">
 	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
@@ -18,7 +8,8 @@
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Form from '@/components/ui/form/index.js';
-	
+	import { new_file_schema, type NewFileSchema } from '@/schema';
+
 	interface Props {
 		new_file_form: T;
 		saved_path?: string;
@@ -29,7 +20,7 @@
 
 	const form = superForm(new_file_form, {
 		SPA: true,
-		validators: zodClient(newFileSchema),
+		validators: zodClient(new_file_schema),
 		onUpdate: ({ form }) => {
 			// toast the values
 			if (form.valid) {
