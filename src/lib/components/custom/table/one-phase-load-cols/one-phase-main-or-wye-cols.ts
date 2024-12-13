@@ -39,6 +39,6 @@ export function onePhaseMainOrWyeCols(
 				}
 			]
 		},
-		...createRightMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form)
+		...createRightMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit)
 	];
 }
