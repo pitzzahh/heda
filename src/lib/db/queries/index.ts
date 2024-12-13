@@ -21,7 +21,7 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	}
 }
 
-export async function getRootNode() {
+export async function getRootNode(): Promise<Node | null> {
 	const db = await databaseInstance();
 
 	try {
@@ -30,13 +30,7 @@ export async function getRootNode() {
 				node_type: 'root'
 			}
 		});
-		const node = (await query.exec()).at(0)?._data;
-
-		if (node) {
-			return node;
-		}
-
-		return null;
+		return (await query.exec()).at(0)?._data as Node | null;
 	} catch (error) {
 		console.log(error);
 		throw error;
