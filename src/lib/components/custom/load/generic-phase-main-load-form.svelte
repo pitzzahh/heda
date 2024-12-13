@@ -88,7 +88,7 @@
 					parent_id: selected_parent_id || panel_id,
 					node_id: load_to_edit?.id
 				});
-				
+
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
@@ -201,7 +201,7 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
+	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
 				{#snippet children({ props })}
