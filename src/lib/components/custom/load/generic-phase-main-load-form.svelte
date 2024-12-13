@@ -36,16 +36,23 @@
 
 	interface Props {
 		phase_main_load_form: T;
-		saved_path?: string;
 		closeDialog: () => void;
 		selected_parent_id?: string;
 		load_to_edit?: Node;
 		action: 'add' | 'edit';
+		latest_circuit_node?: Node;
 	}
+
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog, load_to_edit, action, selected_parent_id }: Props =
-		$props();
+	let {
+		phase_main_load_form,
+		closeDialog,
+		load_to_edit,
+		action,
+		selected_parent_id,
+		latest_circuit_node
+	}: Props = $props();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -167,7 +174,10 @@
 	}
 
 	$effect(() => {
-		if (action !== 'edit') return;
+		if (action !== 'edit') {
+			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
+			return;
+		}
 
 		if (!load_to_edit || !load_to_edit.load_data) {
 			// TODO: Log system error
