@@ -1,7 +1,7 @@
 import { computeVoltAmphere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
-import type { Node, Project } from '@/types/project';
+import type { Node, Project } from '@/db/schema';
 
 export async function getCurrentProject(project_id?: string): Promise<Project | null> {
 	const db = await databaseInstance();
