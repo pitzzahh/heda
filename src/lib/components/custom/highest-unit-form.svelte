@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends SuperValidated<HighestUnitSchema>">
+<script lang="ts" generics="T extends SuperValidated<NonNullable<Node['highest_unit_form']>>">
 	import { goto, invalidate } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
@@ -6,14 +6,12 @@
 	import { Input } from '@/components/ui/input/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Form from '@/components/ui/form/index.js';
-	import { tick, untrack } from 'svelte';
-	import { useId } from 'bits-ui';
 	import { cn } from '@/utils';
 	import { buttonVariants } from '@/components/ui/button';
-	import { type HighestUnitSchema, highest_unit_schema } from '@/schema';
+	import { highest_unit_schema } from '@/schema';
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
-	import type { Project } from '@/types/project';
+	import type { Project, Node } from '@/db/schema';
 
 	interface Props {
 		highest_unit_form: T;
