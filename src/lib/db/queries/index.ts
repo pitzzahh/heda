@@ -1,26 +1,20 @@
 import { computeVoltAmphere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
-import type { Node } from '@/types/project';
+import type { Node, Project } from '@/types/project';
 
-export async function getCurrentProject(project_id?: string) {
+export async function getCurrentProject(project_id?: string): Promise<Project | null> {
 	const db = await databaseInstance();
 
 	try {
 		const query = db.projects.find({
 			selector: project_id
 				? {
-						id: project_id
-					}
+					id: project_id
+				}
 				: undefined
 		});
-		const project = (await query.exec()).at(0)?._data;
-
-		if (project) {
-			return project;
-		}
-
-		return null;
+		return (await query.exec()).at(0)?._data as Project | null;
 	} catch (error) {
 		console.log(error);
 		throw error;
@@ -104,7 +98,7 @@ export async function getNodeById(target_id: string) {
 	}
 }
 
-export async function getChildNodesByParentId(parent_id: string) {
+export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
 	const db = await databaseInstance();
 
 	try {
@@ -120,7 +114,7 @@ export async function getChildNodesByParentId(parent_id: string) {
 			return (a.circuit_number || 0) - (b.circuit_number || 0);
 		});
 
-		return sortedChildren;
+		return sortedChildren as Node[];
 	} catch (error) {
 		console.log(error);
 		throw error;
