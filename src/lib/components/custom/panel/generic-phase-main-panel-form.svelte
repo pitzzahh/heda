@@ -23,7 +23,7 @@
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
 
 	interface Props {
@@ -31,7 +31,7 @@
 		main_phase: Phase;
 		parent_id?: string;
 		closeDialog: () => void;
-		panel_to_edit?: Node;
+		node_to_edit?: Node;
 		action: 'add' | 'edit';
 		selected_parent_id?: string;
 		latest_circuit_node?: Node;
@@ -42,7 +42,7 @@
 		main_phase,
 		parent_id,
 		closeDialog,
-		panel_to_edit,
+		node_to_edit,
 		action,
 		latest_circuit_node,
 		selected_parent_id
@@ -63,7 +63,7 @@
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
 					parent_id: selected_parent_id || parent_id,
-					node_id: panel_to_edit?.id
+					node_id: node_to_edit?.id
 				});
 
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
@@ -78,10 +78,10 @@
 						await addNode({ parent_id, panel_data: form.data });
 						break;
 					case 'edit':
-						if (panel_to_edit && selected_parent_id) {
+						if (node_to_edit && selected_parent_id) {
 							await updateNode({
 								panel_data: form.data,
-								id: panel_to_edit.id,
+								id: node_to_edit.id,
 								parent_id: selected_parent_id
 							});
 							toast.success('Panel updated successfully');
@@ -126,7 +126,7 @@
 			return;
 		}
 
-		if (!panel_to_edit || !panel_to_edit.panel_data) {
+		if (!node_to_edit || !node_to_edit.panel_data) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the panel to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
@@ -136,10 +136,10 @@
 		const {
 			circuit_number,
 			panel_data: { terminal_temperature, phase, name }
-		} = panel_to_edit;
+		} = node_to_edit;
 
 		$formData.circuit_number = circuit_number as number;
-		$formData.name = name;
+		$formData.name = name ?? 'Unknown';
 		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 		$formData.phase = phase as Phase;
 	});
