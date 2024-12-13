@@ -7,14 +7,13 @@
 	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { ConfirmationDialog } from '@/components/custom';
-	import type { Node, Project } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { goto, invalidateAll } from '$app/navigation';
-	import type { HighestUnitSchema } from '@/schema';
+	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
@@ -27,7 +26,7 @@
 		project
 	}: {
 		node: Node;
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
