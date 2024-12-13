@@ -1,7 +1,7 @@
-import type { NodeDocType } from '@/db/schema';
+import type { Node } from '@/db/schema';
 
 // has to put required since panel_data in NodeDocType is optional
-export type Panel = Required<NonNullable<NodeDocType["panel_data"]>>;
+export type Panel = Required<NonNullable<Node["panel_data"]>>;
 
 // ini pete su gagamiton tang type duman sa mga panel na hali sa db
 export type PanelLatest = {
