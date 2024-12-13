@@ -17,7 +17,6 @@
 		parent_id,
 		highest_unit,
 		some_open_state = $bindable(),
-		latest_circuit_node,
 		panel_to_edit
 	}: {
 		highest_unit: HighestUnitSchema;
