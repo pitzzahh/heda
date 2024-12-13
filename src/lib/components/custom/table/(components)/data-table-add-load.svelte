@@ -5,16 +5,15 @@
 	import { CirclePlus } from '@/assets/icons';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { type GenericPhaseMainLoadSchema } from '@/schema/load';
-	import type { HighestUnitSchema } from '@/schema';
+	import type { Node } from '@/db/schema';
 	import { cn } from '@/utils';
 	import Separator from '@/components/ui/separator/separator.svelte';
 	import { getNodeById } from '@/db/queries';
 	import { page } from '$app/stores';
-	import type { Node } from '@/types/project';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
-		highest_unit: HighestUnitSchema;
+		highest_unit?: NonNullable<Node['highest_unit_form']>;
 		latest_circuit_node?: Node;
 	}
 
@@ -58,7 +57,7 @@
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Phase:</h4>
-								<p>{highest_unit.phase ?? 'N/A'}</p>
+								<p>{highest_unit?.phase ?? 'N/A'}</p>
 							</div>
 						</div>
 					</div>
