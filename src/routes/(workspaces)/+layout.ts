@@ -4,7 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { databaseInstance } from '@/db';
 import { generic_phase_panel_schema } from '@/schema/panel';
 import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
-import type { Node, Project } from '@/types/project/index.js';
+
 import { generic_phase_main_load_schema } from '@/schema/load';
 
 export const load = async ({ url: { searchParams } }) => {
@@ -12,9 +12,9 @@ export const load = async ({ url: { searchParams } }) => {
 	const database = await databaseInstance();
 	console.log(database);
 
-	const project = (await getCurrentProject()) as Project;
+	const project = (await getCurrentProject());
 	// const nodes = project ? await getChildNodesByParentId(project.id) : [];
-	const root_node = (await getRootNode()) as Node;
+	const root_node = (await getRootNode());
 
 	return {
 		is_new_file: searchParams.get('new_file') === 'true',
