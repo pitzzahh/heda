@@ -3,11 +3,11 @@ import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-c
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-import type { HighestUnitSchema } from '@/schema';
+import type { Node } from '@/db/schema';
 
 export function threePhaseDeltaCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	highest_unit: HighestUnitSchema
+	highest_unit: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<PhaseLoadSchedule>[] {
 	return [
 		...createLeftMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit),
