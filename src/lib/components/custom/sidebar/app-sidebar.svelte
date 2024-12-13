@@ -10,8 +10,8 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
-	import type { Project } from '@/types/project';
-	import type { Node } from '@/types/project';
+	import type { Project } from '@/db/schema';
+	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 
 	let {
