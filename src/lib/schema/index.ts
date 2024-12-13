@@ -12,5 +12,4 @@ export const new_file_schema = z.object({
 	id: z.string().optional(),
 	file_name: z.string().refine((v) => v, { message: 'An file_name is required.' })
 });
-export type HighestUnitSchema = z.infer<typeof highest_unit_schema>;
 export type NewFileSchema = z.infer<typeof new_file_schema>;
