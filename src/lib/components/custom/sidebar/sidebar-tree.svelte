@@ -91,7 +91,6 @@
 			>
 				<Sidebar.MenuButton
 					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
-						'-translate-x-2': node.node_type === 'panel',
 						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
 					})}
 				>
