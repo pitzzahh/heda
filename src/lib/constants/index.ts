@@ -13,19 +13,19 @@ export const default_terminal_temperatures = {
 export const DEFAULT_LOADS = [
 	{
 		description: 'Lighting Outlet (50W)',
-		varies: 50,
+		varies: "50",
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: 'Lighting Outlet (100W)',
-		varies: 100,
+		varies: "100",
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: "Small Appliance Load",
-		varies: 1500,
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
@@ -49,7 +49,7 @@ export const DEFAULT_LOADS = [
 	},
 	{
 		description: "Convenience Outlet (Simplex)",
-		varies: 180,
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
@@ -67,25 +67,25 @@ export const DEFAULT_LOADS = [
 	},
 	{
 		description: "4-Gang Convenience Outlet",
-		varies: 360,
+		varies: "360",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "5-Gang Convenience Outlet",
-		varies: 450,
+		varies: "450",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Dwelling Unit",
-		varies: 24,
+		varies: "24",
 		continuous: true,
 		type: 'General Lighting'
 	},
 	{
 		description: "Office Buildings",
-		varies: 28,
+		varies: "28",
 		continuous: true,
 		type: 'General Lighting'
 	}
