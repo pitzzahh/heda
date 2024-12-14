@@ -108,7 +108,6 @@ class SidebarState {
 			this.openMobile = !this.openMobile;
 		} else {
 			this.setOpen(!this.open);
-
 			if (this.sidebarWidth < SIDEBAR_MIN_WIDTH) {
 				this.sidebarWidth = SIDEBAR_DEFAULT_WIDTH;
 			}
