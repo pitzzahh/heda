@@ -2,7 +2,7 @@ import type { DEFAULT_LOAD_TYPES_OPTIONS } from '@/constants';
 import { standard_ampere_ratings, load_type_z_value } from '@/constants';
 
 type LoadType = (typeof DEFAULT_LOAD_TYPES_OPTIONS)[number];
-export function computeVoltAmphere({
+export function computeVoltAmpere({
 	load_type,
 	quantity,
 	varies
@@ -40,7 +40,7 @@ export function computeVoltAmphere({
 	console.log('Invalid load_type or varies is not a number');
 }
 
-export function computeAmphereTrip(current: number, load_type?: LoadType) {
+export function computeAmpereTrip(current: number, load_type?: LoadType) {
 	const PANEL_Z_VALUE = 1.25;
 	const calculatedAT = current * (load_type ? load_type_z_value[load_type] : PANEL_Z_VALUE);
 
