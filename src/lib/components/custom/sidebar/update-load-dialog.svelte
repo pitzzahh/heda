@@ -12,19 +12,22 @@
 
 	let {
 		phase_main_load_form,
+		open_load_dialog = $bindable(false),
 		some_open_state = $bindable(),
+		remove_trigger = false,
 		load_to_edit,
 		highest_unit
 	}: {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		some_open_state?: boolean;
+		open_load_dialog?: boolean;
+		remove_trigger?: boolean;
 		load_to_edit: Node;
 		highest_unit: NonNullable<Node['highest_unit_form']>;
 	} = $props();
 
 	const { phase } = highest_unit;
 
-	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
 	$effect(() => {
@@ -39,10 +42,12 @@
 	});
 </script>
 
-<Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
-		>Update Load</Dialog.Trigger
-	>
+<Dialog.Root bind:open={open_load_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
+	{#if !remove_trigger}
+		<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
+			>Update Load</Dialog.Trigger
+		>
+	{/if}
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update Load</Dialog.Title>
@@ -75,7 +80,7 @@
 			<GenericPhaseMainLoadForm
 				{phase_main_load_form}
 				selected_parent_id={selected_parent?.id}
-				closeDialog={() => (open_panel_dialog = false)}
+				closeDialog={() => (open_load_dialog = false)}
 				node_to_edit={load_to_edit}
 				action="edit"
 			/>
