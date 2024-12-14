@@ -77,11 +77,11 @@
 	}
 
 	::-webkit-scrollbar {
-		@apply h-full w-2 border-l border-l-transparent p-px;
+		@apply h-full w-3 border-l border-l-transparent p-px;
 	}
 
 	::-webkit-scrollbar-track {
-		@apply !bg-transparent;
+		@apply !bg-transparent pr-4;
 	}
 	::-webkit-scrollbar-thumb {
 		@apply relative rounded-sm !bg-border;
