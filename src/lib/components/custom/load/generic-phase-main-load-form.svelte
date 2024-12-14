@@ -23,7 +23,8 @@
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
-		default_hp_current_relationship
+		default_hp_current_relationship,
+		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -32,7 +33,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
-	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
+	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
 
@@ -148,6 +149,10 @@
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
+
+	const quantity_label: QuantityLabel | 'QTY' = $derived(
+		$formData.load_type ? load_type_to_quantity_label[$formData.load_type] : 'QTY'
 	);
 
 	let open_horsepower_rating = $state(false);
@@ -344,17 +349,17 @@
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
-		<Form.Field {form} name="quantity" class="text-center">
+		<Form.Field {form} name="quantity" class="w-1/4 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>QTY</Form.Label>
+					<Form.Label>{quantity_label ?? 'QTY'}</Form.Label>
 					<Input
 						{...props}
 						type="number"
 						min={1}
 						inputmode="numeric"
 						bind:value={$formData.quantity}
-						placeholder="Enter quantity"
+						placeholder="Enter {convertToNormalText(quantity_label)}"
 					/>
 				{/snippet}
 			</Form.Control>
