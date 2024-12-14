@@ -20,28 +20,29 @@
 		highest_unit,
 		panel_name,
 		is_parent_root_node = false,
+		open_dialog_state = $bindable(false),
 		latest_circuit_node
 	}: {
-		children: Snippet;
+		children?: Snippet;
 		id: string;
 		panel_name: string;
 		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
+		open_dialog_state?: boolean;
 		is_parent_root_node: boolean;
 		latest_circuit_node?: Node;
 	} = $props();
 
 	const { phase } = highest_unit;
 
-	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let clickTimeout: number | null = null; // To store the timeout for single-click
 
 	function handleClick() {
 		if (clickTimeout) {
 			clearTimeout(clickTimeout);
 			clickTimeout = null;
-			open_panel_dialog = true;
+			open_dialog_state = true;
 		} else {
 			// @ts-ignore
 			clickTimeout = setTimeout(() => {
@@ -56,7 +57,7 @@
 	{@render children?.()}
 </button>
 
-<Dialog.Root bind:open={open_panel_dialog}>
+<Dialog.Root bind:open={open_dialog_state}>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
@@ -97,7 +98,7 @@
 				{parent_id}
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
-				closeDialog={() => (open_panel_dialog = false)}
+				closeDialog={() => (open_dialog_state = false)}
 				{latest_circuit_node}
 			/>
 			{#snippet failed(error, reset)}
