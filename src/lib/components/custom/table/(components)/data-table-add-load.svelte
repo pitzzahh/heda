@@ -18,7 +18,6 @@
 	}
 
 	let { phase_main_load_form, highest_unit, latest_circuit_node, ...props }: Props = $props();
-	let params = $derived($page.params);
 	let is_dialog_open = $state(false);
 </script>
 
@@ -43,9 +42,7 @@
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Supply From:</h4>
-								{#await getNodeById(params.id.split('_').at(-1) || '')}
-									<p></p>
-								{:then parent_node}
+								{#await getNodeById($page.params.id.split('_').at(-1) || '') then parent_node}
 									<p>
 										{parent_node?.highest_unit_form?.distribution_unit ||
 											parent_node?.panel_data?.name ||
