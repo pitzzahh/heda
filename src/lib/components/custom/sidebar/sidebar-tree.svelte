@@ -117,20 +117,36 @@
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
+				<Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							class={buttonVariants({ variant: 'destructive', size: 'icon' })}
+							onclick={() => (open_tree_delete_dialog = true)}
+						>
+							<Trash2 />
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Remove Panel</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
 			</div>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem>
+		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
 				open
-				class="group/collapsible w-full [&[data-state=open]>button>svg:first-child]:rotate-90"
+				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
 					onmouseenter={() => (is_hovering_on_tree_item = true)}
 					onmouseleave={() => (is_hovering_on_tree_item = false)}
-					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
-						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
-					})}
+					class={cn(
+						'flex w-full items-center  hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
+						{
+							'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+						}
+					)}
 				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
@@ -138,7 +154,7 @@
 						{/snippet}
 					</Collapsible.Trigger>
 					<ContextMenu.Root bind:open={open_panel_context_menu}>
-						<ContextMenu.Trigger>
+						<ContextMenu.Trigger class="flex w-full items-center ">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
 							<AddPanelAndViewTrigger
@@ -193,7 +209,7 @@
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 					<div
-						class={cn('hidden w-fit items-center gap-1.5 bg-orange-600 object-right py-1', {
+						class={cn('hidden w-fit items-center gap-1.5 py-1', {
 							flex: is_hovering_on_tree_item
 						})}
 					>
