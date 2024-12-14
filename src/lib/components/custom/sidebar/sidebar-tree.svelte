@@ -120,10 +120,10 @@
 			</div>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem class="w-full">
+		<Sidebar.MenuItem>
 			<Collapsible.Root
 				open
-				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+				class="group/collapsible w-full [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
 					onmouseenter={() => (is_hovering_on_tree_item = true)}
@@ -138,7 +138,7 @@
 						{/snippet}
 					</Collapsible.Trigger>
 					<ContextMenu.Root bind:open={open_panel_context_menu}>
-						<ContextMenu.Trigger class="w-full">
+						<ContextMenu.Trigger>
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
 							<AddPanelAndViewTrigger
@@ -178,6 +178,7 @@
 								{/if}
 
 								<ConfirmationDialog
+									show_trigger={true}
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
 									bind:some_open_state={open_panel_context_menu}
@@ -192,7 +193,7 @@
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 					<div
-						class={cn('hidden items-center gap-1.5 py-1', {
+						class={cn('hidden w-fit items-center gap-1.5 bg-orange-600 object-right py-1', {
 							flex: is_hovering_on_tree_item
 						})}
 					>
