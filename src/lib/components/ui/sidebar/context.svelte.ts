@@ -107,9 +107,6 @@ class SidebarState {
 			this.openMobile = !this.openMobile;
 		} else {
 			this.setOpen(!this.open);
-			if (this.open) {
-				this.sidebarWidth = SIDEBAR_DEFAULT_WIDTH;
-			}
 		}
 	};
 }
