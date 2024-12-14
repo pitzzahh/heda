@@ -2,10 +2,17 @@
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { cn } from '@/utils';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
-	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import {
+		ChevronRight,
+		Pencil,
+		CirclePlus,
+		DatabaseZap,
+		PlugZap,
+		PanelsLeftBottom
+	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
@@ -34,7 +41,9 @@
 
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
+	let open_update_load_dialog = $state(false);
 	let params = $derived($page.params);
+	let is_hovering_on_tree_item = $state(false);
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -48,15 +57,16 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class="flex w-full items-center justify-between hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+			onmouseenter={() => (is_hovering_on_tree_item = true)}
+			onmouseleave={() => (is_hovering_on_tree_item = false)}
+			class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root bind:open={open_load_context_menu}>
-				<ContextMenu.Trigger class="w-full">
+				<ContextMenu.Trigger class="flex w-full items-center gap-1">
 					<div class="flex w-full items-center gap-2">
 						<div class="w-4">
 							<PlugZap class="size-4" />
 						</div>
-
 						<span class="truncate">
 							{typeof node === 'string' ? node : node.load_data?.load_description}
 						</span>
@@ -82,6 +92,15 @@
 					{/snippet}
 				</ContextMenu.Content>
 			</ContextMenu.Root>
+			<div
+				class={cn('hidden items-center gap-1.5', {
+					flex: is_hovering_on_tree_item
+				})}
+			>
+				<Button variant="ghost" size="icon" onclick={() => (open_update_load_dialog = true)}>
+					<Pencil />
+				</Button>
+			</div>
 		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem>
@@ -178,3 +197,12 @@
 {:catch error}
 	<p style="color: red">{error.message}</p>
 {/await}
+
+<UpdateLoadDialog
+	{highest_unit}
+	{phase_main_load_form}
+	remove_trigger={true}
+	bind:open_load_dialog={open_update_load_dialog}
+	bind:some_open_state={open_load_context_menu}
+	load_to_edit={node}
+/>
