@@ -15,23 +15,36 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		highest_unit?: NonNullable<Node['highest_unit_form']>;
 		latest_circuit_node?: Node;
+		open_dialog_state?: boolean;
+		remove_trigger?: boolean;
 	}
 
-	let { phase_main_load_form, highest_unit, latest_circuit_node, ...props }: Props = $props();
-	let is_dialog_open = $state(false);
+	let {
+		phase_main_load_form,
+		open_dialog_state = $bindable(false),
+		remove_trigger = false,
+		highest_unit,
+		latest_circuit_node,
+		...props
+	}: Props = $props();
 </script>
 
 <div class="flex flex-col gap-2 p-1">
-	CRKT NO.
-	<Dialog.Root {...props} bind:open={is_dialog_open}>
-		<Dialog.Trigger
-			class={buttonVariants({
-				variant: 'outline',
-				className: 'h-6 w-full bg-primary text-white hover:bg-primary/80 hover:text-white'
-			})}
-		>
-			<CirclePlus class="size-4" />
-		</Dialog.Trigger>
+	{#if !remove_trigger}
+		CRKT NO.
+	{/if}
+	<Dialog.Root {...props} bind:open={open_dialog_state}>
+		{#if !remove_trigger}
+			<Dialog.Trigger
+				class={buttonVariants({
+					variant: 'outline',
+					className: 'h-6 w-full bg-primary text-white hover:bg-primary/80 hover:text-white'
+				})}
+			>
+				<CirclePlus class="size-4" />
+			</Dialog.Trigger>
+		{/if}
+
 		<Dialog.Content class="max-w-[85%]">
 			<Dialog.Header>
 				<Dialog.Title>Add load</Dialog.Title>
@@ -63,7 +76,7 @@
 			<Separator class="mt-0.5" />
 			<GenericPhaseMainLoadForm
 				action={'add'}
-				closeDialog={() => (is_dialog_open = false)}
+				closeDialog={() => (open_dialog_state = false)}
 				{phase_main_load_form}
 				{latest_circuit_node}
 			/>
