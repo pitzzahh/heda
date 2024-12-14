@@ -31,19 +31,19 @@ export const DEFAULT_LOADS = [
 	},
 	{
 		description: "Laundry Circuit Load",
-		varies: 1500,
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Bathroom Branch Circuit",
-		varies: 1500,
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Garage Branch Circuit",
-		varies: 1500,
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
@@ -55,13 +55,13 @@ export const DEFAULT_LOADS = [
 	},
 	{
 		description: "Convenience Outlet (Duplex)",
-		varies: 180,
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
 		description: "Convenience Outlet (Triplex)",
-		varies: 180,
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
