@@ -14,6 +14,7 @@
 	import ParentPanelPopover from '../../parent-panel-popover.svelte';
 	import { cn } from '@/utils';
 	import Separator from '@/components/ui/separator/separator.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		node,
@@ -44,6 +45,7 @@
 	async function handleRemoveLoad() {
 		await removeNode(node.id);
 		await invalidateAll();
+		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 	}
 </script>
 
