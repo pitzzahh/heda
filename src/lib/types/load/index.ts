@@ -12,7 +12,7 @@ export type TerminalTemperature = (typeof default_terminal_temperatures)[keyof t
 
 export type DefaultLoad = {
   description: string;
-  varies: number;
+  varies: string;
   continuous: boolean;
   type: LoadType;
 }

@@ -1,6 +1,6 @@
 import type { DefaultLoad, LoadType, VariesLabel } from '@/types/load';
 import { getEnumValues, getEnumKeys } from '@/utils/enum';
-import { toLabelValueArray } from '@/utils/mapper';
+import { toLabelKeyArray, toLabelValueArray } from '@/utils/mapper';
 
 export const default_terminal_temperatures = {
 	60: '60',
@@ -12,79 +12,79 @@ export const default_terminal_temperatures = {
 export const DEFAULT_LOADS = [
 	{
 		description: 'Lighting Outlet (50W)',
-		varies: 50,
+		varies: "50",
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: 'Lighting Outlet (100W)',
-		varies: 100,
+		varies: "100",
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
-		description: 'Small Appliance Load',
-		varies: 1500,
+		description: "Small Appliance Load",
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Laundry Circuit Load',
-		varies: 1500,
+		description: "Laundry Circuit Load",
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Bathroom Branch Circuit',
-		varies: 1500,
+		description: "Bathroom Branch Circuit",
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Garage Branch Circuit',
-		varies: 1500,
+		description: "Garage Branch Circuit",
+		varies: "1500",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Convenience Outlet (Simplex)',
-		varies: 180,
+		description: "Convenience Outlet (Simplex)",
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Convenience Outlet (Duplex)',
-		varies: 180,
+		description: "Convenience Outlet (Duplex)",
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Convenience Outlet (Triplex)',
-		varies: 180,
+		description: "Convenience Outlet (Triplex)",
+		varies: "180",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: '4-Gang Convenience Outlet',
-		varies: 360,
+		description: "4-Gang Convenience Outlet",
+		varies: "360",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: '5-Gang Convenience Outlet',
-		varies: 450,
+		description: "5-Gang Convenience Outlet",
+		varies: "450",
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: 'Dwelling Unit',
-		varies: 24,
+		description: "Dwelling Unit",
+		varies: "24",
 		continuous: true,
 		type: 'General Lighting'
 	},
 	{
-		description: 'Office Buildings',
-		varies: 28,
+		description: "Office Buildings",
+		varies: "28",
 		continuous: true,
 		type: 'General Lighting'
 	}
@@ -173,6 +173,7 @@ export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_ty
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
 
+export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(default_hp_current_relationship);
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 
 export const FIELD_VALIDATION = {

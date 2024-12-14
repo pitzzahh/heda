@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_LOAD_TYPES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS, MIN_VARIES } from '@/constants';
+import { DEFAULT_LOAD_TYPES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS, FIELD_VALIDATION, MIN_VARIES } from '@/constants';
 import type { LoadType, TerminalTemperature } from '@/types/load';
 
 export const generic_phase_main_load_schema = z.object({
@@ -15,12 +15,27 @@ export const generic_phase_main_load_schema = z.object({
 		message: 'Quantity must be greater than 0.'
 	}),
 	load_description: z.string().refine((v) => v, { message: 'A load description is required.' }),
-	varies: z
-		.number({ message: 'This field is required' })
-		.refine((v) => v > MIN_VARIES, { message: `Varies must be greater than ${MIN_VARIES}.` }),
+	varies: z.string({ message: 'This field is required' }),
 	continuous: z.boolean(),
 	load_type: z.enum(DEFAULT_LOAD_TYPES_ENUMS.map((f) => f.value) as [LoadType, ...LoadType[]], {
 		errorMap: () => ({ message: 'Please select a valid load type.' })
 	})
+}).superRefine((data, ctx) => {
+	if (data.load_type !== '1P Motor - Rated Horse Power') {
+		if (!data.varies) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['varies'],
+				message: 'This field is required.'
+			});
+		}
+		if (!FIELD_VALIDATION.TEST.ALL_NUMBER(data.varies)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['varies'],
+				message: 'This field must be a number.'
+			});
+		}
+	}
 });
 export type GenericPhaseMainLoadSchema = z.infer<typeof generic_phase_main_load_schema>;

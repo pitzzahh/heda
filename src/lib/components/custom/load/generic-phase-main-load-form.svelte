@@ -22,7 +22,8 @@
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		load_type_to_varies_label,
-		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
+		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
+		default_hp_current_relationship
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -33,6 +34,7 @@
 	import type { Node } from '@/db/schema';
 	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
+	import { formatFraction } from '@/utils/format';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -62,8 +64,17 @@
 				is_circuit_number_taken: false,
 				circuit_number: 0
 			};
+			const { get, paths } = event;
+			if (paths.includes('varies') && paths.length === 1) {
+				const selected_varies = get('varies');
+				const selected_varies_label = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
+					(f) => f === selected_varies
+				);
+				toast.info(`Selected varies: ${selected_varies_label}`);
+				if (!selected_varies_label) return;
+				$formData.varies = default_hp_current_relationship[selected_varies_label];
+			}
 			if (load_type === 'DEFAULT') {
-				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
 					const selected_load_description = get('load_description');
 					const selected_load = DEFAULT_LOADS.find(
@@ -453,11 +464,11 @@
 								role="combobox"
 								{...props}
 							>
-								{$formData.varies
-									? DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.map((e) => Number(e)).find(
-											(s) => s === $formData.varies
-										)
-									: `Select a ${variesLabel.toLowerCase()}`}
+								{#if $formData.varies}
+									{@html formatFraction($formData.varies.toString())}
+								{:else}
+									Select a {variesLabel.toLowerCase()}
+								{/if}
 								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.varies} name={props.name} />
@@ -474,19 +485,18 @@
 							<Command.Group>
 								<ScrollArea class="h-64 pr-2.5">
 									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating}
-										{@const number_hp_current_rating = Number(hp_current_rating)}
 										<Command.Item
 											value={hp_current_rating}
 											onSelect={() => {
-												$formData.varies = number_hp_current_rating;
+												$formData.varies = hp_current_rating;
 												closeAndFocusTrigger(horsepower_rating_trigger_id);
 											}}
 										>
-											{hp_current_rating}
+											{@html formatFraction(hp_current_rating)}
 											<Check
 												class={cn(
 													'ml-auto size-4',
-													number_hp_current_rating !== $formData.varies && 'text-transparent'
+													hp_current_rating !== $formData.varies && 'text-transparent'
 												)}
 											/>
 										</Command.Item>
@@ -502,7 +512,6 @@
 						<Form.Label>{variesLabel}</Form.Label>
 						<Input
 							{...props}
-							type="number"
 							inputmode="numeric"
 							readonly={load_type === 'DEFAULT'}
 							min={1}
