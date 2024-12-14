@@ -1,6 +1,6 @@
 import type { DefaultLoad, LoadType, VariesLabel } from '@/types/load';
 import { getEnumValues, getEnumKeys } from '@/utils/enum';
-import { toLabelValueArray } from '@/utils/mapper';
+import { toLabelKeyArray, toLabelValueArray } from '@/utils/mapper';
 
 export const default_terminal_temperatures = {
 	60: "60",
@@ -137,8 +137,6 @@ export const default_hp_current_relationship = {
 	'10': '50'
 } as const;
 
-export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(default_hp_current_relationship).map(([hp, current]) => ({ hp, current }));
-
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
 
 export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
@@ -159,6 +157,7 @@ export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_ty
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
 
+export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(default_hp_current_relationship);
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 
 export const FIELD_VALIDATION = {
