@@ -32,16 +32,9 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
-	//TODO: FIX the collapsible to not close when a panel is added
-	let collapsible_state = $state(false);
-	let open_context_menu = $state(false);
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
 	let params = $derived($page.params);
-
-	function toggle() {
-		collapsible_state = !collapsible_state;
-	}
 </script>
 
 {#await getChildNodesByParentId(node.id)}
