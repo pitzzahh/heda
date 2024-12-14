@@ -15,7 +15,7 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn } from '@/utils';
+	import { cn, getKeyByValue } from '@/utils';
 	import { ChevronsUpDown, CircleAlert, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
@@ -465,7 +465,13 @@
 								{...props}
 							>
 								{#if $formData.varies}
-									{@html formatFraction($formData.varies.toString())}
+									<p>
+										{@html formatFraction(
+											getKeyByValue(default_hp_current_relationship, $formData.varies.toString()) ||
+												''
+										)}
+										{`(${$formData.varies})`}
+									</p>
 								{:else}
 									Select a {variesLabel.toLowerCase()}
 								{/if}
