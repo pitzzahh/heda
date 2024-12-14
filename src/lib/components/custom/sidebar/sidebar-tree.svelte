@@ -14,7 +14,8 @@
 		PlugZap,
 		PanelsLeftBottom,
 		Grid2x2Plus,
-		Trash2
+		Trash2,
+		Copy
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -48,6 +49,7 @@
 	let open_tree_edit_action_dialog = $state(false);
 	let open_tree_add_panel_dialog = $state(false);
 	let open_tree_add_load_dialog = $state(false);
+	let open_tree_copy_load_dialog = $state(false);
 	let open_tree_delete_dialog = $state(false);
 	let params = $derived($page.params);
 	let is_hovering_on_tree_item = $state(false);
@@ -104,6 +106,19 @@
 					flex: is_hovering_on_tree_item
 				})}
 			>
+				<Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							class={buttonVariants({ variant: 'outline', size: 'icon' })}
+							onclick={() => (open_tree_copy_load_dialog = true)}
+						>
+							<Copy />
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Copy Load</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger
