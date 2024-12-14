@@ -33,6 +33,7 @@
 	import type { Node } from '@/db/schema';
 	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
+	import { formatFraction } from '@/utils/format';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -453,11 +454,14 @@
 								role="combobox"
 								{...props}
 							>
-								{$formData.varies
-									? DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.map((e) => Number(e)).find(
-											(s) => s === $formData.varies
-										)
-									: `Select a ${variesLabel.toLowerCase()}`}
+								{@const current_selected_varies = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
+									(s) => s === $formData.varies.toString()
+								)}
+								{#if $formData.varies && current_selected_varies}
+									{@html formatFraction(current_selected_varies)}
+								{:else}
+									Select a {variesLabel.toLowerCase()}
+								{/if}
 								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.varies} name={props.name} />
@@ -474,19 +478,18 @@
 							<Command.Group>
 								<ScrollArea class="h-64 pr-2.5">
 									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating}
-										{@const number_hp_current_rating = Number(hp_current_rating)}
 										<Command.Item
 											value={hp_current_rating}
 											onSelect={() => {
-												$formData.varies = number_hp_current_rating;
+												$formData.varies = hp_current_rating;
 												closeAndFocusTrigger(horsepower_rating_trigger_id);
 											}}
 										>
-											{hp_current_rating}
+											{@html formatFraction(hp_current_rating)}
 											<Check
 												class={cn(
 													'ml-auto size-4',
-													number_hp_current_rating !== $formData.varies && 'text-transparent'
+													hp_current_rating !== $formData.varies && 'text-transparent'
 												)}
 											/>
 										</Command.Item>
@@ -502,7 +505,6 @@
 						<Form.Label>{variesLabel}</Form.Label>
 						<Input
 							{...props}
-							type="number"
 							inputmode="numeric"
 							readonly={load_type === 'DEFAULT'}
 							min={1}
