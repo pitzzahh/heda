@@ -1,4 +1,4 @@
-import { computeAmphereTrip, computeVoltAmphere } from '@/utils/computations';
+import { computeAmpereTrip, computeVoltAmpere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
@@ -130,13 +130,13 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 			const voltage = 230; // this may change depending on phase
 
 			const va =
-				computeVoltAmphere({
+				computeVoltAmpere({
 					load_type: data.load_data?.load_type as LoadType,
 					quantity: data.load_data?.quantity ?? 0,
 					varies: data.load_data?.varies ?? 0
 				}) || 0;
 			const current = va / voltage;
-			const at = computeAmphereTrip(current, data.load_data?.load_type as LoadType);
+			const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
@@ -155,7 +155,7 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					load_description: data.panel_data.name || '',
 					voltage,
 					va: totalLoads.va,
-					at: computeAmphereTrip(totalLoads.current),
+					at: computeAmpereTrip(totalLoads.current),
 					current: parseFloat(totalLoads.current.toFixed(2))
 				};
 			}
