@@ -22,7 +22,6 @@
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		some_open_state?: boolean;
-		latest_circuit_node?: Node;
 		panel_to_edit: Node;
 	} = $props();
 
