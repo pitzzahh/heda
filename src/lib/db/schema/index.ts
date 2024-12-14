@@ -31,7 +31,9 @@ const node_literal = {
 				terminal_temperature: { type: 'string' },
 				phase: { type: 'string' }
 			},
-			additionalProperties: false
+			additionalProperties: false,
+			required: ['name', 'terminal_temperature', 'terminal_temperature', 'phase']
+
 		},
 		load_data: {
 			type: 'object',
@@ -44,7 +46,8 @@ const node_literal = {
 				load_type: { type: 'string' },
 				config_preference: { type: 'string' } // bale ang magiging value kani is CUSTOM or DEFAULT para pag nag update, automatic naka set na sa form
 			},
-			additionalProperties: false
+			additionalProperties: false,
+			required: ['load_description', 'terminal_temperature', 'quantity', 'varies', 'continuous', 'load_type', 'config_preference']
 		},
 		// this object should be present if it is root node
 		highest_unit_form: {
@@ -68,9 +71,9 @@ const typed_project_schema = toTypedRxJsonSchema(project_schema_literal);
 const typed_node_schema = toTypedRxJsonSchema(node_literal);
 
 // aggregate the document type from the schema
-export type ProjectDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_project_schema>;
-export type NodeDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_node_schema>;
+export type Project = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_project_schema>;
+export type Node = ExtractDocumentTypeFromTypedRxJsonSchema<typeof typed_node_schema>;
 
 // create the typed RxJsonSchema from the literal typed object.
-export const project_schema: RxJsonSchema<ProjectDocType> = project_schema_literal;
-export const node_schema: RxJsonSchema<NodeDocType> = node_literal;
+export const project_schema: RxJsonSchema<Project> = project_schema_literal;
+export const node_schema: RxJsonSchema<Node> = node_literal;

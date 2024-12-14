@@ -7,14 +7,13 @@
 	import { DatabaseZap, PlugZap, PanelsLeftBottom } from 'lucide-svelte';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { ConfirmationDialog } from '@/components/custom';
-	import type { Node, Project } from '@/types/project';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { deleteProject, removeNode } from '@/db/mutations';
 	import { goto, invalidateAll } from '$app/navigation';
-	import type { HighestUnitSchema } from '@/schema';
+	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
@@ -27,15 +26,22 @@
 		project
 	}: {
 		node: Node;
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 		project?: Project;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
+	//TODO: FIX the collapsible to not close when a panel is added
+	let collapsible_state = $state(false);
+	let open_context_menu = $state(false);
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
-	let params_node_id = $derived($page.params?.id?.split('_')?.at(-1) ?? '');
+	let params = $derived($page.params);
+
+	function toggle() {
+		collapsible_state = !collapsible_state;
+	}
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -46,10 +52,10 @@
 			<Skeleton class="h-6 w-full" />
 		{/snippet}
 	</Sidebar.MenuButton>
-{:then children}
+{:then child_nodes}
 	{#if node.node_type === 'load'}
 		<Sidebar.MenuButton
-			class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+			class="flex w-full items-center justify-between hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 		>
 			<ContextMenu.Root bind:open={open_load_context_menu}>
 				<ContextMenu.Trigger class="w-full">
@@ -66,7 +72,7 @@
 				<ContextMenu.Content class="grid gap-1">
 					{#snippet children()}
 						<UpdateLoadDialog
-							node_id={node.id}
+							{highest_unit}
 							{phase_main_load_form}
 							bind:some_open_state={open_load_context_menu}
 							load_to_edit={node}
@@ -93,7 +99,7 @@
 				<Sidebar.MenuButton
 					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
 						'-translate-x-2': node.node_type === 'panel',
-						'bg-primary/20': params_node_id === node.id
+						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
 					})}
 				>
 					<Collapsible.Trigger>
@@ -112,6 +118,7 @@
 								{highest_unit}
 								is_parent_root_node={node.node_type === 'root'}
 								parent_id={node.id}
+								latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 							>
 								<!-- TODO: Palitan or retain this -->
 								{#if node.node_type === 'root'}
@@ -137,6 +144,9 @@
 										{highest_unit}
 										bind:some_open_state={open_panel_context_menu}
 										parent_id={node.parent_id}
+										latest_circuit_node={child_nodes
+											? child_nodes[child_nodes.length - 1]
+											: undefined}
 									/>
 								{/if}
 
@@ -148,7 +158,7 @@
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-										goto('/workspace');
+
 										await invalidateAll();
 									}}
 								/>
@@ -159,7 +169,7 @@
 
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
-						{#each children as unknown as Node[] as child, index (index)}
+						{#each child_nodes as child, index (index)}
 							<SidebarTree
 								node={child}
 								{generic_phase_panel_form}

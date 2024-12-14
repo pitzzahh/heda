@@ -1,12 +1,10 @@
-import type { HighestUnitSchema } from '@/schema';
 import { databaseInstance } from '..';
 import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-import type { NodeDocType } from '../schema';
-import type { Project } from '@/types/project';
+import type { Project, Node } from '@/db/schema';
 
-export async function createProject(highest_unit_form: HighestUnitSchema) {
+export async function createProject(highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
 
 	try {
@@ -76,8 +74,8 @@ export async function addNode({
 				: panel_data
 					? panel_data.circuit_number
 					: 0,
-			panel_data: panel_data as NodeDocType['panel_data'],
-			load_data: load_data as NodeDocType['load_data'],
+			panel_data: panel_data as Node['panel_data'],
+			load_data: load_data as Node['load_data'],
 			parent_id,
 			child_ids: []
 		});
@@ -107,10 +105,12 @@ export async function addNode({
 export async function updateNode({
 	load_data,
 	panel_data,
+	parent_id,
 	id
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
+	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 }) {
 	const database = await databaseInstance();
@@ -124,8 +124,10 @@ export async function updateNode({
 
 		const updatedNode = await query.update({
 			$set: {
+				parent_id,
 				panel_data,
-				load_data: load_data as NodeDocType['load_data']
+				circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+				load_data: load_data as Node['load_data']
 			}
 		});
 
@@ -144,7 +146,7 @@ export async function removeNode(id: string) {
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child.id);
+			await removeNode(child._data.id);
 		}
 
 		const query = database.nodes.findOne({ selector: { id } });

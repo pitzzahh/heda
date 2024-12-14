@@ -23,7 +23,7 @@
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
 
 	interface Props {
@@ -31,8 +31,10 @@
 		main_phase: Phase;
 		parent_id?: string;
 		closeDialog: () => void;
-		panel_to_edit?: Node;
+		node_to_edit?: Node;
 		action: 'add' | 'edit';
+		selected_parent_id?: string;
+		latest_circuit_node?: Node;
 	}
 
 	let {
@@ -40,8 +42,10 @@
 		main_phase,
 		parent_id,
 		closeDialog,
-		panel_to_edit,
-		action
+		node_to_edit,
+		action,
+		latest_circuit_node,
+		selected_parent_id
 	}: Props = $props();
 
 	const form = superForm(generic_phase_panel_form, {
@@ -57,9 +61,11 @@
 			if (parent_id) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
-					parent_id,
-					node_id: panel_to_edit?.id
+					//we want to check if the circuit number is alrdy existing in the parent we want to move in
+					parent_id: selected_parent_id || parent_id,
+					node_id: node_to_edit?.id
 				});
+
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
@@ -67,13 +73,20 @@
 					return;
 				}
 
-				if (action === 'add') await addNode({ parent_id, panel_data: form.data });
-				if (action === 'edit' && panel_to_edit) {
-					await updateNode({
-						panel_data: form.data,
-						id: panel_to_edit.id
-					});
-					toast.success('Panel updated successfully');
+				switch (action) {
+					case 'add':
+						await addNode({ parent_id, panel_data: form.data });
+						break;
+					case 'edit':
+						if (node_to_edit && selected_parent_id) {
+							await updateNode({
+								panel_data: form.data,
+								id: node_to_edit.id,
+								parent_id: selected_parent_id
+							});
+							toast.success('Panel updated successfully');
+						}
+						break;
 				}
 
 				await invalidateAll();
@@ -82,20 +95,6 @@
 		}
 	});
 	const { form: formData, enhance } = form;
-
-	$effect(() => {
-		if (panel_to_edit && panel_to_edit.panel_data) {
-			const {
-				circuit_number,
-				panel_data: { terminal_temperature, phase, name }
-			} = panel_to_edit;
-
-			$formData.circuit_number = circuit_number as number;
-			$formData.name = name;
-			$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
-			$formData.phase = phase as Phase;
-		}
-	});
 
 	let open_panel_phase_popover = $state(false);
 	let open_terminal_temp = $state(false);
@@ -120,6 +119,30 @@
 			document.getElementById(trigger_id)?.focus();
 		});
 	}
+
+	$effect(() => {
+		if (action !== 'edit') {
+			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
+			return;
+		}
+
+		if (!node_to_edit || !node_to_edit.panel_data) {
+			// TODO: Log system error
+			toast.warning('Failed to identify the panel to edit', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+		const {
+			circuit_number,
+			panel_data: { terminal_temperature, phase, name }
+		} = node_to_edit;
+
+		$formData.circuit_number = circuit_number as number;
+		$formData.name = name ?? 'Unknown';
+		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
+		$formData.phase = phase as Phase;
+	});
 </script>
 
 <form method="POST" use:enhance>

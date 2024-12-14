@@ -1,6 +1,6 @@
 import type { Phase } from '@/types/phase';
 import type { LoadType } from '..';
-import type { Node } from '@/types/project';
+import type { Node } from '@/db/schema';
 
 export type MainLoad = {
 	id: string;

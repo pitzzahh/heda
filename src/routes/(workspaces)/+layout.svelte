@@ -12,20 +12,21 @@
 	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
-	import type { Project } from '@/types/project/index.js';
+	import type { Project, Node } from '@/db/schema';
 	import { updateProjectTitle } from '@/db/mutations/index.js';
 	import { invalidateAll } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 
 	let { data, children } = $props();
 
-	const { is_new_file, is_load_file, generic_phase_panel_form, phase_main_load_form } = $derived(data);
+	const { is_new_file, project, is_load_file, generic_phase_panel_form, phase_main_load_form } =
+		data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
 
-	let project_title = $state(data.project?.project_name || 'Untitled');
+	let project_title = $state(project?.project_name || 'Untitled');
 
-	
 	function toggleEdit() {
 		is_editing = !is_editing;
 		tick().then(() => {
@@ -34,20 +35,29 @@
 	}
 
 	async function saveProjectTitle() {
-		await updateProjectTitle(data.project.id, project_title);
+		if (!project || !project_title) return;
+		await updateProjectTitle(project?.id, project_title);
 		await invalidateAll();
 		toggleEdit();
 	}
 
-	onMount(() => (dialogs_state.highestUnit = is_new_file));
+	onMount(() => {
+		if (!data.root_node) {
+			toast.warning('Failed to identify the load description data', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+		dialogs_state.highestUnit = is_new_file;
+	});
 </script>
 
 <PageProgress />
 
 <Sidebar.Provider>
 	<AppSidebar
-		project={data.project as unknown as Project | undefined}
-		root_node={data.root_node}
+		{project}
+		root_node={data.root_node as Node}
 		{generic_phase_panel_form}
 		{phase_main_load_form}
 	/>

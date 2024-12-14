@@ -7,8 +7,9 @@
 	import { Separator } from '@/components/ui/separator/index.js';
 	import type { Phase } from '@/types/phase';
 	import { cn } from '@/utils';
-	import type { HighestUnitSchema } from '@/schema';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
+	import ParentPanelPopover from '../parent-panel-popover.svelte';
+	import { getNodeById } from '@/db/queries';
 
 	let {
 		generic_phase_panel_form,
@@ -17,23 +18,61 @@
 		some_open_state = $bindable(),
 		panel_to_edit
 	}: {
-		highest_unit: HighestUnitSchema;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
 		some_open_state?: boolean;
+		latest_circuit_node?: Node;
 		panel_to_edit: Node;
 	} = $props();
 
 	const { phase } = highest_unit;
 
 	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
+	let selected_parent = $state<{ name: string; id: string } | null>(null);
+
+	$effect(() => {
+		if (panel_to_edit.parent_id) {
+			getNodeById(panel_to_edit.parent_id).then((node) => {
+				selected_parent = {
+					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
+					id: node?.id || ''
+				};
+			});
+		}
+	});
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>Update</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
+		>Update Panel</Dialog.Trigger
+	>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>
+			<div class={cn('flex flex-col items-center justify-start')}>
+				<h4 class="mb-1 font-bold">MAIN</h4>
+				<div class="grid w-full grid-cols-2 justify-items-start">
+					<div>
+						<div class="flex items-center gap-1">
+							<h4 class="font-semibold">Supply From:</h4>
+							{#if selected_parent}
+								<ParentPanelPopover
+									current_parent_id={panel_to_edit.parent_id || ''}
+									bind:selected_parent
+									excluded_node_id={panel_to_edit.id}
+								/>
+							{/if}
+						</div>
+					</div>
+					<div>
+						<div class="flex gap-1">
+							<h4 class="font-semibold">Phase:</h4>
+							<p>{phase ?? 'N/A'}</p>
+						</div>
+					</div>
+				</div>
+			</div>
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
@@ -42,8 +81,9 @@
 				{parent_id}
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
+				selected_parent_id={selected_parent?.id}
 				closeDialog={() => (open_panel_dialog = false)}
-				{panel_to_edit}
+				node_to_edit={panel_to_edit}
 			/>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>

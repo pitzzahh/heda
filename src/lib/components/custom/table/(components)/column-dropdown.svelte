@@ -6,23 +6,46 @@
 	import { removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
+	import { getNodeById } from '@/db/queries';
+	import ParentPanelPopover from '../../parent-panel-popover.svelte';
+	import { cn } from '@/utils';
+	import Separator from '@/components/ui/separator/separator.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		node,
 		phase_main_load_form,
+		highest_unit,
 		...props
-	}: { node: Node; phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema> } = $props();
+	}: {
+		node: Node;
+		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
+		highest_unit?: NonNullable<Node['highest_unit_form']>;
+	} = $props();
+	const phase = highest_unit?.phase;
+
 	let is_dialog_open = $state(false);
-
 	let open_dropdown_menu = $state(false);
+	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
+	$effect(() => {
+		if (node.parent_id) {
+			getNodeById(node.parent_id).then((node) => {
+				selected_parent = {
+					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
+					id: node?.id || ''
+				};
+			});
+		}
+	});
 	async function handleRemoveLoad() {
 		await removeNode(node.id);
 		await invalidateAll();
+		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 	}
 </script>
 
@@ -38,8 +61,10 @@
 				<DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={() => (is_dialog_open = true)}>
-					<Pencil /> Update</DropdownMenu.Item
-				>
+					<Pencil class="ml-2 size-4" />
+					Update
+				</DropdownMenu.Item>
+
 				<DropdownMenu.Item class="mt-0.5 p-0">
 					{#snippet children()}
 						<ConfirmationDialog
@@ -60,17 +85,20 @@
 		<Dialog.Header>
 			<Dialog.Title>Update load</Dialog.Title>
 			<Dialog.Description>Edit the load details.</Dialog.Description>
-			<!-- <div class={cn('flex flex-col items-center justify-start')}>
+			<div class={cn('flex flex-col items-center justify-start')}>
 				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
-						<div class="flex gap-1">
-							<h4 class="font-semibold">Name:</h4>
-							<p>{distribution_unit ?? 'N/A'}</p>
-						</div>
-						<div class="flex gap-1">
-							<h4 class="font-semibold">Terminal temperature:</h4>
-							<p>{ambient_temperature ?? 'N/A'}</p>
+						<div class="flex items-center gap-1">
+							<h4 class="font-semibold">Supply From:</h4>
+							<!-- <p>{distribution_unit ?? 'N/A'}</p> -->
+							{#if selected_parent}
+								<ParentPanelPopover
+									current_parent_id={node.parent_id || ''}
+									bind:selected_parent
+									excluded_node_id={node.id}
+								/>
+							{/if}
 						</div>
 					</div>
 					<div>
@@ -80,13 +108,15 @@
 						</div>
 					</div>
 				</div>
-			</div> -->
+			</div>
 		</Dialog.Header>
+		<Separator class="mt-0.5" />
 		<GenericPhaseMainLoadForm
 			action={'edit'}
+			selected_parent_id={selected_parent?.id}
 			closeDialog={() => (is_dialog_open = false)}
 			{phase_main_load_form}
-			load_to_edit={node}
+			node_to_edit={node}
 		/>
 	</Dialog.Content>
 </Dialog.Root>

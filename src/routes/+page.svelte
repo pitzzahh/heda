@@ -1,7 +1,5 @@
-<script lang="ts">
-	import { Button } from '@/components/ui/button/index.js';
-
-	const { data } = $props();
+<script>
+	import { Button } from '@/components/ui/button';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -15,6 +13,7 @@
 	</div>
 	<div class="flex flex-col gap-4">
 		<Button size="2xl" href="/workspace?new_file=true">New File</Button>
+		<!-- What if digdi na lang su Highest Unit Form? -->
 		<!-- <Dialog.Root>
 			<Dialog.Trigger class={buttonVariants({ size: '2xl' })}>New File</Dialog.Trigger>
 			<Dialog.Content>

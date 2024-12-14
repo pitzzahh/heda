@@ -72,6 +72,38 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+	button:active {
+		@apply scale-98 transition-all;
+	}
+
+	::-webkit-scrollbar {
+		@apply h-full w-3 border-l border-l-transparent p-px;
+	}
+
+	::-webkit-scrollbar-track {
+		@apply !bg-transparent pr-4;
+	}
+	::-webkit-scrollbar-thumb {
+		@apply relative rounded-sm !bg-border;
+	}
+
+	::-webkit-scrollbar-corner {
+		background: rgba(0, 0, 0, 0);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		:root::view-transition-old(root) {
+			animation:
+				90ms cubic-bezier(0.4, 0, 1, 1) both fade-out,
+				300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+		}
+
+		:root::view-transition-new(root) {
+			animation:
+				210ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in,
+				300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+		}
+	}
 }
 
 /* @font-face {

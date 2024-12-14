@@ -30,20 +30,29 @@
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
-	import type { Node } from '@/types/project';
+	import type { Node } from '@/db/schema';
 	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 
 	interface Props {
 		phase_main_load_form: T;
-		saved_path?: string;
 		closeDialog: () => void;
-		load_to_edit?: Node;
+		selected_parent_id?: string;
+		node_to_edit?: Node;
 		action: 'add' | 'edit';
+		latest_circuit_node?: Node;
 	}
+
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 
-	let { phase_main_load_form, closeDialog, load_to_edit, action }: Props = $props();
+	let {
+		phase_main_load_form,
+		closeDialog,
+		node_to_edit,
+		action,
+		selected_parent_id,
+		latest_circuit_node
+	}: Props = $props();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -82,9 +91,11 @@
 			if (panel_id) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
-					parent_id: panel_id,
-					node_id: load_to_edit?.id
+					//we want to check if the circuit number is alrdy existing in the parent we want to move in
+					parent_id: selected_parent_id || panel_id,
+					node_id: node_to_edit?.id
 				});
+
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
 					cancel();
 					toast.warning('Circuit number already exists');
@@ -94,7 +105,7 @@
 
 				if (load_type) {
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
-					const loadData = {
+					const load_data = {
 						...form.data,
 						load_description,
 						config_preference: load_type
@@ -102,16 +113,17 @@
 					switch (action) {
 						case 'add':
 							await addNode({
-								load_data: loadData,
+								load_data,
 								parent_id: panel_id
 							});
 							toast.success(`${load_description} added successfully`);
 							break;
 						case 'edit':
-							if (load_to_edit) {
+							if (node_to_edit && selected_parent_id) {
 								await updateNode({
-									load_data: loadData,
-									id: load_to_edit.id
+									load_data,
+									id: node_to_edit.id,
+									parent_id: selected_parent_id
 								});
 								toast.success('Load updated successfully');
 							}
@@ -145,7 +157,7 @@
 	const load_description_trigger_id = useId();
 	const horsepower_rating_trigger_id = useId();
 	let load_type = $state<FormLoadTypeOption | undefined>(
-		load_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
+		node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined
 	);
 
 	// We want to refocus the trigger button when the user selects
@@ -162,9 +174,12 @@
 	}
 
 	$effect(() => {
-		if (action !== 'edit') return;
+		if (action !== 'edit') {
+			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
+			return;
+		}
 
-		if (!load_to_edit || !load_to_edit.load_data) {
+		if (!node_to_edit || !node_to_edit.load_data) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the load to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
@@ -175,7 +190,7 @@
 		const {
 			circuit_number,
 			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
-		} = load_to_edit;
+		} = node_to_edit;
 
 		$formData.circuit_number = circuit_number as number;
 		$formData.load_description = load_description.split(' - ')[1];
@@ -196,16 +211,20 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid grid-cols-2 place-items-start justify-between gap-2">
+	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
 		<Form.Field {form} name="circuit_number">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>Circuit number</Form.Label>
+					<Form.Label
+						class={cn({ 'text-red': is_circuit_number_taken_state.is_circuit_number_taken })}
+						>Circuit number</Form.Label
+					>
 					<Input
 						{...props}
 						type="number"
 						inputmode="numeric"
 						min={1}
+						class={cn({ 'border-red': is_circuit_number_taken_state.is_circuit_number_taken })}
 						bind:value={$formData.circuit_number}
 						placeholder="Enter the circuit number"
 					/>
@@ -247,19 +266,19 @@
 						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 						<Command.Empty>No terminal temp found.</Command.Empty>
 						<Command.Group>
-							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
+							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
 								<Command.Item
-									value={ambient_temp}
+									value={terminal_temp}
 									onSelect={() => {
-										$formData.terminal_temperature = ambient_temp;
+										$formData.terminal_temperature = terminal_temp;
 										closeAndFocusTrigger(terminal_temp_trigger_id);
 									}}
 								>
-									{convertToNormalText(ambient_temp)}
+									{convertToNormalText(terminal_temp)}
 									<Check
 										class={cn(
 											'ml-auto size-4',
-											ambient_temp !== $formData.terminal_temperature && 'text-transparent'
+											terminal_temp !== $formData.terminal_temperature && 'text-transparent'
 										)}
 									/>
 								</Command.Item>

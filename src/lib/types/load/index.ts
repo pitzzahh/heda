@@ -1,8 +1,8 @@
 import type { default_load_types, default_terminal_temperatures } from "@/constants";
-import type { NodeDocType } from "@/db/schema";
+import type { Node } from "@/db/schema";
 
 // has to put required since load_data in NodeDocType is optional
-export type Load = Required<NonNullable<NodeDocType["load_data"]>>;
+export type Load = Required<NonNullable<Node["load_data"]>>;
 
 export type VariesLabel = 'Unit Wattage' | 'Unit Load' | 'Horsepower Rating' | 'Current Rating';
 

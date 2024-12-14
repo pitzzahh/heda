@@ -1,4 +1,4 @@
-import type { LabelValuePair } from "@/types/generic";
+import type { LabelValuePair, LabelKeyPair } from "@/types/generic";
 
 /**
  * A generic function to convert an object to a label-value pair array.
@@ -9,6 +9,18 @@ export function toLabelValueArray<T extends Record<string, string>>(data: T): La
   return Object.keys(data).map((key) => ({
     label: key as keyof T,
     value: data[key as keyof T]
+  }));
+}
+
+/**
+ * A generic function to convert an object to a label-key pair array.
+ * @param data The object to convert to a label-key pair array.
+ * @returns  An array of label-key pairs.
+ */
+export function toLabelKeyArray<T extends Record<string, string>>(data: T): LabelKeyPair<T>[] {
+  return Object.keys(data).map((key) => ({
+    label: key as keyof T,
+    key: key
   }));
 }
 

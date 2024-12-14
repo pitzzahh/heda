@@ -8,7 +8,7 @@ import {
 	getComputedLoads
 } from '@/db/queries/index.js';
 import { goto } from '$app/navigation';
-import type { Node } from '@/types/project/index.js';
+import type { Node } from '@/db/schema';
 
 export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];

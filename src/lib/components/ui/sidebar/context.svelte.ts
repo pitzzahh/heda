@@ -4,8 +4,10 @@ import { getContext, setContext } from 'svelte';
 import {
 	SIDEBAR_KEYBOARD_SHORTCUT,
 	SIDEBAR_MAX_WIDTH,
-	SIDEBAR_DEFAULT_WIDTH
+	SIDEBAR_DEFAULT_WIDTH,
+	SIDEBAR_MIN_WIDTH
 } from './constants.js';
+import { LocalStorage } from '@/hooks/storage.svelte.js';
 
 type Getter<T> = () => T;
 
@@ -27,18 +29,23 @@ export type SidebarStateProps = {
 
 class SidebarState {
 	readonly props: SidebarStateProps;
+	localStorage: LocalStorage<{ sidebar_width: number }>;
 	open = $derived.by(() => this.props.open());
 	openMobile = $state(false);
 	setOpen: SidebarStateProps['setOpen'];
 	#isMobile: IsMobile;
 	state = $derived.by(() => (this.open ? 'expanded' : 'collapsed'));
-	sidebarWidth = $state(SIDEBAR_DEFAULT_WIDTH);
+	sidebarWidth = $state(0);
 	isResizing = $state(false);
 
 	constructor(props: SidebarStateProps) {
+		const localStorage = new LocalStorage<{ sidebar_width: number }>('sidebar');
+
 		this.setOpen = props.setOpen;
 		this.#isMobile = new IsMobile();
 		this.props = props;
+		this.localStorage = localStorage;
+		this.sidebarWidth = localStorage?.current?.sidebar_width || SIDEBAR_DEFAULT_WIDTH;
 	}
 
 	// Convenience getter for checking if the sidebar is mobile
@@ -66,13 +73,14 @@ class SidebarState {
 			if (this.isResizing) {
 				const newWidth = startWidth + (e.clientX - startX);
 				// close the sidebar if it hits the 180px
-				if (newWidth <= 180) {
+				if (newWidth <= SIDEBAR_MIN_WIDTH) {
 					this.setOpen(false);
-					onMouseUp()
+					onMouseUp();
 				}
 
 				if (newWidth <= SIDEBAR_MAX_WIDTH) {
 					this.sidebarWidth = newWidth;
+					this.localStorage.current = { ...this.localStorage.current, sidebar_width: newWidth };
 				}
 			}
 		};
@@ -100,7 +108,7 @@ class SidebarState {
 			this.openMobile = !this.openMobile;
 		} else {
 			this.setOpen(!this.open);
-			if (this.open) {
+			if (this.sidebarWidth < SIDEBAR_MIN_WIDTH) {
 				this.sidebarWidth = SIDEBAR_DEFAULT_WIDTH;
 			}
 		}

@@ -5,18 +5,19 @@
 	import { CirclePlus } from '@/assets/icons';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { type GenericPhaseMainLoadSchema } from '@/schema/load';
-	import type { HighestUnitSchema } from '@/schema';
+	import type { Node } from '@/db/schema';
 	import { cn } from '@/utils';
+	import Separator from '@/components/ui/separator/separator.svelte';
+	import { getNodeById } from '@/db/queries';
+	import { page } from '$app/stores';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
-		highest_unit: HighestUnitSchema;
+		highest_unit?: NonNullable<Node['highest_unit_form']>;
+		latest_circuit_node?: Node;
 	}
 
-	let { phase_main_load_form, highest_unit, ...props }: Props = $props();
-
-	const { distribution_unit, phase } = highest_unit;
-
+	let { phase_main_load_form, highest_unit, latest_circuit_node, ...props }: Props = $props();
 	let is_dialog_open = $state(false);
 </script>
 
@@ -40,23 +41,31 @@
 					<div class="grid w-full grid-cols-2 justify-items-start">
 						<div>
 							<div class="flex gap-1">
-								<h4 class="font-semibold">Name:</h4>
-								<p>{distribution_unit ?? 'N/A'}</p>
+								<h4 class="font-semibold">Supply From:</h4>
+								{#await getNodeById($page.params.id.split('_').at(-1) || '') then parent_node}
+									<p>
+										{parent_node?.highest_unit_form?.distribution_unit ||
+											parent_node?.panel_data?.name ||
+											'N/A'}
+									</p>
+								{/await}
 							</div>
 						</div>
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Phase:</h4>
-								<p>{phase ?? 'N/A'}</p>
+								<p>{highest_unit?.phase ?? 'N/A'}</p>
 							</div>
 						</div>
 					</div>
 				</div>
 			</Dialog.Header>
+			<Separator class="mt-0.5" />
 			<GenericPhaseMainLoadForm
 				action={'add'}
 				closeDialog={() => (is_dialog_open = false)}
 				{phase_main_load_form}
+				{latest_circuit_node}
 			/>
 		</Dialog.Content>
 	</Dialog.Root>
