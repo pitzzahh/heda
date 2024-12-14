@@ -12,7 +12,9 @@
 		CirclePlus,
 		DatabaseZap,
 		PlugZap,
-		PanelsLeftBottom
+		PanelsLeftBottom,
+		Grid2x2Plus,
+		Trash2
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -44,7 +46,9 @@
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
 	let open_tree_edit_action_dialog = $state(false);
-	let open_tree_add_action_dialog = $state(false);
+	let open_tree_add_panel_dialog = $state(false);
+	let open_tree_add_load_dialog = $state(false);
+	let open_tree_delete_dialog = $state(false);
 	let params = $derived($page.params);
 	let is_hovering_on_tree_item = $state(false);
 </script>
@@ -116,10 +120,10 @@
 			</div>
 		</Sidebar.MenuButton>
 	{:else}
-		<Sidebar.MenuItem>
+		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
 				open
-				class="group/collapsible isolate [&[data-state=open]>button>svg:first-child]:rotate-90"
+				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
 					onmouseenter={() => (is_hovering_on_tree_item = true)}
@@ -188,7 +192,7 @@
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 					<div
-						class={cn('hidden items-center gap-1.5', {
+						class={cn('hidden items-center gap-1.5 py-1', {
 							flex: is_hovering_on_tree_item
 						})}
 					>
@@ -196,7 +200,20 @@
 							<Tooltip.Root>
 								<Tooltip.Trigger
 									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
-									onclick={() => (open_tree_add_action_dialog = true)}
+									onclick={() => (open_tree_add_panel_dialog = true)}
+								>
+									<Grid2x2Plus />
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>Add Panel</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+									onclick={() => (open_tree_add_load_dialog = true)}
 								>
 									<CirclePlus />
 								</Tooltip.Trigger>
@@ -205,13 +222,49 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({ variant: 'destructive', size: 'icon' })}
+									onclick={() => (open_tree_delete_dialog = true)}
+								>
+									<Trash2 />
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>{node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					</div>
+					{@const node_name = (node.highest_unit_form?.distribution_unit ||
+						node.panel_data?.name) as string}
+					<AddPanelAndViewTrigger
+						id={node.id}
+						panel_name={node_name}
+						{generic_phase_panel_form}
+						{highest_unit}
+						is_parent_root_node={node.node_type === 'root'}
+						parent_id={node.id}
+						bind:open_dialog_state={open_tree_add_panel_dialog}
+						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+					/>
 					<AddLoadDialog
 						{phase_main_load_form}
 						{highest_unit}
 						remove_trigger={true}
-						bind:open_dialog_state={open_tree_add_action_dialog}
+						bind:open_dialog_state={open_tree_add_load_dialog}
 						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+					/>
+					<ConfirmationDialog
+						trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+						trigger_variant="destructive"
+						bind:open_dialog_state={open_tree_delete_dialog}
+						onConfirm={async () => {
+							if (node.node_type === 'root' && project) {
+								await deleteProject(project.id);
+							} else await removeNode(node.id);
+							await invalidateAll();
+						}}
 					/>
 				</Sidebar.MenuButton>
 
