@@ -16,7 +16,8 @@
 		"lint": "prettier --check . && eslint .",
 		"tauri": "tauri",
 		"db:gen": "drizzle-kit generate",
-		"db:push": "drizzle-kit push"
+		"db:push": "drizzle-kit push",
+		"site:td": "bun run build && bun run preview"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
