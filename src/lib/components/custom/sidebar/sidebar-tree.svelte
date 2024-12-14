@@ -43,7 +43,8 @@
 
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
-	let open_tree_action_dialog = $state(false);
+	let open_tree_edit_action_dialog = $state(false);
+	let open_tree_add_action_dialog = $state(false);
 	let params = $derived($page.params);
 	let is_hovering_on_tree_item = $state(false);
 </script>
@@ -57,172 +58,179 @@
 		{/snippet}
 	</Sidebar.MenuButton>
 {:then child_nodes}
-	<Tooltip.Provider>
-		{#if node.node_type === 'load'}
-			<Sidebar.MenuButton
-				onmouseenter={() => (is_hovering_on_tree_item = true)}
-				onmouseleave={() => (is_hovering_on_tree_item = false)}
-				class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
-			>
-				<ContextMenu.Root bind:open={open_load_context_menu}>
-					<ContextMenu.Trigger class="flex w-full items-center gap-1">
-						<div class="flex w-full items-center gap-2">
-							<div class="w-4">
-								<PlugZap class="size-4" />
-							</div>
-							<span class="truncate">
-								{typeof node === 'string' ? node : node.load_data?.load_description}
-							</span>
+	{#if node.node_type === 'load'}
+		<Sidebar.MenuButton
+			onmouseenter={() => (is_hovering_on_tree_item = true)}
+			onmouseleave={() => (is_hovering_on_tree_item = false)}
+			class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+		>
+			<ContextMenu.Root bind:open={open_load_context_menu}>
+				<ContextMenu.Trigger class="flex w-full items-center gap-1">
+					<div class="flex w-full items-center gap-2">
+						<div class="w-4">
+							<PlugZap class="size-4" />
 						</div>
-					</ContextMenu.Trigger>
-					<ContextMenu.Content class="grid gap-1">
-						{#snippet children()}
-							<UpdateLoadDialog
-								{highest_unit}
-								{phase_main_load_form}
-								bind:some_open_state={open_load_context_menu}
-								load_to_edit={node}
-							/>
-							<ConfirmationDialog
-								trigger_text="Remove load"
-								trigger_variant="destructive"
-								bind:some_open_state={open_load_context_menu}
-								onConfirm={async () => {
-									await removeNode(node.id);
-									await invalidateAll();
-								}}
-							/>
-						{/snippet}
-					</ContextMenu.Content>
-				</ContextMenu.Root>
-				<div
-					class={cn('hidden items-center gap-1.5', {
-						flex: is_hovering_on_tree_item
-					})}
-				>
+						<span class="truncate">
+							{typeof node === 'string' ? node : node.load_data?.load_description}
+						</span>
+					</div>
+				</ContextMenu.Trigger>
+				<ContextMenu.Content class="grid gap-1">
+					{#snippet children()}
+						<UpdateLoadDialog
+							{highest_unit}
+							{phase_main_load_form}
+							bind:some_open_state={open_load_context_menu}
+							load_to_edit={node}
+						/>
+						<ConfirmationDialog
+							trigger_text="Remove load"
+							trigger_variant="destructive"
+							bind:some_open_state={open_load_context_menu}
+							onConfirm={async () => {
+								await removeNode(node.id);
+								await invalidateAll();
+							}}
+						/>
+					{/snippet}
+				</ContextMenu.Content>
+			</ContextMenu.Root>
+			<div
+				class={cn('hidden items-center gap-1.5', {
+					flex: is_hovering_on_tree_item
+				})}
+			>
+				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-20' })}
-							onclick={() => (open_tree_action_dialog = true)}
+							class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-50' })}
+							onclick={() => (open_tree_edit_action_dialog = true)}
 						>
 							<Pencil />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>Add to library</p>
+							<p>Edit load</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
-				</div>
-			</Sidebar.MenuButton>
-		{:else}
-			<Sidebar.MenuItem>
-				<Collapsible.Root
-					open
-					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+				</Tooltip.Provider>
+			</div>
+		</Sidebar.MenuButton>
+	{:else}
+		<Sidebar.MenuItem>
+			<Collapsible.Root
+				open
+				class="group/collapsible isolate [&[data-state=open]>button>svg:first-child]:rotate-90"
+			>
+				<Sidebar.MenuButton
+					onmouseenter={() => (is_hovering_on_tree_item = true)}
+					onmouseleave={() => (is_hovering_on_tree_item = false)}
+					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
+						'-translate-x-2': node.node_type === 'panel',
+						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+					})}
 				>
-					<Sidebar.MenuButton
-						onmouseenter={() => (is_hovering_on_tree_item = true)}
-						onmouseleave={() => (is_hovering_on_tree_item = false)}
-						class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
-							'-translate-x-2': node.node_type === 'panel',
-							'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
+							<ChevronRight class="transition-transform" {...props} />
+						{/snippet}
+					</Collapsible.Trigger>
+					<ContextMenu.Root bind:open={open_panel_context_menu}>
+						<ContextMenu.Trigger class="w-full">
+							{@const node_name = (node.highest_unit_form?.distribution_unit ||
+								node.panel_data?.name) as string}
+							<AddPanelAndViewTrigger
+								id={node.id}
+								panel_name={node_name}
+								{generic_phase_panel_form}
+								{highest_unit}
+								is_parent_root_node={node.node_type === 'root'}
+								parent_id={node.id}
+								latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+							>
+								<!-- TODO: Palitan or retain this -->
+								{#if node.node_type === 'root'}
+									<div class="w-4">
+										<DatabaseZap class="size-4" />
+									</div>
+								{:else if node.node_type === 'panel'}
+									<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
+								{/if}
+
+								<span class="truncate">
+									{node_name}
+								</span>
+							</AddPanelAndViewTrigger>
+						</ContextMenu.Trigger>
+
+						<ContextMenu.Content class="grid gap-1">
+							{#snippet children()}
+								{#if node.node_type === 'panel' && node.parent_id}
+									<UpdatePanelDialog
+										panel_to_edit={node}
+										{generic_phase_panel_form}
+										{highest_unit}
+										bind:some_open_state={open_panel_context_menu}
+										parent_id={node.parent_id}
+									/>
+								{/if}
+
+								<ConfirmationDialog
+									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+									trigger_variant="destructive"
+									bind:some_open_state={open_panel_context_menu}
+									onConfirm={async () => {
+										if (node.node_type === 'root' && project) {
+											await deleteProject(project.id);
+										} else await removeNode(node.id);
+										await invalidateAll();
+									}}
+								/>
+							{/snippet}
+						</ContextMenu.Content>
+					</ContextMenu.Root>
+					<div
+						class={cn('hidden items-center gap-1.5', {
+							flex: is_hovering_on_tree_item
 						})}
 					>
-						<Collapsible.Trigger>
-							{#snippet child({ props })}
-								<ChevronRight class="transition-transform" {...props} />
-							{/snippet}
-						</Collapsible.Trigger>
-						<ContextMenu.Root bind:open={open_panel_context_menu}>
-							<ContextMenu.Trigger class="w-full">
-								{@const node_name = (node.highest_unit_form?.distribution_unit ||
-									node.panel_data?.name) as string}
-								<AddPanelAndViewTrigger
-									id={node.id}
-									panel_name={node_name}
-									{generic_phase_panel_form}
-									{highest_unit}
-									is_parent_root_node={node.node_type === 'root'}
-									parent_id={node.id}
-									latest_circuit_node={child_nodes
-										? child_nodes[child_nodes.length - 1]
-										: undefined}
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+									onclick={() => (open_tree_add_action_dialog = true)}
 								>
-									<!-- TODO: Palitan or retain this -->
-									{#if node.node_type === 'root'}
-										<div class="w-4">
-											<DatabaseZap class="size-4" />
-										</div>
-									{:else if node.node_type === 'panel'}
-										<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
-									{/if}
+									<CirclePlus />
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>Add Load</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+					</div>
+					<AddLoadDialog
+						{phase_main_load_form}
+						{highest_unit}
+						remove_trigger={true}
+						bind:open_dialog_state={open_tree_add_action_dialog}
+						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+					/>
+				</Sidebar.MenuButton>
 
-									<span class="truncate">
-										{node_name}
-									</span>
-								</AddPanelAndViewTrigger>
-							</ContextMenu.Trigger>
-
-							<ContextMenu.Content class="grid gap-1">
-								{#snippet children()}
-									{#if node.node_type === 'panel' && node.parent_id}
-										<UpdatePanelDialog
-											panel_to_edit={node}
-											{generic_phase_panel_form}
-											{highest_unit}
-											bind:some_open_state={open_panel_context_menu}
-											parent_id={node.parent_id}
-										/>
-									{/if}
-
-									<ConfirmationDialog
-										trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
-										trigger_variant="destructive"
-										bind:some_open_state={open_panel_context_menu}
-										onConfirm={async () => {
-											if (node.node_type === 'root' && project) {
-												await deleteProject(project.id);
-											} else await removeNode(node.id);
-
-											await invalidateAll();
-										}}
-									/>
-								{/snippet}
-							</ContextMenu.Content>
-						</ContextMenu.Root>
-						<div
-							class={cn('hidden items-center gap-1.5', {
-								flex: is_hovering_on_tree_item
-							})}
-						>
-							<Button variant="ghost" size="icon" onclick={() => (open_tree_action_dialog = true)}>
-								<CirclePlus />
-							</Button>
-						</div>
-						<AddLoadDialog
-							{phase_main_load_form}
-							{highest_unit}
-							remove_trigger={true}
-							bind:open_dialog_state={open_tree_action_dialog}
-							latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-						/>
-					</Sidebar.MenuButton>
-
-					<Collapsible.Content class="w-full">
-						<Sidebar.MenuSub class="w-full">
-							{#each child_nodes as child, index (index)}
-								<SidebarTree
-									node={child}
-									{generic_phase_panel_form}
-									{phase_main_load_form}
-									{highest_unit}
-								/>
-							{/each}
-						</Sidebar.MenuSub>
-					</Collapsible.Content>
-				</Collapsible.Root>
-			</Sidebar.MenuItem>
-		{/if}
-	</Tooltip.Provider>
+				<Collapsible.Content class="w-full">
+					<Sidebar.MenuSub class="w-full">
+						{#each child_nodes as child, index (index)}
+							<SidebarTree
+								node={child}
+								{generic_phase_panel_form}
+								{phase_main_load_form}
+								{highest_unit}
+							/>
+						{/each}
+					</Sidebar.MenuSub>
+				</Collapsible.Content>
+			</Collapsible.Root>
+		</Sidebar.MenuItem>
+	{/if}
 {:catch error}
 	<!-- TODO: Enhance error page -->
 	<p style="color: red">{error.message}</p>
@@ -232,7 +240,7 @@
 	{highest_unit}
 	{phase_main_load_form}
 	remove_trigger={true}
-	bind:open_load_dialog={open_tree_action_dialog}
+	bind:open_load_dialog={open_tree_edit_action_dialog}
 	bind:some_open_state={open_load_context_menu}
 	load_to_edit={node}
 />
