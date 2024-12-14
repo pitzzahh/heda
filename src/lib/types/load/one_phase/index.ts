@@ -35,10 +35,10 @@ export type PhaseLoadSchedule = {
 	voltage: number;
 	va: number;
 	current: number;
+	at: number;
 	// ab: number;
 	// bc: number;
 	// ca: number;
-	// at: number;
 	// pole: number;
 	// kaic: number;
 	// sets: number;
@@ -50,4 +50,4 @@ export type PhaseLoadSchedule = {
 	// egc_insulation: string;
 	// conduit_size: string;
 	// conduit_type: string;
-} & Node
+} & Node;
