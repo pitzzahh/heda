@@ -65,15 +65,6 @@
 				circuit_number: 0
 			};
 			const { get, paths } = event;
-			if (paths.includes('varies') && paths.length === 1) {
-				const selected_varies = get('varies');
-				const selected_varies_label = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
-					(f) => f === selected_varies
-				);
-				toast.info(`Selected varies: ${selected_varies_label}`);
-				if (!selected_varies_label) return;
-				$formData.varies = default_hp_current_relationship[selected_varies_label];
-			}
 			if (load_type === 'DEFAULT') {
 				if (paths.includes('load_description') && paths.length === 1) {
 					const selected_load_description = get('load_description');
@@ -118,9 +109,13 @@
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
 					const load_data = {
 						...form.data,
+						varies:
+							default_hp_current_relationship[
+								$formData.varies as keyof typeof default_hp_current_relationship
+							],
 						load_description,
 						config_preference: load_type
-					};
+					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
 							await addNode({
@@ -464,13 +459,14 @@
 								role="combobox"
 								{...props}
 							>
+								{@const varies_output =
+									default_hp_current_relationship[
+										$formData.varies as keyof typeof default_hp_current_relationship
+									]}
 								{#if $formData.varies}
 									<p>
-										{@html formatFraction(
-											getKeyByValue(default_hp_current_relationship, $formData.varies.toString()) ||
-												''
-										)}
-										{`(${$formData.varies})`}
+										{@html formatFraction($formData.varies)}
+										({varies_output})
 									</p>
 								{:else}
 									Select a {variesLabel.toLowerCase()}
