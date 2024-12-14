@@ -76,6 +76,7 @@
 	let params = $derived($page.params);
 	const { root_node } = data;
 	let supply_from_name = $state('');
+	let loads = $derived(data?.nodes)
 
 	$effect(() => {
 		const nodeId = params.id.split('_').at(-1) as string;
@@ -130,9 +131,11 @@
 		</div>
 	</div>
 	<DataTable
-		data={data?.nodes && data.nodes.length > 0
-			? (data.nodes as unknown as PhaseLoadSchedule[])
+		data={loads && loads.length > 0
+			? (loads as unknown as PhaseLoadSchedule[])
 			: []}
-		columns={onePhaseMainOrWyeCols(data.phase_main_load_form, root_node?.highest_unit_form)}
+		columns={onePhaseMainOrWyeCols(data.phase_main_load_form, root_node?.highest_unit_form, 
+			 loads && loads.length > 0 ? loads.at(-1) : undefined
+		)}
 	/>
 </div>
