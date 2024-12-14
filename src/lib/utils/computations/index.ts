@@ -1,4 +1,5 @@
-import type { DEFAULT_LOAD_TYPES_OPTIONS } from "@/constants";
+import type { DEFAULT_LOAD_TYPES_OPTIONS } from '@/constants';
+import { standard_ampere_ratings, load_type_z_value } from '@/constants';
 
 type LoadType = (typeof DEFAULT_LOAD_TYPES_OPTIONS)[number];
 export function computeVoltAmphere({
@@ -27,7 +28,7 @@ export function computeVoltAmphere({
 
 		// load types with separate formula
 		return quantity * 230 * varies;
-		
+
 		// switch (load_type) {
 		// 	case '1P Motor - Rated Current':
 		// 		return quantity * 230 * varies;
@@ -37,4 +38,15 @@ export function computeVoltAmphere({
 	}
 
 	console.log('Invalid load_type or varies is not a number');
+}
+
+export function computeAT(current: number, load_type: LoadType) {
+	const calculatedAT = current * load_type_z_value[load_type];
+
+	for (const rating of standard_ampere_ratings) {
+		if (calculatedAT <= rating) return rating;
+	}
+
+	// return the last rating if the calculated AT exceeded the standard ratings
+	return standard_ampere_ratings.at(-1);
 }
