@@ -1,4 +1,4 @@
-import { computeAT, computeVoltAmphere } from '@/utils/computations';
+import { computeAmphereTrip, computeVoltAmphere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
@@ -136,7 +136,7 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					varies: data.load_data?.varies ?? 0
 				}) || 0;
 			const current = va / voltage;
-			const at = computeAT(current, data.load_data?.load_type as LoadType);
+			const at = computeAmphereTrip(current, data.load_data?.load_type as LoadType);
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
@@ -145,10 +145,9 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 				const totalLoads = panelLoads.reduce(
 					(totals, load) => ({
 						va: totals.va + (load.va || 0),
-						current: totals.current + (load.current || 0),
-						at: totals.at + (load.at || 0)
+						current: totals.current + (load.current || 0)
 					}),
-					{ va: 0, current: 0, at: 0 } // Default initial values
+					{ va: 0, current: 0 } // Default initial values
 				);
 
 				return {
@@ -156,7 +155,7 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					load_description: data.panel_data.name || '',
 					voltage,
 					va: totalLoads.va,
-					at,
+					at: computeAmphereTrip(totalLoads.current),
 					current: parseFloat(totalLoads.current.toFixed(2))
 				};
 			}
