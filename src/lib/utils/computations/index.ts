@@ -40,13 +40,19 @@ export function computeVoltAmphere({
 	console.log('Invalid load_type or varies is not a number');
 }
 
-export function computeAT(current: number, load_type: LoadType) {
-	const calculatedAT = current * load_type_z_value[load_type];
+export function computeAmphereTrip(current: number, load_type?: LoadType) {
+	const PANEL_Z_VALUE = 1.25;
+	const calculatedAT = current * (load_type ? load_type_z_value[load_type] : PANEL_Z_VALUE);
+
+	if (!load_type && calculatedAT < 30) return 30; //for panels
+
+	// for all load types except lighting and general
+	if (load_type !== 'Lighting Load' && load_type !== 'General Lighting' && calculatedAT < 20)
+		return 20;
 
 	for (const rating of standard_ampere_ratings) {
 		if (calculatedAT <= rating) return rating;
 	}
 
-	// return the last rating if the calculated AT exceeded the standard ratings
-	return standard_ampere_ratings.at(-1);
+	return 0;
 }
