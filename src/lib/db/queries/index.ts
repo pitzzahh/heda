@@ -1,4 +1,4 @@
-import { computeVoltAmphere } from '@/utils/computations';
+import { computeAT, computeVoltAmphere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
@@ -8,8 +8,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-				id: project_id
-			}
+					id: project_id
+				}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
@@ -59,13 +59,15 @@ export async function checkNodeExists({
 
 export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
-	return (await db.nodes
-		.findOne({
-			selector: {
-				id: target_id
-			}
-		})
-		.exec())?._data;
+	return (
+		await db.nodes
+			.findOne({
+				selector: {
+					id: target_id
+				}
+			})
+			.exec()
+	)?._data;
 }
 
 export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
@@ -110,9 +112,15 @@ export async function getParentNodes(excluded_id?: string) {
 	return parent_nodes;
 }
 
-export async function getComputedLoads(
-	parent_id: string
-): Promise<(Node & { va: number; current: number; voltage: number; load_description: string })[]> {
+type LoadSchedule = Node & {
+	va: number;
+	current: number;
+	voltage: number;
+	load_description: string;
+	at: number;
+};
+
+export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
 	const db = await databaseInstance();
 	const childNodes = await db.nodes.find({ selector: { parent_id } }).exec();
 
@@ -127,8 +135,8 @@ export async function getComputedLoads(
 					quantity: data.load_data?.quantity ?? 0,
 					varies: data.load_data?.varies ?? 0
 				}) || 0;
-
 			const current = va / voltage;
+			const at = computeAT(current, data.load_data?.load_type as LoadType);
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
@@ -137,9 +145,10 @@ export async function getComputedLoads(
 				const totalLoads = panelLoads.reduce(
 					(totals, load) => ({
 						va: totals.va + (load.va || 0),
-						current: totals.current + (load.current || 0)
+						current: totals.current + (load.current || 0),
+						at: totals.at + (load.at || 0)
 					}),
-					{ va: 0, current: 0 } // Default initial values
+					{ va: 0, current: 0, at: 0 } // Default initial values
 				);
 
 				return {
@@ -147,6 +156,7 @@ export async function getComputedLoads(
 					load_description: data.panel_data.name || '',
 					voltage,
 					va: totalLoads.va,
+					at,
 					current: parseFloat(totalLoads.current.toFixed(2))
 				};
 			}
@@ -156,6 +166,7 @@ export async function getComputedLoads(
 				load_description: data.load_data?.load_description || '',
 				voltage,
 				va,
+				at,
 				current: parseFloat(current.toFixed(2))
 			};
 		})
@@ -164,5 +175,5 @@ export async function getComputedLoads(
 	// sorted loads by circuit_number
 	return loadsWithComputedFields.sort(
 		(a, b) => (a.circuit_number || 0) - (b.circuit_number || 0)
-	) as (Node & { va: number; current: number; voltage: number; load_description: string })[];
+	) as LoadSchedule[];
 }
