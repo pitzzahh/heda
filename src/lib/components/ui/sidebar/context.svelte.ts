@@ -4,7 +4,8 @@ import { getContext, setContext } from 'svelte';
 import {
 	SIDEBAR_KEYBOARD_SHORTCUT,
 	SIDEBAR_MAX_WIDTH,
-	SIDEBAR_DEFAULT_WIDTH
+	SIDEBAR_DEFAULT_WIDTH,
+	SIDEBAR_MIN_WIDTH
 } from './constants.js';
 import { LocalStorage } from '@/hooks/storage.svelte.js';
 
@@ -72,7 +73,7 @@ class SidebarState {
 			if (this.isResizing) {
 				const newWidth = startWidth + (e.clientX - startX);
 				// close the sidebar if it hits the 180px
-				if (newWidth <= 180) {
+				if (newWidth <= SIDEBAR_MIN_WIDTH) {
 					this.setOpen(false);
 					onMouseUp();
 				}
@@ -107,7 +108,8 @@ class SidebarState {
 			this.openMobile = !this.openMobile;
 		} else {
 			this.setOpen(!this.open);
-			if (this.open) {
+
+			if (this.sidebarWidth < SIDEBAR_MIN_WIDTH) {
 				this.sidebarWidth = SIDEBAR_DEFAULT_WIDTH;
 			}
 		}
