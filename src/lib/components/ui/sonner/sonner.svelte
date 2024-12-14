@@ -20,7 +20,7 @@
 	{...restProps}
 />
 
-<style lang="postcss">
+<style>
 	:global([data-rich-colors='true'] [data-sonner-toast][data-type='success']) {
 		background: var(--success-bg) !important;
 		border: 1px solid var(--success-border) !important;
