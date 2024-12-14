@@ -24,6 +24,7 @@
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
+	import { AddLoadDialog } from '../load';
 
 	let {
 		node,
@@ -109,6 +110,8 @@
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
+					onmouseenter={() => (is_hovering_on_tree_item = true)}
+					onmouseleave={() => (is_hovering_on_tree_item = false)}
 					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
 						'-translate-x-2': node.node_type === 'panel',
 						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
@@ -156,9 +159,6 @@
 										{highest_unit}
 										bind:some_open_state={open_panel_context_menu}
 										parent_id={node.parent_id}
-										latest_circuit_node={child_nodes
-											? child_nodes[child_nodes.length - 1]
-											: undefined}
 									/>
 								{/if}
 
@@ -177,6 +177,22 @@
 							{/snippet}
 						</ContextMenu.Content>
 					</ContextMenu.Root>
+					<div
+						class={cn('hidden items-center gap-1.5', {
+							flex: is_hovering_on_tree_item
+						})}
+					>
+						<Button variant="ghost" size="icon" onclick={() => (open_update_load_dialog = true)}>
+							<CirclePlus />
+						</Button>
+					</div>
+					<AddLoadDialog
+						{phase_main_load_form}
+						{highest_unit}
+						remove_trigger={true}
+						bind:open_dialog_state={open_update_load_dialog}
+						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+					/>
 				</Sidebar.MenuButton>
 
 				<Collapsible.Content class="w-full">
