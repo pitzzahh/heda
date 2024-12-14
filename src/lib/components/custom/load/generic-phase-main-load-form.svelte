@@ -15,7 +15,7 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn } from '@/utils';
+	import { cn, getKeyByValue } from '@/utils';
 	import { ChevronsUpDown, CircleAlert, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
@@ -23,7 +23,8 @@
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
-		default_hp_current_relationship
+		default_hp_current_relationship,
+		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -32,7 +33,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
-	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
+	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
 
@@ -65,15 +66,6 @@
 				circuit_number: 0
 			};
 			const { get, paths } = event;
-			if (paths.includes('varies') && paths.length === 1) {
-				const selected_varies = get('varies');
-				const selected_varies_label = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
-					(f) => f === selected_varies
-				);
-				toast.info(`Selected varies: ${selected_varies_label}`);
-				if (!selected_varies_label) return;
-				$formData.varies = default_hp_current_relationship[selected_varies_label];
-			}
 			if (load_type === 'DEFAULT') {
 				if (paths.includes('load_description') && paths.length === 1) {
 					const selected_load_description = get('load_description');
@@ -118,9 +110,13 @@
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
 					const load_data = {
 						...form.data,
+						varies:
+							default_hp_current_relationship[
+								$formData.varies as keyof typeof default_hp_current_relationship
+							],
 						load_description,
 						config_preference: load_type
-					};
+					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
 							await addNode({
@@ -153,6 +149,10 @@
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
+
+	const quantity_label: QuantityLabel | 'QTY' = $derived(
+		$formData.load_type ? load_type_to_quantity_label[$formData.load_type] : 'QTY'
 	);
 
 	let open_horsepower_rating = $state(false);
@@ -349,17 +349,17 @@
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
-		<Form.Field {form} name="quantity" class="text-center">
+		<Form.Field {form} name="quantity" class="w-1/4 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>QTY</Form.Label>
+					<Form.Label>{quantity_label ?? 'QTY'}</Form.Label>
 					<Input
 						{...props}
 						type="number"
 						min={1}
 						inputmode="numeric"
 						bind:value={$formData.quantity}
-						placeholder="Enter quantity"
+						placeholder="Enter {convertToNormalText(quantity_label)}"
 					/>
 				{/snippet}
 			</Form.Control>
@@ -464,8 +464,15 @@
 								role="combobox"
 								{...props}
 							>
+								{@const varies_output =
+									default_hp_current_relationship[
+										$formData.varies as keyof typeof default_hp_current_relationship
+									]}
 								{#if $formData.varies}
-									{@html formatFraction($formData.varies.toString())}
+									<p>
+										{@html formatFraction($formData.varies)}
+										({varies_output})
+									</p>
 								{:else}
 									Select a {variesLabel.toLowerCase()}
 								{/if}

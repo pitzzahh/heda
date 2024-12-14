@@ -1,4 +1,4 @@
-import type { DefaultLoad, LoadType, VariesLabel } from '@/types/load';
+import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '@/types/load';
 import { getEnumValues, getEnumKeys } from '@/utils/enum';
 import { toLabelKeyArray, toLabelValueArray } from '@/utils/mapper';
 
@@ -120,6 +120,10 @@ export const load_type_to_varies_label = {
 	[default_load_types.HEATING_EQUIPMENT]: 'Unit Wattage'
 } as const satisfies Record<LoadType, VariesLabel>;
 
+export const load_type_to_quantity_label = {
+	[default_load_types.GENERAL_LIGHTING]: 'Floor area',
+} as const as Record<LoadType, QuantityLabel>;
+
 export const standard_ampere_ratings = [
 	15, 20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500, 600, 800,
 	1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
@@ -172,6 +176,10 @@ export const DEFAULT_LOAD_TYPES_OPTIONS = getEnumValues(default_load_types);
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_type_to_varies_label);
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
+
+export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_ENUMS = toLabelValueArray(load_type_to_quantity_label);
+
+export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_OPTIONS = getEnumValues(load_type_to_quantity_label);
 
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(default_hp_current_relationship);
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
