@@ -22,7 +22,8 @@
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		load_type_to_varies_label,
-		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
+		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
+		default_hp_current_relationship
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -63,8 +64,17 @@
 				is_circuit_number_taken: false,
 				circuit_number: 0
 			};
+			const { get, paths } = event;
+			if (paths.includes('varies') && paths.length === 1) {
+				const selected_varies = get('varies');
+				const selected_varies_label = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
+					(f) => f === selected_varies
+				);
+				toast.info(`Selected varies: ${selected_varies_label}`);
+				if (!selected_varies_label) return;
+				$formData.varies = default_hp_current_relationship[selected_varies_label];
+			}
 			if (load_type === 'DEFAULT') {
-				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
 					const selected_load_description = get('load_description');
 					const selected_load = DEFAULT_LOADS.find(
@@ -454,11 +464,8 @@
 								role="combobox"
 								{...props}
 							>
-								{@const current_selected_varies = DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.find(
-									(s) => s === $formData.varies.toString()
-								)}
-								{#if $formData.varies && current_selected_varies}
-									{@html formatFraction(current_selected_varies)}
+								{#if $formData.varies}
+									{@html formatFraction($formData.varies.toString())}
 								{:else}
 									Select a {variesLabel.toLowerCase()}
 								{/if}
