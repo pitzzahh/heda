@@ -17,6 +17,7 @@
 		latest_circuit_node?: Node;
 		open_dialog_state?: boolean;
 		remove_trigger?: boolean;
+		panel_id_from_tree?: string
 	}
 
 	let {
@@ -25,6 +26,7 @@
 		remove_trigger = false,
 		highest_unit,
 		latest_circuit_node,
+		panel_id_from_tree,
 		...props
 	}: Props = $props();
 </script>
@@ -79,6 +81,7 @@
 				closeDialog={() => (open_dialog_state = false)}
 				{phase_main_load_form}
 				{latest_circuit_node}
+				{panel_id_from_tree}
 			/>
 		</Dialog.Content>
 	</Dialog.Root>
