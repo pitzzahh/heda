@@ -31,6 +31,7 @@
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { AddLoadDialog } from '../load';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		node,
@@ -48,7 +49,8 @@
 
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
-	let open_tree_edit_action_dialog = $state(false);
+	let open_tree_edit_panel_action_dialog = $state(false);
+	let open_tree_edit_load_action_dialog = $state(false);
 	let open_tree_add_panel_dialog = $state(false);
 	let open_tree_add_load_dialog = $state(false);
 	let open_tree_copy_load_dialog = $state(false);
@@ -128,7 +130,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger
 							class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-50' })}
-							onclick={() => (open_tree_edit_action_dialog = true)}
+							onclick={() => (open_tree_edit_load_action_dialog = true)}
 						>
 							<Pencil />
 						</Tooltip.Trigger>
@@ -147,7 +149,7 @@
 							})}
 							onclick={() => (open_tree_delete_dialog = true)}
 						>
-							<Trash2 class="text-inherit"/>
+							<Trash2 class="text-inherit" />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>Remove Load</p>
@@ -267,7 +269,30 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
+
 						{#if node.node_type === 'panel'}
+							<Tooltip.Provider>
+								<Tooltip.Root>
+									<Tooltip.Trigger
+										class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-50' })}
+										onclick={() => {
+											if (!node.parent_id) {
+												// TODO: Log system error
+												return toast.warning('Failed to identify the panel supplier', {
+													description:
+														'This is a system error and should not be here, the error has been logged.'
+												});
+											}
+											open_tree_edit_panel_action_dialog = true;
+										}}
+									>
+										<Pencil />
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>Edit Panel</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
 							<Tooltip.Provider>
 								<Tooltip.Root>
 									<Tooltip.Trigger
@@ -349,10 +374,20 @@
 	{highest_unit}
 	{phase_main_load_form}
 	remove_trigger={true}
-	bind:open_load_dialog={open_tree_edit_action_dialog}
+	bind:open_load_dialog={open_tree_edit_load_action_dialog}
 	bind:some_open_state={open_load_context_menu}
 	load_to_edit={node}
 />
+{#if node.parent_id}
+	<UpdatePanelDialog
+		panel_to_edit={node}
+		{generic_phase_panel_form}
+		{highest_unit}
+		bind:open_panel_dialog={open_tree_edit_panel_action_dialog}
+		bind:some_open_state={open_panel_context_menu}
+		parent_id={node.parent_id}
+	/>
+{/if}
 <ConfirmationDialog
 	trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 	trigger_variant="destructive"
