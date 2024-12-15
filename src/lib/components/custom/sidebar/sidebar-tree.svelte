@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { cubicInOut } from 'svelte/easing';
-	import { fadeScale } from '@/utils/transitions';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -234,12 +232,6 @@
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 					<div
-						transition:fadeScale={{
-							delay: 100,
-							duration: 200,
-							easing: cubicInOut,
-							start: 0.5
-						}}
 						class={cn('hidden w-fit	items-center gap-1.5 py-1', {
 							flex: is_hovering_on_tree_item
 						})}
