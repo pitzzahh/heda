@@ -2,8 +2,8 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { Button } from '@/components/ui/button';
-	import { Ellipsis, Pencil, Trash2 } from '@/assets/icons';
-	import { removeNode } from '@/db/mutations';
+	import { Ellipsis, Pencil, Trash2, Copy } from '@/assets/icons';
+	import { copyAndAddNodeById, removeNode } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
 	import type { Node } from '@/db/schema';
@@ -64,10 +64,20 @@
 					<Pencil class="ml-2 size-4" />
 					Update
 				</DropdownMenu.Item>
+				<DropdownMenu.Item
+					onclick={async () => {
+						await copyAndAddNodeById(node.id);
+						await invalidateAll();
+					}}
+				>
+					<Copy class="ml-2 size-4" />
+					Copy
+				</DropdownMenu.Item>
 
 				<DropdownMenu.Item class="mt-0.5 p-0">
 					{#snippet children()}
 						<ConfirmationDialog
+							show_trigger={true}
 							trigger_text="Remove load"
 							trigger_variant="destructive"
 							bind:some_open_state={open_dropdown_menu}
