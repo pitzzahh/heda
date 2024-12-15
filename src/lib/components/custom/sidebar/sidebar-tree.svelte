@@ -280,7 +280,7 @@
 										<Copy />
 									</Tooltip.Trigger>
 									<Tooltip.Content>
-										<p>Copy Load</p>
+										<p>Copy Panel</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							</Tooltip.Provider>
