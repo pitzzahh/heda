@@ -22,7 +22,7 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
-	import { deleteProject, removeNode } from '@/db/mutations';
+	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/stores';
@@ -110,7 +110,10 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger
 							class={buttonVariants({ variant: 'outline', size: 'icon' })}
-							onclick={() => (open_tree_copy_load_dialog = true)}
+							onclick={async () => {
+								await copyAndAddNodeById(node.id);
+								await invalidateAll();
+							}}
 						>
 							<Copy />
 						</Tooltip.Trigger>
@@ -251,6 +254,22 @@
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>Add Load</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({ variant: 'outline', size: 'icon' })}
+									onclick={async () => {
+										await copyAndAddNodeById(node.id);
+										await invalidateAll();
+									}}
+								>
+									<Copy />
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>Copy Load</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
