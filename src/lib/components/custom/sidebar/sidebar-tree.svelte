@@ -257,22 +257,26 @@
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={buttonVariants({ variant: 'outline', size: 'icon' })}
-									onclick={async () => {
-										await copyAndAddNodeById(node.id);
-										await invalidateAll();
-									}}
-								>
-									<Copy />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>Copy Load</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+
+						{#if node.node_type === 'panel'}
+							<Tooltip.Provider>
+								<Tooltip.Root>
+									<Tooltip.Trigger
+										class={buttonVariants({ variant: 'outline', size: 'icon' })}
+										onclick={async () => {
+											await copyAndAddNodeById(node.id);
+											await invalidateAll();
+										}}
+									>
+										<Copy />
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>Copy Load</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						{/if}
+
 						<Tooltip.Provider>
 							<Tooltip.Root>
 								<Tooltip.Trigger
