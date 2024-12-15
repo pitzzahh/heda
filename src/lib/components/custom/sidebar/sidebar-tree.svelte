@@ -134,7 +134,7 @@
 							<Pencil />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>Edit Load</p>
+							<p>Edit {node.load_data?.load_description || 'Load'}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
@@ -211,6 +211,8 @@
 										panel_to_edit={node}
 										{generic_phase_panel_form}
 										{highest_unit}
+										trigger_text={`Edit ${node.panel_data?.name || 'Panel'}`}
+										show_trigger={true}
 										bind:some_open_state={open_panel_context_menu}
 										parent_id={node.parent_id}
 									/>
@@ -288,7 +290,7 @@
 										<Pencil />
 									</Tooltip.Trigger>
 									<Tooltip.Content>
-										<p>Edit Panel</p>
+										<p>Edit {node.panel_data?.name || 'Panel'}</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							</Tooltip.Provider>
