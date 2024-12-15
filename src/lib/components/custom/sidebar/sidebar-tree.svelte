@@ -305,6 +305,7 @@
 						remove_trigger={true}
 						bind:open_dialog_state={open_tree_add_load_dialog}
 						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+						panel_id_from_tree={node.id}
 					/>
 				</Sidebar.MenuButton>
 
