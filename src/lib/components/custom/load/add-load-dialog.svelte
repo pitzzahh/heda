@@ -17,7 +17,7 @@
 		latest_circuit_node?: Node;
 		open_dialog_state?: boolean;
 		remove_trigger?: boolean;
-		panel_id_from_tree?: string
+		panel_id_from_tree?: string;
 	}
 
 	let {
@@ -57,7 +57,9 @@
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Supply From:</h4>
-								{#await getNodeById($page.params.id.split('_').at(-1) || '') then parent_node}
+								{#await getNodeById(panel_id_from_tree || $page.params.id
+											.split('_')
+											.at(-1) || '') then parent_node}
 									<p>
 										{parent_node?.highest_unit_form?.distribution_unit ||
 											parent_node?.panel_data?.name ||
