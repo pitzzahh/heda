@@ -39,17 +39,17 @@
 	let clickTimeout: number | null = null; // To store the timeout for single-click
 
 	function handleClick() {
-		if (clickTimeout) {
-			clearTimeout(clickTimeout);
+		// if (clickTimeout) {
+		// 	clearTimeout(clickTimeout);
+		// 	clickTimeout = null;
+		// 	open_dialog_state = true;
+		// } else {
+		// @ts-ignore
+		clickTimeout = setTimeout(() => {
 			clickTimeout = null;
-			open_dialog_state = true;
-		} else {
-			// @ts-ignore
-			clickTimeout = setTimeout(() => {
-				clickTimeout = null;
-				goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
-			}, 300);
-		}
+			goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
+		}, 300);
+		// }
 	}
 </script>
 
