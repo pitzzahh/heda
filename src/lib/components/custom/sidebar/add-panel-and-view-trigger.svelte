@@ -61,11 +61,7 @@
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
-			<div
-				class={cn('flex flex-col items-center justify-start', {
-					hidden: is_parent_root_node
-				})}
-			>
+			<div class="flex flex-col items-center justify-start">
 				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
