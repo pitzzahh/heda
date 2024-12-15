@@ -296,7 +296,7 @@
 							<Tooltip.Provider>
 								<Tooltip.Root>
 									<Tooltip.Trigger
-										class={buttonVariants({ variant: 'outline', size: 'icon' })}
+										class={buttonVariants({ variant: 'ghost', size: 'icon' })}
 										onclick={async () => {
 											await copyAndAddNodeById(node.id);
 											await invalidateAll();
