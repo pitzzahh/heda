@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { cubicInOut } from 'svelte/easing';
+	import { fadeScale } from '@/utils/transitions';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { cn } from '@/utils';
-	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
+	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import {
@@ -23,7 +25,7 @@
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
@@ -109,7 +111,7 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class={buttonVariants({ variant: 'outline', size: 'icon' })}
+							class={buttonVariants({ variant: 'ghost', size: 'icon' })}
 							onclick={async () => {
 								await copyAndAddNodeById(node.id);
 								await invalidateAll();
@@ -131,7 +133,7 @@
 							<Pencil />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>Edit load</p>
+							<p>Edit Load</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
@@ -144,7 +146,7 @@
 							<Trash2 />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>Remove Panel</p>
+							<p>Remove Load</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
@@ -184,7 +186,6 @@
 								parent_id={node.id}
 								latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 							>
-								<!-- TODO: Palitan or retain this -->
 								{#if node.node_type === 'root'}
 									<div class="w-4">
 										<DatabaseZap class="size-4" />
@@ -192,7 +193,6 @@
 								{:else if node.node_type === 'panel'}
 									<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
 								{/if}
-
 								<span class="truncate">
 									{node_name}
 								</span>
@@ -227,7 +227,13 @@
 						</ContextMenu.Content>
 					</ContextMenu.Root>
 					<div
-						class={cn('hidden w-fit items-center gap-1.5 py-1', {
+						transition:fadeScale={{
+							delay: 100,
+							duration: 200,
+							easing: cubicInOut,
+							start: 0.5
+						}}
+						class={cn('hidden w-fit	items-center gap-1.5 py-1', {
 							flex: is_hovering_on_tree_item
 						})}
 					>
@@ -260,7 +266,7 @@
 						<Tooltip.Provider>
 							<Tooltip.Root>
 								<Tooltip.Trigger
-									class={buttonVariants({ variant: 'outline', size: 'icon' })}
+									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
 									onclick={async () => {
 										await copyAndAddNodeById(node.id);
 										await invalidateAll();
@@ -269,7 +275,7 @@
 									<Copy />
 								</Tooltip.Trigger>
 								<Tooltip.Content>
-									<p>Copy Load</p>
+									<p>Copy Panel</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
