@@ -140,10 +140,14 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class={buttonVariants({ variant: 'destructive', size: 'icon' })}
+							class={buttonVariants({
+								variant: 'ghost',
+								size: 'icon',
+								className: 'hover:bg-destructive hover:text-white'
+							})}
 							onclick={() => (open_tree_delete_dialog = true)}
 						>
-							<Trash2 />
+							<Trash2 class="text-inherit"/>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>Remove Load</p>
@@ -282,10 +286,14 @@
 						<Tooltip.Provider>
 							<Tooltip.Root>
 								<Tooltip.Trigger
-									class={buttonVariants({ variant: 'destructive', size: 'icon' })}
+									class={buttonVariants({
+										variant: 'ghost',
+										size: 'icon',
+										className: 'hover:bg-destructive hover:text-white'
+									})}
 									onclick={() => (open_tree_delete_dialog = true)}
 								>
-									<Trash2 />
+									<Trash2 class="text-inherit" />
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>{node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}</p>
