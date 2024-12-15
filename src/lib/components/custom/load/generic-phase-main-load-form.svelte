@@ -110,12 +110,16 @@
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
 					const load_data = {
 						...form.data,
-						varies:
-							default_hp_current_relationship[
-								$formData.varies as keyof typeof default_hp_current_relationship
-							],
 						load_description,
-						config_preference: load_type
+						config_preference: load_type,
+
+						// should only append when the load type is rated hp
+						...(form.data.load_type === '1P Motor - Rated Horse Power' && {
+							varies:
+								default_hp_current_relationship[
+									$formData.varies as keyof typeof default_hp_current_relationship
+								]
+						})
 					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
