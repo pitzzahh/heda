@@ -287,17 +287,6 @@
 						bind:open_dialog_state={open_tree_add_load_dialog}
 						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 					/>
-					<ConfirmationDialog
-						trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
-						trigger_variant="destructive"
-						bind:open_dialog_state={open_tree_delete_dialog}
-						onConfirm={async () => {
-							if (node.node_type === 'root' && project) {
-								await deleteProject(project.id);
-							} else await removeNode(node.id);
-							await invalidateAll();
-						}}
-					/>
 				</Sidebar.MenuButton>
 
 				<Collapsible.Content class="w-full">
@@ -327,4 +316,15 @@
 	bind:open_load_dialog={open_tree_edit_action_dialog}
 	bind:some_open_state={open_load_context_menu}
 	load_to_edit={node}
+/>
+<ConfirmationDialog
+	trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+	trigger_variant="destructive"
+	bind:open_dialog_state={open_tree_delete_dialog}
+	onConfirm={async () => {
+		if (node.node_type === 'root' && project) {
+			await deleteProject(project.id);
+		} else await removeNode(node.id);
+		await invalidateAll();
+	}}
 />
