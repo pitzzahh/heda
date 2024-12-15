@@ -53,7 +53,6 @@
 	let open_tree_edit_load_action_dialog = $state(false);
 	let open_tree_add_panel_dialog = $state(false);
 	let open_tree_add_load_dialog = $state(false);
-	let open_tree_copy_load_dialog = $state(false);
 	let open_tree_delete_dialog = $state(false);
 	let params = $derived($page.params);
 	let is_hovering_on_tree_item = $state(false);
