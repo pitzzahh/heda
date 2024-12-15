@@ -97,7 +97,7 @@
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
-					parent_id: selected_parent_id || panel_id_from_params || panel_id_from_tree || '',
+					parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
 					node_id: node_to_edit?.id
 				});
 
@@ -127,7 +127,7 @@
 						case 'add':
 							await addNode({
 								load_data,
-								parent_id: panel_id_from_params || panel_id_from_tree || ''
+								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
 							break;
