@@ -272,17 +272,22 @@
 										parent_id={node.parent_id}
 									/>
 								{/if}
-
 								<ConfirmationDialog
 									show_trigger={true}
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
+									bind:button_state
 									bind:some_open_state={open_panel_context_menu}
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-										await invalidateAll();
+										toast.success(
+											node.node_type === 'root'
+												? 'Project removed succesfully'
+												: 'Panel removed succesfully'
+										);
+										invalidateAll().then(() => (button_state = 'stale'));
 									}}
 								/>
 							{/snippet}
@@ -376,7 +381,11 @@
 	/>
 {/if}
 <ConfirmationDialog
-	trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
+	trigger_text={node.node_type === 'root'
+		? 'Remove Project'
+		: node.node_type === 'panel'
+			? 'Remove Panel'
+			: 'Remove Load'}
 	trigger_variant="destructive"
 	bind:open_dialog_state={open_tree_delete_dialog}
 	bind:button_state
@@ -386,10 +395,13 @@
 			await deleteProject(project.id);
 		} else await removeNode(node.id);
 		// TODO: Improve invalidation github issue #64
-		await invalidateAll();
-		button_state = 'stale';
+		invalidateAll().then(() => (button_state = 'stale'));
 		toast.success(
-			node.node_type === 'root' ? 'Project removed succesfully' : 'Panel removed succesfully'
+			node.node_type === 'root'
+				? 'Remove Project'
+				: node.node_type === 'panel'
+					? 'Remove Panel'
+					: 'Remove Load'
 		);
 	}}
 />
