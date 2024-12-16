@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { cn } from '@/utils';
+	import { Loader } from '@/assets/icons';
 	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
 	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
 
@@ -57,9 +59,17 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={onConfirm} class={buttonVariants({ variant: trigger_variant })}
-				>Continue</AlertDialog.Action
-			>
+			<AlertDialog.Action onclick={onConfirm} class={buttonVariants({ variant: trigger_variant })}>
+				<Loader
+					class={cn('mr-2 hidden h-4 w-4 animate-spin', {
+						block: button_state === 'loading'
+					})}
+				/>
+				<span class={cn('block', { hidden: button_state === 'stale' })}
+					>{trigger_text ?? 'Continue'}</span
+				>
+				<span class={cn('hidden', { block: button_state === 'loading' })}>Please Wait</span>
+			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
