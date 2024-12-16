@@ -23,7 +23,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		});
 
 		return {
-			project: project as unknown as Project,
+			project: project as Project,
 			root_node_id: created_root_node._data.id as string
 		};
 	} catch (error) {
@@ -72,7 +72,7 @@ export async function addNode({
 		const parent_node_data = await parent_query.exec();
 
 		if (!parent_node_data) {
-			throw new Error(`Parent node with ID ${parent_id} not found`);
+			throw Error(`Parent node with ID ${parent_id} not found`);
 		}
 
 		const created_node = await database.nodes.insert({
@@ -112,7 +112,7 @@ export async function copyAndAddNodeById(node_id: string) {
 			.exec();
 
 		if (!existing_node) {
-			throw new Error('Node not found');
+			throw Error('Node not found');
 		}
 
 		// get nodes under the same parent
@@ -157,7 +157,7 @@ export async function copyAndAddNodeById(node_id: string) {
 		const parent_node_data = await existingParent.exec();
 
 		if (parent_node_data) {
-			await existingParent.update({
+			return await existingParent.update({
 				$set: {
 					child_ids: [...parent_node_data._data.child_ids, created_node._data.id]
 				}
@@ -191,7 +191,7 @@ export async function updateNode({
 
 		const existing_node = await query.exec();
 		if (!existing_node) {
-			throw new Error('Node not found');
+			throw Error('Node not found');
 		}
 
 		const updatednode = await query.update({
@@ -214,7 +214,7 @@ export async function updateNode({
 				const current_parent = await current_parent_query.exec();
 
 				if (current_parent) {
-					await current_parent_query.update({
+					return await current_parent_query.update({
 						$set: {
 							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
 						}
@@ -229,7 +229,7 @@ export async function updateNode({
 			const new_parent = await new_parent_query.exec();
 
 			if (new_parent) {
-				await new_parent_query.update({
+				return await new_parent_query.update({
 					$set: {
 						child_ids: [...new_parent._data.child_ids, id]
 					}
@@ -246,7 +246,7 @@ export async function updateNode({
 
 export async function removeNode(id: string, visited: Set<string> = new Set()) {
 	if (visited.has(id)) {
-		throw new Error(`Circular reference detected at node ${id}`);
+		throw Error(`Circular reference detected at node ${id}`);
 	}
 	visited.add(id);
 
@@ -257,15 +257,14 @@ export async function removeNode(id: string, visited: Set<string> = new Set()) {
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child._data.id, visited);
+			return await removeNode(child._data.id, visited);
 		}
 
 		// remove the current node
 		const query = database.nodes.findOne({ selector: { id } });
-		const removedNode = await query.remove();
 
 		console.log(`Node ${id} removed successfully`);
-		return removedNode;
+		return await query.remove();
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
 		throw error;
@@ -280,16 +279,15 @@ export async function deleteProject(project_id: string) {
 		const project = await query.exec();
 
 		if (!project) {
-			throw new Error(`Project with ID ${project_id} not found`);
+			throw Error(`Project with ID ${project_id} not found`);
 		}
 
 		const rootNodeId = project._data.root_node_id;
 		if (rootNodeId) {
-			await removeNode(rootNodeId);
+			return await removeNode(rootNodeId);
 		}
 
-		const removedProject = await query.remove();
-		return removedProject;
+		return await query.remove();
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
 		throw error;
