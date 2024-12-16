@@ -15,19 +15,24 @@
 		generic_phase_panel_form,
 		parent_id,
 		highest_unit,
+		open_panel_dialog = $bindable(false),
 		some_open_state = $bindable(),
+		trigger_text = 'Update Panel',
+		show_trigger = false,
 		panel_to_edit
 	}: {
 		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
+		open_panel_dialog?: boolean;
 		some_open_state?: boolean;
+		trigger_text?: string;
+		show_trigger?: boolean;
 		panel_to_edit: Node;
 	} = $props();
 
 	const { phase } = highest_unit;
 
-	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
 	$effect(() => {
@@ -43,9 +48,11 @@
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
-	<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
-		>Update Panel</Dialog.Trigger
-	>
+	{#if show_trigger}
+		<Dialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}
+			>{trigger_text}</Dialog.Trigger
+		>
+	{/if}
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>
