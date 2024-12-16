@@ -76,6 +76,32 @@
 			onmouseleave={() => (is_hovering_on_tree_item = false)}
 			class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 		>
+			{@const tooltip_data = [
+				{
+					trigger_callback: async () => {
+						await copyAndAddNodeById(node.id);
+						await invalidateAll();
+					},
+					variant: 'ghost',
+					icon: CopyIcon,
+					tooltip_content: 'Copy Load'
+				},
+				{
+					trigger_callback: () => (open_tree_edit_load_action_dialog = true),
+					variant: 'ghost',
+					icon: PencilIcon,
+					hidden: false,
+					tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
+				},
+				{
+					trigger_callback: () => (open_tree_delete_dialog = true),
+					variant: 'ghost',
+					icon: Trash2Icon,
+					hidden: false,
+					tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
+					className: 'hover:bg-destructive hover:text-white'
+				}
+			]}
 			<ContextMenu.Root bind:open={open_load_context_menu}>
 				<ContextMenu.Trigger class="flex w-full items-center gap-1">
 					<div class="flex w-full items-center gap-2">
@@ -112,52 +138,27 @@
 					flex: is_hovering_on_tree_item
 				})}
 			>
-				<Tooltip.Provider>
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class={buttonVariants({ variant: 'ghost', size: 'icon' })}
-							onclick={async () => {
-								await copyAndAddNodeById(node.id);
-								await invalidateAll();
-							}}
-						>
-							<Copy />
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Copy Load</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
-				<Tooltip.Provider>
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-50' })}
-							onclick={() => (open_tree_edit_load_action_dialog = true)}
-						>
-							<Pencil />
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Edit {node.load_data?.load_description || 'Load'}</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
-				<Tooltip.Provider>
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class={buttonVariants({
-								variant: 'ghost',
-								size: 'icon',
-								className: 'hover:bg-destructive hover:text-white'
-							})}
-							onclick={() => (open_tree_delete_dialog = true)}
-						>
-							<Trash2 class="text-inherit" />
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Remove Load</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
+				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+					{#if !hidden}
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({
+										variant: variant as ButtonVariant,
+										size: 'icon',
+										className
+									})}
+									onclick={() => trigger_callback()}
+								>
+									{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									{tooltip_content}
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+					{/if}
+				{/each}
 			</div>
 		</Sidebar.MenuButton>
 	{:else}
@@ -189,6 +190,16 @@
 							tooltip_content: 'Add Load'
 						},
 						{
+							trigger_callback: async () => {
+								await copyAndAddNodeById(node.id);
+								await invalidateAll();
+							},
+							variant: 'ghost',
+							icon: CopyIcon,
+							hidden: node.node_type === 'root',
+							tooltip_content: 'Copy Panel'
+						},
+						{
 							trigger_callback: () => {
 								if (!node.parent_id) {
 									// TODO: Log system error
@@ -204,19 +215,10 @@
 							hidden: node.node_type === 'root',
 							tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`
 						},
-						{
-							trigger_callback: async () => {
-								await copyAndAddNodeById(node.id);
-								await invalidateAll();
-							},
-							variant: 'ghost',
-							icon: CopyIcon,
-							hidden: node.node_type === 'root',
-							tooltip_content: 'Copy Panel'
-						},
+
 						{
 							trigger_callback: () => (open_tree_delete_dialog = true),
-							variant: 'destructive',
+							variant: 'ghost',
 							icon: Trash2Icon,
 							hidden: false,
 							tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
@@ -229,7 +231,7 @@
 						{/snippet}
 					</Collapsible.Trigger>
 					<ContextMenu.Root bind:open={open_panel_context_menu}>
-						<ContextMenu.Trigger class="flex w-full items-center justify-between bg-red-900">
+						<ContextMenu.Trigger class="flex w-full items-center justify-between">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
 
@@ -289,18 +291,19 @@
 							'relative right-1 flex': is_hovering_on_tree_item
 						})}
 					>
-						{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content }, i}
+						{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
 							{#if !hidden}
 								<Tooltip.Provider>
 									<Tooltip.Root>
 										<Tooltip.Trigger
 											class={buttonVariants({
 												variant: variant as ButtonVariant,
-												size: 'icon'
+												size: 'icon',
+												className
 											})}
 											onclick={() => trigger_callback()}
 										>
-											{@render icon()}
+											{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
 										</Tooltip.Trigger>
 										<Tooltip.Content>
 											{tooltip_content}
