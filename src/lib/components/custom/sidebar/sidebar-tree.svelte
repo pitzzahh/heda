@@ -193,8 +193,7 @@
 						},
 						{
 							trigger_callback: async () => {
-								await copyAndAddNodeById(node.id);
-								await invalidateAll();
+								await copyAndAddNodeById(node.id).finally(() => invalidateAll());
 							},
 							variant: 'ghost',
 							icon: CopyIcon,
@@ -403,5 +402,6 @@
 					? 'Remove Panel'
 					: 'Remove Load'
 		);
+		open_tree_delete_dialog = false;
 	}}
 />
