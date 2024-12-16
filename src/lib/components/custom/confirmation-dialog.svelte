@@ -67,7 +67,7 @@
 				})}
 			>
 				<Loader
-					class={cn('mr-2 hidden h-4 w-4 animate-spin', {
+					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
 						block: button_state === 'processing'
 					})}
 				/>
