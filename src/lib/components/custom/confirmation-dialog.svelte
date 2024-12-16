@@ -60,19 +60,18 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={onConfirm} class={buttonVariants({ variant: trigger_variant })}>
+			<AlertDialog.Action
+				onclick={onConfirm}
+				class={cn(buttonVariants({ variant: trigger_variant }), {
+					'disabled opacity-50 hover:cursor-not-allowed': button_state === 'processing'
+				})}
+			>
 				<Loader
 					class={cn('mr-2 hidden h-4 w-4 animate-spin', {
 						block: button_state === 'processing'
 					})}
 				/>
-				<span
-					class={cn('block', {
-						disabled: button_state === 'processing'
-					})}
-				>
-					{trigger_text ?? 'Continue'}</span
-				>
+				<span> {trigger_text ?? 'Continue'}</span>
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
