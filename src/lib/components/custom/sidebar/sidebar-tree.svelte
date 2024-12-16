@@ -50,6 +50,8 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
+	const params = $derived($page.params);
+
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
 	let open_tree_edit_panel_action_dialog = $state(false);
@@ -57,8 +59,8 @@
 	let open_tree_add_panel_dialog = $state(false);
 	let open_tree_add_load_dialog = $state(false);
 	let open_tree_delete_dialog = $state(false);
-	let params = $derived($page.params);
 	let is_hovering_on_tree_item = $state(false);
+	let button_state: 'stale' | 'processing' = $state('stale');
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -377,10 +379,13 @@
 	trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 	trigger_variant="destructive"
 	bind:open_dialog_state={open_tree_delete_dialog}
+	bind:button_state
 	onConfirm={async () => {
+		button_state = 'processing';
 		if (node.node_type === 'root' && project) {
 			await deleteProject(project.id);
 		} else await removeNode(node.id);
+		button_state = 'stale';
 		await invalidateAll();
 	}}
 />
