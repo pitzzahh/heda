@@ -44,6 +44,7 @@
 		node_to_edit?: Node;
 		action: 'add' | 'edit';
 		latest_circuit_node?: Node;
+		panel_id_from_tree?: string;
 	}
 
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
@@ -54,7 +55,8 @@
 		node_to_edit,
 		action,
 		selected_parent_id,
-		latest_circuit_node
+		latest_circuit_node,
+		panel_id_from_tree
 	}: Props = $props();
 
 	const form = superForm(phase_main_load_form, {
@@ -91,11 +93,11 @@
 				return;
 			}
 
-			if (panel_id) {
+			if (panel_id_from_params || panel_id_from_tree) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
-					parent_id: selected_parent_id || panel_id,
+					parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
 					node_id: node_to_edit?.id
 				});
 
@@ -110,18 +112,22 @@
 					const load_description = `${form.data.quantity} - ${form.data.load_description}`;
 					const load_data = {
 						...form.data,
-						varies:
-							default_hp_current_relationship[
-								$formData.varies as keyof typeof default_hp_current_relationship
-							],
 						load_description,
-						config_preference: load_type
+						config_preference: load_type,
+
+						// should only append when the load type is rated hp
+						...(form.data.load_type === '1P Motor - Rated Horse Power' && {
+							varies:
+								default_hp_current_relationship[
+									$formData.varies as keyof typeof default_hp_current_relationship
+								]
+						})
 					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
 							await addNode({
 								load_data,
-								parent_id: panel_id
+								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
 							break;
@@ -145,7 +151,7 @@
 	});
 	const { form: formData, enhance } = form;
 
-	const panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id_from_params = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'

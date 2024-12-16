@@ -39,17 +39,17 @@
 	let clickTimeout: number | null = null; // To store the timeout for single-click
 
 	function handleClick() {
-		if (clickTimeout) {
-			clearTimeout(clickTimeout);
+		// if (clickTimeout) {
+		// 	clearTimeout(clickTimeout);
+		// 	clickTimeout = null;
+		// 	open_dialog_state = true;
+		// } else {
+		// @ts-ignore
+		clickTimeout = setTimeout(() => {
 			clickTimeout = null;
-			open_dialog_state = true;
-		} else {
-			// @ts-ignore
-			clickTimeout = setTimeout(() => {
-				clickTimeout = null;
-				goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
-			}, 300);
-		}
+			goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
+		}, 300);
+		// }
 	}
 </script>
 
@@ -61,11 +61,7 @@
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
-			<div
-				class={cn('flex flex-col items-center justify-start', {
-					hidden: is_parent_root_node
-				})}
-			>
+			<div class="flex flex-col items-center justify-start">
 				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
