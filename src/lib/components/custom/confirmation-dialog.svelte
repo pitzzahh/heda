@@ -4,6 +4,7 @@
 	import { Loader } from '@/assets/icons';
 	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
 	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
+	import { disable } from 'effect/RuntimeFlagsPatch';
 
 	interface Props {
 		title?: string;
@@ -65,10 +66,13 @@
 						block: button_state === 'processing'
 					})}
 				/>
-				<span class={cn('block', { hidden: button_state === 'stale' })}
-					>{trigger_text ?? 'Continue'}</span
+				<span
+					class={cn('block', {
+						disabled: button_state === 'processing'
+					})}
 				>
-				<span class={cn('hidden', { block: button_state === 'processing' })}>Please Wait</span>
+					{trigger_text ?? 'Continue'}</span
+				>
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
