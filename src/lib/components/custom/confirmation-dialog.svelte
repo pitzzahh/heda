@@ -10,6 +10,7 @@
 		trigger_variant?: ButtonVariant;
 		trigger_text?: string;
 		trigger_icon?: Snippet;
+		button_state?: 'stale' | 'loading';
 		open_dialog_state?: boolean;
 		some_open_state?: boolean;
 		show_trigger?: boolean;
@@ -22,6 +23,7 @@
 		trigger_variant = 'outline',
 		trigger_text,
 		trigger_icon,
+		button_state = $bindable('stale'),
 		show_trigger = $bindable(false),
 		open_dialog_state = $bindable(false),
 		some_open_state = $bindable(),
