@@ -12,7 +12,7 @@
 		trigger_variant?: ButtonVariant;
 		trigger_text?: string;
 		trigger_icon?: Snippet;
-		button_state?: 'stale' | 'loading';
+		button_state?: 'stale' | 'processing';
 		open_dialog_state?: boolean;
 		some_open_state?: boolean;
 		show_trigger?: boolean;
@@ -62,13 +62,13 @@
 			<AlertDialog.Action onclick={onConfirm} class={buttonVariants({ variant: trigger_variant })}>
 				<Loader
 					class={cn('mr-2 hidden h-4 w-4 animate-spin', {
-						block: button_state === 'loading'
+						block: button_state === 'processing'
 					})}
 				/>
 				<span class={cn('block', { hidden: button_state === 'stale' })}
 					>{trigger_text ?? 'Continue'}</span
 				>
-				<span class={cn('hidden', { block: button_state === 'loading' })}>Please Wait</span>
+				<span class={cn('hidden', { block: button_state === 'processing' })}>Please Wait</span>
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
