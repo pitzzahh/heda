@@ -3,17 +3,15 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { cn } from '@/utils';
-	import { buttonVariants } from '$lib/components/ui/button/index.js';
+	import { buttonVariants, type ButtonVariant } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
 	import {
 		ChevronRight,
 		Pencil,
-		CirclePlus,
 		DatabaseZap,
 		PlugZap,
 		PanelsLeftBottom,
-		Grid2x2Plus,
 		Trash2,
 		Copy
 	} from '@/assets/icons';
@@ -30,6 +28,13 @@
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { AddLoadDialog } from '../load';
 	import { toast } from 'svelte-sonner';
+	import {
+		CirclePlusIcon,
+		CopyIcon,
+		Grid2x2PlusIcon,
+		PencilIcon,
+		Trash2Icon
+	} from './(components)';
 
 	let {
 		node,
@@ -164,22 +169,70 @@
 				<Sidebar.MenuButton
 					onmouseenter={() => (is_hovering_on_tree_item = true)}
 					onmouseleave={() => (is_hovering_on_tree_item = false)}
-					class={cn(
-						'flex w-full items-center  hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
-						{
-							'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
-						}
-					)}
+					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
+						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+					})}
 				>
+					{@const tooltip_data = [
+						{
+							trigger_callback: () => (open_tree_add_panel_dialog = true),
+							variant: 'ghost',
+							icon: Grid2x2PlusIcon,
+							hidden: false,
+							tooltip_content: 'Add Panel'
+						},
+						{
+							trigger_callback: () => (open_tree_add_load_dialog = true),
+							variant: 'ghost',
+							icon: CirclePlusIcon,
+							hidden: false,
+							tooltip_content: 'Add Load'
+						},
+						{
+							trigger_callback: () => {
+								if (!node.parent_id) {
+									// TODO: Log system error
+									return toast.warning('Failed to identify the panel supplier', {
+										description:
+											'This is a system error and should not be here, the error has been logged.'
+									});
+								}
+								open_tree_edit_panel_action_dialog = true;
+							},
+							variant: 'ghost',
+							icon: PencilIcon,
+							hidden: node.node_type === 'root',
+							tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`
+						},
+						{
+							trigger_callback: async () => {
+								await copyAndAddNodeById(node.id);
+								await invalidateAll();
+							},
+							variant: 'ghost',
+							icon: CopyIcon,
+							hidden: node.node_type === 'root',
+							tooltip_content: 'Copy Panel'
+						},
+						{
+							trigger_callback: () => (open_tree_delete_dialog = true),
+							variant: 'destructive',
+							icon: Trash2Icon,
+							hidden: false,
+							tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
+							className: 'hover:bg-destructive hover:text-white'
+						}
+					]}
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
 						{/snippet}
 					</Collapsible.Trigger>
 					<ContextMenu.Root bind:open={open_panel_context_menu}>
-						<ContextMenu.Trigger class="flex w-full items-center ">
+						<ContextMenu.Trigger class="flex w-full items-center justify-between bg-red-900">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
+
 							<AddPanelAndViewTrigger
 								id={node.id}
 								panel_name={node_name}
@@ -233,93 +286,29 @@
 					</ContextMenu.Root>
 					<div
 						class={cn('hidden w-fit	items-center gap-1.5 py-1', {
-							flex: is_hovering_on_tree_item
+							'relative right-1 flex': is_hovering_on_tree_item
 						})}
 					>
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
-									onclick={() => (open_tree_add_panel_dialog = true)}
-								>
-									<Grid2x2Plus />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>Add Panel</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={buttonVariants({ variant: 'ghost', size: 'icon' })}
-									onclick={() => (open_tree_add_load_dialog = true)}
-								>
-									<CirclePlus />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>Add Load</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-
-						{#if node.node_type === 'panel'}
-							<Tooltip.Provider>
-								<Tooltip.Root>
-									<Tooltip.Trigger
-										class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'z-50' })}
-										onclick={() => {
-											if (!node.parent_id) {
-												// TODO: Log system error
-												return toast.warning('Failed to identify the panel supplier', {
-													description:
-														'This is a system error and should not be here, the error has been logged.'
-												});
-											}
-											open_tree_edit_panel_action_dialog = true;
-										}}
-									>
-										<Pencil />
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>Edit {node.panel_data?.name || 'Panel'}</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
-							<Tooltip.Provider>
-								<Tooltip.Root>
-									<Tooltip.Trigger
-										class={buttonVariants({ variant: 'ghost', size: 'icon' })}
-										onclick={async () => {
-											await copyAndAddNodeById(node.id);
-											await invalidateAll();
-										}}
-									>
-										<Copy />
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>Copy Panel</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
-						{/if}
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={buttonVariants({
-										variant: 'ghost',
-										size: 'icon',
-										className: 'hover:bg-destructive hover:text-white'
-									})}
-									onclick={() => (open_tree_delete_dialog = true)}
-								>
-									<Trash2 class="text-inherit" />
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+						{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content }, i}
+							{#if !hidden}
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger
+											class={buttonVariants({
+												variant: variant as ButtonVariant,
+												size: 'icon'
+											})}
+											onclick={() => trigger_callback()}
+										>
+											{@render icon()}
+										</Tooltip.Trigger>
+										<Tooltip.Content>
+											{tooltip_content}
+										</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							{/if}
+						{/each}
 					</div>
 					{@const node_name = (node.highest_unit_form?.distribution_unit ||
 						node.panel_data?.name) as string}
