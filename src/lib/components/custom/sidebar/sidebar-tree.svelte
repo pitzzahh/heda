@@ -385,7 +385,11 @@
 		if (node.node_type === 'root' && project) {
 			await deleteProject(project.id);
 		} else await removeNode(node.id);
-		button_state = 'stale';
+		// TODO: Improve invalidation github issue #64
 		await invalidateAll();
+		button_state = 'stale';
+		toast.success(
+			node.node_type === 'root' ? 'Project removed succesfully' : 'Panel removed succesfully'
+		);
 	}}
 />
