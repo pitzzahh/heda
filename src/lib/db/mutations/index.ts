@@ -99,7 +99,7 @@ export async function addNode({
 	}
 }
 
-export async function copyAndAddNodeById(node_id: string) {
+export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
 	const database = await databaseInstance();
 
 	try {
@@ -138,16 +138,24 @@ export async function copyAndAddNodeById(node_id: string) {
 			next_circuit_num = max_number_in_list + 1;
 		}
 
-		const { load_data, panel_data, node_type, parent_id } = existing_node._data;
+		const { load_data, panel_data, node_type, parent_id, id } = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
 			node_type,
 			circuit_number: next_circuit_num,
 			panel_data,
 			load_data,
-			parent_id,
+			parent_id: sub_parent_id || parent_id,
 			child_ids: []
 		});
+
+		if (node_type === "panel") {
+			const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
+
+			for (const child of children) {
+				await copyAndAddNodeById(child._data.id, created_node._data.id);
+			}
+		}
 
 		const existingParent = database.nodes.findOne({
 			selector: {
@@ -170,6 +178,8 @@ export async function copyAndAddNodeById(node_id: string) {
 		return error;
 	}
 }
+
+
 
 export async function updateNode({
 	load_data,
@@ -257,7 +267,7 @@ export async function removeNode(id: string, visited: Set<string> = new Set()) {
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			return await removeNode(child._data.id, visited);
+			await removeNode(child._data.id, visited);
 		}
 
 		// remove the current node
