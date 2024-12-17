@@ -28,6 +28,7 @@
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { AddLoadDialog } from '../load';
 	import { toast } from 'svelte-sonner';
+	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
 	import {
 		CirclePlusIcon,
 		CopyIcon,
@@ -51,6 +52,7 @@
 	} = $props();
 
 	const params = $derived($page.params);
+	const sidebar_context = useSidebar();
 
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
@@ -172,9 +174,12 @@
 				<Sidebar.MenuButton
 					onmouseenter={() => (is_hovering_on_tree_item = true)}
 					onmouseleave={() => (is_hovering_on_tree_item = false)}
-					class={cn('hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20', {
-						'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
-					})}
+					class={cn(
+						'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
+						{
+							'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+						}
+					)}
 				>
 					{@const tooltip_data = [
 						{
@@ -294,7 +299,8 @@
 					</ContextMenu.Root>
 					<div
 						class={cn('hidden w-fit	items-center gap-1.5 py-1', {
-							'relative right-1 flex': is_hovering_on_tree_item
+							'absolute right-0 flex': is_hovering_on_tree_item,
+							hidden: sidebar_context.isResizing
 						})}
 					>
 						{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
@@ -379,29 +385,34 @@
 		parent_id={node.parent_id}
 	/>
 {/if}
-<ConfirmationDialog
-	trigger_text={node.node_type === 'root'
-		? 'Remove Project'
-		: node.node_type === 'panel'
-			? 'Remove Panel'
-			: 'Remove Load'}
-	trigger_variant="destructive"
-	bind:open_dialog_state={open_tree_delete_dialog}
-	bind:button_state
-	onConfirm={async () => {
-		button_state = 'processing';
-		if (node.node_type === 'root' && project) {
-			await deleteProject(project.id);
-		} else await removeNode(node.id);
-		// TODO: Improve invalidation github issue #64
-		invalidateAll().then(() => (button_state = 'stale'));
-		toast.success(
-			node.node_type === 'root'
-				? 'Remove Project'
-				: node.node_type === 'panel'
-					? 'Remove Panel'
-					: 'Remove Load'
-		);
-		open_tree_delete_dialog = false;
-	}}
-/>
+
+{@render ConfirmationDialogExtended()}
+
+{#snippet ConfirmationDialogExtended()}
+	<ConfirmationDialog
+		trigger_text={node.node_type === 'root'
+			? 'Remove Project'
+			: node.node_type === 'panel'
+				? 'Remove Panel'
+				: 'Remove Load'}
+		trigger_variant="destructive"
+		bind:open_dialog_state={open_tree_delete_dialog}
+		bind:button_state
+		onConfirm={async () => {
+			button_state = 'processing';
+			if (node.node_type === 'root' && project) {
+				await deleteProject(project.id);
+			} else await removeNode(node.id);
+			// TODO: Improve invalidation github issue #64
+			invalidateAll().then(() => (button_state = 'stale'));
+			toast.success(
+				node.node_type === 'root'
+					? 'Remove Project'
+					: node.node_type === 'panel'
+						? 'Remove Panel'
+						: 'Remove Load'
+			);
+			open_tree_delete_dialog = false;
+		}}
+	/>
+{/snippet}
