@@ -1,11 +1,4 @@
-<script lang="ts">
-	import type { Snippet } from 'svelte';
-	import { cn } from '@/utils';
-	import { Loader } from '@/assets/icons';
-	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
-	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
-	import { disable } from 'effect/RuntimeFlagsPatch';
-
+<script module lang="ts">
 	interface Props {
 		title?: string;
 		description?: string;
@@ -18,6 +11,15 @@
 		some_open_state?: boolean;
 		show_trigger?: boolean;
 	}
+</script>
+
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+	import { cn } from '@/utils';
+	import { Loader } from '@/assets/icons';
+	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
+	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
+	import { disable } from 'effect/RuntimeFlagsPatch';
 
 	let {
 		title = 'Are you absolutely sure?',
