@@ -14,7 +14,8 @@ export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];
 };
 
-export const load = async ({ params }) => {
+export const load = async ({ depends, params }) => {
+	depends('app:workspace/load-schedule')
 	const node_id = params.id.split('_').at(-1) as string;
 	const project = await getCurrentProject();
 	const root_node = await getRootNode();
