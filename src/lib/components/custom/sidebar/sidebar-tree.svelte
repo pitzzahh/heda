@@ -6,22 +6,14 @@
 	import { buttonVariants, type ButtonVariant } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
-	import {
-		ChevronRight,
-		Pencil,
-		DatabaseZap,
-		PlugZap,
-		PanelsLeftBottom,
-		Trash2,
-		Copy
-	} from '@/assets/icons';
+	import { ChevronRight, DatabaseZap, PlugZap, PanelsLeftBottom } from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/stores';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
@@ -84,7 +76,7 @@
 				{
 					trigger_callback: async () => {
 						await copyAndAddNodeById(node.id);
-						await invalidateAll();
+						await invalidate('app:workspace/load-schedule');
 					},
 					variant: 'ghost',
 					icon: CopyIcon,
@@ -131,7 +123,7 @@
 							bind:some_open_state={open_load_context_menu}
 							onConfirm={async () => {
 								await removeNode(node.id);
-								await invalidateAll();
+								await invalidate('app:workspace/load-schedule');
 							}}
 						/>
 					{/snippet}
@@ -198,7 +190,9 @@
 						},
 						{
 							trigger_callback: async () => {
-								await copyAndAddNodeById(node.id).finally(() => invalidateAll());
+								await copyAndAddNodeById(node.id).finally(() =>
+									invalidate('app:workspace/load-schedule')
+								);
 							},
 							variant: 'ghost',
 							icon: CopyIcon,
@@ -291,7 +285,7 @@
 												? 'Project removed succesfully'
 												: 'Panel removed succesfully'
 										);
-										invalidateAll().then(() => (button_state = 'stale'));
+										invalidate('app:workspace/load-schedule').then(() => (button_state = 'stale'));
 									}}
 								/>
 							{/snippet}
@@ -404,7 +398,7 @@
 				await deleteProject(project.id);
 			} else await removeNode(node.id);
 			// TODO: Improve invalidation github issue #64
-			invalidateAll().then(() => (button_state = 'stale'));
+			invalidate('app:workspace/load-schedule').then(() => (button_state = 'stale'));
 			toast.success(
 				node.node_type === 'root'
 					? 'Remove Project'
