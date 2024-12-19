@@ -24,6 +24,7 @@ const node_literal = {
 		id: { type: 'string', maxLength: 100 },
 		node_type: { type: 'string' },
 		circuit_number: { type: 'number' },
+		overrided_at: { type: 'number' },
 		panel_data: {
 			type: 'object',
 			properties: {
@@ -33,7 +34,6 @@ const node_literal = {
 			},
 			additionalProperties: false,
 			required: ['name', 'terminal_temperature', 'terminal_temperature', 'phase']
-
 		},
 		load_data: {
 			type: 'object',
@@ -47,7 +47,15 @@ const node_literal = {
 				config_preference: { type: 'string' } // bale ang magiging value kani is CUSTOM or DEFAULT para pag nag update, automatic naka set na sa form
 			},
 			additionalProperties: false,
-			required: ['load_description', 'terminal_temperature', 'quantity', 'varies', 'continuous', 'load_type', 'config_preference']
+			required: [
+				'load_description',
+				'terminal_temperature',
+				'quantity',
+				'varies',
+				'continuous',
+				'load_type',
+				'config_preference'
+			]
 		},
 		// this object should be present if it is root node
 		highest_unit_form: {
