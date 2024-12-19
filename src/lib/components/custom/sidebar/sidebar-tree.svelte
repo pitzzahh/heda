@@ -190,9 +190,9 @@
 						},
 						{
 							trigger_callback: async () => {
-								await copyAndAddNodeById(node.id).finally(() =>
-									invalidate('app:workspace/load-schedule')
-								);
+								await copyAndAddNodeById(node.id)
+									.then(() => invalidate('app:workspace'))
+									.finally(() => invalidate('app:workspace/load-schedule'));
 							},
 							variant: 'ghost',
 							icon: CopyIcon,
@@ -400,7 +400,10 @@
 			// TODO: Improve invalidation github issue #64
 			invalidate('app:workspace/load-schedule')
 				.then(() => invalidate('app:workspace'))
-				.finally(() => (button_state = 'stale'));
+				.finally(() => {
+					button_state = 'stale';
+					open_tree_delete_dialog = false;
+				});
 			toast.success(
 				node.node_type === 'root'
 					? 'Remove Project'
@@ -408,7 +411,6 @@
 						? 'Remove Panel'
 						: 'Remove Load'
 			);
-			open_tree_delete_dialog = false;
 		}}
 	/>
 {/snippet}
