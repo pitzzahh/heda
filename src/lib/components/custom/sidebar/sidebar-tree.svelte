@@ -398,7 +398,9 @@
 				await deleteProject(project.id);
 			} else await removeNode(node.id);
 			// TODO: Improve invalidation github issue #64
-			invalidate('app:workspace/load-schedule').then(() => (button_state = 'stale'));
+			invalidate('app:workspace/load-schedule')
+				.then(() => invalidate('app:workspace'))
+				.finally(() => (button_state = 'stale'));
 			toast.success(
 				node.node_type === 'root'
 					? 'Remove Project'
