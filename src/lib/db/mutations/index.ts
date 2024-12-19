@@ -149,7 +149,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			child_ids: []
 		});
 
-		if (node_type === "panel") {
+		if (node_type === 'panel') {
 			const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 			for (const child of children) {
@@ -178,8 +178,6 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 		return error;
 	}
 }
-
-
 
 export async function updateNode({
 	load_data,
@@ -300,6 +298,28 @@ export async function deleteProject(project_id: string) {
 		return await query.remove();
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
+		throw error;
+	}
+}
+
+export async function overrideLoadAmpereTrip(node_id: string, at: number) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		// Use $set to update the project_name field
+		return await query.update({
+			$set: {
+				overrided_at: at
+			}
+		});
+	} catch (error) {
+		console.error('Error overriding AT:', error);
 		throw error;
 	}
 }
