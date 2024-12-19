@@ -42,16 +42,16 @@ export function computeVoltAmpere({
 
 export function computeAmpereTrip(current: number, load_type?: LoadType) {
 	const PANEL_Z_VALUE = 1.25;
-	const calculatedAT = current * (load_type ? load_type_z_value[load_type] : PANEL_Z_VALUE);
+	const calculated_at = current * (load_type ? load_type_z_value[load_type] : PANEL_Z_VALUE);
 
-	if (!load_type && calculatedAT < 30) return 30; //for panels
+	if (!load_type && calculated_at < 30) return 30; //for panels
 
 	// for all load types except lighting and general
-	if (load_type !== 'Lighting Load' && load_type !== 'General Lighting' && calculatedAT < 20)
+	if (load_type !== 'Lighting Load' && load_type !== 'General Lighting' && calculated_at < 20)
 		return 20;
 
 	for (const rating of standard_ampere_ratings) {
-		if (calculatedAT <= rating) return rating;
+		if (calculated_at <= rating) return rating;
 	}
 
 	return 0;
