@@ -91,25 +91,22 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		columns: [
 			{
 				accessorKey: 'at',
-				cell: (info) => {
-					const currents = info.table.getFilteredRowModel().rows.map((row) => row.original.current);
-					const current = Number(info.getValue());
-					const is_greater_than_parent = current >= getComputedMainAT(currents);
-
-					console.log(is_greater_than_parent);
-					// return info.getValue() || '';
-
-					return renderComponent(AtCell, {
-						at: current.toString(),
-						is_greater_than_parent
-					});
-				},
+				cell: (info) => info.getValue(),
 				header: () => 'AT',
 				footer: (props) => {
 					const currents = props.table
 						.getFilteredRowModel()
 						.rows.map((row) => row.original.current);
-					return getComputedMainAT(currents) || '';
+					const load_ampere_trips = props.table
+						.getFilteredRowModel()
+						.rows.map((row) => row.original.at);
+					const at = getComputedMainAT(currents);
+					const has_greater_child_at = load_ampere_trips.some((current) => current >= at);
+
+					return renderComponent(AtCell, {
+						at: !at ? '' : at.toString(),
+						has_greater_child_at
+					});
 				}
 			},
 			{
