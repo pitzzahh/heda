@@ -5,7 +5,8 @@ import { generic_phase_panel_schema } from '@/schema/panel';
 import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 import { generic_phase_main_load_schema } from '@/schema/load';
 
-export const load = async ({ url: { searchParams } }) => {
+export const load = async ({ depends, url: { searchParams } }) => {
+	depends('app:workspace');
 	const project = (await getCurrentProject());
 	// const nodes = project ? await getChildNodesByParentId(project.id) : [];
 	const root_node = (await getRootNode());
