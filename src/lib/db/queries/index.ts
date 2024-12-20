@@ -59,15 +59,35 @@ export async function checkNodeExists({
 
 export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
-	return (
-		await db.nodes
-			.findOne({
-				selector: {
-					id: target_id
-				}
-			})
-			.exec()
-	)?._data;
+	const node = await db.nodes
+		.findOne({
+			selector: {
+				id: target_id
+			}
+		})
+		.exec();
+
+	if (!node) return;
+
+	const data = node?._data;
+	const voltage = 230; // this may change depending on phase
+	const va =
+		computeVoltAmpere({
+			load_type: data.load_data?.load_type as LoadType,
+			quantity: data.load_data?.quantity ?? 0,
+			varies: Number(data.load_data?.varies) || 0
+		}) || 0;
+	const current = va / voltage;
+	const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
+
+	return {
+		...data,
+		load_description: data.load_data?.load_description || '',
+		voltage,
+		va,
+		at,
+		current: parseFloat(current.toFixed(2))
+	};
 }
 
 export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
@@ -133,7 +153,7 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 				computeVoltAmpere({
 					load_type: data.load_data?.load_type as LoadType,
 					quantity: data.load_data?.quantity ?? 0,
-					varies: Number(data.load_data?.varies) ||  0
+					varies: Number(data.load_data?.varies) || 0
 				}) || 0;
 			const current = va / voltage;
 			const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
