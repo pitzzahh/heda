@@ -105,9 +105,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 	try {
 		const existing_node = await database.nodes
 			.findOne({
-				selector: {
-					id: node_id
-				}
+				selector: { id: node_id }
 			})
 			.exec();
 
@@ -117,25 +115,16 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 
 		// get nodes under the same parent
 		const nodes_under_parent = await database.nodes
-			.find({ selector: { parent_id: existing_node._data.parent_id } })
+			.find({ selector: { parent_id: sub_parent_id || existing_node._data.parent_id } })
 			.exec();
 
-		// extract all the circuit numbers under the parent
+		// extract all circuit numbers under the parent
 		const used_numbers = nodes_under_parent.map((node) => node._data.circuit_number) as number[];
-		const max_number_in_list = Math.max(...used_numbers);
 
-		//gets the first number that is not included in the list
-		let next_circuit_num = 0;
-		for (let i = 1; i <= max_number_in_list; i++) {
-			if (!used_numbers.includes(i)) {
-				next_circuit_num = i;
-				break;
-			}
-		}
-
-		// if no missing number, use the next available number after the highest one
-		if (next_circuit_num === 0) {
-			next_circuit_num = max_number_in_list + 1;
+		// find the next available circuit number
+		let next_circuit_num = 1;
+		while (used_numbers.includes(next_circuit_num)) {
+			next_circuit_num++;
 		}
 
 		const { load_data, panel_data, node_type, parent_id, id } = existing_node._data;
@@ -149,33 +138,38 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			child_ids: []
 		});
 
+		// If the node is a panel, recursively copy its children
 		if (node_type === 'panel') {
-			const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
+			const children = await database.nodes
+				.find({ selector: { parent_id: id } })
+				.sort({ circuit_number: 'asc' })
+				.exec();
 
+			// Sequentially copy children to prevent race conditions
 			for (const child of children) {
 				await copyAndAddNodeById(child._data.id, created_node._data.id);
 			}
 		}
 
-		const existingParent = database.nodes.findOne({
-			selector: {
-				id: parent_id
-			}
-		});
-		const parent_node_data = await existingParent.exec();
+		// Update parent node with the new child ID
+		if (sub_parent_id || parent_id) {
+			const existingParent = await database.nodes
+				.findOne({ selector: { id: sub_parent_id || parent_id } })
+				.exec();
 
-		if (parent_node_data) {
-			return await existingParent.update({
-				$set: {
-					child_ids: [...parent_node_data._data.child_ids, created_node._data.id]
-				}
-			});
+			if (existingParent) {
+				await existingParent.update({
+					$set: {
+						child_ids: [...existingParent._data.child_ids, created_node._data.id]
+					}
+				});
+			}
 		}
 
 		return created_node;
 	} catch (error) {
 		console.error('Error copying and adding a node:', error);
-		return error;
+		throw error;
 	}
 }
 
