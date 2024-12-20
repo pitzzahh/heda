@@ -39,6 +39,7 @@ export const load = async ({ depends, params }) => {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		project,
 		nodes: nodes && nodes?.length > 0 ? nodes : [],
-		root_node: root_node as Node
+		root_node: root_node as Node,
+		current_node
 	};
 };
