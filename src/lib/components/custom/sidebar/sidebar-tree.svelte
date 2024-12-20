@@ -75,8 +75,9 @@
 			{@const tooltip_data = [
 				{
 					trigger_callback: async () => {
-						await copyAndAddNodeById(node.id);
-						await invalidate('app:workspace/load-schedule');
+						await copyAndAddNodeById(node.id)
+							.then(() => invalidate('app:workspace'))
+							.finally(() => invalidate('app:workspace/load-schedule'));
 					},
 					variant: 'ghost',
 					icon: CopyIcon,
@@ -122,8 +123,9 @@
 							trigger_variant="destructive"
 							bind:some_open_state={open_load_context_menu}
 							onConfirm={async () => {
-								await removeNode(node.id);
-								await invalidate('app:workspace/load-schedule');
+								await removeNode(node.id)
+									.then(() => invalidate('app:workspace'))
+									.finally(() => invalidate('app:workspace/load-schedule'));
 							}}
 						/>
 					{/snippet}
