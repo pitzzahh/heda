@@ -302,7 +302,15 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-export async function overrideLoadAmpereTrip(node_id: string, at: number) {
+export async function overrideLoadAmpereTrip({
+	node_id,
+	at,
+	unoverride = false
+}: {
+	node_id: string;
+	at?: number;
+	unoverride?: boolean;
+}) {
 	const database = await databaseInstance();
 
 	try {
@@ -315,7 +323,7 @@ export async function overrideLoadAmpereTrip(node_id: string, at: number) {
 		// Use $set to update the project_name field
 		return await query.update({
 			$set: {
-				overrided_at: at
+				overrided_at: unoverride && !at ? undefined : at
 			}
 		});
 	} catch (error) {
