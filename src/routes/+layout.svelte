@@ -7,7 +7,6 @@
 	import { DIALOG_STATE_CTX, MISC_STATE_CTX } from '@/state/constants';
 	import { setSettingsState } from '@/hooks/settings-state.svelte';
 	import { setProjectState } from '@/hooks/project.svelte';
-	import { browser } from '$app/environment';
 
 	let { children } = $props();
 
