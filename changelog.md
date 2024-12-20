@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Ampere Trip overriding feature.
 - Add Ampere Trip indicator on load schedule.
 
+## Fix
+
+- Load schedule heirarchy when deep copying a panel.
+- Improve query performance.
+- Fix incorrect increment and decrement button placement.
+
 ## [0.1.19] - 2024-12-16
 
 ## Fix
