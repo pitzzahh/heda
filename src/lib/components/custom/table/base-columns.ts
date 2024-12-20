@@ -16,6 +16,7 @@ function getComputedMainAT(currents: number[]) {
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
+	current_node: Node,
 	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<T>[] => [
@@ -91,20 +92,30 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		columns: [
 			{
 				accessorKey: 'at',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const overrided_at = info.row.original.overrided_at;
+					return overrided_at ? overrided_at : info.getValue();
+				},
 				header: () => 'AT',
 				footer: (props) => {
 					const currents = props.table
 						.getFilteredRowModel()
 						.rows.map((row) => row.original.current);
-					const load_ampere_trips = props.table
+					const child_load_ampere_trips = props.table
 						.getFilteredRowModel()
-						.rows.map((row) => row.original.at);
-					const at = getComputedMainAT(currents);
-					const has_greater_child_at = load_ampere_trips.some((current) => current >= at);
+						.rows.map((row) => row.original.at || row.original.overrided_at)
+						.filter(Boolean);
+					const main_at = getComputedMainAT(currents);
+					const has_greater_child_at = child_load_ampere_trips.some(
+						(child_at) => child_at && child_at >= (current_node.overrided_at || main_at)
+					);
 
 					return renderComponent(AtCell, {
-						at: !at ? '' : at.toString(),
+						at: current_node.overrided_at
+							? current_node.overrided_at.toString()
+							: !main_at
+								? ''
+								: main_at.toString(),
 						has_greater_child_at
 					});
 				}
@@ -133,6 +144,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
+	current_node: Node,
 	highest_unit?: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<T>[] => [
 	{
@@ -172,9 +184,16 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		header: 'Actions',
 		cell: ({ row }) => {
-			if (row.original.node_type === 'panel') return;
 			return renderComponent(ColumnDropdown, {
 				node: row.original,
+				phase_main_load_form,
+				highest_unit
+			});
+		},
+
+		footer: (props) => {
+			return renderComponent(ColumnDropdown, {
+				node: current_node as PhaseLoadSchedule,
 				phase_main_load_form,
 				highest_unit
 			});
