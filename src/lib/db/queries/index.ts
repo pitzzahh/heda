@@ -97,14 +97,7 @@ export async function getChildNodesByParentId(parent_id: string): Promise<Node[]
 			parent_id
 		}
 	});
-	const children = (await query.exec()).map((doc) => doc._data);
-
-	// sorts the circuit number of every load node
-	const sortedChildren = children.sort((a, b) => {
-		return (a.circuit_number || 0) - (b.circuit_number || 0);
-	});
-
-	return sortedChildren as Node[];
+	return (await query.sort({ circuit_number: 'asc' }).exec()).map((doc) => doc._data) as Node[];
 }
 
 export async function getParentNodes(excluded_id?: string) {
@@ -142,7 +135,10 @@ type LoadSchedule = Node & {
 
 export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
 	const db = await databaseInstance();
-	const childNodes = await db.nodes.find({ selector: { parent_id } }).exec();
+	const childNodes = await db.nodes
+		.find({ selector: { parent_id } })
+		.sort({ circuit_number: 'asc' })
+		.exec();
 
 	const loadsWithComputedFields = await Promise.all(
 		childNodes.map(async (doc) => {
@@ -192,7 +188,5 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 	);
 
 	// sorted loads by circuit_number
-	return loadsWithComputedFields.sort(
-		(a, b) => (a.circuit_number || 0) - (b.circuit_number || 0)
-	) as LoadSchedule[];
+	return loadsWithComputedFields as LoadSchedule[];
 }

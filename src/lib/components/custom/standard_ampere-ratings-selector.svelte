@@ -45,14 +45,14 @@
 
 <div class="flex w-full flex-col gap-4">
 	<div class="flex w-full items-center justify-center gap-2">
-		<Button class="h-8 w-full max-w-8" size="sm" onclick={handleIncrement}>
-			<ArrowUp class="size-4" />
+		<Button class="h-8 w-full max-w-8" size="icon" onclick={handleDecrement}>
+			<ArrowDown class="size-4" />
 		</Button>
 		<p class="w-full min-w-12 border py-1 text-center">
 			{selected_rating}
 		</p>
-		<Button class="h-8 w-full max-w-8" size="icon" onclick={handleDecrement}>
-			<ArrowDown class="size-4" />
+		<Button class="h-8 w-full max-w-8" size="sm" onclick={handleIncrement}>
+			<ArrowUp class="size-4" />
 		</Button>
 	</div>
 
