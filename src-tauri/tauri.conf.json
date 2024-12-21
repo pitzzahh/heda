@@ -26,6 +26,7 @@
 		}
 	},
 	"bundle": {
+		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
 		"windows": {
