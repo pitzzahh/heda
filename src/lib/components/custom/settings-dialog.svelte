@@ -1,14 +1,16 @@
 <script lang="ts">
 	import * as Tooltip from '@/components/ui/tooltip';
 	import * as Select from '@/components/ui/select';
-	import { Gear } from 'svelte-radix';
-	import { buttonVariants } from '../ui/button';
-	import * as Dialog from '../ui/dialog';
+	import { Cog, Loader } from '@/assets/icons';
+	import { Button, buttonVariants } from '@/components/ui/button';
+	import * as Dialog from '@/components/ui/dialog';
 	import { Label } from '@/components/ui/label/index.js';
 	import { mode } from 'mode-watcher';
 	import type { Settings } from '@/types/settings';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
+	import { checkForUpdates } from '@/utils/update';
+	import { Update } from '@tauri-apps/plugin-updater';
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -16,7 +18,10 @@
 	] as const;
 
 	const settingsState = getSettingsState();
-	let selectedFont = $derived(settingsState.font);
+	const selectedFont = $derived(settingsState.font);
+
+	let app_update: Update | null = $state(null);
+	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' = $state('stale');
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
 		if ($mode) {
@@ -27,10 +32,10 @@
 
 <Tooltip.Provider>
 	<Tooltip.Root>
-		<Tooltip.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
+		<Tooltip.Trigger>
 			<Dialog.Root>
-				<Dialog.Trigger>
-					<Gear class="size-4" />
+				<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
+					<Cog class="size-4" />
 				</Dialog.Trigger>
 				<Dialog.Content class="sm:max-w-[425px]">
 					<Dialog.Header>
@@ -74,6 +79,28 @@
 								</Select.Content>
 							</Select.Root>
 						</div>
+						<Button
+							onclick={async () => {
+								update_state = 'processing';
+								app_update = await checkForUpdates();
+								console.log('app_update', app_update);
+								update_state = app_update ? 'available' : 'no_updates';
+							}}
+						>
+							<Loader
+								class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+									block: update_state === 'processing'
+								})}
+							/>
+							<span>{update_state === 'processing' ? 'Checking' : 'Check for updates'}</span>
+							<span>
+								{#if update_state === 'available'}
+									<span class="text-xs text-blue-500">v{app_update?.version}</span>
+								{:else if update_state === 'no_updates'}
+									<span class="text-xs text-green-500">No updates available</span>
+								{/if}
+							</span>
+						</Button>
 					</div>
 				</Dialog.Content>
 			</Dialog.Root>
