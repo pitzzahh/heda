@@ -28,21 +28,22 @@ export function onePhaseMainOrWyeCols(
 					footer: () => ''
 				},
 				{
-					header: 'L + N',
-					columns: [
-						{
-							accessorKey: 'p_plus_p_size',
-							header: () => 'SIZE',
-							cell: (info) => info.getValue(),
-							footer: () => ''
-						},
-						{
-							accessorKey: 'p_plus_p_insulation',
-							header: 'INSULATION',
-							cell: (info) => info.getValue(),
-							footer: () => ''
-						}
-					]
+					accessorKey: 'conductor_quantity',
+					header: () => 'Qty',
+					cell: (info) => info.getValue(),
+					footer: () => ''
+				},
+				{
+					accessorKey: 'conductor_size',
+					header: () => 'Size (mm²)',
+					cell: (info) => info.getValue(),
+					footer: () => ''
+				},
+				{
+					accessorKey: 'conductor_insulation',
+					header: 'Insulation',
+					cell: (info) => info.getValue(),
+					footer: () => ''
 				}
 			]
 		},
