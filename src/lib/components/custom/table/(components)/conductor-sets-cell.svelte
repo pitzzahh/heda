@@ -28,7 +28,11 @@
 
 	$effect(() => {
 		if (!focusWithinForm.current && sets_value !== sets) {
-			saveSetsChanges();
+			if (sets_value && sets_value >= 1) {
+				saveSetsChanges();
+			} else {
+				sets_value = sets;
+			}
 		}
 	});
 </script>
