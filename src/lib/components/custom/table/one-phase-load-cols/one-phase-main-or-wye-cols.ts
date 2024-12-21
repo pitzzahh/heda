@@ -4,6 +4,8 @@ import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
+import { renderComponent } from '@/components/ui/data-table';
+import ConductorSetsCell from '../(components)/conductor-sets-cell.svelte';
 
 export function onePhaseMainOrWyeCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -23,9 +25,19 @@ export function onePhaseMainOrWyeCols(
 			columns: [
 				{
 					accessorKey: 'conductor_sets',
-					cell: (info) => info.getValue(),
 					header: () => 'Sets',
-					footer: () => current_node.conductor_sets
+					cell: (info) => {
+						return renderComponent(ConductorSetsCell, {
+							sets: info.row.original.conductor_sets as number,
+							node_id: info.row.original.id
+						});
+					},
+					footer: () => {
+						return renderComponent(ConductorSetsCell, {
+							sets: current_node.conductor_sets as number,
+							node_id: current_node.id
+						});
+					}
 				},
 				{
 					accessorKey: 'conductor_qty',
