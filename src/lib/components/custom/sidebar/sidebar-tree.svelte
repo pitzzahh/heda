@@ -282,12 +282,15 @@
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-										toast.success(
-											node.node_type === 'root'
-												? 'Project removed succesfully'
-												: 'Panel removed succesfully'
-										);
-										invalidate('app:workspace/load-schedule').then(() => (button_state = 'stale'));
+										invalidate('app:workspace/load-schedule')
+											.then(() => (button_state = 'stale'))
+											.finally(() => {
+												toast.success(
+													node.node_type === 'root'
+														? `${project?.project_name ?? 'Project'} removed succesfully`
+														: `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+												);
+											});
 									}}
 								/>
 							{/snippet}
@@ -405,14 +408,14 @@
 				.finally(() => {
 					button_state = 'stale';
 					open_tree_delete_dialog = false;
+					toast.success(
+						node.node_type === 'root'
+							? `${project?.project_name ?? 'Project'} removed succesfully`
+							: node.node_type === 'panel'
+								? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+								: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
+					);
 				});
-			toast.success(
-				node.node_type === 'root'
-					? 'Remove Project'
-					: node.node_type === 'panel'
-						? 'Remove Panel'
-						: 'Remove Load'
-			);
 		}}
 	/>
 {/snippet}
