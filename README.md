@@ -1,6 +1,6 @@
-# ⚡ HEDA
+# ⚡ HEDA (Heirarchical Electrical Design Analyzer)
 
-[![publish](https://github.com/pitzzahh/voltix/actions/workflows/publish.yml/badge.svg)](https://github.com/pitzzahh/voltix/actions/workflows/publish.yml)
+[![publish](https://github.com/pitzzahh/heda/actions/workflows/publish.yml/badge.svg)](https://github.com/pitzzahh/heda/actions/workflows/publish.yml)
 
 **HEDA** is an easy-to-use tool designed to help with essential electrical engineering tasks such as:
 
