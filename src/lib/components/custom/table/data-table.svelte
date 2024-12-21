@@ -52,7 +52,8 @@
 						<Table.Cell
 							class={cn({
 								'border-r': index + 1 !== row.getVisibleCells().length,
-								'text-center': cellIdx === 0
+								'text-center': cellIdx === 0,
+								"min-w-[250px]": cell.column.columnDef.header === "LOAD DESCRIPTION"
 							})}
 						>
 							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
