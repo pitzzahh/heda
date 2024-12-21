@@ -15,7 +15,7 @@
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { AddLoadDialog } from '../load';
@@ -43,7 +43,7 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
-	const params = $derived($page.params);
+	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
 
 	let open_panel_context_menu = $state(false);
