@@ -6,10 +6,11 @@ import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
 import { renderComponent } from '@/components/ui/data-table';
 import ConductorSetsCell from '../(components)/conductor-sets-cell.svelte';
+import { computeAmpereTrip, computeConductorSize } from '@/utils/computations';
 
 export function onePhaseMainOrWyeCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: Node,
+	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<PhaseLoadSchedule>[] {
@@ -43,13 +44,26 @@ export function onePhaseMainOrWyeCols(
 					accessorKey: 'conductor_qty',
 					header: () => 'Qty',
 					cell: (info) => info.getValue(),
-					footer: () => current_node.conductor_qty
+					footer: (props) => current_node.conductor_qty
 				},
 				{
 					accessorKey: 'conductor_size',
 					header: () => 'Size (mm²)',
 					cell: (info) => info.getValue(),
-					footer: () => ''
+					footer: (props) => {
+						const total_current = props.table
+							.getFilteredRowModel()
+							.rows.reduce((sum, row) => sum + row.original.current, 0);
+						const main_at = current_node.overrided_at || computeAmpereTrip(total_current);
+						
+						return computeConductorSize({
+							set: current_node.conductor_sets as number,
+							qty: current_node.conductor_qty as number,
+							current: total_current,
+							load_type: 'Main',
+							at: main_at
+						});
+					}
 				},
 				{
 					accessorKey: 'conductor_insulation',
