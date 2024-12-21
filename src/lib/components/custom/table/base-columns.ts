@@ -9,14 +9,9 @@ import { computeAmpereTrip } from '@/utils/computations';
 import { AddLoadDialog } from '@/components/custom/load';
 import AtFooterCell from './(components)/at-footer-cell.svelte';
 
-function getComputedMainAT(currents: number[]) {
-	const total_current = currents.reduce((sum, current) => sum + current, 0);
-	return computeAmpereTrip(total_current);
-}
-
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: Node,
+	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<T>[] => [
@@ -98,24 +93,23 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 				header: () => 'AT',
 				footer: (props) => {
-					const currents = props.table
-						.getFilteredRowModel()
-						.rows.map((row) => row.original.current);
+					const total_current = parseFloat(
+						props.table
+							.getFilteredRowModel()
+							.rows.reduce((sum, row) => sum + row.original.current, 0)
+							.toFixed(2)
+					);
 					const child_load_ampere_trips = props.table
 						.getFilteredRowModel()
 						.rows.map((row) => row.original.at || row.original.overrided_at)
 						.filter(Boolean);
-					const main_at = getComputedMainAT(currents);
+					const main_at = current_node.overrided_at || computeAmpereTrip(total_current);
 					const has_greater_child_at = child_load_ampere_trips.some(
-						(child_at) => child_at && child_at >= (current_node.overrided_at || main_at)
+						(child_at) => child_at && child_at >= main_at
 					);
 
 					return renderComponent(AtFooterCell, {
-						at: current_node.overrided_at
-							? current_node.overrided_at.toString()
-							: !main_at
-								? ''
-								: main_at.toString(),
+						at: !main_at ? '' : main_at.toString(),
 						has_greater_child_at
 					});
 				}
@@ -144,7 +138,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: Node,
+	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<T>[] => [
 	{
