@@ -6,7 +6,7 @@ import {
 } from '@/constants';
 import type { LoadType } from '@/types/load';
 
-// load types with the same formula
+// load types with the same formula or value
 const commonLoadTypes = [
 	'Lighting Load',
 	'Convenience Outlet',
@@ -34,13 +34,6 @@ export function computeVoltAmpere({
 
 		// load types with separate formula
 		return quantity * 230 * varies;
-
-		// switch (load_type) {
-		// 	case '1P Motor - Rated Current':
-		// 		return quantity * 230 * varies;
-		// 	// case '1P Motor - Rated Horse Power':
-		// 	// 	return quantity * 230 * output of the varies;
-		// }
 	}
 
 	console.log('Invalid load_type or varies is not a number');
