@@ -25,6 +25,8 @@ const node_literal = {
 		node_type: { type: 'string' },
 		circuit_number: { type: 'number' },
 		overrided_at: { type: 'number' },
+		conductor_sets: { type: 'number', default: 1 },
+		conductor_qty: { type: 'number', default: 2 },
 		panel_data: {
 			type: 'object',
 			properties: {
@@ -72,7 +74,7 @@ const node_literal = {
 			items: { type: 'string' }
 		}
 	},
-	required: ['id', 'node_type', 'child_ids']
+	required: ['id', 'node_type', 'child_ids', 'conductor_sets', 'conductor_qty']
 } as const;
 
 const typed_project_schema = toTypedRxJsonSchema(project_schema_literal);
