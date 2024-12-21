@@ -74,7 +74,7 @@ const node_literal = {
 			items: { type: 'string' }
 		}
 	},
-	required: ['id', 'node_type', 'child_ids', 'conductor_sets', 'conductor_qty']
+	required: ['id', 'node_type', 'child_ids']
 } as const;
 
 const typed_project_schema = toTypedRxJsonSchema(project_schema_literal);
