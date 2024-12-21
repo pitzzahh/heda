@@ -314,7 +314,6 @@ export async function overrideLoadAmpereTrip({
 			}
 		});
 
-		// Use $set to update the project_name field
 		return await query.update({
 			$set: {
 				overrided_at: unoverride && !at ? undefined : at
@@ -322,6 +321,27 @@ export async function overrideLoadAmpereTrip({
 		});
 	} catch (error) {
 		console.error('Error overriding AT:', error);
+		throw error;
+	}
+}
+
+export async function updateConductorSets({ node_id, sets }: { node_id: string; sets: number }) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		return await query.update({
+			$set: {
+				conductor_sets: sets
+			}
+		});
+	} catch (error) {
+		console.error('Error updating conductor sets:', error);
 		throw error;
 	}
 }
