@@ -52,7 +52,9 @@
 						<Table.Cell
 							class={cn({
 								'border-r': index + 1 !== row.getVisibleCells().length,
-								'text-center': cellIdx === 0
+								'text-center': cellIdx === 0,
+								'min-w-[250px]': cell.column.columnDef.header === 'LOAD DESCRIPTION',
+								'p-0': cell.column.id === 'conductor_sets'
 							})}
 						>
 							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
@@ -67,7 +69,7 @@
 		</Table.Body>
 
 		{#if data.length > 0}
-			<Table.Footer class="bg-muted/10 border-t">
+			<Table.Footer class="border-t bg-muted/10">
 				{#each table.getFooterGroups() as footerGroup, i (i)}
 					{#if i === 0}
 						<Table.Row>
@@ -76,7 +78,8 @@
 									colspan={header.colSpan}
 									class={cn('bg-muted/50', {
 										'border-r': i + 1 < footerGroup.headers.length,
-										'text-center font-semibold': i === 0
+										'text-center font-semibold': i === 0,
+										'p-0': header.column.id === 'conductor_sets'
 									})}
 								>
 									{#if !header.isPlaceholder}

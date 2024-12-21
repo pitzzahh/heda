@@ -1,41 +1,72 @@
-name: 'publish'
+name: "publish"
 
 on:
   push:
     tags:
-      - '*.*.*'
+      - "*.*.*"
 
 env:
-  APP_NAME: 'Hierarchical Electrical Design Analyzer'
+  APP_NAME: "Hierarchical Electrical Design Analyzer"
 
 jobs:
+  determine-platforms:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if [ -n "${{ github.event.client_payload.PLATFORMS }}" ]; then
+            # Convert comma-separated platforms to JSON array
+            PLATFORMS_JSON="$(echo "${{ github.event.client_payload.PLATFORMS }}" | jq -R 'split(",")')"
+            
+            # Create matrix configuration dynamically
+            matrix="{\"include\":["
+            for platform in $(echo "${{ github.event.client_payload.PLATFORMS }}" | tr ',' '\n'); do
+              case $platform in
+                "macos-latest")
+                  matrix="$matrix{\"platform\":\"macos-latest\",\"args\":\"--target aarch64-apple-darwin\"},{\"platform\":\"macos-latest\",\"args\":\"--target x86_64-apple-darwin\"},"
+                  ;;
+                "ubuntu-22.04")
+                  matrix="$matrix{\"platform\":\"ubuntu-22.04\",\"args\":\"\"},"
+                  ;;
+                "windows-latest")
+                  matrix="$matrix{\"platform\":\"windows-latest\",\"args\":\"\"},"
+                  ;;
+              esac
+            done
+            matrix="${matrix%,}]}"
+          else
+            # Default matrix if no platforms specified
+            matrix='{
+              "include": [
+                {"platform": "macos-latest", "args": "--target aarch64-apple-darwin"},
+                {"platform": "macos-latest", "args": "--target x86_64-apple-darwin"},
+                {"platform": "ubuntu-22.04", "args": ""},
+                {"platform": "windows-latest", "args": ""}
+              ]
+            }'
+          fi
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
   release:
+    needs: determine-platforms
     permissions:
       contents: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+      matrix: ${{fromJson(needs.determine-platforms.outputs.matrix)}}
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # build the changelog based on the commit messages between the versioned tags
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -50,28 +81,27 @@ jobs:
         run: bun install -g npm
 
       - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@stable
         with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install frontend
-        run: |
-          bun install
+        run: bun install
 
       - name: CI Upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: 'Windows Installers'
+          name: "Windows Installers"
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+
       - name: Get Changelog Entry
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
@@ -79,6 +109,7 @@ jobs:
           validation_level: warn
           version: ${{ github.ref_name }}
           path: ./changelog.md
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         if: ${{ github.ref_type == 'tag' }}
@@ -87,7 +118,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: '${{ env.APP_NAME }} v__VERSION__'
+          releaseName: "${{ env.APP_NAME }} v__VERSION__"
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: false
           prerelease: false

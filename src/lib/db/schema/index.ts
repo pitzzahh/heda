@@ -25,6 +25,8 @@ const node_literal = {
 		node_type: { type: 'string' },
 		circuit_number: { type: 'number' },
 		overrided_at: { type: 'number' },
+		conductor_sets: { type: 'number', default: 1 },
+		conductor_qty: { type: 'number', default: 2 },
 		panel_data: {
 			type: 'object',
 			properties: {

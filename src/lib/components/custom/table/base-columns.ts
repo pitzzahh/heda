@@ -7,7 +7,7 @@ import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
 import { computeAmpereTrip } from '@/utils/computations';
 import { AddLoadDialog } from '@/components/custom/load';
-import AtCell from './(components)/at-cell.svelte';
+import AtFooterCell from './(components)/at-footer-cell.svelte';
 
 function getComputedMainAT(currents: number[]) {
 	const total_current = currents.reduce((sum, current) => sum + current, 0);
@@ -34,12 +34,12 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	},
 	{
 		accessorKey: 'load_description',
-		header: 'Load Description',
+		header: 'LOAD DESCRIPTION',
 		footer: () => 'MAIN'
 	},
 	{
 		accessorKey: 'voltage',
-		header: 'Voltage',
+		header: 'VOLTAGE (V)',
 		footer: (props) => {
 			// render the voltage of first index since all voltage cells are the same
 			return props.table.getFilteredRowModel().rows.at(0)?.original.voltage;
@@ -47,14 +47,14 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	},
 	{
 		accessorKey: 'va',
-		header: 'VA',
+		header: 'APPARENT POWER (VA)',
 		footer: (props) => {
 			return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
 		}
 	},
 	{
 		accessorKey: 'current',
-		header: 'CURRENT',
+		header: 'CURRENT (A)',
 		footer: (props) => {
 			return props.table
 				.getFilteredRowModel()
@@ -110,7 +110,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 						(child_at) => child_at && child_at >= (current_node.overrided_at || main_at)
 					);
 
-					return renderComponent(AtCell, {
+					return renderComponent(AtFooterCell, {
 						at: current_node.overrided_at
 							? current_node.overrided_at.toString()
 							: !main_at
