@@ -34,12 +34,12 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	},
 	{
 		accessorKey: 'load_description',
-		header: 'Load Description',
+		header: 'LOAD DESCRIPTION',
 		footer: () => 'MAIN'
 	},
 	{
 		accessorKey: 'voltage',
-		header: 'Voltage',
+		header: 'VOLTAGE (V)',
 		footer: (props) => {
 			// render the voltage of first index since all voltage cells are the same
 			return props.table.getFilteredRowModel().rows.at(0)?.original.voltage;
@@ -47,14 +47,14 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	},
 	{
 		accessorKey: 'va',
-		header: 'VA',
+		header: 'APPARENT POWER (VA)',
 		footer: (props) => {
 			return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
 		}
 	},
 	{
 		accessorKey: 'current',
-		header: 'CURRENT',
+		header: 'CURRENT (A)',
 		footer: (props) => {
 			return props.table
 				.getFilteredRowModel()
