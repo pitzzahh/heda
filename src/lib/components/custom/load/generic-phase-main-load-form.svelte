@@ -15,14 +15,16 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn } from '@/utils';
+	import { cn, getKeyByValue } from '@/utils';
 	import { ChevronsUpDown, CircleAlert, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
 		DEFAULT_LOADS,
 		DEFAULT_LOAD_TYPES_OPTIONS,
 		load_type_to_varies_label,
-		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS
+		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
+		default_hp_current_relationship,
+		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { page } from '$app/stores';
@@ -31,8 +33,9 @@
 	import { invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
-	import type { LoadType, TerminalTemperature, VariesLabel } from '@/types/load';
+	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
+	import { formatFraction } from '@/utils/format';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -41,6 +44,7 @@
 		node_to_edit?: Node;
 		action: 'add' | 'edit';
 		latest_circuit_node?: Node;
+		panel_id_from_tree?: string;
 	}
 
 	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
@@ -51,7 +55,8 @@
 		node_to_edit,
 		action,
 		selected_parent_id,
-		latest_circuit_node
+		latest_circuit_node,
+		panel_id_from_tree
 	}: Props = $props();
 
 	const form = superForm(phase_main_load_form, {
@@ -62,8 +67,8 @@
 				is_circuit_number_taken: false,
 				circuit_number: 0
 			};
+			const { get, paths } = event;
 			if (load_type === 'DEFAULT') {
-				const { get, paths } = event;
 				if (paths.includes('load_description') && paths.length === 1) {
 					const selected_load_description = get('load_description');
 					const selected_load = DEFAULT_LOADS.find(
@@ -88,11 +93,11 @@
 				return;
 			}
 
-			if (panel_id) {
+			if (panel_id_from_params || panel_id_from_tree) {
 				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
-					parent_id: selected_parent_id || panel_id,
+					parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
 					node_id: node_to_edit?.id
 				});
 
@@ -108,13 +113,21 @@
 					const load_data = {
 						...form.data,
 						load_description,
-						config_preference: load_type
-					};
+						config_preference: load_type,
+
+						// should only append when the load type is rated hp
+						...(form.data.load_type === '1P Motor - Rated Horse Power' && {
+							varies:
+								default_hp_current_relationship[
+									$formData.varies as keyof typeof default_hp_current_relationship
+								]
+						})
+					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
 							await addNode({
 								load_data,
-								parent_id: panel_id
+								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
 							break;
@@ -138,10 +151,14 @@
 	});
 	const { form: formData, enhance } = form;
 
-	const panel_id = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id_from_params = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
+	);
+
+	const quantity_label: QuantityLabel | 'QTY' = $derived(
+		$formData.load_type ? load_type_to_quantity_label[$formData.load_type] : 'QTY'
 	);
 
 	let open_horsepower_rating = $state(false);
@@ -338,17 +355,17 @@
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
-		<Form.Field {form} name="quantity" class="text-center">
+		<Form.Field {form} name="quantity" class="w-1/4 text-center">
 			<Form.Control>
 				{#snippet children({ props })}
-					<Form.Label>QTY</Form.Label>
+					<Form.Label>{quantity_label ?? 'QTY'}</Form.Label>
 					<Input
 						{...props}
 						type="number"
 						min={1}
 						inputmode="numeric"
 						bind:value={$formData.quantity}
-						placeholder="Enter quantity"
+						placeholder="Enter {convertToNormalText(quantity_label)}"
 					/>
 				{/snippet}
 			</Form.Control>
@@ -453,11 +470,18 @@
 								role="combobox"
 								{...props}
 							>
-								{$formData.varies
-									? DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS.map((e) => Number(e)).find(
-											(s) => s === $formData.varies
-										)
-									: `Select a ${variesLabel.toLowerCase()}`}
+								{@const varies_output =
+									default_hp_current_relationship[
+										$formData.varies as keyof typeof default_hp_current_relationship
+									]}
+								{#if $formData.varies}
+									<p>
+										{@html formatFraction($formData.varies)}
+										({varies_output})
+									</p>
+								{:else}
+									Select a {variesLabel.toLowerCase()}
+								{/if}
 								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
 							<input hidden value={$formData.varies} name={props.name} />
@@ -474,19 +498,18 @@
 							<Command.Group>
 								<ScrollArea class="h-64 pr-2.5">
 									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating}
-										{@const number_hp_current_rating = Number(hp_current_rating)}
 										<Command.Item
 											value={hp_current_rating}
 											onSelect={() => {
-												$formData.varies = number_hp_current_rating;
+												$formData.varies = hp_current_rating;
 												closeAndFocusTrigger(horsepower_rating_trigger_id);
 											}}
 										>
-											{hp_current_rating}
+											{@html formatFraction(hp_current_rating)}
 											<Check
 												class={cn(
 													'ml-auto size-4',
-													number_hp_current_rating !== $formData.varies && 'text-transparent'
+													hp_current_rating !== $formData.varies && 'text-transparent'
 												)}
 											/>
 										</Command.Item>
@@ -502,7 +525,6 @@
 						<Form.Label>{variesLabel}</Form.Label>
 						<Input
 							{...props}
-							type="number"
 							inputmode="numeric"
 							readonly={load_type === 'DEFAULT'}
 							min={1}

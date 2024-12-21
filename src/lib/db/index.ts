@@ -1,4 +1,5 @@
 import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase } from 'rxdb';
+import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import {
 	getRxStorageMemory
@@ -28,6 +29,7 @@ async function createDatabase(
 	}
 
 	addRxPlugin(RxDBUpdatePlugin);
+	addRxPlugin(RxDBQueryBuilderPlugin);
 
 	dbInstance = await createRxDatabase({
 		name,

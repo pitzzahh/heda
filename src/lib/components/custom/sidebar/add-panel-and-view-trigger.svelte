@@ -20,35 +20,36 @@
 		highest_unit,
 		panel_name,
 		is_parent_root_node = false,
+		open_dialog_state = $bindable(false),
 		latest_circuit_node
 	}: {
-		children: Snippet;
+		children?: Snippet;
 		id: string;
 		panel_name: string;
 		highest_unit: NonNullable<Node['highest_unit_form']>;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		parent_id: string;
+		open_dialog_state?: boolean;
 		is_parent_root_node: boolean;
 		latest_circuit_node?: Node;
 	} = $props();
 
 	const { phase } = highest_unit;
 
-	let open_panel_dialog = $state(false); // Add a reactive variable to control the dialog state
 	let clickTimeout: number | null = null; // To store the timeout for single-click
 
 	function handleClick() {
-		if (clickTimeout) {
-			clearTimeout(clickTimeout);
+		// if (clickTimeout) {
+		// 	clearTimeout(clickTimeout);
+		// 	clickTimeout = null;
+		// 	open_dialog_state = true;
+		// } else {
+		// @ts-ignore
+		clickTimeout = setTimeout(() => {
 			clickTimeout = null;
-			open_panel_dialog = true;
-		} else {
-			// @ts-ignore
-			clickTimeout = setTimeout(() => {
-				clickTimeout = null;
-				goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
-			}, 300);
-		}
+			goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
+		}, 300);
+		// }
 	}
 </script>
 
@@ -56,15 +57,11 @@
 	{@render children?.()}
 </button>
 
-<Dialog.Root bind:open={open_panel_dialog}>
+<Dialog.Root bind:open={open_dialog_state}>
 	<Dialog.Content class="max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
-			<div
-				class={cn('flex flex-col items-center justify-start', {
-					hidden: is_parent_root_node
-				})}
-			>
+			<div class="flex flex-col items-center justify-start">
 				<h4 class="mb-1 font-bold">MAIN</h4>
 				<div class="grid w-full grid-cols-2 justify-items-start">
 					<div>
@@ -97,7 +94,7 @@
 				{parent_id}
 				{generic_phase_panel_form}
 				main_phase={phase as Phase}
-				closeDialog={() => (open_panel_dialog = false)}
+				closeDialog={() => (open_dialog_state = false)}
 				{latest_circuit_node}
 			/>
 			{#snippet failed(error, reset)}

@@ -4,7 +4,8 @@
 	import { page } from '$app/stores';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import { getNodeById } from '@/db/queries/index.js';
-
+	import type { Node } from '@/db/schema';
+	
 	// FOR FUTURE REFERENCE
 	// const table_data: PhaseLoadSchedule[] = [
 	// {
@@ -135,6 +136,7 @@
 			data={loads && loads.length > 0 ? (loads as unknown as PhaseLoadSchedule[]) : []}
 			columns={onePhaseMainOrWyeCols(
 				data.phase_main_load_form,
+				data.current_node as unknown as Node,
 				root_node?.highest_unit_form,
 				loads && loads.length > 0 ? loads.at(-1) : undefined
 			)}

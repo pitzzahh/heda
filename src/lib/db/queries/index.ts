@@ -1,4 +1,4 @@
-import { computeVoltAmphere } from '@/utils/computations';
+import { computeAmpereTrip, computeVoltAmpere } from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
@@ -8,8 +8,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-				id: project_id
-			}
+					id: project_id
+				}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
@@ -59,13 +59,35 @@ export async function checkNodeExists({
 
 export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
-	return (await db.nodes
+	const node = await db.nodes
 		.findOne({
 			selector: {
 				id: target_id
 			}
 		})
-		.exec())?._data;
+		.exec();
+
+	if (!node) return;
+
+	const data = node?._data;
+	const voltage = 230; // this may change depending on phase
+	const va =
+		computeVoltAmpere({
+			load_type: data.load_data?.load_type as LoadType,
+			quantity: data.load_data?.quantity ?? 0,
+			varies: Number(data.load_data?.varies) || 0
+		}) || 0;
+	const current = va / voltage;
+	const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
+
+	return {
+		...data,
+		load_description: data.load_data?.load_description || '',
+		voltage,
+		va,
+		at,
+		current: parseFloat(current.toFixed(2))
+	};
 }
 
 export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
@@ -75,14 +97,7 @@ export async function getChildNodesByParentId(parent_id: string): Promise<Node[]
 			parent_id
 		}
 	});
-	const children = (await query.exec()).map((doc) => doc._data);
-
-	// sorts the circuit number of every load node
-	const sortedChildren = children.sort((a, b) => {
-		return (a.circuit_number || 0) - (b.circuit_number || 0);
-	});
-
-	return sortedChildren as Node[];
+	return (await query.sort({ circuit_number: 'asc' }).exec()).map((doc) => doc._data) as Node[];
 }
 
 export async function getParentNodes(excluded_id?: string) {
@@ -110,11 +125,20 @@ export async function getParentNodes(excluded_id?: string) {
 	return parent_nodes;
 }
 
-export async function getComputedLoads(
-	parent_id: string
-): Promise<(Node & { va: number; current: number; voltage: number; load_description: string })[]> {
+type LoadSchedule = Node & {
+	va: number;
+	current: number;
+	voltage: number;
+	load_description: string;
+	at: number;
+};
+
+export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
 	const db = await databaseInstance();
-	const childNodes = await db.nodes.find({ selector: { parent_id } }).exec();
+	const childNodes = await db.nodes
+		.find({ selector: { parent_id } })
+		.sort({ circuit_number: 'asc' })
+		.exec();
 
 	const loadsWithComputedFields = await Promise.all(
 		childNodes.map(async (doc) => {
@@ -122,13 +146,13 @@ export async function getComputedLoads(
 			const voltage = 230; // this may change depending on phase
 
 			const va =
-				computeVoltAmphere({
+				computeVoltAmpere({
 					load_type: data.load_data?.load_type as LoadType,
 					quantity: data.load_data?.quantity ?? 0,
-					varies: data.load_data?.varies ?? 0
+					varies: Number(data.load_data?.varies) || 0
 				}) || 0;
-
 			const current = va / voltage;
+			const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
@@ -147,6 +171,7 @@ export async function getComputedLoads(
 					load_description: data.panel_data.name || '',
 					voltage,
 					va: totalLoads.va,
+					at: computeAmpereTrip(totalLoads.current),
 					current: parseFloat(totalLoads.current.toFixed(2))
 				};
 			}
@@ -156,13 +181,12 @@ export async function getComputedLoads(
 				load_description: data.load_data?.load_description || '',
 				voltage,
 				va,
+				at,
 				current: parseFloat(current.toFixed(2))
 			};
 		})
 	);
 
 	// sorted loads by circuit_number
-	return loadsWithComputedFields.sort(
-		(a, b) => (a.circuit_number || 0) - (b.circuit_number || 0)
-	) as (Node & { va: number; current: number; voltage: number; load_description: string })[];
+	return loadsWithComputedFields as LoadSchedule[];
 }

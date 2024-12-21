@@ -7,11 +7,17 @@ import type { Node } from '@/db/schema';
 
 export function onePhaseMainOrWyeCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
+	current_node: Node,
 	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<PhaseLoadSchedule>[] {
 	return [
-		...createLeftMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit, latest_circuit_node),
+		...createLeftMostBaseColumns<PhaseLoadSchedule>(
+			phase_main_load_form,
+			current_node,
+			highest_unit,
+			latest_circuit_node
+		),
 		{
 			header: 'CONDUCTOR',
 			columns: [
@@ -40,6 +46,10 @@ export function onePhaseMainOrWyeCols(
 				}
 			]
 		},
-		...createRightMostBaseColumns<PhaseLoadSchedule>(phase_main_load_form, highest_unit)
+		...createRightMostBaseColumns<PhaseLoadSchedule>(
+			phase_main_load_form,
+			current_node,
+			highest_unit
+		)
 	];
 }

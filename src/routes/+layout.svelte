@@ -26,6 +26,10 @@
 		},
 		MISC_STATE_CTX
 	);
+
+	$effect(() => {
+		document.addEventListener('contextmenu', (event) => event.preventDefault());
+	});
 </script>
 
 <Toaster richColors position="top-right" />

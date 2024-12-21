@@ -9,7 +9,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 
 	try {
 		// creation of root node first to be referenced in project data
-		const createdRootNode = await database.nodes.insert({
+		const created_root_node = await database.nodes.insert({
 			id: createId(),
 			node_type: 'root',
 			highest_unit_form,
@@ -18,17 +18,17 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 
 		const project = await database.projects.insert({
 			id: createId(),
-			root_node_id: createdRootNode._data.id,
+			root_node_id: created_root_node._data.id,
 			project_name: 'Untitled'
 		});
 
 		return {
-			project: project as unknown as Project,
-			root_node_id: createdRootNode._data.id as string
+			project: project as Project,
+			root_node_id: created_root_node._data.id as string
 		};
 	} catch (error) {
-		console.log(error);
-		return error;
+		console.error('Error creating a project:', error);
+		throw error;
 	}
 }
 
@@ -66,39 +66,110 @@ export async function addNode({
 	const database = await databaseInstance();
 
 	try {
-		const createdNode = await database.nodes.insert({
+		const parent_query = database.nodes.findOne({
+			selector: { id: parent_id }
+		});
+		const parent_node_data = await parent_query.exec();
+
+		if (!parent_node_data) {
+			throw Error(`Parent node with ID ${parent_id} not found`);
+		}
+
+		const created_node = await database.nodes.insert({
 			id: createId(),
 			node_type: load_data ? 'load' : 'panel',
-			circuit_number: load_data
-				? load_data.circuit_number
-				: panel_data
-					? panel_data.circuit_number
-					: 0,
+			circuit_number: load_data?.circuit_number ?? panel_data?.circuit_number ?? 0,
 			panel_data: panel_data as Node['panel_data'],
 			load_data: load_data as Node['load_data'],
 			parent_id,
 			child_ids: []
 		});
 
-		const existingParent = database.nodes.findOne({
-			selector: {
-				id: parent_id
+		// update parent node's child_ids
+		await parent_query.update({
+			$set: {
+				child_ids: [...parent_node_data._data.child_ids, created_node._data.id]
 			}
 		});
-		const parentNodeData = await existingParent.exec();
 
-		if (parentNodeData) {
-			await existingParent.update({
-				$set: {
-					child_ids: [...parentNodeData._data.child_ids, createdNode._data.id]
-				}
-			});
+		return created_node;
+	} catch (error) {
+		console.error('Error adding a node:', error);
+		throw error;
+	}
+}
+
+export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
+	const database = await databaseInstance();
+
+	try {
+		const existing_node = await database.nodes
+			.findOne({
+				selector: { id: node_id }
+			})
+			.exec();
+
+		if (!existing_node) {
+			throw Error('Node not found');
 		}
 
-		return createdNode;
+		// get nodes under the same parent
+		const nodes_under_parent = await database.nodes
+			.find({ selector: { parent_id: sub_parent_id || existing_node._data.parent_id } })
+			.exec();
+
+		// extract all circuit numbers under the parent
+		const used_numbers = nodes_under_parent.map((node) => node._data.circuit_number) as number[];
+
+		// find the next available circuit number
+		let next_circuit_num = 1;
+		while (used_numbers.includes(next_circuit_num)) {
+			next_circuit_num++;
+		}
+
+		const { load_data, panel_data, node_type, parent_id, id } = existing_node._data;
+		const created_node = await database.nodes.insert({
+			id: createId(),
+			node_type,
+			circuit_number: next_circuit_num,
+			panel_data,
+			load_data,
+			parent_id: sub_parent_id || parent_id,
+			child_ids: []
+		});
+
+		// If the node is a panel, recursively copy its children
+		if (node_type === 'panel') {
+			const children = await database.nodes
+				.find({ selector: { parent_id: id } })
+				.sort({ circuit_number: 'asc' })
+				.exec();
+
+			// Sequentially copy children to prevent race conditions
+			for (const child of children) {
+				await copyAndAddNodeById(child._data.id, created_node._data.id);
+			}
+		}
+
+		// Update parent node with the new child ID
+		if (sub_parent_id || parent_id) {
+			const existingParent = await database.nodes
+				.findOne({ selector: { id: sub_parent_id || parent_id } })
+				.exec();
+
+			if (existingParent) {
+				await existingParent.update({
+					$set: {
+						child_ids: [...existingParent._data.child_ids, created_node._data.id]
+					}
+				});
+			}
+		}
+
+		return created_node;
 	} catch (error) {
-		console.log(error);
-		return error;
+		console.error('Error copying and adding a node:', error);
+		throw error;
 	}
 }
 
@@ -117,12 +188,15 @@ export async function updateNode({
 
 	try {
 		const query = database.nodes.findOne({
-			selector: {
-				id
-			}
+			selector: { id }
 		});
 
-		const updatedNode = await query.update({
+		const existing_node = await query.exec();
+		if (!existing_node) {
+			throw Error('Node not found');
+		}
+
+		const updatednode = await query.update({
 			$set: {
 				parent_id,
 				panel_data,
@@ -131,31 +205,71 @@ export async function updateNode({
 			}
 		});
 
-		return updatedNode;
+		const is_changing_parent = parent_id !== existing_node._data.parent_id;
+
+		if (is_changing_parent) {
+			// remove the node from its current parent
+			if (existing_node._data.parent_id) {
+				const current_parent_query = database.nodes.findOne({
+					selector: { id: existing_node._data.parent_id }
+				});
+				const current_parent = await current_parent_query.exec();
+
+				if (current_parent) {
+					return await current_parent_query.update({
+						$set: {
+							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
+						}
+					});
+				}
+			}
+
+			// addd the node to the new parent
+			const new_parent_query = database.nodes.findOne({
+				selector: { id: parent_id }
+			});
+			const new_parent = await new_parent_query.exec();
+
+			if (new_parent) {
+				return await new_parent_query.update({
+					$set: {
+						child_ids: [...new_parent._data.child_ids, id]
+					}
+				});
+			}
+		}
+
+		return updatednode;
 	} catch (error) {
-		console.log(error);
-		return error;
+		console.error('Error updating node:', error);
+		throw error;
 	}
 }
 
-export async function removeNode(id: string) {
+export async function removeNode(id: string, visited: Set<string> = new Set()) {
+	if (visited.has(id)) {
+		throw Error(`Circular reference detected at node ${id}`);
+	}
+	visited.add(id);
+
 	const database = await databaseInstance();
 
 	try {
-		// child nodes of the target node
+		// find and remove child nodes recursively
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child._data.id);
+			await removeNode(child._data.id, visited);
 		}
 
+		// remove the current node
 		const query = database.nodes.findOne({ selector: { id } });
-		const removedNode = await query.remove();
 
-		return removedNode;
+		console.log(`Node ${id} removed successfully`);
+		return await query.remove();
 	} catch (error) {
-		console.error(error);
-		return error;
+		console.error(`Failed to remove node ${id}:`, error);
+		throw error;
 	}
 }
 
@@ -166,12 +280,48 @@ export async function deleteProject(project_id: string) {
 		const query = database.projects.findOne({ selector: { id: project_id } });
 		const project = await query.exec();
 
-		// remove all the nodes of the root node
-		if (project) await removeNode(project?._data.root_node_id);
+		if (!project) {
+			throw Error(`Project with ID ${project_id} not found`);
+		}
+
+		const rootNodeId = project._data.root_node_id;
+		if (rootNodeId) {
+			return await removeNode(rootNodeId);
+		}
 
 		return await query.remove();
 	} catch (error) {
-		console.error(error);
-		return error;
+		console.error(`Failed to delete project ${project_id}:`, error);
+		throw error;
+	}
+}
+
+export async function overrideLoadAmpereTrip({
+	node_id,
+	at,
+	unoverride = false
+}: {
+	node_id: string;
+	at?: number;
+	unoverride?: boolean;
+}) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		// Use $set to update the project_name field
+		return await query.update({
+			$set: {
+				overrided_at: unoverride && !at ? undefined : at
+			}
+		});
+	} catch (error) {
+		console.error('Error overriding AT:', error);
+		throw error;
 	}
 }
