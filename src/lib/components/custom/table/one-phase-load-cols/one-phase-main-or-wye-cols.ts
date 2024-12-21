@@ -22,16 +22,16 @@ export function onePhaseMainOrWyeCols(
 			header: 'CONDUCTOR',
 			columns: [
 				{
-					accessorKey: 'sets',
+					accessorKey: 'conductor_sets',
 					cell: (info) => info.getValue(),
 					header: () => 'Sets',
-					footer: () => ''
+					footer: () => current_node.conductor_sets
 				},
 				{
-					accessorKey: 'conductor_quantity',
+					accessorKey: 'conductor_qty',
 					header: () => 'Qty',
 					cell: (info) => info.getValue(),
-					footer: () => ''
+					footer: () => current_node.conductor_qty
 				},
 				{
 					accessorKey: 'conductor_size',
