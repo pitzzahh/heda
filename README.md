@@ -1,19 +1,43 @@
-# ⚡ HEDA (Heirarchical Electrical Design Analyzer)
+<div align="center">
 
-[![publish](https://github.com/pitzzahh/heda/actions/workflows/publish.yml/badge.svg)](https://github.com/pitzzahh/heda/actions/workflows/publish.yml)
+# ⚡ HEDA  
+**Hierarchical Electrical Design Analyzer**
 
-**HEDA** is an easy-to-use tool designed to help with essential electrical engineering tasks such as:
+[![publish](https://github.com/pitzzahh/heda/actions/workflows/publish.yml/badge.svg)](https://github.com/pitzzahh/heda/actions/workflows/publish.yml)  
+[![Latest Release](https://img.shields.io/github/v/release/pitzzahh/heda?label=Latest%20Release&style=flat-square)](https://github.com/pitzzahh/heda/releases/latest)
 
-- 📅 **Load Scheduling**
-- 🔋 **Voltage Drop Analysis**
-- 💥 **Short Circuit Calculations**
+</div>
 
-## Features
+---
 
-- Simple interface for scheduling electrical loads.
-- Efficient tools for analyzing voltage drops in circuits.
-- Short circuit analysis to ensure system safety.
+**HEDA** is an intuitive and powerful tool designed for electrical engineers to streamline crucial design and analysis processes. Whether you're planning loads, analyzing circuits, or ensuring system safety, HEDA has you covered.
 
-## Fonts
-- Verdana
-- Isocpeur
+---
+
+## ✨ **Features**
+
+- **Load Scheduling**  
+  Plan and organize electrical loads with ease using a user-friendly interface.
+
+- **Voltage Drop Analysis**  
+  Accurately analyze voltage drops across circuits to ensure efficiency and reliability.
+
+- **Short Circuit Calculations**  
+  Perform detailed calculations to evaluate and enhance system safety.
+
+---
+
+## ✒️ **Design**
+
+- **Fonts**:  
+  - Verdana  
+  - Isocpeur
+
+HEDA combines modern design principles with practical functionality, ensuring a seamless user experience for professionals.
+
+---
+
+## 📥 **Download**  
+Access the latest release of HEDA from the [**Releases Page**](https://github.com/pitzzahh/heda/releases/latest). Download, install, and start optimizing your electrical designs today!
+
+---
