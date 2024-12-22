@@ -127,7 +127,16 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			next_circuit_num++;
 		}
 
-		const { load_data, panel_data, node_type, parent_id, id } = existing_node._data;
+		const {
+			load_data,
+			panel_data,
+			node_type,
+			parent_id,
+			id,
+			overrided_at,
+			conductor_qty,
+			conductor_sets
+		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
 			node_type,
@@ -135,6 +144,9 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			panel_data,
 			load_data,
 			parent_id: sub_parent_id || parent_id,
+			conductor_qty,
+			conductor_sets,
+			overrided_at,
 			child_ids: []
 		});
 
