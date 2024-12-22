@@ -55,13 +55,14 @@ export function onePhaseMainOrWyeCols(
 							.getFilteredRowModel()
 							.rows.reduce((sum, row) => sum + row.original.current, 0);
 						const main_at = current_node.overrided_at || computeAmpereTrip(total_current);
-						
+
 						return computeConductorSize({
 							set: current_node.conductor_sets as number,
 							qty: current_node.conductor_qty as number,
 							current: total_current,
 							load_type: 'Main',
-							at: main_at
+							at: main_at,
+							ambient_temp: current_node.panel_data?.ambient_temperature || 30
 						});
 					}
 				},
