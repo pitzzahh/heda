@@ -32,16 +32,24 @@ const node_literal = {
 			properties: {
 				name: { type: 'string' },
 				terminal_temperature: { type: 'string' },
+				ambient_temperature: { type: 'number' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false,
-			required: ['name', 'terminal_temperature', 'terminal_temperature', 'phase']
+			required: [
+				'name',
+				'terminal_temperature',
+				'terminal_temperature',
+				'phase',
+				'ambient_temperature'
+			]
 		},
 		load_data: {
 			type: 'object',
 			properties: {
 				load_description: { type: 'string' },
 				terminal_temperature: { type: 'string' },
+				ambient_temperature: { type: 'number' },
 				quantity: { type: 'number' },
 				varies: { type: 'string' },
 				continuous: { type: 'boolean' },
@@ -56,7 +64,8 @@ const node_literal = {
 				'varies',
 				'continuous',
 				'load_type',
-				'config_preference'
+				'config_preference',
+				'ambient_temperature'
 			]
 		},
 		// this object should be present if it is root node
