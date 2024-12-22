@@ -2,7 +2,8 @@ import {
 	standard_ampere_ratings,
 	load_type_z_value,
 	AMPACITY_RANGES,
-	AMPACITY_TO_CONDUCTOR_SIZE
+	AMPACITY_TO_CONDUCTOR_SIZE,
+	AMBIENT_TEMP_RATINGS
 } from '@/constants';
 import type { LoadType } from '@/types/load';
 
@@ -58,7 +59,7 @@ export function computeAmpereTrip(current: number, load_type?: LoadType) {
 
 export function computeConductorSize({
 	set,
-	// ambient_temp = 30, //pansamantala
+	ambient_temp,
 	qty,
 	load_type,
 	at,
@@ -66,7 +67,7 @@ export function computeConductorSize({
 }: {
 	set: number;
 	qty: number;
-	ambient_temp?: number;
+	ambient_temp: number;
 	load_type: LoadType | 'Main';
 	at: number;
 	current: number;
@@ -74,8 +75,7 @@ export function computeConductorSize({
 	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
 
-	// digdi ang usage kang ambient temp, but 30 muna and 1 pansamantagal
-	const correction_factor = 1; // TODO: create an array of temp rating
+	const correction_factor = AMBIENT_TEMP_RATINGS.find((temp_rating) => ambient_temp <= temp_rating.max_temp)?.factor ?? 1; // digdi ang usage kang ambient temp
 	const adjustment_factor = getAdjustmentFactor(total_num_of_conductors);
 
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
