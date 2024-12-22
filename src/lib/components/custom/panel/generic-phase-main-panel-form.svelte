@@ -25,6 +25,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
+	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -283,23 +284,25 @@
 							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No terminal temp found.</Command.Empty>
 							<Command.Group>
-								{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
-									<Command.Item
-										value={ambient_temp.toString()}
-										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp;
-											closeAndFocusTrigger(terminal_temp_trigger_id);
-										}}
-									>
-										{ambient_temp}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
+								<ScrollArea class="h-64 pr-2.5">
+									{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
+										<Command.Item
+											value={ambient_temp.toString()}
+											onSelect={() => {
+												$formData.ambient_temperature = ambient_temp;
+												closeAndFocusTrigger(ambient_temp_trigger_id);
+											}}
+										>
+											{ambient_temp}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													ambient_temp !== $formData.ambient_temperature && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
 							</Command.Group>
 						</Command.Root>
 					</Popover.Content>

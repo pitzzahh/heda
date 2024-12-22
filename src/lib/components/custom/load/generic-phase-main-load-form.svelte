@@ -283,23 +283,25 @@
 							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No terminal temp found.</Command.Empty>
 							<Command.Group>
-								{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
-									<Command.Item
-										value={ambient_temp.toString()}
-										onSelect={() => {
-											$formData.ambient_temperature = ambient_temp;
-											closeAndFocusTrigger(terminal_temp_trigger_id);
-										}}
-									>
-										{ambient_temp}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												ambient_temp !== $formData.ambient_temperature && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
+								<ScrollArea class="h-64 pr-2.5">
+									{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
+										<Command.Item
+											value={ambient_temp.toString()}
+											onSelect={() => {
+												$formData.ambient_temperature = ambient_temp;
+												closeAndFocusTrigger(ambient_temp_trigger_id);
+											}}
+										>
+											{ambient_temp}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													ambient_temp !== $formData.ambient_temperature && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
 							</Command.Group>
 						</Command.Root>
 					</Popover.Content>
