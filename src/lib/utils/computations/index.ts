@@ -7,14 +7,14 @@ import {
 import type { LoadType } from '@/types/load';
 
 // load types with the same formula or value
-const commonLoadTypes = [
+const common_load_types = [
 	'Lighting Load',
 	'Convenience Outlet',
 	'General Lighting',
 	'Heating Equipment'
 ] as const;
 
-type CommonLoadTypes = (typeof commonLoadTypes)[number];
+type CommonLoadTypes = (typeof common_load_types)[number];
 
 export function computeVoltAmpere({
 	load_type,
@@ -28,7 +28,7 @@ export function computeVoltAmpere({
 	const is_varies_number = typeof varies === 'number';
 
 	if (is_varies_number) {
-		if (commonLoadTypes.includes(load_type as CommonLoadTypes)) {
+		if (common_load_types.includes(load_type as CommonLoadTypes)) {
 			return quantity * varies;
 		}
 
@@ -71,17 +71,17 @@ export function computeConductorSize({
 	at: number;
 	current: number;
 }) {
-	const load_type_parameter = getLoadTypeParams(load_type as CommonLoadTypes);
+	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
 
 	// digdi ang usage kang ambient temp, but 30 muna and 1 pansamantagal
 	const correction_factor = 1; // TODO: create an array of temp rating
 	const adjustment_factor = getAdjustmentFactor(total_num_of_conductors);
 
-	const load_type_output =
-		load_type === 'Main' ? 1.25 : load_type_parameter === 'at' ? at : 1.25 * current;
+	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
 
+	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
 	const range = AMPACITY_RANGES.find(
 		(range) => adjusted_current > range.min && adjusted_current < range.max
 	);
@@ -90,11 +90,11 @@ export function computeConductorSize({
 	return AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
 }
 
-function getLoadTypeParams(load_type: LoadType): 'at' | 'multiply-current' {
-	if (commonLoadTypes.includes(load_type as CommonLoadTypes)) {
+function getLoadTypeParams(load_type: LoadType | 'Main'): 'at' | 'multiply-current' {
+	const commond_load_types_with_main = [...common_load_types, 'Main']; //the Main here is if the node is a panel
+	if (commond_load_types_with_main.includes(load_type as CommonLoadTypes)) {
 		return 'at';
 	}
-
 	return 'multiply-current';
 }
 
