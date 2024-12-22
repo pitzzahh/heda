@@ -177,6 +177,22 @@ export const AMPACITY_RANGES = [
 	{ min: 480, max: Infinity, value: 530 }
 ];
 
+export const AMBIENT_TEMP_RATINGS = [
+    { max_temp: 10, factor: 1.20 },    // 10 or less
+    { max_temp: 15, factor: 1.15 },    // 11-15
+    { max_temp: 20, factor: 1.11 },    // 16-20
+    { max_temp: 25, factor: 1.05 },    // 21-25
+    { max_temp: 30, factor: 1.00 },    // 26-30
+    { max_temp: 35, factor: 0.94 },    // 31-35
+    { max_temp: 40, factor: 0.88 },    // 36-40
+    { max_temp: 45, factor: 0.82 },    // 41-45
+    { max_temp: 50, factor: 0.75 },    // 46-50
+    { max_temp: 55, factor: 0.67 },    // 51-55
+    { max_temp: 60, factor: 0.58 },    // 56-60
+    { max_temp: 65, factor: 0.47 },    // 61-65
+    { max_temp: 70, factor: 0.33 }     // 66-70
+]
+
 export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	15: 2.0,
 	20: 3.5,
