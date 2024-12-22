@@ -57,6 +57,7 @@ export async function checkNodeExists({
 	}
 }
 
+// TODO: IF THE NODE IS PANEL, THEN GET ITS CHILD AND COMPUTE THE CURRENT, AT, and CONDUCTOR SIZE
 export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
 	const node = await db.nodes
@@ -84,7 +85,8 @@ export async function getNodeById(target_id: string) {
 		qty: data.conductor_qty as number,
 		current,
 		load_type: data.load_data?.load_type as LoadType | 'Main',
-		at: data?.overrided_at || at
+		at: data?.overrided_at || at,
+		ambient_temp: data.load_data?.ambient_temperature || data.panel_data?.ambient_temperature || 30
 	});
 
 	return {
@@ -166,7 +168,8 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 				qty: data.conductor_qty as number,
 				current,
 				load_type: data.load_data?.load_type as LoadType | 'Main',
-				at: data?.overrided_at || at
+				at: data?.overrided_at || at,
+				ambient_temp: data.load_data?.ambient_temperature || 30
 			});
 
 			if (data.panel_data) {
@@ -188,7 +191,8 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					qty: data.conductor_qty as number,
 					current: main_current,
 					load_type: 'Main',
-					at: data?.overrided_at || main_at
+					at: data?.overrided_at || main_at,
+					ambient_temp: data.panel_data.ambient_temperature
 				});
 
 				return {
