@@ -17,8 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import { RefreshCcw } from 'lucide-svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import StandardAmpereRatingsSelector from '../../standard_ampere-ratings-selector.svelte';
-	import { overrideField } from '@/db/mutations';
+	import OverrideSelectors from '../../override-selectors.svelte';
 
 	let {
 		node,
@@ -33,7 +32,7 @@
 	const phase = highest_unit?.phase;
 
 	let is_update_dialog_open = $state(false);
-	let is_override_at_dialog_open = $state(false);
+	let is_override_dialog_open = $state(false);
 	let open_dropdown_menu = $state(false);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
@@ -83,12 +82,12 @@
 					</DropdownMenu.Item>
 				{/if}
 
-				<DropdownMenu.Item onclick={() => (is_override_at_dialog_open = true)}>
+				<DropdownMenu.Item onclick={() => (is_override_dialog_open = true)}>
 					<RefreshCcw class="ml-2 size-4" />
-					Override AT
+					Override
 				</DropdownMenu.Item>
 
-				{#if !!node.overrided_at}
+				<!-- {#if !!node.overrided_at}
 					<DropdownMenu.Item
 						class="!text-red-500 hover:!bg-red-500/20"
 						onclick={async () => {
@@ -99,7 +98,7 @@
 						<RefreshCcw class="ml-2 size-4" />
 						Remove Overrided AT
 					</DropdownMenu.Item>
-				{/if}
+				{/if} -->
 
 				{#if node.node_type === 'load'}
 					<DropdownMenu.Item class="mt-0.5 p-0">
@@ -160,19 +159,27 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root {...props} bind:open={is_override_at_dialog_open}>
-	<Dialog.Content class="max-w-[350px]">
+<Dialog.Root {...props} bind:open={is_override_dialog_open}>
+	{console.log(node)}
+	<Dialog.Content class="max-w-[450px]">
 		<Dialog.Header>
-			<Dialog.Title>Override AT</Dialog.Title>
+			<Dialog.Title>Override</Dialog.Title>
 			<Dialog.Description>
-				Override the AT of <span class="font-semibold">{node.load_description}</span>
+				Override the data of <span class="font-semibold">{node.load_description}</span>
 			</Dialog.Description>
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
-		<StandardAmpereRatingsSelector
-			closeDialog={() => (is_override_at_dialog_open = false)}
+		<OverrideSelectors
+			closeDialog={() => (is_override_dialog_open = false)}
 			node_id={node.id}
 			current_at={node.overrided_at || node.at}
+			current_conductor_size={node.overrided_conductor_size || node.conductor_size}
+			current_egc_size={node.overrided_egc_size || node.egc_size}
+			overridden_fields={{
+				egc_size: node.overrided_egc_size ? true : false,
+				at: node.overrided_at ? true : false,
+				conductor_size: node.overrided_conductor_size ? true : false
+			}}
 		/>
 	</Dialog.Content>
 </Dialog.Root>
