@@ -2,7 +2,7 @@
 	import { standard_ampere_ratings } from '@/constants';
 	import { ArrowUp, ArrowDown } from 'svelte-radix';
 	import { Button } from '@/components/ui/button/index.js';
-	import { overrideLoadAmpereTrip } from '@/db/mutations';
+	import { overrideField } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 
 	let {
@@ -36,7 +36,7 @@
 
 	async function handleOverride() {
 		if (selected_rating) {
-			await overrideLoadAmpereTrip({ node_id, at: selected_rating });
+			await overrideField({ node_id, field_data: selected_rating, field_type: 'at' });
 			await invalidateAll();
 			closeDialog();
 		}

@@ -18,7 +18,7 @@
 	import { RefreshCcw } from 'lucide-svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import StandardAmpereRatingsSelector from '../../standard_ampere-ratings-selector.svelte';
-	import { overrideLoadAmpereTrip } from '@/db/mutations';
+	import { overrideField } from '@/db/mutations';
 
 	let {
 		node,
@@ -92,7 +92,7 @@
 					<DropdownMenu.Item
 						class="!text-red-500 hover:!bg-red-500/20"
 						onclick={async () => {
-							await overrideLoadAmpereTrip({ node_id: node.id, unoverride: true });
+							await overrideField({ node_id: node.id, unoverride: true, field_type: 'at' });
 							await invalidateAll();
 						}}
 					>
