@@ -153,6 +153,7 @@ export const default_hp_current_relationship = {
 	'10': '50'
 } as const;
 
+// FOR CONDUCTOR SIZING
 export const AMPACITY_RANGES = [
 	{ min: 0, max: 15, value: 15 },
 	{ min: 15, max: 20, value: 20 },
@@ -193,6 +194,7 @@ export const AMBIENT_TEMP_RATINGS = [
     { max_temp: 70, factor: 0.33 }     // 66-70
 ]
 
+// FOR EGC SIZING
 export const AMPERE_TRIP_TO_COPPER = [
     { at_threshold: 6000, size: "error" },
     { at_threshold: 5000, size: 400 },
