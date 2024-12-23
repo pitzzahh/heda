@@ -4,7 +4,6 @@
 	import { page } from '$app/stores';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import { getNodeById } from '@/db/queries/index.js';
-	import type { Node } from '@/db/schema';
 
 	let { data } = $props();
 	let params = $derived($page.params);
@@ -73,6 +72,7 @@
 				root_node?.highest_unit_form,
 				loads && loads.length > 0 ? loads.at(-1) : undefined
 			)}
+			is_root_node={data.current_node?.node_type === 'root'}
 		/>
 	{/key}
 </div>
