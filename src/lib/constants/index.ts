@@ -193,6 +193,28 @@ export const AMBIENT_TEMP_RATINGS = [
     { max_temp: 70, factor: 0.33 }     // 66-70
 ]
 
+export const AMPERE_TRIP_TO_COPPER = [
+    { at_threshold: 6000, size: "error" },
+    { at_threshold: 5000, size: 400 },
+    { at_threshold: 4000, size: 375 },
+    { at_threshold: 3000, size: 250 },
+    { at_threshold: 2500, size: 200 },
+    { at_threshold: 2000, size: 175 },
+    { at_threshold: 1600, size: 125 },
+    { at_threshold: 1200, size: 100 },
+    { at_threshold: 1000, size: 80 },
+    { at_threshold: 800, size: 60 },
+    { at_threshold: 600, size: 50 },
+    { at_threshold: 500, size: 38 },
+    { at_threshold: 300, size: 30 },
+    { at_threshold: 200, size: 22 },
+    { at_threshold: 100, size: 14 },
+    { at_threshold: 60, size: 8 },
+    { at_threshold: 20, size: 5.5 },
+    { at_threshold: 15, size: 3.5 },
+    { at_threshold: 0, size: 2 }
+] as const;
+
 export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	15: 2.0,
 	20: 3.5,
