@@ -25,6 +25,9 @@ const node_literal = {
 		node_type: { type: 'string' },
 		circuit_number: { type: 'number' },
 		overrided_at: { type: 'number' },
+		overrided_egc_size: { type: 'number' },
+		overrided_conduit_size: { type: 'number' },
+		overrided_conductor_size: { type: 'number' },
 		conductor_sets: { type: 'number', default: 1 },
 		conductor_qty: { type: 'number', default: 2 },
 		panel_data: {
