@@ -3,7 +3,8 @@ import {
 	load_type_z_value,
 	AMPACITY_RANGES,
 	AMPACITY_TO_CONDUCTOR_SIZE,
-	AMBIENT_TEMP_RATINGS
+	AMBIENT_TEMP_RATINGS,
+	AMPERE_TRIP_TO_COPPER
 } from '@/constants';
 import type { LoadType } from '@/types/load';
 
@@ -75,7 +76,8 @@ export function computeConductorSize({
 	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
 
-	const correction_factor = AMBIENT_TEMP_RATINGS.find((temp_rating) => ambient_temp <= temp_rating.max_temp)?.factor ?? 1; // digdi ang usage kang ambient temp
+	const correction_factor =
+		AMBIENT_TEMP_RATINGS.find((temp_rating) => ambient_temp <= temp_rating.max_temp)?.factor ?? 1; // digdi ang usage kang ambient temp
 	const adjustment_factor = getAdjustmentFactor(total_num_of_conductors);
 
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
@@ -116,4 +118,10 @@ function getAdjustmentFactor(numberOfConductors: number): number {
 	} else {
 		return 0.35;
 	}
+}
+
+export function getEgcSize(amperes: number): number | 'error' {
+	if (amperes <= 0) return 'error';
+	const range = AMPERE_TRIP_TO_COPPER.find((r) => amperes > r.at_threshold);
+	return range?.size ?? 'error';
 }
