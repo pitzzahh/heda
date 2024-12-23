@@ -308,14 +308,25 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-export async function overrideLoadAmpereTrip({
+type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size';
+
+const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
+	egc_size: 'overrided_egc_size',
+	conductor_size: 'overrided_conductor_size',
+	at: 'overrided_at',
+	conduit_size: 'overrided_conduit_size'
+};
+
+export async function overrideField({
 	node_id,
-	at,
-	unoverride = false
+	field_data,
+	unoverride = false,
+	field_type
 }: {
 	node_id: string;
-	at?: number;
+	field_data?: number;
 	unoverride?: boolean;
+	field_type: FieldType;
 }) {
 	const database = await databaseInstance();
 
@@ -326,13 +337,16 @@ export async function overrideLoadAmpereTrip({
 			}
 		});
 
+		const data = unoverride && !field_data ? undefined : field_data;
+		const field_to_update = FIELD_TYPE_MAPPING[field_type];
+
 		return await query.update({
 			$set: {
-				overrided_at: unoverride && !at ? undefined : at
+				[field_to_update]: data
 			}
 		});
 	} catch (error) {
-		console.error('Error overriding AT:', error);
+		console.error('Error overriding data:', error);
 		throw error;
 	}
 }
