@@ -114,8 +114,19 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 					// 	at: !main_at ? '' : main_at.toString(),
 					// 	has_greater_child_at
 					// });
+					const child_load_ampere_trips = props.table
+						.getFilteredRowModel()
+						.rows.map((row) => row.original.at || row.original.overrided_at)
+						.filter(Boolean);
 
-					return !current_node.at ? '' : current_node.at;
+					const has_greater_child_at = child_load_ampere_trips.some(
+						(child_at) => child_at && child_at >= current_node.at
+					);
+
+					return renderComponent(AtFooterCell, {
+						at: !current_node.at ? '' : current_node.at.toString(),
+						has_greater_child_at
+					});
 				}
 			},
 			{
