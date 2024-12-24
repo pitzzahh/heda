@@ -73,6 +73,39 @@ export function computeConductorSize({
 	at: number;
 	current: number;
 }) {
+	const adjusted_current = computeAdjustedCurrent({
+		set,
+		ambient_temp,
+		qty,
+		load_type,
+		at,
+		current
+	});
+
+	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
+	const range = AMPACITY_RANGES.find(
+		(range) => adjusted_current > range.min && adjusted_current < range.max
+	);
+	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
+
+	return AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
+}
+
+export function computeAdjustedCurrent({
+	set,
+	ambient_temp,
+	qty,
+	load_type,
+	at,
+	current
+}: {
+	set: number;
+	qty: number;
+	ambient_temp: number;
+	load_type: LoadType | 'Main';
+	at: number;
+	current: number;
+}) {
 	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
 
@@ -83,13 +116,7 @@ export function computeConductorSize({
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
 
-	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
-	const range = AMPACITY_RANGES.find(
-		(range) => adjusted_current > range.min && adjusted_current < range.max
-	);
-	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
-
-	return AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
+	return adjusted_current;
 }
 
 function getLoadTypeParams(load_type: LoadType | 'Main'): 'at' | 'multiply-current' {
