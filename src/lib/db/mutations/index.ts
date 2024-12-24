@@ -371,3 +371,33 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 		throw error;
 	}
 }
+
+export async function changeInsulation({
+	node_id,
+	insulation,
+	type
+}: {
+	node_id: string;
+	insulation: string;
+	type: 'egc' | 'conductor';
+}) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		return await query.update({
+			$set: {
+				...(type === 'egc' && { egc_insulation: insulation }),
+				...(type === 'conductor' && { conductor_insulation: insulation })
+			}
+		});
+	} catch (error) {
+		console.error('Error changing insulation:', error);
+		throw error;
+	}
+}
