@@ -11,6 +11,12 @@ export const generic_phase_main_load_schema = z.object({
 	terminal_temperature: z.enum(DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [TerminalTemperature, ...TerminalTemperature[]], {
 		errorMap: () => ({ message: 'Please select a valid terminal temperature.' })
 	}).default('Standard Temperature'),
+	ambient_temperature: z
+	.number({
+		message: 'Please enter a valid ambient temperature.',
+		required_error: 'You need to select an ambient temperature'
+	})
+	.default(30),
 	quantity: z.number({ message: 'Please enter a valid quantity.' }).refine((value) => value > 0, {
 		message: 'Quantity must be greater than 0.'
 	}),

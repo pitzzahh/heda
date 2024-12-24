@@ -1,4 +1,10 @@
-import { computeAmpereTrip, computeVoltAmpere } from '@/utils/computations';
+import {
+	computeAdjustedCurrent,
+	computeAmpereTrip,
+	computeConductorSize,
+	computeVoltAmpere,
+	getEgcSize
+} from '@/utils/computations';
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
@@ -69,6 +75,65 @@ export async function getNodeById(target_id: string) {
 
 	if (!node) return;
 
+	// for panel
+	if (node._data && node._data.node_type === 'panel') {
+		const child_nodes = await db.nodes
+			.find({
+				selector: {
+					parent_id: node._data.id
+				}
+			})
+			.exec();
+
+		const total_values = { va: 0, current: 0 };
+
+		for (const child_node of child_nodes) {
+			const node = await getNodeById(child_node._data.id);
+			if (node) {
+				total_values.va += node.va || 0;
+				total_values.current += node.current || 0;
+			}
+		}
+
+		const data = node._data;
+		const voltage = 230;
+		const va = total_values.va;
+		const current = total_values.current;
+		const at = data.overrided_at || computeAmpereTrip(current);
+		const conductor_size =
+			data.overrided_conductor_size ||
+			computeConductorSize({
+				set: data.conductor_sets as number,
+				qty: data.conductor_qty as number,
+				current,
+				load_type: 'Main',
+				at,
+				ambient_temp: data.panel_data?.ambient_temperature || 30
+			});
+
+		const adjusted_current = computeAdjustedCurrent({
+			set: data.conductor_sets as number,
+			qty: data.conductor_qty as number,
+			current: current,
+			load_type: 'Main',
+			at: at,
+			ambient_temp: data.panel_data?.ambient_temperature || 30
+		});
+
+		return {
+			...data,
+			load_description: data.panel_data?.name || '',
+			voltage,
+			va,
+			at,
+			current: parseFloat(current.toFixed(2)),
+			conductor_size,
+			egc_size: data.overrided_egc_size || getEgcSize(at),
+			adjusted_current
+		};
+	}
+
+	// for load
 	const data = node?._data;
 	const voltage = 230; // this may change depending on phase
 	const va =
@@ -79,6 +144,26 @@ export async function getNodeById(target_id: string) {
 		}) || 0;
 	const current = va / voltage;
 	const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
+	const conductor_size =
+		data.overrided_conductor_size ||
+		computeConductorSize({
+			set: data.conductor_sets as number,
+			qty: data.conductor_qty as number,
+			current,
+			load_type: data.load_data?.load_type as LoadType | 'Main',
+			at: data?.overrided_at || at,
+			ambient_temp:
+				data.load_data?.ambient_temperature || data.panel_data?.ambient_temperature || 30
+		});
+
+	const adjusted_current = computeAdjustedCurrent({
+		set: data.conductor_sets as number,
+		qty: data.conductor_qty as number,
+		current,
+		load_type: data.load_data?.load_type as LoadType | 'Main',
+		at: data?.overrided_at || at,
+		ambient_temp: data.load_data?.ambient_temperature || data.panel_data?.ambient_temperature || 30
+	});
 
 	return {
 		...data,
@@ -86,7 +171,10 @@ export async function getNodeById(target_id: string) {
 		voltage,
 		va,
 		at,
-		current: parseFloat(current.toFixed(2))
+		current: parseFloat(current.toFixed(2)),
+		conductor_size,
+		egc_size: data.overrided_egc_size || getEgcSize(at),
+		adjusted_current
 	};
 }
 
@@ -126,11 +214,14 @@ export async function getParentNodes(excluded_id?: string) {
 }
 
 type LoadSchedule = Node & {
-	va: number;
-	current: number;
-	voltage: number;
 	load_description: string;
+	voltage: number;
+	va: number;
 	at: number;
+	current: number;
+	conductor_size: number;
+	egc_size: number;
+	adjusted_current: number;
 };
 
 export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
@@ -152,27 +243,68 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					varies: Number(data.load_data?.varies) || 0
 				}) || 0;
 			const current = va / voltage;
-			const at = computeAmpereTrip(current, data.load_data?.load_type as LoadType);
+			const at =
+				data?.overrided_at || computeAmpereTrip(current, data.load_data?.load_type as LoadType);
+			const conductor_size =
+				data.overrided_conductor_size ||
+				computeConductorSize({
+					set: data.conductor_sets as number,
+					qty: data.conductor_qty as number,
+					current,
+					load_type: data.load_data?.load_type as LoadType | 'Main',
+					at,
+					ambient_temp: data.load_data?.ambient_temperature || 30
+				});
+
+			const adjusted_current = computeAdjustedCurrent({
+				set: data.conductor_sets as number,
+				qty: data.conductor_qty as number,
+				current,
+				load_type: data.load_data?.load_type as LoadType | 'Main',
+				at,
+				ambient_temp: data.load_data?.ambient_temperature || 30
+			});
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
-				const panelLoads = await getComputedLoads(data.id);
+				const panel_loads = await getComputedLoads(data.id);
 
-				const totalLoads = panelLoads.reduce(
+				const total_loads = panel_loads.reduce(
 					(totals, load) => ({
 						va: totals.va + (load.va || 0),
 						current: totals.current + (load.current || 0)
 					}),
 					{ va: 0, current: 0 } // Default initial values
 				);
+				const main_at = data.overrided_at || computeAmpereTrip(total_loads.current);
+				const main_current = parseFloat(total_loads.current.toFixed(2));
+				const conductor_size = computeConductorSize({
+					set: data.conductor_sets as number,
+					qty: data.conductor_qty as number,
+					current: main_current,
+					load_type: 'Main',
+					at: main_at,
+					ambient_temp: data.panel_data.ambient_temperature
+				});
+				const adjusted_current = computeAdjustedCurrent({
+					set: data.conductor_sets as number,
+					qty: data.conductor_qty as number,
+					current: main_current,
+					load_type: 'Main',
+					at: main_at,
+					ambient_temp: data.panel_data.ambient_temperature
+				});
 
 				return {
 					...data,
 					load_description: data.panel_data.name || '',
 					voltage,
-					va: totalLoads.va,
-					at: computeAmpereTrip(totalLoads.current),
-					current: parseFloat(totalLoads.current.toFixed(2))
+					va: total_loads.va,
+					at: main_at,
+					current: parseFloat(total_loads.current.toFixed(2)),
+					conductor_size,
+					egc_size: data.overrided_egc_size || getEgcSize(at),
+					adjusted_current
 				};
 			}
 
@@ -182,7 +314,10 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 				voltage,
 				va,
 				at,
-				current: parseFloat(current.toFixed(2))
+				current: parseFloat(current.toFixed(2)),
+				conductor_size,
+				egc_size: data.overrided_egc_size || getEgcSize(at),
+				adjusted_current
 			};
 		})
 	);
