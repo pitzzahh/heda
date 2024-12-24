@@ -40,6 +40,7 @@ export type PhaseLoadSchedule = {
 	conductor_sets: number;
 	conductor_size: number;
 	egc_size: number;
+	adjusted_current: number
 	// ab: number;
 	// bc: number;
 	// ca: number;
