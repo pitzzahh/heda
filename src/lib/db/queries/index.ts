@@ -1,4 +1,5 @@
 import {
+	computeAdjustedCurrent,
 	computeAmpereTrip,
 	computeConductorSize,
 	computeVoltAmpere,
@@ -110,6 +111,15 @@ export async function getNodeById(target_id: string) {
 				ambient_temp: data.panel_data?.ambient_temperature || 30
 			});
 
+		const adjusted_current = computeAdjustedCurrent({
+			set: data.conductor_sets as number,
+			qty: data.conductor_qty as number,
+			current: current,
+			load_type: 'Main',
+			at: at,
+			ambient_temp: data.panel_data?.ambient_temperature || 30
+		});
+
 		return {
 			...data,
 			load_description: data.panel_data?.name || '',
@@ -118,7 +128,8 @@ export async function getNodeById(target_id: string) {
 			at,
 			current: parseFloat(current.toFixed(2)),
 			conductor_size,
-			egc_size: data.overrided_egc_size || getEgcSize(at)
+			egc_size: data.overrided_egc_size || getEgcSize(at),
+			adjusted_current
 		};
 	}
 
@@ -145,6 +156,15 @@ export async function getNodeById(target_id: string) {
 				data.load_data?.ambient_temperature || data.panel_data?.ambient_temperature || 30
 		});
 
+	const adjusted_current = computeAdjustedCurrent({
+		set: data.conductor_sets as number,
+		qty: data.conductor_qty as number,
+		current,
+		load_type: data.load_data?.load_type as LoadType | 'Main',
+		at: data?.overrided_at || at,
+		ambient_temp: data.load_data?.ambient_temperature || data.panel_data?.ambient_temperature || 30
+	});
+
 	return {
 		...data,
 		load_description: data.load_data?.load_description || '',
@@ -153,7 +173,8 @@ export async function getNodeById(target_id: string) {
 		at,
 		current: parseFloat(current.toFixed(2)),
 		conductor_size,
-		egc_size: data.overrided_egc_size || getEgcSize(at)
+		egc_size: data.overrided_egc_size || getEgcSize(at),
+		adjusted_current
 	};
 }
 
@@ -193,11 +214,14 @@ export async function getParentNodes(excluded_id?: string) {
 }
 
 type LoadSchedule = Node & {
-	va: number;
-	current: number;
-	voltage: number;
 	load_description: string;
+	voltage: number;
+	va: number;
 	at: number;
+	current: number;
+	conductor_size: number;
+	egc_size: number;
+	adjusted_current: number;
 };
 
 export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
@@ -232,6 +256,15 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					ambient_temp: data.load_data?.ambient_temperature || 30
 				});
 
+			const adjusted_current = computeAdjustedCurrent({
+				set: data.conductor_sets as number,
+				qty: data.conductor_qty as number,
+				current,
+				load_type: data.load_data?.load_type as LoadType | 'Main',
+				at,
+				ambient_temp: data.load_data?.ambient_temperature || 30
+			});
+
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
 				const panel_loads = await getComputedLoads(data.id);
@@ -253,6 +286,14 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					at: main_at,
 					ambient_temp: data.panel_data.ambient_temperature
 				});
+				const adjusted_current = computeAdjustedCurrent({
+					set: data.conductor_sets as number,
+					qty: data.conductor_qty as number,
+					current: main_current,
+					load_type: 'Main',
+					at: main_at,
+					ambient_temp: data.panel_data.ambient_temperature
+				});
 
 				return {
 					...data,
@@ -262,7 +303,8 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					at: main_at,
 					current: parseFloat(total_loads.current.toFixed(2)),
 					conductor_size,
-					egc_size: data.overrided_egc_size || getEgcSize(at)
+					egc_size: data.overrided_egc_size || getEgcSize(at),
+					adjusted_current
 				};
 			}
 
@@ -274,7 +316,8 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 				at,
 				current: parseFloat(current.toFixed(2)),
 				conductor_size,
-				egc_size: data.overrided_egc_size || getEgcSize(at)
+				egc_size: data.overrided_egc_size || getEgcSize(at),
+				adjusted_current
 			};
 		})
 	);
