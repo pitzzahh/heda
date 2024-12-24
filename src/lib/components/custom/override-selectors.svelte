@@ -9,6 +9,8 @@
 	import { overrideField } from '@/db/mutations';
 	import { invalidateAll } from '$app/navigation';
 	import { X } from 'lucide-svelte';
+	import * as Tooltip from '../ui/tooltip';
+	import { toast } from 'svelte-sonner';
 
 	// Props
 	let {
@@ -65,9 +67,12 @@
 	}
 
 	async function handleOverride() {
+		const overridden_fields: string[] = [];
+
 		if (selected_ampere_rating) {
 			if (selected_ampere_rating !== current_at) {
 				await overrideField({ node_id, field_data: selected_ampere_rating, field_type: 'at' });
+				overridden_fields.push('AT');
 			}
 
 			if (selected_conductor_size !== current_conductor_size) {
@@ -76,11 +81,17 @@
 					field_data: selected_conductor_size,
 					field_type: 'conductor_size'
 				});
-			}
-			if (selected_egc_size !== current_egc_size) {
-				await overrideField({ node_id, field_data: selected_egc_size, field_type: 'egc_size' });
+				overridden_fields.push('Conductor Size');
 			}
 
+			if (selected_egc_size !== current_egc_size) {
+				await overrideField({ node_id, field_data: selected_egc_size, field_type: 'egc_size' });
+				overridden_fields.push('EGC Size');
+			}
+
+			if (overridden_fields.length > 0) {
+				toast.success(`Overridden: ${overridden_fields.join(', ')}.`);
+			}
 			await invalidateAll();
 			closeDialog();
 		}
@@ -166,14 +177,21 @@
 			</Button>
 		</div>
 		{#if is_overridden}
-			<Button
-				class="h-8 w-full max-w-8"
-				size="sm"
-				variant="destructive"
-				onclick={handleRemoveOverride}
-			>
-				<X class="size-4" />
-			</Button>
+			<Tooltip.Provider delayDuration={100}>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<Button
+							class="h-8 w-full max-w-8"
+							size="sm"
+							variant="destructive"
+							onclick={handleRemoveOverride}
+						>
+							<X class="size-4" />
+						</Button>
+					</Tooltip.Trigger>
+					<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
 		{/if}
 	</div>
 {/snippet}
