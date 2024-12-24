@@ -30,6 +30,8 @@ const node_literal = {
 		overrided_conductor_size: { type: 'number' },
 		conductor_sets: { type: 'number', default: 1 },
 		conductor_qty: { type: 'number', default: 2 },
+		conductor_insulation: { type: 'string', default: 'THHN-Cu' },
+		egc_insulation: { type: 'string', default: 'TW-Cu' },
 		panel_data: {
 			type: 'object',
 			properties: {
