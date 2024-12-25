@@ -6,7 +6,6 @@ import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
 import { renderComponent } from '@/components/ui/data-table';
 import ConductorSetsCell from '../(components)/conductor-sets-cell.svelte';
-import { computeAmpereTrip, computeConductorSize } from '@/utils/computations';
 import InsulationsDropdown from '../(components)/insulations-dropdown.svelte';
 
 export function onePhaseMainOrWyeCols(
