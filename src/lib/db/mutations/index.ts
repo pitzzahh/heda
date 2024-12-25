@@ -135,7 +135,13 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			id,
 			overrided_at,
 			conductor_qty,
-			conductor_sets
+			conductor_sets,
+			overrided_egc_size,
+			overrided_conduit_size,
+			overrided_conductor_size,
+			conductor_insulation,
+			egc_insulation,
+			conduit_type
 		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
@@ -147,6 +153,12 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			conductor_qty,
 			conductor_sets,
 			overrided_at,
+			overrided_egc_size,
+			overrided_conduit_size,
+			overrided_conductor_size,
+			conductor_insulation,
+			egc_insulation,
+			conduit_type,
 			child_ids: []
 		});
 
@@ -308,13 +320,14 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size';
+type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | "ampere_frames";
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
 	conductor_size: 'overrided_conductor_size',
 	at: 'overrided_at',
-	conduit_size: 'overrided_conduit_size'
+	conduit_size: 'overrided_conduit_size',
+	ampere_frames: "overrided_ampere_frames"
 };
 
 export async function overrideField({
@@ -398,6 +411,27 @@ export async function changeInsulation({
 		});
 	} catch (error) {
 		console.error('Error changing insulation:', error);
+		throw error;
+	}
+}
+
+export async function changePole(node_id: string, pole: string) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		return await query.update({
+			$set: {
+				pole
+			}
+		});
+	} catch (error) {
+		console.error('Error changing pole:', error);
 		throw error;
 	}
 }
