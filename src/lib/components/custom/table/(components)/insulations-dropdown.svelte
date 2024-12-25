@@ -15,7 +15,7 @@
 	let { adjusted_current, type, current_insulation, node_id }: Props = $props();
 	let selected_insulation = $state<Insulations>(current_insulation as Insulations);
 
-	const insulations = ['TW-Cu', 'THWN-Cu', 'THHN-Cu'] as const;
+	const insulations = ['TW-Cu', 'THWN-Cu', 'THWN-2-Cu', 'THHN-Cu'] as const;
 	const insulations_to_map =
 		type === 'egc'
 			? insulations
