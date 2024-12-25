@@ -175,10 +175,14 @@
 			current_at={node.overrided_at || node.at}
 			current_conductor_size={node.overrided_conductor_size || node.conductor_size}
 			current_egc_size={node.overrided_egc_size || node.egc_size}
+			current_conduit_size={node.overrided_conduit_size || node.conduit_size}
+			current_ampere_frames={node.overrided_ampere_frames || node.ampere_frames}
 			overridden_fields={{
-				egc_size: node.overrided_egc_size ? true : false,
-				at: node.overrided_at ? true : false,
-				conductor_size: node.overrided_conductor_size ? true : false
+				egc_size: !!node.overrided_egc_size,
+				at: !!node.overrided_at,
+				conductor_size: !!node.overrided_conductor_size,
+				conduit_size: !!node.overrided_conduit_size,
+				ampere_frames: !!node.overrided_ampere_frames
 			}}
 		/>
 	</Dialog.Content>
