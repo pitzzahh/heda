@@ -9,6 +9,11 @@
     "core:default",
     "log:default",
     "process:default",
-    "updater:default"
+    "updater:default",
+    "dialog:default",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    "updater:allow-check",
+    "updater:allow-download-and-install"
   ]
 }
