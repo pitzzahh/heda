@@ -4,7 +4,8 @@ import {
 	AMPACITY_RANGES,
 	AMPACITY_TO_CONDUCTOR_SIZE,
 	AMBIENT_TEMP_RATINGS,
-	AMPERE_TRIP_TO_COPPER
+	AMPERE_TRIP_TO_COPPER,
+	CONDUIT_TABLE
 } from '@/constants';
 import type { LoadType } from '@/types/load';
 
@@ -127,8 +128,10 @@ function getLoadTypeParams(load_type: LoadType | 'Main'): 'at' | 'multiply-curre
 	return 'multiply-current';
 }
 
-function getAdjustmentFactor(numberOfConductors: number): number {
-	if (numberOfConductors <= 3) {
+
+// TODO: CREATE A SWITCH THAT CAN BE TOGGLED IN SETTINGS
+function getAdjustmentFactor(numberOfConductors: number, is_dynamic?: boolean): number {
+	if (numberOfConductors <= 3 || is_dynamic) {
 		return 1.0;
 	}
 
@@ -147,8 +150,33 @@ function getAdjustmentFactor(numberOfConductors: number): number {
 	}
 }
 
-export function getEgcSize(amperes: number): number | 'error' {
-	if (amperes <= 0) return 'error';
-	const range = AMPERE_TRIP_TO_COPPER.find((r) => amperes > r.at_threshold);
+export function getEgcSize(at: number): number | 'error' {
+	if (at <= 0) return 'error';
+	const range = AMPERE_TRIP_TO_COPPER.find((r) => at > r.at_threshold);
 	return range?.size ?? 'error';
+}
+
+export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
+	const row = CONDUIT_TABLE.conductor_rows.find((row) => row.conductor_size === conductor_size);
+
+	if (!row) {
+		return 'Invalid conductor size';
+	}
+
+	let nearest_value = Infinity;
+	let column_index = -1;
+
+	for (let i = 0; i < row.values.length; i++) {
+		const value = row.values[i];
+		if (value >= total_num_of_conductors && value < nearest_value) {
+			nearest_value = value;
+			column_index = i;
+		}
+	}
+
+	if (column_index === -1) {
+		return 'No valid conduit size found for the given total conductors.';
+	}
+
+	return CONDUIT_TABLE.conduit_columns[column_index];
 }
