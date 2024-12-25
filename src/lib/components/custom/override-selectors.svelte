@@ -2,7 +2,8 @@
 	import {
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
-		AMPERE_TRIP_TO_COPPER
+		AMPERE_TRIP_TO_COPPER,
+		CONDUIT_TABLE
 	} from '@/constants';
 	import { ArrowUp, ArrowDown } from 'svelte-radix';
 	import { Button } from '@/components/ui/button/index.js';
@@ -11,25 +12,32 @@
 	import { X } from 'lucide-svelte';
 	import * as Tooltip from '../ui/tooltip';
 	import { toast } from 'svelte-sonner';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import Input from '../ui/input/input.svelte';
 
-	// Props
 	let {
 		node_id,
 		closeDialog,
 		current_at,
 		current_conductor_size,
 		current_egc_size,
-		overridden_fields
+		overridden_fields,
+		current_conduit_size,
+		current_ampere_frames
 	}: {
 		node_id: string;
 		closeDialog: () => void;
 		current_at: number;
+		current_ampere_frames: number;
 		current_conductor_size: number;
 		current_egc_size: number;
+		current_conduit_size: number;
 		overridden_fields: {
 			egc_size: boolean;
 			at: boolean;
 			conductor_size: boolean;
+			conduit_size: boolean;
+			ampere_frames: boolean;
 		};
 	} = $props();
 
@@ -57,6 +65,19 @@
 	let egc_size_current_index = $state(egc_size_default_index);
 	let selected_egc_size = $derived(egc_sizes.at(egc_size_current_index));
 	const egc_size_last_index = egc_sizes.length - 1;
+
+	// Conduit Size
+	const conduit_sizes = CONDUIT_TABLE.conduit_columns;
+	const conduit_size_default_index = conduit_sizes.findIndex(
+		(size) => current_conduit_size === size
+	);
+	let conduit_size_current_index = $state(conduit_size_default_index);
+	let selected_conduit_size = $derived(conduit_sizes.at(conduit_size_current_index));
+	const conduit_size_last_index = conduit_sizes.length - 1;
+
+	// Ampere Frames(AF)
+	let ampere_frames = $state(current_ampere_frames.toString());
+	const ampere_frames_ratings = ['50', '100', '125', '250', '400', '600', '800', '1000', '1200'];
 
 	function handleIncrement(currentIndex: number, lastIndex: number): number {
 		return currentIndex === lastIndex ? 0 : currentIndex + 1;
@@ -89,17 +110,43 @@
 				overridden_fields.push('EGC Size');
 			}
 
+			if (selected_conduit_size !== current_conduit_size) {
+				await overrideField({
+					node_id,
+					field_data: selected_conduit_size,
+					field_type: 'conduit_size'
+				});
+				overridden_fields.push('Conduit Size');
+			}
+
+			if (ampere_frames !== current_ampere_frames.toString()) {
+				await overrideField({
+					node_id,
+					field_data: Number(ampere_frames),
+					field_type: 'ampere_frames'
+				});
+				overridden_fields.push('Ampere Frames (AT)');
+			}
+
 			if (overridden_fields.length > 0) {
 				toast.success(`Overridden: ${overridden_fields.join(', ')}.`);
 			}
+
 			await invalidateAll();
 			closeDialog();
 		}
 	}
+	async function removeOverride(
+		field_type: 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames'
+	) {
+		const formatted_field = field_type
+			.split('_')
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
 
-	async function removeOverride(field_type: 'egc_size' | 'conductor_size' | 'at' | 'conduit_size') {
 		await overrideField({ node_id, field_type, unoverride: true });
 		await invalidateAll();
+		toast.success(`Removed override for ${formatted_field}`);
 	}
 </script>
 
@@ -148,6 +195,62 @@
 			handleIncrement: () =>
 				(egc_size_current_index = handleIncrement(egc_size_current_index, egc_size_last_index))
 		})}
+	</div>
+
+	<!-- Conduit Size Selector -->
+	<div class="grid gap-2">
+		<p class="text-sm">Conduit Size</p>
+		{@render Selector({
+			selected_value: selected_conduit_size,
+			is_overridden: overridden_fields.conduit_size,
+			handleRemoveOverride: () => removeOverride('conduit_size'),
+			handleDecrement: () =>
+				(conduit_size_current_index = handleDecrement(
+					conduit_size_current_index,
+					conduit_size_last_index
+				)),
+			handleIncrement: () =>
+				(conduit_size_current_index = handleIncrement(
+					conduit_size_current_index,
+					conduit_size_last_index
+				))
+		})}
+	</div>
+
+	<!-- Ampere Frames(AF) Selector -->
+	<div>
+		<p class="text-sm">Ampere Frames (AF)</p>
+		<div class="flex items-center gap-2">
+			<Input type="text" bind:value={ampere_frames} />
+			<Select.Root type="single" bind:value={ampere_frames}>
+				<Select.Trigger class="w-[40px] text-xs"></Select.Trigger>
+				<Select.Content class="text-sm">
+					{#each ampere_frames_ratings as ampere_frame, i (i)}
+						<Select.Item value={ampere_frame} disabled={ampere_frames === ampere_frame}>
+							{ampere_frame}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+
+			{#if overridden_fields.ampere_frames}
+				<Tooltip.Provider delayDuration={100}>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Button
+								class="h-8 w-full max-w-8"
+								size="sm"
+								variant="destructive"
+								onclick={() => removeOverride('ampere_frames')}
+							>
+								<X class="size-4" />
+							</Button>
+						</Tooltip.Trigger>
+						<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
+			{/if}
+		</div>
 	</div>
 
 	<Button class="w-full" onclick={handleOverride}>Override</Button>
