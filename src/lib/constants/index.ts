@@ -241,6 +241,36 @@ export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	530: 500
 };
 
+
+export const CONDUIT_TABLE = {
+	conduit_columns: [16, 21, 27, 35, 41, 53, 63, 78, 91, 103, 128, 155],
+	conductor_rows: [
+		{ conductor_size: 2, values: [9, 17, 28, 51, 70, 118, 170, 265, 358, 464, 736, 1055] },
+		{ conductor_size: 3.5, values: [6, 12, 20, 37, 51, 86, 124, 193, 261, 338, 537, 770] },
+		{ conductor_size: 5.5, values: [4, 7, 13, 23, 32, 54, 78, 122, 164, 213, 338, 485] },
+		{ conductor_size: 8, values: [2, 4, 7, 13, 18, 31, 45, 70, 95, 123, 195, 279] },
+		{ conductor_size: 14, values: [2, 3, 5, 9, 13, 22, 32, 51, 68, 89, 141, 202] },
+		{ conductor_size: 22, values: [1, 1, 3, 6, 8, 14, 20, 33, 42, 54, 86, 124] },
+		{ conductor_size: 30, values: [1, 1, 2, 4, 6, 10, 14, 22, 30, 39, 61, 88] },
+		{ conductor_size: 38, values: [1, 1, 1, 3, 4, 7, 10, 16, 22, 29, 45, 65] },
+		{ conductor_size: 50, values: [0, 1, 1, 2, 3, 6, 9, 14, 18, 24, 38, 55] },
+		{ conductor_size: 60, values: [0, 1, 1, 1, 3, 5, 7, 11, 15, 20, 32, 46] },
+		{ conductor_size: 80, values: [0, 1, 1, 1, 2, 4, 6, 9, 13, 17, 26, 38] },
+		{ conductor_size: 100, values: [0, 0, 1, 1, 2, 3, 5, 8, 11, 15, 23, 34] },
+		{ conductor_size: 125, values: [0, 0, 1, 1, 1, 2, 4, 6, 9, 11, 19, 28] },
+		{ conductor_size: 150, values: [0, 0, 0, 1, 1, 2, 3, 5, 7, 9, 15, 22] },
+		{ conductor_size: 175, values: [0, 0, 0, 1, 1, 1, 3, 5, 6, 8, 13, 19] },
+		{ conductor_size: 200, values: [0, 0, 0, 1, 1, 1, 2, 4, 6, 8, 11, 17] },
+		{ conductor_size: 250, values: [0, 0, 0, 0, 1, 1, 2, 3, 5, 6, 9, 14] },
+		{ conductor_size: 300, values: [0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 8, 12] },
+		{ conductor_size: 325, values: [0, 0, 0, 0, 1, 1, 1, 3, 4, 5, 7, 11] },
+		{ conductor_size: 350, values: [0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 6, 10] },
+		{ conductor_size: 400, values: [0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 6, 9] },
+		{ conductor_size: 500, values: [0, 0, 0, 0, 0, 1, 1, 1, 2, 3, 5, 7] }
+	]
+};
+
+
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(
 	default_hp_current_relationship
 ).map(([hp, current]) => ({ hp, current }));
