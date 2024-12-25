@@ -8,6 +8,7 @@ import type { Node } from '@/db/schema';
 import { AddLoadDialog } from '@/components/custom/load';
 import AtFooterCell from './(components)/at-footer-cell.svelte';
 import InsulationsDropdown from './(components)/insulations-dropdown.svelte';
+import PoleDropdown from './(components)/pole-dropdown.svelte';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -131,14 +132,21 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				}
 			},
 			{
-				accessorKey: 'af',
+				accessorKey: 'ampere_frames',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
 				footer: (props) => ''
 			},
 			{
 				accessorKey: 'pole',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const data = info.row.original;
+					return renderComponent(PoleDropdown, {
+						current_pole: data.pole as '1' | '2',
+						node_id: data.id
+					});
+				},
+
 				header: () => 'Pole',
 				footer: (props) => ''
 			},
@@ -195,7 +203,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_size',
 				cell: (info) => info.getValue(),
 				header: () => 'SIZE',
-				footer: (props) => ''
+				footer: (props) => current_node.conduit_size
 			},
 			{
 				accessorKey: 'conduit_type',
