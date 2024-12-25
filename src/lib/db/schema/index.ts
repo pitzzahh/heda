@@ -30,8 +30,12 @@ const node_literal = {
 		overrided_conductor_size: { type: 'number' },
 		conductor_sets: { type: 'number', default: 1 },
 		conductor_qty: { type: 'number', default: 2 },
+		overrided_ampere_frames: { type: 'number' },
 		conductor_insulation: { type: 'string', default: 'THHN-Cu' },
 		egc_insulation: { type: 'string', default: 'TW-Cu' },
+		conduit_type: { type: 'string', default: 'PVC' },
+		pole: { type: 'string', default: '2' },
+		kaic: { type: 'string', default: '5' },
 		panel_data: {
 			type: 'object',
 			properties: {
