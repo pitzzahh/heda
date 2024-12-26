@@ -1,12 +1,6 @@
 name: "publish"
 
 on:
-  workflow_dispatch:
-    inputs:
-      PLATFORMS:
-        description: 'Platforms to build (comma-separated)'
-        required: false
-        type: string
   push:
     tags:
       - "*.*.*"
@@ -22,36 +16,38 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          if [ -n "${{ github.event.client_payload.PLATFORMS }}" ]; then
-            # Convert comma-separated platforms to JSON array
-            PLATFORMS_JSON="$(echo "${{ github.event.client_payload.PLATFORMS }}" | jq -R 'split(",")')"
+          if [ -n "${{ github.event.head_commit.message }}" ]; then
+            # Extract PLATFORMS from commit message if it exists
+            PLATFORMS=$(echo "${{ github.event.head_commit.message }}" | grep -oP 'PLATFORMS=\K[^,\s]+(?:,[^,\s]+)*' || echo "")
             
-            # Create matrix configuration dynamically
-            matrix="{\"include\":["
-            for platform in $(echo "${{ github.event.client_payload.PLATFORMS }}" | tr ',' '\n'); do
-              case $platform in
-                "macos-latest")
-                  matrix="$matrix{\"platform\":\"macos-latest\",\"args\":\"--target aarch64-apple-darwin\"},{\"platform\":\"macos-latest\",\"args\":\"--target x86_64-apple-darwin\"},"
-                  ;;
-                "ubuntu-22.04")
-                  matrix="$matrix{\"platform\":\"ubuntu-22.04\",\"args\":\"\"},"
-                  ;;
-                "windows-latest")
-                  matrix="$matrix{\"platform\":\"windows-latest\",\"args\":\"\"},"
-                  ;;
-              esac
-            done
-            matrix="${matrix%,}]}"
-          else
-            # Default matrix if no platforms specified
-            matrix='{
-              "include": [
-                {"platform": "macos-latest", "args": "--target aarch64-apple-darwin"},
-                {"platform": "macos-latest", "args": "--target x86_64-apple-darwin"},
-                {"platform": "ubuntu-22.04", "args": ""},
-                {"platform": "windows-latest", "args": ""}
-              ]
-            }'
+            if [ -n "$PLATFORMS" ]; then
+              # Create matrix configuration dynamically
+              matrix="{\"include\":["
+              for platform in $(echo "$PLATFORMS" | tr ',' '\n'); do
+                case $platform in
+                  "macos-latest")
+                    matrix="$matrix{\"platform\":\"macos-latest\",\"args\":\"--target aarch64-apple-darwin\"},{\"platform\":\"macos-latest\",\"args\":\"--target x86_64-apple-darwin\"},"
+                    ;;
+                  "ubuntu-22.04")
+                    matrix="$matrix{\"platform\":\"ubuntu-22.04\",\"args\":\"\"},"
+                    ;;
+                  "windows-latest")
+                    matrix="$matrix{\"platform\":\"windows-latest\",\"args\":\"\"},"
+                    ;;
+                esac
+              done
+              matrix="${matrix%,}]}"
+            else
+              # Default matrix if no platforms specified
+              matrix='{
+                "include": [
+                  {"platform": "macos-latest", "args": "--target aarch64-apple-darwin"},
+                  {"platform": "macos-latest", "args": "--target x86_64-apple-darwin"},
+                  {"platform": "ubuntu-22.04", "args": ""},
+                  {"platform": "windows-latest", "args": ""}
+                ]
+              }'
+            fi
           fi
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
