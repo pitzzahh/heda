@@ -5,15 +5,14 @@
 		AMPERE_TRIP_TO_COPPER,
 		CONDUIT_TABLE
 	} from '@/constants';
-	import { ArrowUp, ArrowDown } from 'svelte-radix';
+	import { ChevronUp, ChevronDown, X } from '@/assets/icons';
 	import { Button } from '@/components/ui/button/index.js';
 	import { overrideField } from '@/db/mutations';
-	import { invalidate, invalidateAll } from '$app/navigation';
-	import { X } from 'lucide-svelte';
-	import * as Tooltip from '../ui/tooltip';
+	import { invalidate } from '$app/navigation';
+	import * as Tooltip from '@/components/ui/tooltip';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import Input from '../ui/input/input.svelte';
+	import Input from '@/components/ui/input/input.svelte';
 
 	let {
 		node_id,
@@ -273,11 +272,11 @@
 	<div class="flex items-center gap-2">
 		<div class="flex w-full items-center justify-center gap-2">
 			<Button class="h-8 w-full max-w-8" size="icon" onclick={handleDecrement}>
-				<ArrowDown class="size-4" />
+				<ChevronDown class="size-4" />
 			</Button>
 			<p class="w-full min-w-12 border py-1 text-center">{selected_value}</p>
 			<Button class="h-8 w-full max-w-8" size="sm" onclick={handleIncrement}>
-				<ArrowUp class="size-4" />
+				<ChevronUp class="size-4" />
 			</Button>
 		</div>
 		{#if is_overridden}
