@@ -20,8 +20,6 @@
 
 	let { project }: { project?: Project } = $props();
 
-
-
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
 		{ name: 'Excel', value: 'excel', bg: 'bg-[#20B356]' }
@@ -37,7 +35,7 @@
 		project?.settings.is_adjustment_factor_constant || false
 	);
 	let has_changes = $derived(
-		project?.settings.is_adjustment_factor_constant !== is_adjustment_factor_constant
+		project && project.settings.is_adjustment_factor_constant !== is_adjustment_factor_constant
 	);
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -131,28 +129,32 @@
 								</Select.Root>
 							</div>
 						</div>
-						<Button
-							onclick={async () => {
-								update_state = 'processing';
-								app_update = await checkForUpdates();
-								console.log('app_update', app_update);
-								update_state = app_update ? 'available' : 'no_updates';
-							}}
-						>
-							<Loader
-								class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-									block: update_state === 'processing'
-								})}
-							/>
-							<span>{update_state === 'processing' ? 'Checking' : 'Check for updates'}</span>
-							<span>
-								{#if update_state === 'available'}
-									<span class="text-xs text-blue-500">v{app_update?.version}</span>
-								{:else if update_state === 'no_updates'}
-									<span class="text-xs text-green-500">No updates available</span>
-								{/if}
-							</span>
-						</Button>
+						<Separator class="my-4 w-full" />
+						<div class="flex flex-col gap-2">
+							<p class="font-semibold">App Version</p>
+							<Button
+								onclick={async () => {
+									update_state = 'processing';
+									app_update = await checkForUpdates();
+									console.log('app_update', app_update);
+									update_state = app_update ? 'available' : 'no_updates';
+								}}
+							>
+								<Loader
+									class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+										block: update_state === 'processing'
+									})}
+								/>
+								<span>{update_state === 'processing' ? 'Checking' : 'Check for updates'}</span>
+								<span>
+									{#if update_state === 'available'}
+										<span class="text-xs text-blue-500">v{app_update?.version}</span>
+									{:else if update_state === 'no_updates'}
+										<span class="text-xs text-green-500">No updates available</span>
+									{/if}
+								</span>
+							</Button>
+						</div>
 					</div>
 				</Dialog.Content>
 			</Dialog.Root>
