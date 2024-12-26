@@ -23,3 +23,6 @@ export { default as CircleAlert } from 'lucide-svelte/icons/circle-alert';
 export { default as Grid2x2Plus } from 'lucide-svelte/icons/grid-2x2-plus';
 export { default as Copy } from 'lucide-svelte/icons/copy';
 export { default as Loader } from 'lucide-svelte/icons/loader';
+export { default as X } from 'lucide-svelte/icons/x';
+export { default as ChevronUp } from 'lucide-svelte/icons/chevron-up';
+export { default as ChevronUDown} from 'lucide-svelte/icons/chevron-down';
