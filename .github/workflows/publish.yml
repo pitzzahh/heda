@@ -1,6 +1,12 @@
 name: "publish"
 
 on:
+  workflow_dispatch:
+    inputs:
+      PLATFORMS:
+        description: 'Platforms to build (comma-separated)'
+        required: false
+        type: string
   push:
     tags:
       - "*.*.*"
