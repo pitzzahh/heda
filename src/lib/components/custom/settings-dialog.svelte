@@ -17,6 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
+	import * as pj from '../../../../package.json';
 
 	let { project }: { project?: Project } = $props();
 
@@ -62,11 +63,9 @@
 				</Dialog.Trigger>
 				<Dialog.Content class="sm:max-w-[425px]">
 					<Dialog.Header>
-						<Dialog.Title>Settings</Dialog.Title>
-						<Dialog.Description>Set your preferences in the application</Dialog.Description>
+						<Dialog.Title class="text-center">Settings</Dialog.Title>
+						<Dialog.Description class="text-center">Set your preferences in the application</Dialog.Description>
 					</Dialog.Header>
-
-					<div>
 						<div class="flex flex-col gap-2">
 							<p class="font-semibold">Project</p>
 							<div class="flex flex-col gap-3">
@@ -90,7 +89,7 @@
 								</p>
 							</div>
 						</div>
-						<Separator class="my-4 w-full" />
+						<Separator class="my-1 w-full" />
 						<div class="flex flex-col gap-3">
 							<p class="font-semibold">Preferences</p>
 							<div class="flex flex-col gap-3">
@@ -129,9 +128,10 @@
 								</Select.Root>
 							</div>
 						</div>
-						<Separator class="my-4 w-full" />
+						<Separator class="my-1 w-full" />
 						<div class="flex flex-col gap-2">
 							<p class="font-semibold">App Version</p>
+							<span>v{pj.version}</span>
 							<svelte:boundary>
 								<Button
 									onclick={async () => {
@@ -161,7 +161,6 @@
 								{/snippet}
 							</svelte:boundary>
 						</div>
-					</div>
 				</Dialog.Content>
 			</Dialog.Root>
 		</Tooltip.Trigger>
