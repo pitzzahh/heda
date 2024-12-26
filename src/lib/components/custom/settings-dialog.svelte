@@ -132,28 +132,34 @@
 						<Separator class="my-4 w-full" />
 						<div class="flex flex-col gap-2">
 							<p class="font-semibold">App Version</p>
-							<Button
-								onclick={async () => {
-									update_state = 'processing';
-									app_update = await checkForUpdates();
-									console.log('app_update', app_update);
-									update_state = app_update ? 'available' : 'no_updates';
-								}}
-							>
-								<Loader
-									class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-										block: update_state === 'processing'
-									})}
-								/>
-								<span>{update_state === 'processing' ? 'Checking' : 'Check for updates'}</span>
-								<span>
-									{#if update_state === 'available'}
-										<span class="text-xs text-blue-500">v{app_update?.version}</span>
-									{:else if update_state === 'no_updates'}
-										<span class="text-xs text-green-500">No updates available</span>
-									{/if}
-								</span>
-							</Button>
+							<svelte:boundary>
+								<Button
+									onclick={async () => {
+										update_state = 'processing';
+										app_update = await checkForUpdates();
+										console.log('app_update', app_update);
+										update_state = app_update ? 'available' : 'no_updates';
+									}}
+								>
+									<Loader
+										class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+											block: update_state === 'processing'
+										})}
+									/>
+									<span>{update_state === 'processing' ? 'Checking' : 'Check for updates'}</span>
+									<span>
+										{#if update_state === 'available'}
+											<span class="text-xs text-blue-500">v{app_update?.version}</span>
+										{:else if update_state === 'no_updates'}
+											<span class="text-xs text-green-500">No updates available</span>
+										{/if}
+									</span>
+								</Button>
+								{#snippet failed(error, reset)}
+									<p class="text-sm text-muted-foreground">{error}</p>
+									<Button onclick={reset}>oops! try again</Button>
+								{/snippet}
+							</svelte:boundary>
 						</div>
 					</div>
 				</Dialog.Content>
