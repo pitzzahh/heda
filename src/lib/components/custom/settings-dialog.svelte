@@ -9,6 +9,7 @@
 	import type { Settings } from '@/types/settings';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
+	import { ViewChangelog } from '.';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import type { Project } from '@/db/schema';
@@ -132,7 +133,10 @@
 					</div>
 					<Separator class="my-1 w-full" />
 					<div class="flex flex-col gap-2">
-						<p class="font-semibold">App Version</p>
+						<div class="flex items-center justify-between">
+							<p class="font-semibold">App Version</p>
+							<ViewChangelog />
+						</div>
 						<span>v{pj.version}</span>
 						<svelte:boundary>
 							<Button
