@@ -11,9 +11,18 @@ const project_schema_literal = {
 	properties: {
 		id: { type: 'string', maxLength: 100 },
 		project_name: { type: 'string' },
+		settings: {
+			type: 'object',
+			properties: {
+				is_adjustment_factor_constant: {
+					type: 'boolean',
+					default: false
+				}
+			}
+		},
 		root_node_id: { type: 'string' }
 	},
-	required: ['id', 'root_node_id']
+	required: ['id', 'root_node_id', 'settings']
 } as const;
 
 const node_literal = {

@@ -19,7 +19,10 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		const project = await database.projects.insert({
 			id: createId(),
 			root_node_id: created_root_node._data.id,
-			project_name: 'Untitled'
+			project_name: 'Untitled',
+			settings: {
+				is_adjustment_factor_constant: false
+			}
 		});
 
 		return {
@@ -28,6 +31,32 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		};
 	} catch (error) {
 		console.error('Error creating a project:', error);
+		throw error;
+	}
+}
+
+export async function updateProjectSettings(
+	project_id: string,
+	settings: {
+		is_adjustment_factor_constant: boolean;
+	}
+) {
+	const database = await databaseInstance();
+
+	try {
+		const project = database.projects.findOne({
+			selector: {
+				id: project_id
+			}
+		});
+
+		return await project.update({
+			$set: {
+				settings
+			}
+		});
+	} catch (error) {
+		console.error('Error in updating project settings:', error);
 		throw error;
 	}
 }
@@ -320,14 +349,14 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | "ampere_frames";
+type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
 	conductor_size: 'overrided_conductor_size',
 	at: 'overrided_at',
 	conduit_size: 'overrided_conduit_size',
-	ampere_frames: "overrided_ampere_frames"
+	ampere_frames: 'overrided_ampere_frames'
 };
 
 export async function overrideField({
