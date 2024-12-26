@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.22] - 2024-12-26
+
+## Add
+
+- Add Ampere Trip overriding feature.
+- Add Ampere Trip indicator on load schedule.
+- Computation of EGC Size
+- Computation of Conductor Size
+- Computation of Conduit Size
+- Refactoring Node Retrieval by ID
+- Overriding Data in EGC Size, Conduit, Ampere Frames and Conductor
+- Changing Insulations for EGC and Conductor
+- Add default values of kAIC, pole, conduit type, and ampere frames
+- Implement Adjustment Factor toggle in app settings
+- In app update
+
 ## [0.1.21] - 2024-12-20
 
 ## Add
