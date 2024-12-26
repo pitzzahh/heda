@@ -65,7 +65,8 @@ export function computeConductorSize({
 	qty,
 	load_type,
 	at,
-	current
+	current,
+	is_adjustment_factor_constant
 }: {
 	set: number;
 	qty: number;
@@ -73,6 +74,7 @@ export function computeConductorSize({
 	load_type: LoadType | 'Main';
 	at: number;
 	current: number;
+	is_adjustment_factor_constant: boolean;
 }) {
 	const adjusted_current = computeAdjustedCurrent({
 		set,
@@ -80,7 +82,8 @@ export function computeConductorSize({
 		qty,
 		load_type,
 		at,
-		current
+		current,
+		is_adjustment_factor_constant
 	});
 
 	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
@@ -98,7 +101,8 @@ export function computeAdjustedCurrent({
 	qty,
 	load_type,
 	at,
-	current
+	current,
+	is_adjustment_factor_constant
 }: {
 	set: number;
 	qty: number;
@@ -106,13 +110,17 @@ export function computeAdjustedCurrent({
 	load_type: LoadType | 'Main';
 	at: number;
 	current: number;
+	is_adjustment_factor_constant: boolean;
 }) {
 	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
 
 	const correction_factor =
 		AMBIENT_TEMP_RATINGS.find((temp_rating) => ambient_temp <= temp_rating.max_temp)?.factor ?? 1; // digdi ang usage kang ambient temp
-	const adjustment_factor = getAdjustmentFactor(total_num_of_conductors);
+	const adjustment_factor = getAdjustmentFactor(
+		total_num_of_conductors,
+		is_adjustment_factor_constant
+	);
 
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
@@ -128,10 +136,11 @@ function getLoadTypeParams(load_type: LoadType | 'Main'): 'at' | 'multiply-curre
 	return 'multiply-current';
 }
 
-
-// TODO: CREATE A SWITCH THAT CAN BE TOGGLED IN SETTINGS
-function getAdjustmentFactor(numberOfConductors: number, is_dynamic?: boolean): number {
-	if (numberOfConductors <= 3 || is_dynamic) {
+function getAdjustmentFactor(
+	numberOfConductors: number,
+	is_adjustment_factor_constant?: boolean
+): number {
+	if (numberOfConductors <= 3 || is_adjustment_factor_constant) {
 		return 1.0;
 	}
 
