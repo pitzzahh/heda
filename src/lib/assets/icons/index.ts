@@ -27,3 +27,4 @@ export { default as X } from 'lucide-svelte/icons/x';
 export { default as ChevronUp } from 'lucide-svelte/icons/chevron-up';
 export { default as ChevronDown } from 'lucide-svelte/icons/chevron-down';
 export { default as FileClock } from 'lucide-svelte/icons/file-clock';
+export { default as History } from 'lucide-svelte/icons/history';
