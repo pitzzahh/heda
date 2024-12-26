@@ -7,7 +7,7 @@
 </script>
 
 <Drawer.Root>
-	<Drawer.Trigger class={buttonVariants({ size: 'sm' })}>
+	<Drawer.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>
 		<History />
 		View Changelog
 	</Drawer.Trigger>
