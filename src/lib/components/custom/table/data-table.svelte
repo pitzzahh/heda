@@ -7,9 +7,10 @@
 	type DataTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
 		data: TData[];
+		is_root_node: boolean;
 	};
 
-	let { data, columns }: DataTableProps<TData, TValue> = $props();
+	let { data, columns, is_root_node }: DataTableProps<TData, TValue> = $props();
 
 	const table = createSvelteTable({
 		get data() {
@@ -68,7 +69,7 @@
 			{/each}
 		</Table.Body>
 
-		{#if data.length > 0}
+		{#if data.length > 0 && !is_root_node}
 			<Table.Footer class="border-t bg-muted/10">
 				{#each table.getFooterGroups() as footerGroup, i (i)}
 					{#if i === 0}

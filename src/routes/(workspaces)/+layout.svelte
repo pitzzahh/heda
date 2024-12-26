@@ -19,13 +19,12 @@
 
 	let { data, children } = $props();
 
-	const { is_new_file, project, is_load_file, generic_phase_panel_form, phase_main_load_form } =
-		data;
+	const { is_new_file, is_load_file, generic_phase_panel_form, phase_main_load_form } = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
 
-	let project_title = $state(project?.project_name || 'Untitled');
+	let project_title = $state(data?.project?.project_name || 'Untitled');
 
 	function toggleEdit() {
 		is_editing = !is_editing;
@@ -35,8 +34,8 @@
 	}
 
 	async function saveProjectTitle() {
-		if (!project || !project_title) return;
-		await updateProjectTitle(project?.id, project_title);
+		if (!data?.project || !project_title) return;
+		await updateProjectTitle(data.project.id, project_title);
 		await invalidateAll();
 		toggleEdit();
 	}
@@ -56,7 +55,7 @@
 
 <Sidebar.Provider>
 	<AppSidebar
-		{project}
+		project={data.project}
 		root_node={data.root_node as Node}
 		{generic_phase_panel_form}
 		{phase_main_load_form}

@@ -7,6 +7,9 @@
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import type { Project } from '@/db/schema';
+
+	let { project }: { project?: Project } = $props();
 
 	const settingsState = getSettingsState();
 
@@ -51,7 +54,8 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 
-		<SettingsDialog />
+		<SettingsDialog {project} />
+
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
 				<Sun

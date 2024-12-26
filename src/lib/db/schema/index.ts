@@ -11,9 +11,18 @@ const project_schema_literal = {
 	properties: {
 		id: { type: 'string', maxLength: 100 },
 		project_name: { type: 'string' },
+		settings: {
+			type: 'object',
+			properties: {
+				is_adjustment_factor_constant: {
+					type: 'boolean',
+					default: false
+				}
+			}
+		},
 		root_node_id: { type: 'string' }
 	},
-	required: ['id', 'root_node_id']
+	required: ['id', 'root_node_id', 'settings']
 } as const;
 
 const node_literal = {
@@ -25,23 +34,40 @@ const node_literal = {
 		node_type: { type: 'string' },
 		circuit_number: { type: 'number' },
 		overrided_at: { type: 'number' },
+		overrided_egc_size: { type: 'number' },
+		overrided_conduit_size: { type: 'number' },
+		overrided_conductor_size: { type: 'number' },
 		conductor_sets: { type: 'number', default: 1 },
 		conductor_qty: { type: 'number', default: 2 },
+		overrided_ampere_frames: { type: 'number' },
+		conductor_insulation: { type: 'string', default: 'THHN-Cu' },
+		egc_insulation: { type: 'string', default: 'TW-Cu' },
+		conduit_type: { type: 'string', default: 'PVC' },
+		pole: { type: 'string', default: '2' },
+		kaic: { type: 'string', default: '5' },
 		panel_data: {
 			type: 'object',
 			properties: {
 				name: { type: 'string' },
 				terminal_temperature: { type: 'string' },
+				ambient_temperature: { type: 'number' },
 				phase: { type: 'string' }
 			},
 			additionalProperties: false,
-			required: ['name', 'terminal_temperature', 'terminal_temperature', 'phase']
+			required: [
+				'name',
+				'terminal_temperature',
+				'terminal_temperature',
+				'phase',
+				'ambient_temperature'
+			]
 		},
 		load_data: {
 			type: 'object',
 			properties: {
 				load_description: { type: 'string' },
 				terminal_temperature: { type: 'string' },
+				ambient_temperature: { type: 'number' },
 				quantity: { type: 'number' },
 				varies: { type: 'string' },
 				continuous: { type: 'boolean' },
@@ -56,7 +82,8 @@ const node_literal = {
 				'varies',
 				'continuous',
 				'load_type',
-				'config_preference'
+				'config_preference',
+				'ambient_temperature'
 			]
 		},
 		// this object should be present if it is root node

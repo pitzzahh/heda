@@ -4,7 +4,7 @@
 	import { Button } from '@/components/ui/button';
 	import { Ellipsis, Pencil, Trash2, Copy } from '@/assets/icons';
 	import { copyAndAddNodeById, removeNode } from '@/db/mutations';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
 	import type { Node } from '@/db/schema';
 	import { ConfirmationDialog } from '@/components/custom';
@@ -17,8 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import { RefreshCcw } from 'lucide-svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import StandardAmpereRatingsSelector from '../../standard_ampere-ratings-selector.svelte';
-	import { overrideLoadAmpereTrip } from '@/db/mutations';
+	import OverrideSelectors from '../../override-selectors.svelte';
 
 	let {
 		node,
@@ -33,7 +32,7 @@
 	const phase = highest_unit?.phase;
 
 	let is_update_dialog_open = $state(false);
-	let is_override_at_dialog_open = $state(false);
+	let is_override_dialog_open = $state(false);
 	let open_dropdown_menu = $state(false);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
@@ -50,7 +49,7 @@
 
 	async function handleRemoveLoad() {
 		await removeNode(node.id);
-		await invalidateAll();
+		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 	}
 </script>
@@ -75,7 +74,7 @@
 					<DropdownMenu.Item
 						onclick={async () => {
 							await copyAndAddNodeById(node.id);
-							await invalidateAll();
+							invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 						}}
 					>
 						<Copy class="ml-2 size-4" />
@@ -83,23 +82,23 @@
 					</DropdownMenu.Item>
 				{/if}
 
-				<DropdownMenu.Item onclick={() => (is_override_at_dialog_open = true)}>
+				<DropdownMenu.Item onclick={() => (is_override_dialog_open = true)}>
 					<RefreshCcw class="ml-2 size-4" />
-					Override AT
+					Override
 				</DropdownMenu.Item>
 
-				{#if !!node.overrided_at}
+				<!-- {#if !!node.overrided_at}
 					<DropdownMenu.Item
 						class="!text-red-500 hover:!bg-red-500/20"
 						onclick={async () => {
-							await overrideLoadAmpereTrip({ node_id: node.id, unoverride: true });
+							await overrideField({ node_id: node.id, unoverride: true, field_type: 'at' });
 							await invalidateAll();
 						}}
 					>
 						<RefreshCcw class="ml-2 size-4" />
 						Remove Overrided AT
 					</DropdownMenu.Item>
-				{/if}
+				{/if} -->
 
 				{#if node.node_type === 'load'}
 					<DropdownMenu.Item class="mt-0.5 p-0">
@@ -160,19 +159,31 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root {...props} bind:open={is_override_at_dialog_open}>
-	<Dialog.Content class="max-w-[350px]">
+<Dialog.Root {...props} bind:open={is_override_dialog_open}>
+	{console.log(node)}
+	<Dialog.Content class="max-w-[450px]">
 		<Dialog.Header>
-			<Dialog.Title>Override AT</Dialog.Title>
+			<Dialog.Title>Override</Dialog.Title>
 			<Dialog.Description>
-				Override the AT of <span class="font-semibold">{node.load_description}</span>
+				Override the data of <span class="font-semibold">{node.load_description}</span>
 			</Dialog.Description>
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
-		<StandardAmpereRatingsSelector
-			closeDialog={() => (is_override_at_dialog_open = false)}
+		<OverrideSelectors
+			closeDialog={() => (is_override_dialog_open = false)}
 			node_id={node.id}
 			current_at={node.overrided_at || node.at}
+			current_conductor_size={node.overrided_conductor_size || node.conductor_size}
+			current_egc_size={node.overrided_egc_size || node.egc_size}
+			current_conduit_size={node.overrided_conduit_size || node.conduit_size}
+			current_ampere_frames={node.overrided_ampere_frames || node.ampere_frames}
+			overridden_fields={{
+				egc_size: !!node.overrided_egc_size,
+				at: !!node.overrided_at,
+				conductor_size: !!node.overrided_conductor_size,
+				conduit_size: !!node.overrided_conduit_size,
+				ampere_frames: !!node.overrided_ampere_frames
+			}}
 		/>
 	</Dialog.Content>
 </Dialog.Root>

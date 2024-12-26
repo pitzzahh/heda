@@ -19,7 +19,10 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		const project = await database.projects.insert({
 			id: createId(),
 			root_node_id: created_root_node._data.id,
-			project_name: 'Untitled'
+			project_name: 'Untitled',
+			settings: {
+				is_adjustment_factor_constant: false
+			}
 		});
 
 		return {
@@ -28,6 +31,32 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		};
 	} catch (error) {
 		console.error('Error creating a project:', error);
+		throw error;
+	}
+}
+
+export async function updateProjectSettings(
+	project_id: string,
+	settings: {
+		is_adjustment_factor_constant: boolean;
+	}
+) {
+	const database = await databaseInstance();
+
+	try {
+		const project = database.projects.findOne({
+			selector: {
+				id: project_id
+			}
+		});
+
+		return await project.update({
+			$set: {
+				settings
+			}
+		});
+	} catch (error) {
+		console.error('Error in updating project settings:', error);
 		throw error;
 	}
 }
@@ -127,7 +156,22 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			next_circuit_num++;
 		}
 
-		const { load_data, panel_data, node_type, parent_id, id } = existing_node._data;
+		const {
+			load_data,
+			panel_data,
+			node_type,
+			parent_id,
+			id,
+			overrided_at,
+			conductor_qty,
+			conductor_sets,
+			overrided_egc_size,
+			overrided_conduit_size,
+			overrided_conductor_size,
+			conductor_insulation,
+			egc_insulation,
+			conduit_type
+		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
 			node_type,
@@ -135,6 +179,15 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			panel_data,
 			load_data,
 			parent_id: sub_parent_id || parent_id,
+			conductor_qty,
+			conductor_sets,
+			overrided_at,
+			overrided_egc_size,
+			overrided_conduit_size,
+			overrided_conductor_size,
+			conductor_insulation,
+			egc_insulation,
+			conduit_type,
 			child_ids: []
 		});
 
@@ -296,14 +349,26 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-export async function overrideLoadAmpereTrip({
+type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+
+const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
+	egc_size: 'overrided_egc_size',
+	conductor_size: 'overrided_conductor_size',
+	at: 'overrided_at',
+	conduit_size: 'overrided_conduit_size',
+	ampere_frames: 'overrided_ampere_frames'
+};
+
+export async function overrideField({
 	node_id,
-	at,
-	unoverride = false
+	field_data,
+	unoverride = false,
+	field_type
 }: {
 	node_id: string;
-	at?: number;
+	field_data?: number;
 	unoverride?: boolean;
+	field_type: FieldType;
 }) {
 	const database = await databaseInstance();
 
@@ -314,13 +379,16 @@ export async function overrideLoadAmpereTrip({
 			}
 		});
 
+		const data = unoverride && !field_data ? undefined : field_data;
+		const field_to_update = FIELD_TYPE_MAPPING[field_type];
+
 		return await query.update({
 			$set: {
-				overrided_at: unoverride && !at ? undefined : at
+				[field_to_update]: data
 			}
 		});
 	} catch (error) {
-		console.error('Error overriding AT:', error);
+		console.error('Error overriding data:', error);
 		throw error;
 	}
 }
@@ -342,6 +410,57 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 		});
 	} catch (error) {
 		console.error('Error updating conductor sets:', error);
+		throw error;
+	}
+}
+
+export async function changeInsulation({
+	node_id,
+	insulation,
+	type
+}: {
+	node_id: string;
+	insulation: string;
+	type: 'egc' | 'conductor';
+}) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		return await query.update({
+			$set: {
+				...(type === 'egc' && { egc_insulation: insulation }),
+				...(type === 'conductor' && { conductor_insulation: insulation })
+			}
+		});
+	} catch (error) {
+		console.error('Error changing insulation:', error);
+		throw error;
+	}
+}
+
+export async function changePole(node_id: string, pole: string) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		return await query.update({
+			$set: {
+				pole
+			}
+		});
+	} catch (error) {
+		console.error('Error changing pole:', error);
 		throw error;
 	}
 }

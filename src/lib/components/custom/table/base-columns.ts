@@ -5,18 +5,14 @@ import { ColumnDropdown } from '@/components/custom/table/(components)';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
-import { computeAmpereTrip } from '@/utils/computations';
 import { AddLoadDialog } from '@/components/custom/load';
 import AtFooterCell from './(components)/at-footer-cell.svelte';
-
-function getComputedMainAT(currents: number[]) {
-	const total_current = currents.reduce((sum, current) => sum + current, 0);
-	return computeAmpereTrip(total_current);
-}
+import InsulationsDropdown from './(components)/insulations-dropdown.svelte';
+import PoleDropdown from './(components)/pole-dropdown.svelte';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: Node,
+	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>,
 	latest_circuit_node?: Node
 ): ColumnDef<T>[] => [
@@ -49,17 +45,20 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		accessorKey: 'va',
 		header: 'APPARENT POWER (VA)',
 		footer: (props) => {
-			return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
+			// return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
+			return current_node.va;
 		}
 	},
 	{
 		accessorKey: 'current',
 		header: 'CURRENT (A)',
 		footer: (props) => {
-			return props.table
-				.getFilteredRowModel()
-				.rows.reduce((sum, row) => sum + row.original.current, 0)
-				.toFixed(2);
+			// return props.table
+			// 	.getFilteredRowModel()
+			// 	.rows.reduce((sum, row) => sum + row.original.current, 0)
+			// 	.toFixed(2);
+
+			return current_node.current.toFixed(2);
 		}
 	},
 
@@ -93,42 +92,61 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			{
 				accessorKey: 'at',
 				cell: (info) => {
-					const overrided_at = info.row.original.overrided_at;
-					return overrided_at ? overrided_at : info.getValue();
+					const at = info.getValue();
+					return !at ? '' : at;
 				},
 				header: () => 'AT',
 				footer: (props) => {
-					const currents = props.table
-						.getFilteredRowModel()
-						.rows.map((row) => row.original.current);
+					// const total_current = parseFloat(
+					// 	props.table
+					// 		.getFilteredRowModel()
+					// 		.rows.reduce((sum, row) => sum + row.original.current, 0)
+					// 		.toFixed(2)
+					// );
+					// const child_load_ampere_trips = props.table
+					// 	.getFilteredRowModel()
+					// 	.rows.map((row) => row.original.at || row.original.overrided_at)
+					// 	.filter(Boolean);
+					// const main_at = current_node.overrided_at || computeAmpereTrip(total_current);
+					// const has_greater_child_at = child_load_ampere_trips.some(
+					// 	(child_at) => child_at && child_at >= main_at
+					// );
+
+					// return renderComponent(AtFooterCell, {
+					// 	at: !main_at ? '' : main_at.toString(),
+					// 	has_greater_child_at
+					// });
 					const child_load_ampere_trips = props.table
 						.getFilteredRowModel()
 						.rows.map((row) => row.original.at || row.original.overrided_at)
 						.filter(Boolean);
-					const main_at = getComputedMainAT(currents);
+
 					const has_greater_child_at = child_load_ampere_trips.some(
-						(child_at) => child_at && child_at >= (current_node.overrided_at || main_at)
+						(child_at) => child_at && child_at >= current_node.at
 					);
 
 					return renderComponent(AtFooterCell, {
-						at: current_node.overrided_at
-							? current_node.overrided_at.toString()
-							: !main_at
-								? ''
-								: main_at.toString(),
+						at: !current_node.at ? '' : current_node.at.toString(),
 						has_greater_child_at
 					});
 				}
 			},
 			{
-				accessorKey: 'af',
+				accessorKey: 'ampere_frames',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
 				footer: (props) => ''
 			},
 			{
 				accessorKey: 'pole',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const data = info.row.original;
+					return renderComponent(PoleDropdown, {
+						current_pole: data.pole as '1' | '2',
+						node_id: data.id
+					});
+				},
+
 				header: () => 'Pole',
 				footer: (props) => ''
 			},
@@ -144,7 +162,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: Node,
+	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<T>[] => [
 	{
@@ -154,13 +172,27 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'egc_size',
 				cell: (info) => info.getValue(),
 				header: () => 'SIZE',
-				footer: (props) => ''
+				footer: (props) => current_node.egc_size
 			},
 			{
 				accessorKey: 'egc_insulation',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const data = info.row.original;
+					return renderComponent(InsulationsDropdown, {
+						adjusted_current: data.adjusted_current,
+						type: 'egc',
+						current_insulation: data.egc_insulation as string,
+						node_id: data.id
+					});
+				},
 				header: () => 'INSULATION',
-				footer: (props) => ''
+				footer: (props) =>
+					renderComponent(InsulationsDropdown, {
+						adjusted_current: current_node.adjusted_current,
+						type: 'egc',
+						current_insulation: current_node.egc_insulation as string,
+						node_id: current_node.id
+					})
 			}
 		]
 	},
@@ -171,7 +203,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_size',
 				cell: (info) => info.getValue(),
 				header: () => 'SIZE',
-				footer: (props) => ''
+				footer: (props) => current_node.conduit_size
 			},
 			{
 				accessorKey: 'conduit_type',

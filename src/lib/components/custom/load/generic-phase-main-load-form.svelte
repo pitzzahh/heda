@@ -30,7 +30,7 @@
 	import { page } from '$app/stores';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
@@ -143,8 +143,7 @@
 							break;
 					}
 				}
-
-				await invalidateAll();
+				invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 				closeDialog();
 			}
 		}
@@ -165,11 +164,13 @@
 	let open_terminal_temp = $state(false);
 	let open_load_type = $state(false);
 	let open_load_description = $state(false);
+	let open_ambient_temp = $state(false);
 	let is_circuit_number_taken_state = $state({
 		is_circuit_number_taken: false,
 		circuit_number: 0
 	});
 	const terminal_temp_trigger_id = useId();
+	const ambient_temp_trigger_id = useId();
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
 	const horsepower_rating_trigger_id = useId();
@@ -185,6 +186,7 @@
 		open_terminal_temp = false;
 		open_load_type = false;
 		open_load_description = false;
+		open_ambient_temp = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -229,29 +231,88 @@
 		</Alert.Root>
 	{/if}
 	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
-		<Form.Field {form} name="circuit_number">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label
-						class={cn({ 'text-red': is_circuit_number_taken_state.is_circuit_number_taken })}
-						>Circuit number</Form.Label
-					>
-					<Input
-						{...props}
-						type="number"
-						inputmode="numeric"
-						min={1}
-						class={cn({ 'border-red': is_circuit_number_taken_state.is_circuit_number_taken })}
-						bind:value={$formData.circuit_number}
-						placeholder="Enter the circuit number"
-					/>
-				{/snippet}
-			</Form.Control>
-			<Form.Description>
-				This is the circuit number that will determine the circuit number of the wire to the main.
-			</Form.Description>
-			<Form.FieldErrors />
-		</Form.Field>
+		<div>
+			<Form.Field {form} name="circuit_number">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label
+							class={cn({ 'text-red': is_circuit_number_taken_state.is_circuit_number_taken })}
+							>Circuit number</Form.Label
+						>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							min={1}
+							class={cn({ 'border-red': is_circuit_number_taken_state.is_circuit_number_taken })}
+							bind:value={$formData.circuit_number}
+							placeholder="Enter the circuit number"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.Description>
+					This is the circuit number that will determine the circuit number of the wire to the main.
+				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
+				<Popover.Root bind:open={open_ambient_temp}>
+					<Form.Control id={ambient_temp_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>Ambient Temperature</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.ambient_temperature && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{$formData.ambient_temperature
+									? $formData.ambient_temperature
+									: 'Select an ambient temperature'}
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.ambient_temperature} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
+							<Command.Empty>No terminal temp found.</Command.Empty>
+							<Command.Group>
+								<ScrollArea class="h-64 pr-2.5">
+									{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
+										<Command.Item
+											value={ambient_temp.toString()}
+											onSelect={() => {
+												$formData.ambient_temperature = ambient_temp;
+												closeAndFocusTrigger(ambient_temp_trigger_id);
+											}}
+										>
+											{ambient_temp}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													ambient_temp !== $formData.ambient_temperature && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.Description>
+					This is the ambient temp that will determine the ambient temp of the panel wire to the
+					main.
+				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+		</div>
+
 		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
 			<Popover.Root bind:open={open_terminal_temp}>
 				<Form.Control id={terminal_temp_trigger_id}>
