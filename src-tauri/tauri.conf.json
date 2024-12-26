@@ -1,7 +1,7 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Hierarchical Electrical Design Analyzer",
-	"version": "0.1.21",
+	"version": "0.2.22",
 	"identifier": "me.araopj.heda",
 	"build": {
 		"frontendDist": "../build",
@@ -12,7 +12,7 @@
 	"app": {
 		"windows": [
 			{
-				"title": "Hierarchical Electrical Design Analyzer v0.1.21",
+				"title": "Hierarchical Electrical Design Analyzer v0.2.22",
 				"width": 950,
 				"height": 650,
 				"minWidth": 950,
