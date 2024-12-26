@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { changeInsulation } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
@@ -31,7 +31,7 @@
 
 	async function handleChangeInsulation(insulation: Insulations) {
 		await changeInsulation({ node_id, insulation, type });
-		await invalidateAll();
+		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 	}
 </script>
 

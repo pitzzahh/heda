@@ -22,7 +22,7 @@
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
 	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
@@ -90,7 +90,7 @@
 						break;
 				}
 
-				await invalidateAll();
+				invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 				closeDialog();
 			}
 		}

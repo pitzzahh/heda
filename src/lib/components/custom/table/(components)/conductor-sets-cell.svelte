@@ -18,7 +18,7 @@
 			});
 
 			sets_value = updated_set?._data.conductor_sets as number;
-			await invalidateAll(); //important as the single page invalidation doesnt update the nodes
+			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			toast.success('Sets updated successfully');
 		} catch (error) {
 			console.log(error);

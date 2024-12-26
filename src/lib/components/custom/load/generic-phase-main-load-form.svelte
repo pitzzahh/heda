@@ -30,7 +30,7 @@
 	import { page } from '$app/stores';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
@@ -143,8 +143,7 @@
 							break;
 					}
 				}
-
-				await invalidateAll();
+				invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 				closeDialog();
 			}
 		}

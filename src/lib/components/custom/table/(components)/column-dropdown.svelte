@@ -4,7 +4,7 @@
 	import { Button } from '@/components/ui/button';
 	import { Ellipsis, Pencil, Trash2, Copy } from '@/assets/icons';
 	import { copyAndAddNodeById, removeNode } from '@/db/mutations';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
 	import type { Node } from '@/db/schema';
 	import { ConfirmationDialog } from '@/components/custom';
@@ -49,7 +49,7 @@
 
 	async function handleRemoveLoad() {
 		await removeNode(node.id);
-		await invalidateAll();
+		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 	}
 </script>
@@ -74,7 +74,7 @@
 					<DropdownMenu.Item
 						onclick={async () => {
 							await copyAndAddNodeById(node.id);
-							await invalidateAll();
+							invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 						}}
 					>
 						<Copy class="ml-2 size-4" />
