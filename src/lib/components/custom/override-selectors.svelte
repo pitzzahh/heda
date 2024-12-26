@@ -8,7 +8,7 @@
 	import { ArrowUp, ArrowDown } from 'svelte-radix';
 	import { Button } from '@/components/ui/button/index.js';
 	import { overrideField } from '@/db/mutations';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import { X } from 'lucide-svelte';
 	import * as Tooltip from '../ui/tooltip';
 	import { toast } from 'svelte-sonner';
@@ -132,7 +132,7 @@
 				toast.success(`Overridden: ${overridden_fields.join(', ')}.`);
 			}
 
-			await invalidateAll();
+			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			closeDialog();
 		}
 	}
@@ -145,7 +145,8 @@
 			.join(' ');
 
 		await overrideField({ node_id, field_type, unoverride: true });
-		await invalidateAll();
+		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		closeDialog();
 		toast.success(`Removed override for ${formatted_field}`);
 	}
 </script>
