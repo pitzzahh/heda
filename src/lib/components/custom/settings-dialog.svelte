@@ -44,8 +44,8 @@
 		if (!project) return;
 
 		await updateProjectSettings(project.id, { is_adjustment_factor_constant });
-		await invalidate('app:workspace');
-		toast.success('Adjustment Factor applied');	
+		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		toast.success('Adjustment Factor applied');
 	}
 </script>
 
