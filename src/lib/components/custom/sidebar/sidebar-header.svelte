@@ -1,5 +1,4 @@
 <script lang="ts">
-	import writeXlsxFile from 'write-excel-file';
 	import * as XLSX from 'xlsx';
 	import { Save, FilePlus, Moon, Sun, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -9,9 +8,10 @@
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import type { Project } from '@/db/schema';
+	import type { Project, Node } from '@/db/schema';
+	import { getChildNodesByParentId } from '@/db/queries/index';
 
-	let { project }: { project?: Project } = $props();
+	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
 	const settingsState = getSettingsState();
 
@@ -31,40 +31,68 @@
 	}
 
 	async function exportToExcel() {
-		// Create a new worksheet
-		const worksheet = XLSX.utils.aoa_to_sheet([
-			['Header 1', 'Header 2', 'Header 3'],
-			['Data 1', 'Data 2', 'Data 3']
-		]);
+		console.log('Root:', root_node);
+		if (!root_node) {
+			toast.warning('No root node found');
+			return;
+		}
+		async function processNodeChildren(nodeId: string, parent?: Node) {
+			const children = await getChildNodesByParentId(nodeId);
+			for (const child of children) {
+				// required to have complete if-else block
+				if (child.node_type === 'root') {
+					await processNodeChildren(child.id, child);
+				} else if (child.node_type === 'panel') {
+					const panel_name = child.panel_data?.name;
+					console.log('Panel:', panel_name);
+					await processNodeChildren(child.id, child);
+				}
+				const { node_type } = child;
+				console.log(
+					`${node_type === 'root' ? project?.project_name : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
+				);
+			}
+			return children;
+		}
 
-		// Merge cells programmatically
-		worksheet['!merges'] = [
-			{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } } // Merge Header 1-3 into a single cell
-		];
+		await processNodeChildren(root_node.id);
 
-		// Add additional data
-		XLSX.utils.sheet_add_aoa(worksheet, [['Additional Row']], { origin: { r: 3, c: 0 } });
+		// // Create a new worksheet
+		// const worksheet = XLSX.utils.aoa_to_sheet([
+		// 	['Header 1', 'Header 2', 'Header 3'],
+		// 	['Data 1', 'Data 2', 'Data 3']
+		// ]);
 
-		// Create a workbook and append the worksheet
-		const wb = XLSX.utils.book_new();
+		// // Merge cells programmatically
+		// worksheet['!merges'] = [
+		// 	{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } } // Merge Header 1-3 into a single cell
+		// ];
 
-		XLSX.utils.book_append_sheet(wb, worksheet, 'Sheet1');
+		// // Add additional data
+		// XLSX.utils.sheet_add_aoa(worksheet, [['Additional Row']], { origin: { r: 3, c: 0 } });
 
-		// Write the workbook and trigger download
-		const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-		const blob = new Blob([wbout], { type: 'application/octet-stream' });
-		const url = URL.createObjectURL(blob);
+		// // Create a workbook and append the worksheet
+		// const workbook = XLSX.utils.book_new();
 
-		// Create a link and download the file
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = 'ExportedData.xlsx';
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+		// XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
 
-		// Free resources
-		URL.revokeObjectURL(url);
+		// // Write the workbook and trigger download
+		// const blob = new Blob([XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })], {
+		// 	type: 'application/octet-stream'
+		// });
+		// const url = URL.createObjectURL(blob);
+
+		// // Create a link and download the file
+		// const link = document.createElement('a');
+		// link.href = url;
+		// link.download = 'ExportedData.xlsx';
+		// document.body.appendChild(link);
+		// link.click();
+		// document.body.removeChild(link);
+
+		// // Free resources
+		// URL.revokeObjectURL(url);
+		toast.warning('This feature is still under development');
 	}
 </script>
 
