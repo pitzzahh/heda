@@ -38,8 +38,8 @@
 		}
 		async function processNodeChildren(nodeId: string, parent?: Node) {
 			const children = await getChildNodesByParentId(nodeId);
-			for (const child of children) {
-				// required to have complete if-else block
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
 				if (child.node_type === 'root') {
 					await processNodeChildren(child.id, child);
 				} else if (child.node_type === 'panel') {
@@ -47,9 +47,9 @@
 					console.log('Panel:', panel_name);
 					await processNodeChildren(child.id, child);
 				}
-				const { node_type } = child;
+				const node_type = parent?.node_type;
 				console.log(
-					`${node_type === 'root' ? project?.project_name : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
+					`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
 				);
 			}
 			return children;
