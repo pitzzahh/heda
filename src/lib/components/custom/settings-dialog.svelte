@@ -1,7 +1,8 @@
 <script lang="ts">
 	import * as Tooltip from '@/components/ui/tooltip';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader } from '@/assets/icons';
+	import { Cog, Loader, PackageCheck } from '@/assets/icons';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import * as Dialog from '@/components/ui/dialog';
 	import { Label } from '@/components/ui/label/index.js';
@@ -16,7 +17,7 @@
 	import { updateProjectSettings } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { checkForUpdates } from '@/utils/update';
+	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
 
@@ -32,7 +33,9 @@
 
 	let open = $state(false);
 	let app_update: Update | null = $state(null);
-	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' = $state('stale');
+	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading' =
+		$state('stale');
+	let download_progress = $state(0);
 
 	let is_adjustment_factor_constant = $state(
 		project?.settings.is_adjustment_factor_constant || false
@@ -106,19 +109,21 @@
 					<Separator class="my-1 w-full" />
 					<div class="flex flex-col gap-3">
 						<p class="font-semibold">Preferences</p>
-						<div class="flex flex-col gap-3">
-							<Label for="colors">Theme Color</Label>
-							<div id="colors" class="flex items-center gap-2">
-								{#each themeColors as themeColor, index (index)}
-									<button
-										aria-label="color"
-										class={cn(themeColor.bg, 'size-8 rounded-full', {
-											'outline outline-2 outline-offset-1 outline-blue-500':
-												themeColor.value === settingsState.themeColor
-										})}
-										onclick={() => handleChangeThemeColor(themeColor.value)}
-									></button>
-								{/each}
+						<div class="grid grid-cols-2">
+							<div class="flex flex-col gap-3">
+								<Label for="colors">Theme Color</Label>
+								<div id="colors" class="flex items-center gap-2">
+									{#each themeColors as themeColor, index (index)}
+										<button
+											aria-label="color"
+											class={cn(themeColor.bg, 'size-8 rounded-full', {
+												'outline outline-2 outline-offset-1 outline-blue-500':
+													themeColor.value === settingsState.themeColor
+											})}
+											onclick={() => handleChangeThemeColor(themeColor.value)}
+										></button>
+									{/each}
+								</div>
 							</div>
 						</div>
 
@@ -144,14 +149,45 @@
 					</div>
 					<Separator class="my-1 w-full" />
 					<div class="flex flex-col gap-2">
-						<div class="flex items-center justify-between">
-							<p class="font-semibold">App Version</p>
-							<ViewChangelog />
+						{#if update_state === 'available'}
+							<Alert.Root>
+								<PackageCheck class="size-4" />
+								<Alert.Description
+									>New version available: v{app_update?.version ?? 'unknown'}</Alert.Description
+								>
+							</Alert.Root>
+						{/if}
+						<div>
+							<div class="flex items-center justify-between">
+								<p class="font-semibold">App Version</p>
+								<ViewChangelog />
+							</div>
+							<span class="text-sm tabular-nums">v{pj.version}</span>
 						</div>
-						<span>v{pj.version}</span>
 						<svelte:boundary>
 							<Button
+								variant={update_state === 'available' ? 'default' : 'outline'}
+								style={download_progress > 0
+									? `background: linear-gradient(to right, var(--primary) ${download_progress}%, transparent ${download_progress}%)`
+									: ''}
+								class={cn({
+									'!cursor-not-allowed opacity-50':
+										update_state === 'processing' || update_state === 'no_updates'
+								})}
 								onclick={async () => {
+									if (update_state === 'available' && app_update) {
+										download_progress = 0;
+										update_state = 'downloading';
+										installUpdate(
+											app_update,
+											() => {},
+											(progress) => {
+												download_progress = progress;
+											}
+										);
+										return;
+									}
+									if (update_state === 'processing' || update_state === 'no_updates') return;
 									update_state = 'processing';
 									try {
 										app_update = await checkForUpdates();
@@ -180,6 +216,10 @@
 										Download and install v{app_update?.version}
 									{:else if update_state === 'no_updates'}
 										No updates available
+									{:else if update_state === 'downloading'}
+										{download_progress}%
+									{:else if update_state === 'error'}
+										Something went wrong while checking for updates
 									{:else}
 										Check for updates
 									{/if}
