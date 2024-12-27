@@ -28,3 +28,4 @@ export { default as ChevronUp } from 'lucide-svelte/icons/chevron-up';
 export { default as ChevronDown } from 'lucide-svelte/icons/chevron-down';
 export { default as FileClock } from 'lucide-svelte/icons/file-clock';
 export { default as History } from 'lucide-svelte/icons/history';
+export { default as PackageCheck } from 'lucide-svelte/icons/package-check';
