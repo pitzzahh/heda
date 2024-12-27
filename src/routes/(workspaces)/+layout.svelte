@@ -41,8 +41,8 @@
 	}
 
 	onMount(() => {
-		if (!data.root_node) {
-			toast.warning('Failed to identify the load description data', {
+		if (is_load_file && !data.root_node) {
+			toast.warning('Failed to identify project data', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
 			return;
@@ -98,7 +98,7 @@
 		</header>
 
 		<svelte:boundary>
-			<div class="mt-14 gap-4 p-4">
+			<div class="grid place-content-center gap-4 p-4">
 				{@render children?.()}
 			</div>
 			{#snippet failed(error, reset)}
