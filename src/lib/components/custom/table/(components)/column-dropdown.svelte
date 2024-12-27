@@ -87,19 +87,6 @@
 					Override
 				</DropdownMenu.Item>
 
-				<!-- {#if !!node.overrided_at}
-					<DropdownMenu.Item
-						class="!text-red-500 hover:!bg-red-500/20"
-						onclick={async () => {
-							await overrideField({ node_id: node.id, unoverride: true, field_type: 'at' });
-							await invalidateAll();
-						}}
-					>
-						<RefreshCcw class="ml-2 size-4" />
-						Remove Overrided AT
-					</DropdownMenu.Item>
-				{/if} -->
-
 				{#if node.node_type === 'load'}
 					<DropdownMenu.Item class="mt-0.5 p-0">
 						{#snippet children()}
@@ -160,7 +147,6 @@
 </Dialog.Root>
 
 <Dialog.Root {...props} bind:open={is_override_dialog_open}>
-	{console.log(node)}
 	<Dialog.Content class="max-w-[450px]">
 		<Dialog.Header>
 			<Dialog.Title>Override</Dialog.Title>
