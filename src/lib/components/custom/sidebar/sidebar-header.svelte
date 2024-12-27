@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Save, FilePlus, Moon, Sun } from '@/assets/icons';
+	import writeXlsxFile from 'write-excel-file';
+	import * as XLSX from 'xlsx';
+	import { Save, FilePlus, Moon, Sun, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import { SettingsDialog } from '..';
@@ -27,9 +29,46 @@
 		settingsState.setThemeColor(settingsState.themeColor, mode);
 		setMode(mode);
 	}
+
+	async function exportToExcel() {
+		// Create a new worksheet
+		const worksheet = XLSX.utils.aoa_to_sheet([
+			['Header 1', 'Header 2', 'Header 3'],
+			['Data 1', 'Data 2', 'Data 3']
+		]);
+
+		// Merge cells programmatically
+		worksheet['!merges'] = [
+			{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } } // Merge Header 1-3 into a single cell
+		];
+
+		// Add additional data
+		XLSX.utils.sheet_add_aoa(worksheet, [['Additional Row']], { origin: { r: 3, c: 0 } });
+
+		// Create a workbook and append the worksheet
+		const wb = XLSX.utils.book_new();
+
+		XLSX.utils.book_append_sheet(wb, worksheet, 'Sheet1');
+
+		// Write the workbook and trigger download
+		const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+		const blob = new Blob([wbout], { type: 'application/octet-stream' });
+		const url = URL.createObjectURL(blob);
+
+		// Create a link and download the file
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = 'ExportedData.xlsx';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		// Free resources
+		URL.revokeObjectURL(url);
+	}
 </script>
 
-<div class="w-full p-2">
+<div class="flex w-full items-center justify-between p-2">
 	<div class="flex w-full items-center gap-2">
 		<Tooltip.Provider>
 			<Tooltip.Root>
@@ -77,4 +116,8 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	</div>
+	<Button onclick={exportToExcel} variant="outline" size="sm">
+		<FileUp class="h-4 w-4" />
+		Export to Excel
+	</Button>
 </div>
