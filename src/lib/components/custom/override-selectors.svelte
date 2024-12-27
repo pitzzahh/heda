@@ -43,7 +43,7 @@
 	// AT
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);
 	let at_current_index = $state(at_default_index);
-	let selected_ampere_rating = $derived(standard_ampere_ratings.at(at_current_index));
+	const selected_ampere_rating = $derived(standard_ampere_ratings.at(at_current_index));
 	const at_last_index = standard_ampere_ratings.length - 1;
 
 	// Conductor Size
@@ -52,7 +52,7 @@
 		(size) => current_conductor_size === size
 	);
 	let conductor_size_current_index = $state(conductor_size_default_index);
-	let selected_conductor_size = $derived(conductor_sizes.at(conductor_size_current_index));
+	const selected_conductor_size = $derived(conductor_sizes.at(conductor_size_current_index));
 	const conductor_size_last_index = conductor_sizes.length - 1;
 
 	// EGC Size
@@ -62,7 +62,7 @@
 		.sort((a, b) => a - b);
 	const egc_size_default_index = egc_sizes.findIndex((size) => current_egc_size === size);
 	let egc_size_current_index = $state(egc_size_default_index);
-	let selected_egc_size = $derived(egc_sizes.at(egc_size_current_index));
+	const selected_egc_size = $derived(egc_sizes.at(egc_size_current_index));
 	const egc_size_last_index = egc_sizes.length - 1;
 
 	// Conduit Size
@@ -71,7 +71,7 @@
 		(size) => current_conduit_size === size
 	);
 	let conduit_size_current_index = $state(conduit_size_default_index);
-	let selected_conduit_size = $derived(conduit_sizes.at(conduit_size_current_index));
+	const selected_conduit_size = $derived(conduit_sizes.at(conduit_size_current_index));
 	const conduit_size_last_index = conduit_sizes.length - 1;
 
 	// Ampere Frames(AF)
