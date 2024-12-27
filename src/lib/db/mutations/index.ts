@@ -414,6 +414,54 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 	}
 }
 
+export async function updateLoadDescription({
+	node_id,
+	load_description,
+	node_type
+}: {
+	node_id: string;
+	load_description: string;
+	node_type: 'panel' | 'load';
+}) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		const node_data = (await query.exec())?._data;
+
+		const updated_node = await query.update({
+			$set: {
+				...(node_type === 'panel' &&
+					node_data?.panel_data && {
+						panel_data: {
+							...node_data.panel_data,
+							name: load_description
+						}
+					}),
+				...(node_type === 'load' &&
+					node_data?.load_data && {
+						load_data: {
+							...node_data.load_data,
+							load_description
+						}
+					})
+			}
+		});
+
+		return (
+			updated_node?._data.load_data?.load_description || updated_node?._data.panel_data?.name || ''
+		);
+	} catch (error) {
+		console.error('Error updating conductor load_description:', error);
+		throw error;
+	}
+}
+
 export async function changeInsulation({
 	node_id,
 	insulation,
