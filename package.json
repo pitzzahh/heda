@@ -69,7 +69,6 @@
 		"rxjs": "^7.8.1",
 		"svelte-exmarkdown": "^4.0.2",
 		"sveltekit-superforms": "^2.22.1",
-		"write-excel-file": "^2.0.10",
 		"xlsx": "^0.18.5",
 		"zod": "v3.24.1"
 	}
