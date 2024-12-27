@@ -148,13 +148,18 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 
 				header: () => 'Pole',
-				footer: (props) => ''
+				footer: (props) => {
+					return renderComponent(PoleDropdown, {
+						current_pole: current_node.pole as '1' | '2',
+						node_id: current_node.id
+					});
+				}
 			},
 			{
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
 				header: () => 'kAIC',
-				footer: (props) => ''
+				footer: (props) => current_node.kaic || ''
 			}
 		]
 	}
