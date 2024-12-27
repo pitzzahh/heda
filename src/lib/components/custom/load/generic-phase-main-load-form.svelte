@@ -290,6 +290,7 @@
 												$formData.ambient_temperature = ambient_temp;
 												closeAndFocusTrigger(ambient_temp_trigger_id);
 											}}
+											disabled={ambient_temp !== 30}
 										>
 											{ambient_temp}
 											<Check
@@ -351,6 +352,7 @@
 										$formData.terminal_temperature = terminal_temp;
 										closeAndFocusTrigger(terminal_temp_trigger_id);
 									}}
+									disabled={terminal_temp !== 'Standard Temperature'}
 								>
 									{convertToNormalText(terminal_temp)}
 									<Check

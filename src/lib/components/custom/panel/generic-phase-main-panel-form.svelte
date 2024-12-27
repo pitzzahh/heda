@@ -221,19 +221,20 @@
 							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No terminal temp found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
 									<Command.Item
-										value={ambient_temp}
+										value={terminal_temp}
 										onSelect={() => {
-											$formData.terminal_temperature = ambient_temp;
+											$formData.terminal_temperature = terminal_temp;
 											closeAndFocusTrigger(terminal_temp_trigger_id);
 										}}
+										disabled={terminal_temp !== 'Standard Temperature'}
 									>
-										{convertToNormalText(ambient_temp)}
+										{convertToNormalText(terminal_temp)}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp !== $formData.terminal_temperature && 'text-transparent'
+												terminal_temp !== $formData.terminal_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -292,6 +293,7 @@
 												$formData.ambient_temperature = ambient_temp;
 												closeAndFocusTrigger(ambient_temp_trigger_id);
 											}}
+											disabled={ambient_temp !== 30}
 										>
 											{ambient_temp}
 											<Check
