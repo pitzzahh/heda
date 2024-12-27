@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { DataTable } from '@/components/custom/table';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import { getNodeById } from '@/db/queries/index.js';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 
 	let { data } = $props();
-	let params = $derived($page.params);
+	let params = $derived(page.params);
 	const { root_node } = data;
 	let supply_from_name = $state('');
 	let loads = $derived(data?.nodes);
@@ -38,41 +40,36 @@
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
 			</p>
-			<!-- <p class="font-semibold">
-				Wire Length: <span class="font-normal">{root_node?.highest_unit_form?.wire_length}</span>
-			</p> -->
 		</div>
-		<div>
-			<!-- <p class="font-semibold">
-				Terminal Temperature: <span class="font-normal"
-					>{root_node?.highest_unit_form?.terminal_temperature}</span
-				>
-			</p> -->
-			<!-- <p class="font-semibold">
-		</div>
-		<div>
-			<p class="font-semibold">
-				Panel: <span class="font-normal">{params.id.split('_').at(0)}</span>
-			</p> -->
 
-			<p class="font-semibold">
-				Supply From:
-				<span class="font-normal">
-					{supply_from_name}
-				</span>
-			</p>
-		</div>
+		<p class="font-semibold">
+			Supply From:
+			<span class="font-normal">
+				{supply_from_name}
+			</span>
+		</p>
 	</div>
-	{#key loads}
-		<DataTable
-			data={loads && loads.length > 0 ? (loads as unknown as PhaseLoadSchedule[]) : []}
-			columns={onePhaseMainOrWyeCols(
-				data.phase_main_load_form,
-				data.current_node as unknown as PhaseLoadSchedule,
-				root_node?.highest_unit_form,
-				loads && loads.length > 0 ? loads.at(-1) : undefined
-			)}
-			is_root_node={data.current_node?.node_type === 'root'}
-		/>
-	{/key}
+	<Tabs.Root value="load-sched" class="w-full">
+		<Tabs.List class="place-self-end">
+			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
+			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
+		</Tabs.List>
+		<Tabs.Content value="load-sched">
+			{#key loads}
+				<DataTable
+					data={loads && loads.length > 0 ? (loads as unknown as PhaseLoadSchedule[]) : []}
+					columns={onePhaseMainOrWyeCols(
+						data.phase_main_load_form,
+						data.current_node as unknown as PhaseLoadSchedule,
+						root_node?.highest_unit_form,
+						loads && loads.length > 0 ? loads.at(-1) : undefined
+					)}
+					is_root_node={data.current_node?.node_type === 'root'}
+				/>
+			{/key}
+		</Tabs.Content>
+		<Tabs.Content value="voltage-drop">
+			<DataTable data={[]} columns={voltageDropColumns()} is_root_node={false}/>
+		</Tabs.Content>
+	</Tabs.Root>
 </div>
