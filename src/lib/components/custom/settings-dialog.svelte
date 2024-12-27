@@ -31,7 +31,7 @@
 	const selectedFont = $derived(settingsState.font);
 
 	let app_update: Update | null = $state(null);
-	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' = $state('stale');
+	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' = $state('stale');
 
 	let is_adjustment_factor_constant = $state(
 		project?.settings.is_adjustment_factor_constant || false
@@ -146,9 +146,14 @@
 										app_update = await checkForUpdates();
 										console.log('app_update', app_update);
 										update_state = app_update ? 'available' : 'no_updates';
+										if (!app_update) {
+											toast.info('No updates available');
+										} else {
+											toast.success(`New version available: v${app_update.version}`);
+										}
 									} catch (error) {
-										update_state = 'no_updates';
-										toast.info('No updates available');
+										update_state = 'error';
+										toast.warning(`Failed to check for updates: ${error}`);
 									}
 								}}
 							>
@@ -161,7 +166,7 @@
 									{#if update_state === 'processing'}
 										Checking
 									{:else if update_state === 'available'}
-										v{app_update?.version}
+										Download and install v{app_update?.version}
 									{:else if update_state === 'no_updates'}
 										No updates available
 									{:else}
