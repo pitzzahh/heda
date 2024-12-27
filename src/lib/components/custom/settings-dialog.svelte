@@ -30,6 +30,7 @@
 	const settingsState = getSettingsState();
 	const selectedFont = $derived(settingsState.font);
 
+	let open = $state(false);
 	let app_update: Update | null = $state(null);
 	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' = $state('stale');
 
@@ -53,10 +54,20 @@
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Adjustment Factor applied');
 	}
+
+	$effect(() => {
+		if (open) return;
+		// reset all the fields if not open
+		if (!open) {
+			is_adjustment_factor_constant = project?.settings.is_adjustment_factor_constant || false;
+			update_state = 'stale';
+			app_update = null;
+		}
+	});
 </script>
 
 <Tooltip.Provider>
-	<Tooltip.Root>
+	<Tooltip.Root bind:open>
 		<Tooltip.Trigger>
 			<Dialog.Root>
 				<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
