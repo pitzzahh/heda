@@ -26,7 +26,7 @@
 				<p>Loading...</p>
 			{:then response_body}
 				<ScrollArea class="mt-2 h-[90%]">
-					<Markdown md={DOMPurify.sanitize(response_body)} />
+					{@html marked(DOMPurify.sanitize(response_body))}
 				</ScrollArea>
 			{:catch error}
 				<p>{error.message}</p>
