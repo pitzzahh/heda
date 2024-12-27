@@ -11,7 +11,7 @@ export async function checkForUpdates() {
   return await check();
 }
 
-export async function installUpdate(update: Update, fn: (fn: () => Promise<void>) => void) {
+export async function installUpdate(update: Update, _relaunch: (fn: () => Promise<void>) => void, _progress: (progress: number) => void) {
   console.log(
     `found update ${update.version} from ${update.date} with notes ${update.body}`
   );
@@ -29,6 +29,7 @@ export async function installUpdate(update: Update, fn: (fn: () => Promise<void>
       case 'Progress':
         downloaded += event.data.chunkLength;
         console.log(`downloaded ${downloaded} from ${contentLength}`);
+        _progress && _progress((downloaded / contentLength) * 100);
         break;
       case 'Finished':
         console.log('download finished');
@@ -36,5 +37,5 @@ export async function installUpdate(update: Update, fn: (fn: () => Promise<void>
     }
   });
   console.log('update installed');
-  fn && fn(async () => await relaunch());
+  _relaunch && _relaunch(async () => await relaunch());
 }
