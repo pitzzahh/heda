@@ -106,6 +106,11 @@
 	}
 }
 
+.app-name {
+	-webkit-text-fill-color: transparent; /* Will override color (regardless of order) */
+	-webkit-text-stroke: 6px hsl(var(--primary));
+}
+
 /* @font-face {
 	font-display: swap; 
 	font-family: 'ISOCPEUR';
