@@ -144,7 +144,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'ampere_frames',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
-				footer: (props) => ''
+				footer: (props) => current_node.ampere_frames
 			},
 			{
 				accessorKey: 'pole',
