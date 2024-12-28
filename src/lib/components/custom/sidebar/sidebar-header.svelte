@@ -11,6 +11,7 @@
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
 	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { dev } from '$app/environment';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
@@ -27,7 +28,7 @@
 	}
 
 	async function exportToExcel() {
-		console.log('Root:', root_node);
+		dev && console.log('Root:', root_node);
 		if (!root_node) {
 			toast.warning('No project found, nothing to export');
 			return;
@@ -48,7 +49,7 @@
 				} else if (child.node_type === 'panel') {
 					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
 					const panel_level = getOrdinalSuffix(depth + 1);
-					console.log(`Panel: ${panel_name} (${panel_level})`);
+					dev && console.log(`Panel: ${panel_name} (${panel_level})`);
 
 					if (!workbook.getWorksheet(panel_level)) {
 						const worksheet = workbook.addWorksheet(panel_level);
@@ -160,9 +161,10 @@
 					await processNodeChildren(child.id, child, depth + 1);
 				}
 				const node_type = parent?.node_type;
-				console.log(
-					`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
-				);
+				dev &&
+					console.log(
+						`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
+					);
 			}
 			return true;
 		}
