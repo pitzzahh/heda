@@ -4,7 +4,7 @@
 	import { Button } from '@/components/ui/button';
 	import { Ellipsis, Pencil, Trash2, Copy } from '@/assets/icons';
 	import { copyAndAddNodeById, removeNode } from '@/db/mutations';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
 	import type { Node } from '@/db/schema';
 	import { ConfirmationDialog } from '@/components/custom';
@@ -34,6 +34,7 @@
 	let is_update_dialog_open = $state(false);
 	let is_override_dialog_open = $state(false);
 	let open_dropdown_menu = $state(false);
+	let is_confirmation_open = $state(false);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
 	$effect(() => {
@@ -87,36 +88,27 @@
 					Override
 				</DropdownMenu.Item>
 
-				<!-- {#if !!node.overrided_at}
-					<DropdownMenu.Item
-						class="!text-red-500 hover:!bg-red-500/20"
-						onclick={async () => {
-							await overrideField({ node_id: node.id, unoverride: true, field_type: 'at' });
-							await invalidateAll();
-						}}
-					>
-						<RefreshCcw class="ml-2 size-4" />
-						Remove Overrided AT
-					</DropdownMenu.Item>
-				{/if} -->
-
 				{#if node.node_type === 'load'}
-					<DropdownMenu.Item class="mt-0.5 p-0">
-						{#snippet children()}
-							<ConfirmationDialog
-								show_trigger={true}
-								trigger_text="Remove load"
-								trigger_variant="destructive"
-								bind:some_open_state={open_dropdown_menu}
-								onConfirm={handleRemoveLoad}
-							/>
-						{/snippet}
+					<DropdownMenu.Item
+						class="!text-red-600 hover:!bg-red-600/10"
+						onclick={() => (is_confirmation_open = true)}
+					>
+						<Trash2 class="ml-2 size-4" />
+						Delete
 					</DropdownMenu.Item>
 				{/if}
 			</DropdownMenu.Group>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 </div>
+
+<ConfirmationDialog
+	bind:open_dialog_state={is_confirmation_open}
+	trigger_text="Remove load"
+	trigger_variant="destructive"
+	bind:some_open_state={open_dropdown_menu}
+	onConfirm={handleRemoveLoad}
+/>
 
 <Dialog.Root {...props} bind:open={is_update_dialog_open}>
 	<Dialog.Content class="max-w-[70%]">
@@ -160,7 +152,6 @@
 </Dialog.Root>
 
 <Dialog.Root {...props} bind:open={is_override_dialog_open}>
-	{console.log(node)}
 	<Dialog.Content class="max-w-[450px]">
 		<Dialog.Header>
 			<Dialog.Title>Override</Dialog.Title>

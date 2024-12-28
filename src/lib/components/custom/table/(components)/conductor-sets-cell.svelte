@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
 	import { updateConductorSets } from '@/db/mutations';
-	import { invalidate, invalidateAll } from '$app/navigation';
-	import { page } from '$app/state';
+	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 
 	let { sets, node_id }: { sets: number; node_id: string } = $props();

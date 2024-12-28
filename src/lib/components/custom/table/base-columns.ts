@@ -9,6 +9,7 @@ import { AddLoadDialog } from '@/components/custom/load';
 import AtFooterCell from './(components)/at-footer-cell.svelte';
 import InsulationsDropdown from './(components)/insulations-dropdown.svelte';
 import PoleDropdown from './(components)/pole-dropdown.svelte';
+import LoadDescriptionCell from './(components)/load-description-cell.svelte';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -31,6 +32,19 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'load_description',
 		header: 'LOAD DESCRIPTION',
+		cell: (info) => {
+			const data = info.row.original;
+
+			if (data.load_data && data.load_data.config_preference === 'DEFAULT') {
+				return info.getValue();
+			}
+
+			return renderComponent(LoadDescriptionCell, {
+				load_description: data.load_description,
+				node_id: data.id,
+				node_type: data.node_type as 'panel' | 'load'
+			});
+		},
 		footer: () => 'MAIN'
 	},
 	{
@@ -53,11 +67,6 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		accessorKey: 'current',
 		header: 'CURRENT (A)',
 		footer: (props) => {
-			// return props.table
-			// 	.getFilteredRowModel()
-			// 	.rows.reduce((sum, row) => sum + row.original.current, 0)
-			// 	.toFixed(2);
-
 			return current_node.current.toFixed(2);
 		}
 	},
@@ -148,13 +157,18 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 
 				header: () => 'Pole',
-				footer: (props) => ''
+				footer: (props) => {
+					return renderComponent(PoleDropdown, {
+						current_pole: current_node.pole as '1' | '2',
+						node_id: current_node.id
+					});
+				}
 			},
 			{
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
 				header: () => 'kAIC',
-				footer: (props) => ''
+				footer: (props) => current_node.kaic || ''
 			}
 		]
 	}
