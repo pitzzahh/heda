@@ -38,6 +38,10 @@
 		}
 
 		if (!focusWithinForm.current) {
+			if (node_type === 'panel' && load_description_state !== load_description) {
+				saveLoadDescChanges();
+			}
+
 			if (
 				node_type === 'load' &&
 				load_description_state !== load_description &&
@@ -47,14 +51,8 @@
 			} else {
 				load_description_state = load_description;
 			}
-
-			if (node_type === 'panel' && load_description_state !== load_description) {
-				saveLoadDescChanges();
-			}
 		}
 	});
-
-	$effect(() => {});
 </script>
 
 <form bind:this={formElement}>
