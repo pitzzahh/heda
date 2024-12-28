@@ -29,7 +29,7 @@
 	async function exportToExcel() {
 		console.log('Root:', root_node);
 		if (!root_node) {
-			toast.warning('No root node found');
+			toast.warning('No project found, nothing to export');
 			return;
 		}
 
@@ -54,24 +54,23 @@
 						const worksheet = workbook.addWorksheet(panel_level);
 
 						// Add headers
-						worksheet.getCell('A1').value = 'DESCRIPTION';
-						worksheet.getCell('A2').value = 'SUPPLY';
-						worksheet.getCell('A3').value = 'FROM';
-						worksheet.getCell('A4').value = 'NAME';
-						worksheet.getCell('J3').value = 'USE';
-						worksheet.getCell('J4').value = 'FEEDER';
+						[
+							{ cell: 'A1', value: 'DESCRIPTION' },
+							{ cell: 'A2', value: 'SUPPLY' },
+							{ cell: 'A3', value: 'FROM' },
+							{ cell: 'A4', value: 'NAME' },
+							{ cell: 'J3', value: 'USE' },
+							{ cell: 'J4', value: 'FEEDER' }
+						].forEach(({ cell, value }) => (worksheet.getCell(cell).value = value));
 
 						worksheet.getCell('B1').value = `: PANELBOARD SCHEDULE`;
 						worksheet.getCell('B3').value = `: ${parent?.panel_data?.name ?? '--'}`;
 						worksheet.getCell('B4').value = `: ${panel_name}`;
 
 						// Bold formatting to all headers
-						worksheet.getCell('A1').font = { bold: true };
-						worksheet.getCell('A2').font = { bold: true };
-						worksheet.getCell('A3').font = { bold: true };
-						worksheet.getCell('A4').font = { bold: true };
-						worksheet.getCell('J3').font = { bold: true };
-						worksheet.getCell('J4').font = { bold: true };
+						['A1', 'A2', 'A3', 'A4', 'J3', 'J4'].forEach((cell) => {
+							worksheet.getCell(cell).font = { bold: true };
+						});
 
 						// Set headers for load schedule with styling.
 						type Header = { text: string; cols: number; subText?: string };
