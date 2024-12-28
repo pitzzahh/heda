@@ -106,7 +106,7 @@
 							} else if (header.text === 'AB' || header.text === 'CA') {
 								const top_cell = worksheet.getCell(5, currentCol);
 								top_cell.border = { top: { style: 'thin' } };
-								
+
 								const cell = worksheet.getCell(6, currentCol);
 								cell.value = header.text;
 								cell.font = { bold: true };
