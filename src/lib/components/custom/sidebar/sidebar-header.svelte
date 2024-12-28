@@ -73,11 +73,58 @@
 						worksheet.getCell('J3').font = { bold: true };
 						worksheet.getCell('J4').font = { bold: true };
 
-						// Merge cells for each row
-						// worksheet.mergeCells('A1:J1');
-						// worksheet.mergeCells('A2:J2');
-						// worksheet.mergeCells('A3:I3');
-						// worksheet.mergeCells('A4:I4');
+						// // add top border to headers of load schedule
+						// for (let col = 1; col <= 13; col++) {
+						// 	worksheet.getCell(5, col).border = { top: { style: 'thin' } };
+						// }
+
+						// Set headers for load schedule
+						type Header = { text: string; cols: number };
+						const headers: Header[] = [
+							{ text: 'CKT NO.', cols: 1 },
+							{ text: 'LOAD DESCRIPTION', cols: 1 },
+							{ text: 'CAPACITY\n(VA)', cols: 1 },
+							{ text: 'VOLTAGE\n(V)', cols: 1 },
+							{ text: '\nAB', cols: 1 },
+							{ text: 'CURRENT\nBC', cols: 1 },
+							{ text: '\nCA', cols: 1 },
+							{ text: 'CIRCUIT BREAKER', cols: 3 },
+							{ text: 'FEEDER CONDUCTOR', cols: 1 },
+							{ text: 'EGC', cols: 1 },
+							{ text: 'CONDUIT', cols: 1 }
+						];
+
+						let currentCol = 1;
+						headers.forEach((header: Header) => {
+							if (header.cols === 1) {
+								const cell = worksheet.getCell(5, currentCol);
+								worksheet.mergeCells(5, currentCol, 6, currentCol);
+								cell.value = header.text;
+								cell.font = { bold: true };
+								cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+								cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
+							} else {
+								worksheet.mergeCells(5, currentCol, 5, currentCol + header.cols - 1);
+								const cell = worksheet.getCell(5, currentCol);
+								cell.value = header.text;
+								cell.font = { bold: true };
+								cell.alignment = { horizontal: 'center', wrapText: false };
+								cell.border = { top: { style: 'thin' } };
+
+								// Sub-headers for circuit breaker
+								if (header.text === 'CIRCUIT BREAKER') {
+									const subHeaders: string[] = ['AT', 'AF', 'POLE'];
+									subHeaders.forEach((text: string, i: number) => {
+										const subCell = worksheet.getCell(6, currentCol + i);
+										subCell.value = text;
+										subCell.font = { bold: true };
+										subCell.alignment = { horizontal: 'center' };
+										subCell.border = { bottom: { style: 'thick' } };
+									});
+								}
+							}
+							currentCol += header.cols;
+						});
 
 						// Set column widths
 						worksheet.columns = [
