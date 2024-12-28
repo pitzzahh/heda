@@ -76,6 +76,7 @@ export function computeConductorSize({
 	current: number;
 	is_adjustment_factor_constant: boolean;
 }) {
+	const motor_loads = ['1P Motor - Rated Horse Power', '1P Motor - Rated Current'];
 	const adjusted_current = computeAdjustedCurrent({
 		set,
 		ambient_temp,
@@ -88,11 +89,13 @@ export function computeConductorSize({
 
 	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
 	const range = AMPACITY_RANGES.find(
-		(range) => adjusted_current > range.min && adjusted_current < range.max
+		(range) => adjusted_current >= range.min && adjusted_current <= range.max
 	);
-	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
 
-	return AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
+	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
+	const conductor_size = AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
+
+	return load_type && motor_loads.includes(load_type) && conductor_size <= 2 ? 3.5 : conductor_size;
 }
 
 export function computeAdjustedCurrent({
@@ -125,6 +128,7 @@ export function computeAdjustedCurrent({
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
 
+	console.log(load_type, adjusted_current);
 	return adjusted_current;
 }
 
