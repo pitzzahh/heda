@@ -5,6 +5,7 @@
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
+	import { getOrdinalSuffix } from '@/utils/format';
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -20,11 +21,6 @@
 		toast.warning('This feature is not yet implemented');
 	}
 
-	function handleNew() {
-		// TODO: Implement new document functionality
-		toast.warning('This feature is not yet implemented');
-	}
-
 	function setModeAndColor(mode: 'dark' | 'light') {
 		settingsState.setThemeColor(settingsState.themeColor, mode);
 		setMode(mode);
@@ -37,20 +33,18 @@
 			return;
 		}
 
-		function getOrdinalSuffix(n: number): string {
-			const s = ['th', 'st', 'nd', 'rd'];
-			const v = n % 100;
-			return n + (s[(v - 20) % 10] || s[v] || s[0]);
-		}
-
 		const workbook = new ExcelJS.Workbook();
 
 		async function processNodeChildren(nodeId: string, parent?: Node, depth: number = 1) {
 			const children = await getChildNodesByParentId(nodeId);
+			if (depth === 1 && children.length === 0) {
+				toast.warning('No panels/loads found');
+				return false;
+			}
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
 				if (child.node_type === 'root') {
-					return await processNodeChildren(child.id, child, depth + 1);
+					await processNodeChildren(child.id, child, depth + 1);
 				} else if (child.node_type === 'panel') {
 					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
 					const panel_level = getOrdinalSuffix(depth + 1);
@@ -101,10 +95,11 @@
 					`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
 				);
 			}
-			return children;
+			return true;
 		}
 
-		await processNodeChildren(root_node.id);
+		const is_valid = await processNodeChildren(root_node.id);
+		if (!is_valid) return;
 
 		// Write the workbook and trigger download
 		const buffer = await workbook.xlsx.writeBuffer();
