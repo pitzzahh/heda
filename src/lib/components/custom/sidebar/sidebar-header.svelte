@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ExcelJS from 'exceljs';
+	import ExcelJS, { type Alignment } from 'exceljs';
 	import { Save, Moon, Sun, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { buttonVariants } from '@/components/ui/button/index.js';
@@ -36,11 +36,15 @@
 
 		const workbook = new ExcelJS.Workbook();
 
-		async function processNodeChildren(nodeId: string, parent?: Node, depth: number = 1) {
+		async function processNodeChildren(
+			nodeId: string,
+			parent?: Node,
+			depth: number = 1
+		): Promise<{ valid: boolean; message?: string }> {
 			const children = await getChildNodesByParentId(nodeId);
 			if (depth === 1 && children.length === 0) {
 				toast.warning('No panels/loads found');
-				return false;
+				return { valid: false, message: 'No panels/loads found' };
 			}
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
@@ -158,6 +162,78 @@
 							{ width: 15 }
 						];
 					}
+					// Get and write panel loads
+					const loads = await getChildNodesByParentId(child.id);
+					let currentRow = 7;
+					for (const load of loads) {
+						if (load.node_type === 'load' && load.load_data) {
+							const worksheet = workbook.getWorksheet(panel_level);
+							if (!worksheet) {
+								return {
+									valid: false,
+									message: 'Failed to get worksheet of load level'
+								};
+							}
+							const centerAlignment: Partial<Alignment> = {
+								vertical: 'middle',
+								horizontal: 'center'
+							};
+
+							const cellA = worksheet.getCell(`A${currentRow}`);
+							cellA.value = load.circuit_number;
+							cellA.alignment = centerAlignment;
+
+							const cellB = worksheet.getCell(`B${currentRow}`);
+							cellB.value = load.load_data.load_description;
+							cellB.alignment = { vertical: 'middle', horizontal: 'left' };
+
+							const cellC = worksheet.getCell(`C${currentRow}`);
+							cellC.value = 'TBA';
+							cellC.alignment = centerAlignment;
+
+							const cellD = worksheet.getCell(`D${currentRow}`);
+							cellD.value = 'TBA';
+							cellD.alignment = centerAlignment;
+
+							const cellE = worksheet.getCell(`E${currentRow}`);
+							cellE.value = 'TBA';
+							cellE.alignment = centerAlignment;
+
+							const cellF = worksheet.getCell(`F${currentRow}`);
+							cellF.value = 'TBA';
+							cellF.alignment = centerAlignment;
+
+							const cellG = worksheet.getCell(`G${currentRow}`);
+							cellG.value = 'TBA';
+							cellG.alignment = centerAlignment;
+
+							const cellH = worksheet.getCell(`H${currentRow}`);
+							cellH.value = 'TBA';
+							cellH.alignment = centerAlignment;
+
+							const cellI = worksheet.getCell(`I${currentRow}`);
+							cellI.value = 'TBA';
+							cellI.alignment = centerAlignment;
+
+							const cellJ = worksheet.getCell(`J${currentRow}`);
+							cellJ.value = 'TBA';
+							cellJ.alignment = centerAlignment;
+
+							const cellK = worksheet.getCell(`K${currentRow}`);
+							cellK.value = 'TBA';
+							cellK.alignment = centerAlignment;
+
+							const cellL = worksheet.getCell(`L${currentRow}`);
+							cellL.value = 'TBA';
+							cellL.alignment = centerAlignment;
+
+							const cellM = worksheet.getCell(`M${currentRow}`);
+							cellM.value = 'TBA';
+							cellM.alignment = centerAlignment;
+
+							currentRow++;
+						}
+					}
 					await processNodeChildren(child.id, child, depth + 1);
 				}
 				const node_type = parent?.node_type;
@@ -166,11 +242,18 @@
 						`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
 					);
 			}
-			return true;
+			return {
+				valid: true
+			};
 		}
 
-		const is_valid = await processNodeChildren(root_node.id);
-		if (!is_valid) return;
+		const process_result = await processNodeChildren(root_node.id);
+		if (!process_result.valid) {
+			toast.warning(process_result.message ?? 'Something went wrong while exporting', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
 
 		// Write the workbook and trigger download
 		const buffer = await workbook.xlsx.writeBuffer();
@@ -239,7 +322,7 @@
 				<FileUp class="h-4 w-4" />
 				Export to Excel
 			</Tooltip.Trigger>
-			<Tooltip.Content>New document</Tooltip.Content>
+			<Tooltip.Content>Export project to excel</Tooltip.Content>
 		</Tooltip.Root>
 	</Tooltip.Provider>
 </div>
