@@ -38,14 +38,19 @@
 		}
 
 		if (!focusWithinForm.current) {
-			if (node_type === 'panel' && load_description_state !== load_description) {
+			if (
+				node_type === 'panel' &&
+				load_description_state !== load_description &&
+				load_description_state
+			) {
 				saveLoadDescChanges();
-			}
+			} else load_description_state = load_description;
 
 			if (
 				node_type === 'load' &&
 				load_description_state !== load_description &&
-				load_description_state !== load_description_suffix
+				load_description_state !== load_description_suffix &&
+				load_description_state
 			) {
 				saveLoadDescChanges();
 			} else {
