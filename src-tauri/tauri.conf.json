@@ -12,6 +12,7 @@
 	"app": {
 		"windows": [
 			{
+				"center": true,
 				"title": "Hierarchical Electrical Design Analyzer v0.2.24",
 				"width": 950,
 				"height": 650,

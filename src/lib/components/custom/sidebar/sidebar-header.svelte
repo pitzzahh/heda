@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { Save, FilePlus, Moon, Sun } from '@/assets/icons';
+	import ExcelJS from 'exceljs';
+	import { Save, Moon, Sun, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
+	import { buttonVariants } from '@/components/ui/button/index.js';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
 	import { setMode, systemPrefersMode } from 'mode-watcher';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import type { Project } from '@/db/schema';
+	import type { Project, Node } from '@/db/schema';
+	import { getChildNodesByParentId } from '@/db/queries/index';
 
-	let { project }: { project?: Project } = $props();
+	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
 	const settingsState = getSettingsState();
 
@@ -27,9 +29,105 @@
 		settingsState.setThemeColor(settingsState.themeColor, mode);
 		setMode(mode);
 	}
+
+	async function exportToExcel() {
+		console.log('Root:', root_node);
+		if (!root_node) {
+			toast.warning('No root node found');
+			return;
+		}
+
+		function getOrdinalSuffix(n: number): string {
+			const s = ['th', 'st', 'nd', 'rd'];
+			const v = n % 100;
+			return n + (s[(v - 20) % 10] || s[v] || s[0]);
+		}
+
+		const workbook = new ExcelJS.Workbook();
+
+		async function processNodeChildren(nodeId: string, parent?: Node, depth: number = 1) {
+			const children = await getChildNodesByParentId(nodeId);
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				if (child.node_type === 'root') {
+					return await processNodeChildren(child.id, child, depth + 1);
+				} else if (child.node_type === 'panel') {
+					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
+					const panel_level = getOrdinalSuffix(depth + 1);
+					console.log(`Panel: ${panel_name} (${panel_level})`);
+
+					if (!workbook.getWorksheet(panel_level)) {
+						const worksheet = workbook.addWorksheet(panel_level);
+
+						// Add headers
+						worksheet.getCell('A1').value = 'DESCRIPTION';
+						worksheet.getCell('A2').value = 'SUPPLY';
+						worksheet.getCell('A3').value = 'FROM';
+						worksheet.getCell('A4').value = 'NAME';
+						worksheet.getCell('J3').value = 'USE';
+						worksheet.getCell('J4').value = 'FEEDER';
+
+						worksheet.getCell('B1').value = `: PANELBOARD SCHEDULE`;
+						worksheet.getCell('B3').value = `: ${parent?.panel_data?.name ?? '--'}`;
+						worksheet.getCell('B4').value = `: ${panel_name}`;
+
+						// Bold formatting to all headers
+						worksheet.getCell('A1').font = { bold: true };
+						worksheet.getCell('A2').font = { bold: true };
+						worksheet.getCell('A3').font = { bold: true };
+						worksheet.getCell('A4').font = { bold: true };
+						worksheet.getCell('J3').font = { bold: true };
+						worksheet.getCell('J4').font = { bold: true };
+
+						// Merge cells for each row
+						// worksheet.mergeCells('A1:J1');
+						// worksheet.mergeCells('A2:J2');
+						// worksheet.mergeCells('A3:I3');
+						// worksheet.mergeCells('A4:I4');
+
+						// Set column widths
+						worksheet.columns = [
+							{ width: 15 },
+							{ width: 20 },
+							{ width: 15 },
+							{ width: 15 },
+							{ width: 15 }
+						];
+					}
+					await processNodeChildren(child.id, child, depth + 1);
+				}
+				const node_type = parent?.node_type;
+				console.log(
+					`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
+				);
+			}
+			return children;
+		}
+
+		await processNodeChildren(root_node.id);
+
+		// Write the workbook and trigger download
+		const buffer = await workbook.xlsx.writeBuffer();
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+		});
+		const url = URL.createObjectURL(blob);
+
+		// Create a link and download the file
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `${project?.project_name ?? 'Exported Data'}.xlsx`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		// Free resources
+		URL.revokeObjectURL(url);
+		toast.warning('This feature is still under development');
+	}
 </script>
 
-<div class="w-full p-2">
+<div class="flex w-full items-center justify-between p-2">
 	<div class="flex w-full items-center gap-2">
 		<Tooltip.Provider>
 			<Tooltip.Root>
@@ -43,17 +141,6 @@
 				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<Button variant="outline" size="sm" onclick={handleNew}>
-						<FilePlus class="h-4 w-4" />
-					</Button>
-				</Tooltip.Trigger>
-				<Tooltip.Content>New document</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
-
 		<SettingsDialog {project} />
 
 		<DropdownMenu.Root>
@@ -77,4 +164,16 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	</div>
+	<Tooltip.Provider>
+		<Tooltip.Root>
+			<Tooltip.Trigger
+				class={buttonVariants({ variant: 'outline', size: 'sm' })}
+				onclick={exportToExcel}
+			>
+				<FileUp class="h-4 w-4" />
+				Export to Excel
+			</Tooltip.Trigger>
+			<Tooltip.Content>New document</Tooltip.Content>
+		</Tooltip.Root>
+	</Tooltip.Provider>
 </div>

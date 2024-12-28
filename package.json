@@ -62,6 +62,7 @@
 		"@tauri-apps/plugin-process": "~2",
 		"@tauri-apps/plugin-updater": "~2",
 		"dompurify": "^3.2.3",
+		"exceljs": "^4.4.0",
 		"formsnap": "^2.0.0",
 		"marked": "^15.0.4",
 		"mode-watcher": "^0.5.0",
