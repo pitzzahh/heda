@@ -73,21 +73,16 @@
 						worksheet.getCell('J3').font = { bold: true };
 						worksheet.getCell('J4').font = { bold: true };
 
-						// // add top border to headers of load schedule
-						// for (let col = 1; col <= 13; col++) {
-						// 	worksheet.getCell(5, col).border = { top: { style: 'thin' } };
-						// }
-
-						// Set headers for load schedule
-						type Header = { text: string; cols: number };
+						// Set headers for load schedule with styling.
+						type Header = { text: string; cols: number; subText?: string };
 						const headers: Header[] = [
 							{ text: 'CKT NO.', cols: 1 },
 							{ text: 'LOAD DESCRIPTION', cols: 1 },
-							{ text: 'CAPACITY\n(VA)', cols: 1 },
-							{ text: 'VOLTAGE\n(V)', cols: 1 },
-							{ text: '\nAB', cols: 1 },
-							{ text: 'CURRENT\nBC', cols: 1 },
-							{ text: '\nCA', cols: 1 },
+							{ text: 'CAPACITY', cols: 1, subText: '(VA)' },
+							{ text: 'VOLTAGE', cols: 1, subText: '(V)' },
+							{ text: 'AB', cols: 1 },
+							{ text: 'CURRENT', cols: 1, subText: 'BC' },
+							{ text: 'CA', cols: 1 },
 							{ text: 'CIRCUIT BREAKER', cols: 3 },
 							{ text: 'FEEDER CONDUCTOR', cols: 1 },
 							{ text: 'EGC', cols: 1 },
@@ -96,19 +91,39 @@
 
 						let currentCol = 1;
 						headers.forEach((header: Header) => {
-							if (header.cols === 1) {
-								const cell = worksheet.getCell(5, currentCol);
+							const cell = worksheet.getCell(5, currentCol);
+							if (header.subText) {
+								cell.value = header.text;
+								cell.font = { bold: true };
+								cell.alignment = { horizontal: 'center' };
+								cell.border = { top: { style: 'thin' } };
+
+								const subCell = worksheet.getCell(6, currentCol);
+								subCell.value = header.subText;
+								subCell.font = { bold: true };
+								subCell.alignment = { horizontal: 'center' };
+								subCell.border = { bottom: { style: 'thick' } };
+							} else if (header.text === 'AB' || header.text === 'CA') {
+								const top_cell = worksheet.getCell(5, currentCol);
+								top_cell.border = { top: { style: 'thin' } };
+								
+								const cell = worksheet.getCell(6, currentCol);
+								cell.value = header.text;
+								cell.font = { bold: true };
+								cell.alignment = { horizontal: 'center' };
+								cell.border = { bottom: { style: 'thick' } };
+							} else if (header.cols === 1) {
 								worksheet.mergeCells(5, currentCol, 6, currentCol);
 								cell.value = header.text;
 								cell.font = { bold: true };
-								cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+								cell.alignment = { vertical: 'middle', horizontal: 'center' };
 								cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
 							} else {
 								worksheet.mergeCells(5, currentCol, 5, currentCol + header.cols - 1);
 								const cell = worksheet.getCell(5, currentCol);
 								cell.value = header.text;
 								cell.font = { bold: true };
-								cell.alignment = { horizontal: 'center', wrapText: false };
+								cell.alignment = { horizontal: 'center' };
 								cell.border = { top: { style: 'thin' } };
 
 								// Sub-headers for circuit breaker
@@ -129,8 +144,16 @@
 						// Set column widths
 						worksheet.columns = [
 							{ width: 15 },
-							{ width: 20 },
+							{ width: 30 },
 							{ width: 15 },
+							{ width: 15 },
+							{ width: 15 },
+							{ width: 15 },
+							{ width: 15 },
+							{ width: 10 },
+							{ width: 10 },
+							{ width: 10 },
+							{ width: 25 },
 							{ width: 15 },
 							{ width: 15 }
 						];
