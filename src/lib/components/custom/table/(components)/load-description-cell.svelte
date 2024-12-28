@@ -9,8 +9,8 @@
 		node_id,
 		node_type
 	}: { load_description: string; node_id: string; node_type: 'panel' | 'load' } = $props();
-	let load_desc = load_description.split(' - ').at(-1);
-	let load_description_state = $state(load_desc || '');
+	let load_description_suffix = load_description.split(' - ').at(-1);
+	let load_description_state = $state(load_description);
 	let formElement = $state<HTMLFormElement>();
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
@@ -18,7 +18,10 @@
 		try {
 			await updateLoadDescription({
 				node_id,
-				load_description: load_description_state,
+				load_description:
+					node_type === 'load'
+						? (load_description.split(' - ').at(0) as string) + ' - ' + load_description_state
+						: load_description_state,
 				node_type
 			});
 			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
@@ -30,20 +33,33 @@
 	}
 
 	$effect(() => {
-		if (!focusWithinForm.current && load_description_state !== load_desc) {
-			if (!load_description_state) {
-				load_description_state = load_desc as string;
-				return;
+		if (focusWithinForm.current && node_type === 'load') {
+			load_description_state = load_description_suffix as string;
+		}
+
+		if (!focusWithinForm.current) {
+			if (
+				node_type === 'load' &&
+				load_description_state !== load_description &&
+				load_description_state !== load_description_suffix
+			) {
+				saveLoadDescChanges();
+			} else {
+				load_description_state = load_description;
 			}
-			saveLoadDescChanges();
+
+			if (node_type === 'panel' && load_description_state !== load_description) {
+				saveLoadDescChanges();
+			}
 		}
 	});
+
+	$effect(() => {});
 </script>
 
 <form bind:this={formElement}>
 	<input
 		type="text"
-		{...!focusWithinForm.current && { value: load_desc }}
 		bind:value={load_description_state}
 		class="w-full bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
