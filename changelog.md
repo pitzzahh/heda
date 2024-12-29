@@ -10,10 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Add
 
 - Exporting of panelboard schedule to excel file.
+- In app updates.
+- Changelog history.
 
 ### Fix
 
 - In app updates
+- Changelog history loader.
 
 
 ## [0.2.24] - 2024-12-27
