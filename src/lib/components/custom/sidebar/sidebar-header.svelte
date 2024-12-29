@@ -316,8 +316,8 @@
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
 						{ column: 'B', value: ' ' },
-						{ column: 'C', value: '230' },
-						{ column: 'D', value: 'TBA' },
+						{ column: 'C', value: 'TBA' },
+						{ column: 'D', value: '230' },
 						{ column: 'E', value: 'TBA' },
 						{ column: 'F', value: ' ' },
 						{ column: 'G', value: ' ' },
