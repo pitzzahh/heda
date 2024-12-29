@@ -209,22 +209,46 @@
 								horizontal: 'center'
 							};
 							circuit_number_cell.alignment = center_alignment_reference;
+							circuit_number_cell.border = { bottom: { style: 'thin' } };
+
 							load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
+							load_description_cell.border = { bottom: { style: 'thin' } };
+
 							capacity_cell.alignment = center_alignment_reference;
+							capacity_cell.border = { bottom: { style: 'thin' } };
+
 							voltage_cell.alignment = center_alignment_reference;
+							voltage_cell.border = { bottom: { style: 'thin' } };
+
 							ab_cell.alignment = center_alignment_reference;
+							ab_cell.border = { bottom: { style: 'thin' } };
+
 							current_bc_cell.alignment = center_alignment_reference;
+							current_bc_cell.border = { bottom: { style: 'thin' } };
+
 							ca_cell.alignment = center_alignment_reference;
+							ca_cell.border = { bottom: { style: 'thin' } };
+
 							at_cell.alignment = center_alignment_reference;
+							at_cell.border = { bottom: { style: 'thin' } };
+
 							af_cell.alignment = center_alignment_reference;
+							af_cell.border = { bottom: { style: 'thin' } };
+
 							pole_cell.alignment = center_alignment_reference;
+							pole_cell.border = { bottom: { style: 'thin' } };
+
 							feeder_conductor_cell.alignment = center_alignment_reference;
+							feeder_conductor_cell.border = { bottom: { style: 'thin' } };
+
 							egc_cell.alignment = center_alignment_reference;
+							egc_cell.border = { bottom: { style: 'thin' } };
+
 							conduit_cell.alignment = center_alignment_reference;
+							conduit_cell.border = { bottom: { style: 'thin' } };
 
 							if (load.node_type === 'load' && load.load_data) {
 								const load_data = load.load_data;
-								voltage_cell.value = load.voltage;
 								ab_cell.value = 'TBA';
 								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
@@ -243,6 +267,7 @@
 							}
 							circuit_number_cell.value = load.circuit_number;
 							load_description_cell.value = load.load_description;
+							voltage_cell.value = load.voltage;
 							capacity_cell.value = load.va;
 							at_cell.value = load.at;
 							af_cell.value = load.overrided_ampere_frames;
@@ -268,11 +293,12 @@
 						cell.value = value;
 						cell.font = { bold: true };
 						cell.alignment = centerAlignment;
+						cell.border = { bottom: { style: 'thin' } };
 					};
 
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
-						{ column: 'B', value: 'TBA' },
+						{ column: 'B', value: ' ' },
 						{ column: 'C', value: 'TBA' },
 						{ column: 'D', value: 'TBA' },
 						{ column: 'E', value: 'TBA' }
