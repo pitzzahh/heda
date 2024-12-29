@@ -10,7 +10,7 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
-	import { getChildNodesByParentId, getComputedLoads } from '@/db/queries/index';
+	import { getComputedLoads } from '@/db/queries/index';
 	import { dev } from '$app/environment';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
@@ -42,7 +42,7 @@
 			depth: number = 1,
 			end_row: number = 1 // Track row position for appending panels
 		): Promise<{ valid: boolean; message?: string; is_system_error?: boolean }> {
-			const children = await getChildNodesByParentId(nodeId);
+			const children = await getComputedLoads(nodeId);
 			if (depth === 1 && children.length === 0) {
 				toast.warning('No panels/loads found');
 				return { valid: false, message: 'No panels/loads found' };
@@ -184,8 +184,8 @@
 					console.log('loads data', loads);
 					let last_row = end_row + 6;
 
-					for (let i = 0; i < loads.length; i++) {
-						const load = loads[i];
+					for (let j = 0; j < loads.length; j++) {
+						const load = loads[j];
 						if (
 							load.node_type === 'load' ||
 							(load.node_type === 'panel' && (load.load_data || load.panel_data))
