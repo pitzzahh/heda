@@ -247,6 +247,74 @@
 							cellM.alignment = centerAlignment;
 
 							last_row++;
+						} else if(load.node_type === 'panel' && load.panel_data) {
+							const worksheet = workbook.getWorksheet(panel_level);
+							const panel_data = load.panel_data;
+							if (!worksheet) {
+								return {
+									valid: false,
+									message: 'Failed to get worksheet of load level',
+									is_system_error: true
+								};
+							}
+							const centerAlignment: Partial<Alignment> = {
+								vertical: 'middle',
+								horizontal: 'center'
+							};
+
+							const cellA = worksheet.getCell(`A${last_row}`);
+							cellA.value = load.circuit_number;
+							cellA.alignment = centerAlignment;
+
+							const cellB = worksheet.getCell(`B${last_row}`);
+							cellB.value = panel_data.name;
+							cellB.alignment = { vertical: 'middle', horizontal: 'left' };
+
+							const cellC = worksheet.getCell(`C${last_row}`);
+							cellC.value = 'TBA';
+							cellC.alignment = centerAlignment;
+
+							const cellD = worksheet.getCell(`D${last_row}`);
+							cellD.value = 'TBA';
+							cellD.alignment = centerAlignment;
+
+							const cellE = worksheet.getCell(`E${last_row}`);
+							cellE.value = 'TBA';
+							cellE.alignment = centerAlignment;
+
+							const cellF = worksheet.getCell(`F${last_row}`);
+							cellF.value = 'TBA';
+							cellF.alignment = centerAlignment;
+
+							const cellG = worksheet.getCell(`G${last_row}`);
+							cellG.value = 'TBA';
+							cellG.alignment = centerAlignment;
+
+							const cellH = worksheet.getCell(`H${last_row}`);
+							cellH.value = 'TBA';
+							cellH.alignment = centerAlignment;
+
+							const cellI = worksheet.getCell(`I${last_row}`);
+							cellI.value = 'TBA';
+							cellI.alignment = centerAlignment;
+
+							const cellJ = worksheet.getCell(`J${last_row}`);
+							cellJ.value = 'TBA';
+							cellJ.alignment = centerAlignment;
+
+							const cellK = worksheet.getCell(`K${last_row}`);
+							cellK.value = 'TBA';
+							cellK.alignment = centerAlignment;
+
+							const cellL = worksheet.getCell(`L${last_row}`);
+							cellL.value = 'TBA';
+							cellL.alignment = centerAlignment;
+
+							const cellM = worksheet.getCell(`M${last_row}`);
+							cellM.value = 'TBA';
+							cellM.alignment = centerAlignment;
+
+							last_row++;
 						}
 					}
 					end_row += last_row + 2;
