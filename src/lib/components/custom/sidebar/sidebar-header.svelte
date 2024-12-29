@@ -369,8 +369,8 @@
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
 						{ column: 'B', value: ' ' },
-						{ column: 'C', value: node_data_summary.va.toString() },
-						{ column: 'D', value: node_data_summary.voltage.toString() },
+						{ column: 'C', value: node_data_summary.voltage.toString() },
+						{ column: 'D', value: node_data_summary.va.toString() },
 						{ column: 'E', value: node_data_summary.current.toString() },
 						{ column: 'F', value: ' ' },
 						{ column: 'G', value: ' ' },
@@ -389,7 +389,8 @@
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
 
 					// bottom part
-					worksheet.getCell(`A${last_row + 1}`).value = `l(t) = 1.25 * ${node_data_summary.voltage} `;
+					worksheet.getCell(`A${last_row + 1}`).value =
+						`l(t) = 1.25 * ${node_data_summary.voltage} `;
 					worksheet.getCell(`C${last_row + 1}`).value = 1.25 * node_data_summary.voltage;
 
 					end_row += last_row + 3;
