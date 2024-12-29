@@ -267,7 +267,7 @@
 						circuit_number_cell.alignment = center_alignment_reference;
 						circuit_number_cell.border = bottom_border_reference;
 
-						load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
+						load_description_cell.alignment = center_alignment_reference;
 						load_description_cell.border = bottom_border_reference;
 
 						voltage_cell.alignment = center_alignment_reference;
