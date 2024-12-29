@@ -10,7 +10,7 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
-	import { getComputedLoads } from '@/db/queries/index';
+	import { getComputedLoads, getNodeById } from '@/db/queries/index';
 	import { dev } from '$app/environment';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
@@ -264,29 +264,36 @@
 							conduit_cell.alignment = center_alignment_reference;
 							conduit_cell.border = { bottom: { style: 'thin' } };
 
+							const node_data = await getNodeById(load.id);
+
+							if (!node_data) {
+								return {
+									valid: false,
+									message: 'Failed to get node data',
+									is_system_error: true
+								};
+							}
+
 							if (load.node_type === 'load' && load.load_data) {
-								const load_data = load.load_data;
 								ab_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
-								conduit_cell.value = 'TBA';
 							} else if (load.node_type === 'panel' && load.panel_data) {
-								const panel_data = load.panel_data;
-								voltage_cell.value = 'TBA';
 								ab_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
-								conduit_cell.value = 'TBA';
 							}
 							circuit_number_cell.value = load.circuit_number;
 							load_description_cell.value = load.load_description;
 							voltage_cell.value = load.voltage;
 							capacity_cell.value = load.va;
+							current_bc_cell.value = load.adjusted_current ?? load.current;
 							at_cell.value = load.at;
 							af_cell.value = load.overrided_ampere_frames;
 							pole_cell.value = load.pole;
+							conduit_cell.value = node_data.conduit_size;
 							last_row++;
 						}
 					}
