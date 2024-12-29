@@ -99,7 +99,7 @@
 					worksheet.getCell(`B${end_row + 1}`).value =
 						`: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
 					worksheet.getCell(`B${end_row + 2}`).value =
-						`: ${parent?.panel_data?.name?.toUpperCase() ?? '--'}`;
+						`: ${parent?.panel_data?.name?.toUpperCase() ?? 'Transformer'}`;
 					worksheet.getCell(`B${end_row + 3}`).value = `: ${panel_name}`;
 
 					// Bold formatting to all headers
@@ -348,10 +348,12 @@
 					if (!node_data_summary) {
 						return {
 							valid: false,
-							message: 'Failed to get total panel data',
+							message: 'Failed to get MAIN data',
 							is_system_error: true
 						};
 					}
+
+					console.log({ node_data_summary });
 
 					const centerAlignment: Partial<Alignment> = {
 						vertical: 'middle',
@@ -362,27 +364,28 @@
 						const cell = worksheet.getCell(`${column}${last_row}`);
 						cell.value = value;
 						cell.font = { bold: true };
-						cell.alignment = centerAlignment;
+						cell.alignment =
+							column === 'B' ? { vertical: 'middle', horizontal: 'left' } : centerAlignment;
 						cell.border = { bottom: { style: 'thin' } };
 					};
 
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
-						{ column: 'B', value: ' ' },
+						{ column: 'B', value: 'MAIN' },
 						{ column: 'C', value: node_data_summary.voltage.toString() },
 						{ column: 'D', value: node_data_summary.va.toString() },
 						{ column: 'E', value: node_data_summary.current.toString() },
-						{ column: 'F', value: ' ' },
-						{ column: 'G', value: ' ' },
-						{ column: 'H', value: ' ' },
-						{ column: 'I', value: ' ' },
-						{ column: 'J', value: ' ' },
-						{ column: 'K', value: ' ' },
-						{ column: 'L', value: ' ' },
-						{ column: 'M', value: ' ' },
-						{ column: 'N', value: ' ' },
-						{ column: 'O', value: ' ' },
-						{ column: 'P', value: ' ' },
+						{ column: 'F', value: node_data_summary.at.toString() },
+						{ column: 'G', value: node_data_summary.ampere_frames.toString() },
+						{ column: 'H', value: node_data_summary.pole ?? 'N/A' },
+						{ column: 'I', value: node_data_summary.kaic ?? 'N/A' },
+						{ column: 'J', value: node_data_summary.conductor_sets?.toString() ?? 'N/A' },
+						{ column: 'K', value: node_data_summary.conductor_qty?.toString() ?? 'N/A' },
+						{ column: 'L', value: node_data_summary.conductor_size.toString() },
+						{ column: 'M', value: node_data_summary.conductor_insulation ?? 'N/A' },
+						{ column: 'N', value: node_data_summary.egc_size.toString() },
+						{ column: 'O', value: node_data_summary.egc_insulation ?? 'N/A' },
+						{ column: 'P', value: node_data_summary.conduit_size.toString() },
 						{ column: 'Q', value: ' ' }
 					];
 
