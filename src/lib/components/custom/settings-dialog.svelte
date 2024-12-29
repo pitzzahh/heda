@@ -178,14 +178,9 @@
 									if (update_state === 'available' && app_update) {
 										download_progress = 0;
 										update_state = 'downloading';
-										installUpdate(
-											app_update,
-											() => {},
-											(progress) => {
-												download_progress = progress;
-											}
-										);
-										return;
+										return installUpdate(app_update, true, (progress) => {
+											download_progress = progress;
+										});
 									}
 									if (update_state === 'processing' || update_state === 'no_updates') return;
 									update_state = 'processing';
@@ -217,7 +212,7 @@
 									{:else if update_state === 'no_updates'}
 										No updates available
 									{:else if update_state === 'downloading'}
-										{download_progress}%
+										{Math.round(download_progress)}%
 									{:else if update_state === 'error'}
 										Something went wrong while checking for updates
 									{:else}
