@@ -388,7 +388,11 @@
 
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
 
-					end_row += last_row + 2;
+					// bottom part
+					worksheet.getCell(`A${last_row}`).value = `l(t) = 1.25 * ${node_data_summary.voltage} `;
+					worksheet.getCell(`C${last_row + 1}`).value = 1.25 * node_data_summary.voltage;
+
+					end_row += last_row + 3;
 					await processNodeChildren(child.id, child, depth + 1, last_row);
 				}
 				const node_type = parent?.node_type;
