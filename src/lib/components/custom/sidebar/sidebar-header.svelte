@@ -389,13 +389,13 @@
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
 
 					// bottom part
-					const last_cell = worksheet.getCell(`A${last_row + 1}`);
-					last_cell.value =
-						`l(t) = 1.25 * ${node_data_summary.voltage} `;
-						last_cell.alignment = centerAlignment;
-					const last_total_cell = worksheet.getCell(`C${last_row + 1}`)
-					last_total_cell.value = 1.25 * node_data_summary.voltage;
-					last_total_cell.alignment = centerAlignment;
+					// const last_cell = worksheet.getCell(`A${last_row + 1}`);
+					// last_cell.value =
+					// 	`l(t) = 1.25 * ${node_data_summary.voltage} `;
+					// 	last_cell.alignment = centerAlignment;
+					// const last_total_cell = worksheet.getCell(`C${last_row + 1}`)
+					// last_total_cell.value = 1.25 * node_data_summary.voltage;
+					// last_total_cell.alignment = centerAlignment;
 
 					end_row += last_row + 3;
 					await processNodeChildren(child.id, child, depth + 1, last_row);
