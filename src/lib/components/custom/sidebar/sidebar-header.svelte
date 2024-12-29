@@ -208,77 +208,68 @@
 
 					for (let j = 0; j < loads.length; j++) {
 						const load = loads[j];
-						if (
-							load.node_type === 'load' ||
-							(load.node_type === 'panel' && (load.load_data || load.panel_data))
-						) {
-							const circuit_number_cell = worksheet.getCell(`A${last_row}`);
-							const load_description_cell = worksheet.getCell(`B${last_row}`);
-							const capacity_cell = worksheet.getCell(`C${last_row}`);
-							const voltage_cell = worksheet.getCell(`D${last_row}`);
-							const current_cell = worksheet.getCell(`E${last_row}`);
-							const at_cell = worksheet.getCell(`F${last_row}`);
-							const af_cell = worksheet.getCell(`G${last_row}`);
-							const pole_cell = worksheet.getCell(`H${last_row}`);
-							const feeder_conductor_cell = worksheet.getCell(`I${last_row}`);
-							const egc_cell = worksheet.getCell(`J${last_row}`);
-							const conduit_cell = worksheet.getCell(`K${last_row}`);
 
-							const center_alignment_reference: Partial<Alignment> = {
-								vertical: 'middle',
-								horizontal: 'center'
-							};
-							circuit_number_cell.alignment = center_alignment_reference;
-							circuit_number_cell.border = { bottom: { style: 'thin' } };
+						const circuit_number_cell = worksheet.getCell(`A${last_row}`);
+						const load_description_cell = worksheet.getCell(`B${last_row}`);
+						const capacity_cell = worksheet.getCell(`C${last_row}`);
+						const voltage_cell = worksheet.getCell(`D${last_row}`);
+						const current_cell = worksheet.getCell(`E${last_row}`);
+						const at_cell = worksheet.getCell(`F${last_row}`);
+						const af_cell = worksheet.getCell(`G${last_row}`);
+						const pole_cell = worksheet.getCell(`H${last_row}`);
+						const feeder_conductor_cell = worksheet.getCell(`I${last_row}`);
+						const egc_cell = worksheet.getCell(`J${last_row}`);
+						const conduit_cell = worksheet.getCell(`K${last_row}`);
 
-							load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
-							load_description_cell.border = { bottom: { style: 'thin' } };
+						const center_alignment_reference: Partial<Alignment> = {
+							vertical: 'middle',
+							horizontal: 'center'
+						};
+						circuit_number_cell.alignment = center_alignment_reference;
+						circuit_number_cell.border = { bottom: { style: 'thin' } };
 
-							capacity_cell.alignment = center_alignment_reference;
-							capacity_cell.border = { bottom: { style: 'thin' } };
+						load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
+						load_description_cell.border = { bottom: { style: 'thin' } };
 
-							voltage_cell.alignment = center_alignment_reference;
-							voltage_cell.border = { bottom: { style: 'thin' } };
+						capacity_cell.alignment = center_alignment_reference;
+						capacity_cell.border = { bottom: { style: 'thin' } };
 
-							current_cell.alignment = center_alignment_reference;
-							current_cell.border = { bottom: { style: 'thin' } };
+						voltage_cell.alignment = center_alignment_reference;
+						voltage_cell.border = { bottom: { style: 'thin' } };
 
-							at_cell.alignment = center_alignment_reference;
-							at_cell.border = { bottom: { style: 'thin' } };
+						current_cell.alignment = center_alignment_reference;
+						current_cell.border = { bottom: { style: 'thin' } };
 
-							af_cell.alignment = center_alignment_reference;
-							af_cell.border = { bottom: { style: 'thin' } };
+						at_cell.alignment = center_alignment_reference;
+						at_cell.border = { bottom: { style: 'thin' } };
 
-							pole_cell.alignment = center_alignment_reference;
-							pole_cell.border = { bottom: { style: 'thin' } };
+						af_cell.alignment = center_alignment_reference;
+						af_cell.border = { bottom: { style: 'thin' } };
 
-							feeder_conductor_cell.alignment = center_alignment_reference;
-							feeder_conductor_cell.border = { bottom: { style: 'thin' } };
+						pole_cell.alignment = center_alignment_reference;
+						pole_cell.border = { bottom: { style: 'thin' } };
 
-							egc_cell.alignment = center_alignment_reference;
-							egc_cell.border = { bottom: { style: 'thin' } };
+						feeder_conductor_cell.alignment = center_alignment_reference;
+						feeder_conductor_cell.border = { bottom: { style: 'thin' } };
 
-							conduit_cell.alignment = center_alignment_reference;
-							conduit_cell.border = { bottom: { style: 'thin' } };
+						egc_cell.alignment = center_alignment_reference;
+						egc_cell.border = { bottom: { style: 'thin' } };
 
-							if (load.node_type === 'load' && load.load_data) {
-								feeder_conductor_cell.value = 'TBA';
-								egc_cell.value = 'TBA';
-							} else if (load.node_type === 'panel' && load.panel_data) {
-								feeder_conductor_cell.value = 'TBA';
-								egc_cell.value = 'TBA';
-							}
-							circuit_number_cell.value = load.circuit_number;
-							load_description_cell.value = load.load_description;
-							voltage_cell.value = load.voltage;
-							capacity_cell.value = load.va;
-							current_cell.value = load.current;
-							at_cell.value = load.at;
-							af_cell.value = load.ampere_frames;
-							pole_cell.value = load.pole;
-							conduit_cell.value = load.conduit_size;
-							last_row++;
-						}
+						conduit_cell.alignment = center_alignment_reference;
+						conduit_cell.border = { bottom: { style: 'thin' } };
+
+						circuit_number_cell.value = load.circuit_number;
+						load_description_cell.value = load.load_description;
+						capacity_cell.value = load.va;
+						voltage_cell.value = load.voltage;
+						current_cell.value = load.current;
+						at_cell.value = load.at;
+						af_cell.value = load.ampere_frames;
+						pole_cell.value = load.pole;
+						feeder_conductor_cell.value = load.conductor_size;
+						egc_cell.value = load.egc_size;
+						conduit_cell.value = load.conduit_size;
+						last_row++;
 					}
 					// Add main total
 					if (!worksheet) {
