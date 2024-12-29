@@ -10,7 +10,7 @@
 	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
-	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { getChildNodesByParentId, getComputedLoads } from '@/db/queries/index';
 	import { dev } from '$app/environment';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
@@ -180,9 +180,12 @@
 					];
 
 					// Get and write panel loads
-					const loads = await getChildNodesByParentId(child.id);
+					const loads = await getComputedLoads(child.id);
+					console.log('loads data', loads);
 					let last_row = end_row + 6;
-					for (const load of loads) {
+
+					for (let i = 0; i < loads.length; i++) {
+						const load = loads[i];
 						if (
 							load.node_type === 'load' ||
 							(load.node_type === 'panel' && (load.load_data || load.panel_data))
@@ -225,7 +228,7 @@
 								circuit_number_cell.value = load.circuit_number;
 								load_description_cell.value = load_data.load_description;
 								capacity_cell.value = 'TBA';
-								voltage_cell.value = 'TBA';
+								voltage_cell.value = load.voltage;
 								ab_cell.value = 'TBA';
 								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
