@@ -30,16 +30,16 @@
 	async function exportToExcel() {
 		dev && console.log('Root:', root_node);
 		if (!root_node) {
-			toast.warning('No project found, nothing to export');
-			return;
+			return toast.warning('No project found', {
+				description: 'Cannot proceed with the export.'
+			});
 		}
 
 		const highest_unit = root_node?.highest_unit_form;
 		if (!highest_unit) {
-			toast.warning('No highest unit found, nothing to export', {
+			return toast.warning('No highest unit found, nothing to export', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
-			return;
 		}
 
 		const workbook = new ExcelJS.Workbook();
@@ -364,7 +364,7 @@
 			toast.warning(process_result.message ?? 'Something went wrong while exporting', {
 				description: process_result?.is_system_error
 					? 'This is a system error and should not be here, the error has been logged.'
-					: undefined
+					: (process_result?.description ?? undefined)
 			});
 			return;
 		}
