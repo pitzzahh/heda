@@ -183,132 +183,75 @@
 					const loads = await getChildNodesByParentId(child.id);
 					let last_row = end_row + 6;
 					for (const load of loads) {
-						if (load.node_type === 'load' && load.load_data) {
-							const centerAlignment: Partial<Alignment> = {
+						if (
+							load.node_type === 'load' ||
+							(load.node_type === 'panel' && (load.load_data || load.panel_data))
+						) {
+							const circuit_number_cell = worksheet.getCell(`A${last_row}`);
+							const load_description_cell = worksheet.getCell(`B${last_row}`);
+							const capacity_cell = worksheet.getCell(`C${last_row}`);
+							const voltage_cell = worksheet.getCell(`D${last_row}`);
+							const ab_cell = worksheet.getCell(`E${last_row}`);
+							const current_bc_cell = worksheet.getCell(`F${last_row}`);
+							const ca_cell = worksheet.getCell(`G${last_row}`);
+							const at_cell = worksheet.getCell(`H${last_row}`);
+							const af_cell = worksheet.getCell(`I${last_row}`);
+							const pole_cell = worksheet.getCell(`J${last_row}`);
+							const feeder_conductor_cell = worksheet.getCell(`K${last_row}`);
+							const egc_cell = worksheet.getCell(`L${last_row}`);
+							const conduit_cell = worksheet.getCell(`M${last_row}`);
+
+							const center_alignment_reference: Partial<Alignment> = {
 								vertical: 'middle',
 								horizontal: 'center'
 							};
+							circuit_number_cell.alignment = center_alignment_reference;
+							load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
+							capacity_cell.alignment = center_alignment_reference;
+							voltage_cell.alignment = center_alignment_reference;
+							ab_cell.alignment = center_alignment_reference;
+							current_bc_cell.alignment = center_alignment_reference;
+							ca_cell.alignment = center_alignment_reference;
+							at_cell.alignment = center_alignment_reference;
+							af_cell.alignment = center_alignment_reference;
+							pole_cell.alignment = center_alignment_reference;
+							feeder_conductor_cell.alignment = center_alignment_reference;
+							egc_cell.alignment = center_alignment_reference;
+							conduit_cell.alignment = center_alignment_reference;
 
-							const cellA = worksheet.getCell(`A${last_row}`);
-							cellA.value = load.circuit_number;
-							cellA.alignment = centerAlignment;
+							if (load.node_type === 'load' && load.load_data) {
+								const load_data = load.load_data;
 
-							const cellB = worksheet.getCell(`B${last_row}`);
-							cellB.value = load.load_data.load_description;
-							cellB.alignment = { vertical: 'middle', horizontal: 'left' };
+								circuit_number_cell.value = load.circuit_number;
+								load_description_cell.value = load_data.load_description;
+								capacity_cell.value = 'TBA';
+								voltage_cell.value = 'TBA';
+								ab_cell.value = 'TBA';
+								current_bc_cell.value = 'TBA';
+								ca_cell.value = 'TBA';
+								at_cell.value = 'TBA';
+								af_cell.value = 'TBA';
+								pole_cell.value = 'TBA';
+								feeder_conductor_cell.value = 'TBA';
+								egc_cell.value = 'TBA';
+								conduit_cell.value = 'TBA';
+							} else if (load.node_type === 'panel' && load.panel_data) {
+								const panel_data = load.panel_data;
 
-							const cellC = worksheet.getCell(`C${last_row}`);
-							cellC.value = 'TBA';
-							cellC.alignment = centerAlignment;
-
-							const cellD = worksheet.getCell(`D${last_row}`);
-							cellD.value = 'TBA';
-							cellD.alignment = centerAlignment;
-
-							const cellE = worksheet.getCell(`E${last_row}`);
-							cellE.value = 'TBA';
-							cellE.alignment = centerAlignment;
-
-							const cellF = worksheet.getCell(`F${last_row}`);
-							cellF.value = 'TBA';
-							cellF.alignment = centerAlignment;
-
-							const cellG = worksheet.getCell(`G${last_row}`);
-							cellG.value = 'TBA';
-							cellG.alignment = centerAlignment;
-
-							const cellH = worksheet.getCell(`H${last_row}`);
-							cellH.value = 'TBA';
-							cellH.alignment = centerAlignment;
-
-							const cellI = worksheet.getCell(`I${last_row}`);
-							cellI.value = 'TBA';
-							cellI.alignment = centerAlignment;
-
-							const cellJ = worksheet.getCell(`J${last_row}`);
-							cellJ.value = 'TBA';
-							cellJ.alignment = centerAlignment;
-
-							const cellK = worksheet.getCell(`K${last_row}`);
-							cellK.value = 'TBA';
-							cellK.alignment = centerAlignment;
-
-							const cellL = worksheet.getCell(`L${last_row}`);
-							cellL.value = 'TBA';
-							cellL.alignment = centerAlignment;
-
-							const cellM = worksheet.getCell(`M${last_row}`);
-							cellM.value = 'TBA';
-							cellM.alignment = centerAlignment;
-
-							last_row++;
-						} else if (load.node_type === 'panel' && load.panel_data) {
-							const worksheet = workbook.getWorksheet(panel_level);
-							const panel_data = load.panel_data;
-							if (!worksheet) {
-								return {
-									valid: false,
-									message: 'Failed to get worksheet of load level',
-									is_system_error: true
-								};
+								circuit_number_cell.value = load.circuit_number;
+								load_description_cell.value = panel_data.name;
+								capacity_cell.value = 'TBA';
+								voltage_cell.value = 'TBA';
+								ab_cell.value = 'TBA';
+								current_bc_cell.value = 'TBA';
+								ca_cell.value = 'TBA';
+								at_cell.value = 'TBA';
+								af_cell.value = 'TBA';
+								pole_cell.value = 'TBA';
+								feeder_conductor_cell.value = 'TBA';
+								egc_cell.value = 'TBA';
+								conduit_cell.value = 'TBA';
 							}
-							const centerAlignment: Partial<Alignment> = {
-								vertical: 'middle',
-								horizontal: 'center'
-							};
-
-							const cellA = worksheet.getCell(`A${last_row}`);
-							cellA.value = load.circuit_number;
-							cellA.alignment = centerAlignment;
-
-							const cellB = worksheet.getCell(`B${last_row}`);
-							cellB.value = panel_data.name;
-							cellB.alignment = { vertical: 'middle', horizontal: 'left' };
-
-							const cellC = worksheet.getCell(`C${last_row}`);
-							cellC.value = 'TBA';
-							cellC.alignment = centerAlignment;
-
-							const cellD = worksheet.getCell(`D${last_row}`);
-							cellD.value = 'TBA';
-							cellD.alignment = centerAlignment;
-
-							const cellE = worksheet.getCell(`E${last_row}`);
-							cellE.value = 'TBA';
-							cellE.alignment = centerAlignment;
-
-							const cellF = worksheet.getCell(`F${last_row}`);
-							cellF.value = 'TBA';
-							cellF.alignment = centerAlignment;
-
-							const cellG = worksheet.getCell(`G${last_row}`);
-							cellG.value = 'TBA';
-							cellG.alignment = centerAlignment;
-
-							const cellH = worksheet.getCell(`H${last_row}`);
-							cellH.value = 'TBA';
-							cellH.alignment = centerAlignment;
-
-							const cellI = worksheet.getCell(`I${last_row}`);
-							cellI.value = 'TBA';
-							cellI.alignment = centerAlignment;
-
-							const cellJ = worksheet.getCell(`J${last_row}`);
-							cellJ.value = 'TBA';
-							cellJ.alignment = centerAlignment;
-
-							const cellK = worksheet.getCell(`K${last_row}`);
-							cellK.value = 'TBA';
-							cellK.alignment = centerAlignment;
-
-							const cellL = worksheet.getCell(`L${last_row}`);
-							cellL.value = 'TBA';
-							cellL.alignment = centerAlignment;
-
-							const cellM = worksheet.getCell(`M${last_row}`);
-							cellM.value = 'TBA';
-							cellM.alignment = centerAlignment;
-
 							last_row++;
 						}
 					}
