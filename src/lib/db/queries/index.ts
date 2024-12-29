@@ -361,7 +361,7 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 					egc_size: data.overrided_egc_size || getEgcSize(at),
 					adjusted_current,
 					conduit_size,
-					ampere_frame: data.overrided_ampere_frames || main_at
+					ampere_frames: data.overrided_ampere_frames || main_at
 				};
 			}
 
