@@ -102,31 +102,31 @@
 						{ text: 'CONDUIT', cols: 1 }
 					];
 
-					let currentCol = 1;
+					let current_header_column = 1;
 					table_headers.forEach((header: Header) => {
-						const cell = worksheet.getCell(end_row + 4, currentCol);
+						const cell = worksheet.getCell(end_row + 4, current_header_column);
 						if (header.subText) {
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { top: { style: 'thin' } };
 
-							const subCell = worksheet.getCell(end_row + 5, currentCol);
+							const subCell = worksheet.getCell(end_row + 5, current_header_column);
 							subCell.value = header.subText;
 							subCell.font = { bold: true };
 							subCell.alignment = { horizontal: 'center' };
 							subCell.border = { bottom: { style: 'thick' } };
 						} else if (header.text === 'AB' || header.text === 'CA') {
-							const top_cell = worksheet.getCell(end_row + 4, currentCol);
+							const top_cell = worksheet.getCell(end_row + 4, current_header_column);
 							top_cell.border = { top: { style: 'thin' } };
 
-							const cell = worksheet.getCell(end_row + 5, currentCol);
+							const cell = worksheet.getCell(end_row + 5, current_header_column);
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { bottom: { style: 'thick' } };
 						} else if (header.cols === 1) {
-							worksheet.mergeCells(end_row + 4, currentCol, end_row + 5, currentCol);
+							worksheet.mergeCells(end_row + 4, current_header_column, end_row + 5, current_header_column);
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -134,11 +134,11 @@
 						} else {
 							worksheet.mergeCells(
 								end_row + 4,
-								currentCol,
+								current_header_column,
 								end_row + 4,
-								currentCol + header.cols - 1
+								current_header_column + header.cols - 1
 							);
-							const cell = worksheet.getCell(end_row + 4, currentCol);
+							const cell = worksheet.getCell(end_row + 4, current_header_column);
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { horizontal: 'center' };
@@ -148,7 +148,7 @@
 							if (header.text === 'CIRCUIT BREAKER') {
 								const subHeaders: string[] = ['AT', 'AF', 'POLE'];
 								subHeaders.forEach((text: string, i: number) => {
-									const subCell = worksheet.getCell(end_row + 5, currentCol + i);
+									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
 									subCell.value = text;
 									subCell.font = { bold: true };
 									subCell.alignment = { horizontal: 'center' };
@@ -156,7 +156,7 @@
 								});
 							}
 						}
-						currentCol += header.cols;
+						current_header_column += header.cols;
 					});
 
 					// Set column widths
