@@ -43,6 +43,8 @@
 		}
 
 		const workbook = new ExcelJS.Workbook();
+		workbook.title = 'Exported Panelboard Schedule';
+		workbook.creator = 'HEDA(Desktop App)';
 
 		async function processNodeChildren(
 			nodeId: string,
@@ -417,6 +419,7 @@
 		switch (highest_unit?.phase) {
 			case '1P':
 				workbook.subject = '1P Load Schedule';
+				workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
 				workbook.description = 'Load schedule for 1 phase load schedule';
 				const process_result = await processNodeChildren(root_node.id);
 				if (!process_result.valid) {
@@ -430,6 +433,7 @@
 				break;
 			case '3P':
 				workbook.subject = '3P Load Schedule';
+				workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
 				workbook.description = 'Load schedule for 3 phase load schedule';
 				toast.warning('This feature is still under development', {
 					description: 'Three phase load schedule is not yet supported'
