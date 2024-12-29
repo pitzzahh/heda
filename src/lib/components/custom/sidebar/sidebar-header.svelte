@@ -117,9 +117,7 @@
 						{ text: 'LOAD DESCRIPTION', cols: 1 },
 						{ text: 'CAPACITY', cols: 1, subText: '(VA)' },
 						{ text: 'VOLTAGE', cols: 1, subText: '(V)' },
-						{ text: 'AB', cols: 1 },
-						{ text: 'CURRENT', cols: 1, subText: 'BC' },
-						{ text: 'CA', cols: 1 },
+						{ text: 'CURRENT', cols: 1 },
 						{ text: 'CIRCUIT BREAKER', cols: 3 },
 						{ text: 'FEEDER CONDUCTOR', cols: 1 },
 						{ text: 'EGC', cols: 1 },
@@ -195,8 +193,6 @@
 						{ width: 15 },
 						{ width: 15 },
 						{ width: 15 },
-						{ width: 15 },
-						{ width: 15 },
 						{ width: 10 },
 						{ width: 10 },
 						{ width: 10 },
@@ -220,15 +216,13 @@
 							const load_description_cell = worksheet.getCell(`B${last_row}`);
 							const capacity_cell = worksheet.getCell(`C${last_row}`);
 							const voltage_cell = worksheet.getCell(`D${last_row}`);
-							const ab_cell = worksheet.getCell(`E${last_row}`);
-							const current_bc_cell = worksheet.getCell(`F${last_row}`);
-							const ca_cell = worksheet.getCell(`G${last_row}`);
-							const at_cell = worksheet.getCell(`H${last_row}`);
-							const af_cell = worksheet.getCell(`I${last_row}`);
-							const pole_cell = worksheet.getCell(`J${last_row}`);
-							const feeder_conductor_cell = worksheet.getCell(`K${last_row}`);
-							const egc_cell = worksheet.getCell(`L${last_row}`);
-							const conduit_cell = worksheet.getCell(`M${last_row}`);
+							const current_cell = worksheet.getCell(`E${last_row}`);
+							const at_cell = worksheet.getCell(`F${last_row}`);
+							const af_cell = worksheet.getCell(`G${last_row}`);
+							const pole_cell = worksheet.getCell(`H${last_row}`);
+							const feeder_conductor_cell = worksheet.getCell(`I${last_row}`);
+							const egc_cell = worksheet.getCell(`J${last_row}`);
+							const conduit_cell = worksheet.getCell(`K${last_row}`);
 
 							const center_alignment_reference: Partial<Alignment> = {
 								vertical: 'middle',
@@ -246,14 +240,8 @@
 							voltage_cell.alignment = center_alignment_reference;
 							voltage_cell.border = { bottom: { style: 'thin' } };
 
-							ab_cell.alignment = center_alignment_reference;
-							ab_cell.border = { bottom: { style: 'thin' } };
-
-							current_bc_cell.alignment = center_alignment_reference;
-							current_bc_cell.border = { bottom: { style: 'thin' } };
-
-							ca_cell.alignment = center_alignment_reference;
-							ca_cell.border = { bottom: { style: 'thin' } };
+							current_cell.alignment = center_alignment_reference;
+							current_cell.border = { bottom: { style: 'thin' } };
 
 							at_cell.alignment = center_alignment_reference;
 							at_cell.border = { bottom: { style: 'thin' } };
@@ -273,24 +261,10 @@
 							conduit_cell.alignment = center_alignment_reference;
 							conduit_cell.border = { bottom: { style: 'thin' } };
 
-							const node_data = await getNodeById(load.id);
-
-							if (!node_data) {
-								return {
-									valid: false,
-									message: 'Failed to get node data',
-									is_system_error: true
-								};
-							}
-
 							if (load.node_type === 'load' && load.load_data) {
-								ab_cell.value = 'TBA';
-								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
 							} else if (load.node_type === 'panel' && load.panel_data) {
-								ab_cell.value = 'TBA';
-								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
 							}
@@ -298,11 +272,11 @@
 							load_description_cell.value = load.load_description;
 							voltage_cell.value = load.voltage;
 							capacity_cell.value = load.va;
-							current_bc_cell.value = load.adjusted_current ?? load.current;
+							current_cell.value = load.current;
 							at_cell.value = load.at;
-							af_cell.value = load.overrided_ampere_frames;
+							af_cell.value = load.ampere_frames;
 							pole_cell.value = load.pole;
-							conduit_cell.value = node_data.conduit_size;
+							conduit_cell.value = load.conduit_size;
 							last_row++;
 						}
 					}
@@ -314,6 +288,17 @@
 							is_system_error: true
 						};
 					}
+
+					const node_data_summary = await getNodeById(child.id);
+
+					if (!node_data_summary) {
+						return {
+							valid: false,
+							message: 'Failed to get total panel data',
+							is_system_error: true
+						};
+					}
+
 					const centerAlignment: Partial<Alignment> = {
 						vertical: 'middle',
 						horizontal: 'center'
@@ -330,17 +315,15 @@
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
 						{ column: 'B', value: ' ' },
-						{ column: 'C', value: 'TBA' },
-						{ column: 'D', value: '230' },
-						{ column: 'E', value: 'TBA' },
+						{ column: 'C', value: node_data_summary.va.toString() },
+						{ column: 'D', value: node_data_summary.voltage.toString() },
+						{ column: 'E', value: node_data_summary.current.toString() },
 						{ column: 'F', value: ' ' },
 						{ column: 'G', value: ' ' },
 						{ column: 'H', value: ' ' },
 						{ column: 'I', value: ' ' },
 						{ column: 'J', value: ' ' },
-						{ column: 'K', value: ' ' },
-						{ column: 'L', value: ' ' },
-						{ column: 'M', value: ' ' }
+						{ column: 'K', value: ' ' }
 					];
 
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
