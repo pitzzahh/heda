@@ -113,15 +113,15 @@
 					type Header = { text: string; cols: number; subText?: string };
 
 					const table_headers: Header[] = [
-						{ text: 'CKT NO.', cols: 1 },
-						{ text: 'LOAD DESCRIPTION', cols: 1 },
-						{ text: 'CAPACITY', cols: 1, subText: '(VA)' },
-						{ text: 'VOLTAGE', cols: 1, subText: '(V)' },
-						{ text: 'CURRENT', cols: 1 },
-						{ text: 'CIRCUIT BREAKER', cols: 3 },
-						{ text: 'FEEDER CONDUCTOR', cols: 1 },
-						{ text: 'EGC', cols: 1 },
-						{ text: 'CONDUIT', cols: 1 }
+						{ text: ' ', cols: 1, subText: 'CKT NO.' },
+						{ text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
+						{ text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
+						{ text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
+						{ text: ' ', cols: 1, subText: 'CURRENT (A)' },
+						{ text: 'CIRCUIT BREAKER', cols: 4 },
+						{ text: 'CONDUCTOR', cols: 4 },
+						{ text: 'EGC', cols: 2 },
+						{ text: 'CONDUIT', cols: 2 }
 					];
 
 					let current_header_column = 1;
@@ -138,15 +138,6 @@
 							subCell.font = { bold: true };
 							subCell.alignment = { horizontal: 'center' };
 							subCell.border = { bottom: { style: 'thick' } };
-						} else if (header.text === 'AB' || header.text === 'CA') {
-							const top_cell = worksheet.getCell(end_row + 4, current_header_column);
-							top_cell.border = { top: { style: 'thin' } };
-
-							const cell = worksheet.getCell(end_row + 5, current_header_column);
-							cell.value = header.text;
-							cell.font = { bold: true };
-							cell.alignment = { horizontal: 'center' };
-							cell.border = { bottom: { style: 'thick' } };
 						} else if (header.cols === 1) {
 							worksheet.mergeCells(
 								end_row + 4,
@@ -173,7 +164,41 @@
 
 							// Sub-headers for circuit breaker
 							if (header.text === 'CIRCUIT BREAKER') {
-								const subHeaders: string[] = ['AT', 'AF', 'POLE'];
+								const subHeaders: string[] = ['AT', 'AF', 'Pole', 'kAIC'];
+								subHeaders.forEach((text: string, i: number) => {
+									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
+									subCell.value = text;
+									subCell.font = { bold: true };
+									subCell.alignment = { horizontal: 'center' };
+									subCell.border = { bottom: { style: 'thick' } };
+								});
+							}
+
+							// Sub-headers for conductor
+							if (header.text === 'CONDUCTOR') {
+								const subHeaders: string[] = ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'];
+								subHeaders.forEach((text: string, i: number) => {
+									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
+									subCell.value = text;
+									subCell.font = { bold: true };
+									subCell.alignment = { horizontal: 'center' };
+									subCell.border = { bottom: { style: 'thick' } };
+								});
+							}
+							// Sub-headers for egc
+							if (header.text === 'EGC') {
+								const subHeaders: string[] = ['Size', 'Insulation'];
+								subHeaders.forEach((text: string, i: number) => {
+									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
+									subCell.value = text;
+									subCell.font = { bold: true };
+									subCell.alignment = { horizontal: 'center' };
+									subCell.border = { bottom: { style: 'thick' } };
+								});
+							}
+							// Sub-headers for conduit
+							if (header.text === 'CONDUIT') {
+								const subHeaders: string[] = ['Size', 'Insulation'];
 								subHeaders.forEach((text: string, i: number) => {
 									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
 									subCell.value = text;
@@ -196,9 +221,15 @@
 						{ width: 10 },
 						{ width: 10 },
 						{ width: 10 },
-						{ width: 25 },
-						{ width: 15 },
-						{ width: 15 }
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 }
 					];
 
 					// Get and write panel loads
@@ -211,64 +242,96 @@
 
 						const circuit_number_cell = worksheet.getCell(`A${last_row}`);
 						const load_description_cell = worksheet.getCell(`B${last_row}`);
-						const capacity_cell = worksheet.getCell(`C${last_row}`);
-						const voltage_cell = worksheet.getCell(`D${last_row}`);
+						const voltage_cell = worksheet.getCell(`C${last_row}`);
+						const apparent_power_cell = worksheet.getCell(`D${last_row}`);
 						const current_cell = worksheet.getCell(`E${last_row}`);
 						const at_cell = worksheet.getCell(`F${last_row}`);
 						const af_cell = worksheet.getCell(`G${last_row}`);
 						const pole_cell = worksheet.getCell(`H${last_row}`);
-						const feeder_conductor_cell = worksheet.getCell(`I${last_row}`);
-						const egc_cell = worksheet.getCell(`J${last_row}`);
-						const conduit_cell = worksheet.getCell(`K${last_row}`);
+						const kaic_cell = worksheet.getCell(`I${last_row}`);
+						const conductor_sets_cell = worksheet.getCell(`J${last_row}`);
+						const conductor_qty_cell = worksheet.getCell(`K${last_row}`);
+						const conductor_size_cell = worksheet.getCell(`L${last_row}`);
+						const conductor_insulation_cell = worksheet.getCell(`M${last_row}`);
+						const egc_size_cell = worksheet.getCell(`N${last_row}`);
+						const egc_insulation_cell = worksheet.getCell(`O${last_row}`);
+						const conduit_size_cell = worksheet.getCell(`P${last_row}`);
+						const conduit_type_cell = worksheet.getCell(`Q${last_row}`);
 
-						const center_alignment_reference: Partial<Alignment> = {
+						const center_alignment_reference: Partial<ExcelJS.Alignment> = {
 							vertical: 'middle',
 							horizontal: 'center'
 						};
+						const bottom_border_reference: Partial<ExcelJS.Borders> = { bottom: { style: 'thin' } };
+
 						circuit_number_cell.alignment = center_alignment_reference;
-						circuit_number_cell.border = { bottom: { style: 'thin' } };
+						circuit_number_cell.border = bottom_border_reference;
 
 						load_description_cell.alignment = { vertical: 'middle', horizontal: 'left' };
-						load_description_cell.border = { bottom: { style: 'thin' } };
-
-						capacity_cell.alignment = center_alignment_reference;
-						capacity_cell.border = { bottom: { style: 'thin' } };
+						load_description_cell.border = bottom_border_reference;
 
 						voltage_cell.alignment = center_alignment_reference;
-						voltage_cell.border = { bottom: { style: 'thin' } };
+						voltage_cell.border = bottom_border_reference;
+
+						apparent_power_cell.alignment = center_alignment_reference;
+						apparent_power_cell.border = bottom_border_reference;
 
 						current_cell.alignment = center_alignment_reference;
-						current_cell.border = { bottom: { style: 'thin' } };
+						current_cell.border = bottom_border_reference;
 
 						at_cell.alignment = center_alignment_reference;
-						at_cell.border = { bottom: { style: 'thin' } };
+						at_cell.border = bottom_border_reference;
 
 						af_cell.alignment = center_alignment_reference;
-						af_cell.border = { bottom: { style: 'thin' } };
+						af_cell.border = bottom_border_reference;
 
 						pole_cell.alignment = center_alignment_reference;
-						pole_cell.border = { bottom: { style: 'thin' } };
+						pole_cell.border = bottom_border_reference;
 
-						feeder_conductor_cell.alignment = center_alignment_reference;
-						feeder_conductor_cell.border = { bottom: { style: 'thin' } };
+						kaic_cell.alignment = center_alignment_reference;
+						kaic_cell.border = bottom_border_reference;
 
-						egc_cell.alignment = center_alignment_reference;
-						egc_cell.border = { bottom: { style: 'thin' } };
+						conductor_sets_cell.alignment = center_alignment_reference;
+						conductor_sets_cell.border = bottom_border_reference;
 
-						conduit_cell.alignment = center_alignment_reference;
-						conduit_cell.border = { bottom: { style: 'thin' } };
+						conductor_qty_cell.alignment = center_alignment_reference;
+						conductor_qty_cell.border = bottom_border_reference;
+
+						conductor_size_cell.alignment = center_alignment_reference;
+						conductor_size_cell.border = bottom_border_reference;
+
+						conductor_insulation_cell.alignment = center_alignment_reference;
+						conductor_insulation_cell.border = bottom_border_reference;
+
+						egc_size_cell.alignment = center_alignment_reference;
+						egc_size_cell.border = bottom_border_reference;
+
+						egc_insulation_cell.alignment = center_alignment_reference;
+						egc_insulation_cell.border = bottom_border_reference;
+
+						conduit_size_cell.alignment = center_alignment_reference;
+						conduit_size_cell.border = bottom_border_reference;
+
+						conduit_type_cell.alignment = center_alignment_reference;
+						conduit_type_cell.border = bottom_border_reference;
 
 						circuit_number_cell.value = load.circuit_number;
 						load_description_cell.value = load.load_description;
-						capacity_cell.value = load.va;
 						voltage_cell.value = load.voltage;
+						apparent_power_cell.value = load.va;
 						current_cell.value = load.current;
 						at_cell.value = load.at;
 						af_cell.value = load.ampere_frames;
 						pole_cell.value = load.pole;
-						feeder_conductor_cell.value = load.conductor_size;
-						egc_cell.value = load.egc_size;
-						conduit_cell.value = load.conduit_size;
+						kaic_cell.value = load.kaic;
+						conductor_sets_cell.value = load.conductor_sets;
+						conductor_qty_cell.value = load.conductor_qty;
+						conductor_size_cell.value = load.conductor_size;
+						conductor_insulation_cell.value = load.conductor_insulation;
+						egc_size_cell.value = load.egc_size;
+						egc_insulation_cell.value = load.egc_insulation;
+						conduit_size_cell.value = load.conduit_size;
+						conduit_type_cell.value = load.conduit_type;
 						last_row++;
 					}
 					// Add main total
