@@ -457,7 +457,6 @@
 
 		// Free resources
 		URL.revokeObjectURL(url);
-		toast.warning('This feature is still under development');
 	}
 </script>
 
