@@ -34,6 +34,14 @@
 			return;
 		}
 
+		const highest_unit = root_node?.highest_unit_form;
+		if (!highest_unit) {
+			toast.warning('No highest unit found, nothing to export', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
+
 		const workbook = new ExcelJS.Workbook();
 
 		async function processNodeChildren(
@@ -43,10 +51,16 @@
 			end_row: number = 1 // Track row position for appending panels
 		): Promise<{ valid: boolean; message?: string; is_system_error?: boolean }> {
 			const children = await getComputedLoads(nodeId);
-			if (depth === 1 && children.length === 0) {
-				toast.warning('No panels/loads found');
-				return { valid: false, message: 'No panels/loads found' };
+
+			// bail out if there are no child panels on the root node
+			if (
+				depth === 1 &&
+				(children.length === 0 || children.every((child) => child.node_type !== 'panel'))
+			) {
+				toast.warning('No panels found');
+				return { valid: false, message: 'No panels found' };
 			}
+
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
 				if (child.node_type === 'root') {
@@ -73,7 +87,10 @@
 					);
 
 					worksheet.getCell(`B${end_row}`).value = `: PANELBOARD SCHEDULE`;
-					worksheet.getCell(`B${end_row + 2}`).value = `: ${parent?.panel_data?.name ?? '--'}`;
+					worksheet.getCell(`B${end_row + 1}`).value =
+						`: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
+					worksheet.getCell(`B${end_row + 2}`).value =
+						`: ${parent?.panel_data?.name?.toUpperCase() ?? '--'}`;
 					worksheet.getCell(`B${end_row + 3}`).value = `: ${panel_name}`;
 
 					// Bold formatting to all headers
@@ -299,7 +316,7 @@
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
 						{ column: 'B', value: ' ' },
-						{ column: 'C', value: 'TBA' },
+						{ column: 'C', value: '230' },
 						{ column: 'D', value: 'TBA' },
 						{ column: 'E', value: 'TBA' },
 						{ column: 'F', value: ' ' },
