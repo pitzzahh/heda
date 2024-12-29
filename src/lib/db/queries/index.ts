@@ -9,6 +9,7 @@ import {
 import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
+import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 export async function getCurrentProject(project_id?: string): Promise<Project | undefined> {
 	const db = await databaseInstance();
@@ -254,18 +255,7 @@ export async function getParentNodes(excluded_id?: string) {
 	return parent_nodes;
 }
 
-type LoadSchedule = Node & {
-	load_description: string;
-	voltage: number;
-	va: number;
-	at: number;
-	current: number;
-	conductor_size: number;
-	egc_size: number;
-	adjusted_current: number;
-};
-
-export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[]> {
+export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSchedule[]> {
 	const project = await getCurrentProject();
 	const is_adjustment_factor_constant = project?.settings.is_adjustment_factor_constant;
 
@@ -382,5 +372,5 @@ export async function getComputedLoads(parent_id: string): Promise<LoadSchedule[
 	);
 
 	// sorted loads by circuit_number
-	return loadsWithComputedFields as LoadSchedule[];
+	return loadsWithComputedFields as PhaseLoadSchedule[];
 }
