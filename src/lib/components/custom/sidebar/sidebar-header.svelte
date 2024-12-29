@@ -49,7 +49,12 @@
 			parent?: Node,
 			depth: number = 1,
 			end_row: number = 1 // Track row position for appending panels
-		): Promise<{ valid: boolean; message?: string; is_system_error?: boolean }> {
+		): Promise<{
+			valid: boolean;
+			message?: string;
+			is_system_error?: boolean;
+			description?: string;
+		}> {
 			const children = await getComputedLoads(nodeId);
 
 			// bail out if there are no child panels on the root node
@@ -58,7 +63,11 @@
 				(children.length === 0 || children.every((child) => child.node_type !== 'panel'))
 			) {
 				toast.warning('No panels found');
-				return { valid: false, message: 'No panels found' };
+				return {
+					valid: false,
+					message: 'No panels found',
+					description: 'Cannot proceed with the export.'
+				};
 			}
 
 			for (let i = 0; i < children.length; i++) {
