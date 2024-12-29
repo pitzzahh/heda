@@ -11,7 +11,7 @@ export async function checkForUpdates() {
   return await check();
 }
 
-export async function installUpdate(update: Update, _relaunch: (fn: () => Promise<void>) => void, _progress: (progress: number) => void) {
+export async function installUpdate(update: Update, _relaunch: boolean, _progress: (progress: number) => void) {
   console.log(
     `found update ${update.version} from ${update.date} with notes ${update.body}`
   );
@@ -23,19 +23,18 @@ export async function installUpdate(update: Update, _relaunch: (fn: () => Promis
     switch (event.event) {
       case 'Started':
         contentLength = event.data.contentLength ?? 0;
-        console.log(`started downloading ${contentLength} bytes`);
         toast.info(`started downloading ${contentLength} bytes`);
         break;
       case 'Progress':
         downloaded += event.data.chunkLength;
-        console.log(`downloaded ${downloaded} from ${contentLength}`);
         _progress && _progress((downloaded / contentLength) * 100);
         break;
       case 'Finished':
-        console.log('download finished');
         break;
     }
   });
-  console.log('update installed');
-  _relaunch && _relaunch(async () => await relaunch());
+  toast.info('Update installed successfully', {
+    description: 'The application will now restart to apply the changes.',
+  });
+  _relaunch && await relaunch();
 }
