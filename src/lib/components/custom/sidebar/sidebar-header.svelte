@@ -216,20 +216,20 @@
 						{ width: 15 },
 						{ width: 30 },
 						{ width: 15 },
+						{ width: 20 },
+						{ width: 15 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 15 },
+						{ width: 15 },
 						{ width: 15 },
 						{ width: 15 },
 						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 },
-						{ width: 10 }
+						{ width: 15 }
 					];
 
 					// Get and write panel loads
@@ -377,7 +377,13 @@
 						{ column: 'H', value: ' ' },
 						{ column: 'I', value: ' ' },
 						{ column: 'J', value: ' ' },
-						{ column: 'K', value: ' ' }
+						{ column: 'K', value: ' ' },
+						{ column: 'L', value: ' ' },
+						{ column: 'M', value: ' ' },
+						{ column: 'N', value: ' ' },
+						{ column: 'O', value: ' ' },
+						{ column: 'P', value: ' ' },
+						{ column: 'Q', value: ' ' }
 					];
 
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
