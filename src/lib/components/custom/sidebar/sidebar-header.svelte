@@ -301,7 +301,15 @@
 						{ column: 'B', value: ' ' },
 						{ column: 'C', value: 'TBA' },
 						{ column: 'D', value: 'TBA' },
-						{ column: 'E', value: 'TBA' }
+						{ column: 'E', value: 'TBA' },
+						{ column: 'F', value: ' ' },
+						{ column: 'G', value: ' ' },
+						{ column: 'H', value: ' ' },
+						{ column: 'I', value: ' ' },
+						{ column: 'J', value: ' ' },
+						{ column: 'K', value: ' ' },
+						{ column: 'L', value: ' ' },
+						{ column: 'M', value: ' ' }
 					];
 
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
