@@ -57,10 +57,10 @@
 		<Tabs.Content value="load-sched">
 			{#key loads}
 				<DataTable
-					data={loads && loads.length > 0 ? (loads as unknown as PhaseLoadSchedule[]) : []}
+					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
 					columns={onePhaseMainOrWyeCols(
 						data.phase_main_load_form,
-						data.current_node as unknown as PhaseLoadSchedule,
+						data.current_node as PhaseLoadSchedule,
 						root_node?.highest_unit_form,
 						loads && loads.length > 0 ? loads.at(-1) : undefined
 					)}
@@ -69,7 +69,7 @@
 			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			<DataTable data={[]} columns={voltageDropColumns()} is_root_node={false}/>
+			<DataTable data={[]} columns={voltageDropColumns()} is_root_node={false} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
