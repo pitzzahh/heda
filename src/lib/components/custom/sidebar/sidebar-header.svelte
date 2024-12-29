@@ -39,8 +39,9 @@
 		async function processNodeChildren(
 			nodeId: string,
 			parent?: Node,
-			depth: number = 1
-		): Promise<{ valid: boolean; message?: string }> {
+			depth: number = 1,
+			end_row: number = 1 // Track row position for appending panels
+		): Promise<{ valid: boolean; message?: string; is_system_error?: boolean }> {
 			const children = await getChildNodesByParentId(nodeId);
 			if (depth === 1 && children.length === 0) {
 				toast.warning('No panels/loads found');
@@ -54,124 +55,138 @@
 					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
 					const panel_level = getOrdinalSuffix(depth + 1);
 					dev && console.log(`Panel: ${panel_name} (${panel_level})`);
+					let worksheet = workbook.getWorksheet(panel_level);
+					if (!worksheet) {
+						end_row = 1;
+						worksheet = workbook.addWorksheet(panel_level);
+					}
 
-					if (!workbook.getWorksheet(panel_level)) {
-						const worksheet = workbook.addWorksheet(panel_level);
+					// Add headers
+					const description_label_column_position_data = [
+						{ column: `A${end_row}`, value: 'DESCRIPTION' },
+						{ column: `A${end_row + 1}`, value: 'SUPPLY' },
+						{ column: `A${end_row + 2}`, value: 'FROM' },
+						{ column: `A${end_row + 3}`, value: 'NAME' },
+						{ column: `J${end_row + 2}`, value: 'USE' },
+						{ column: `J${end_row + 3}`, value: 'FEEDER' }
+					];
+					description_label_column_position_data.forEach(
+						({ column, value }) => (worksheet.getCell(column).value = value)
+					);
 
-						// Add headers
-						[
-							{ cell: 'A1', value: 'DESCRIPTION' },
-							{ cell: 'A2', value: 'SUPPLY' },
-							{ cell: 'A3', value: 'FROM' },
-							{ cell: 'A4', value: 'NAME' },
-							{ cell: 'J3', value: 'USE' },
-							{ cell: 'J4', value: 'FEEDER' }
-						].forEach(({ cell, value }) => (worksheet.getCell(cell).value = value));
+					worksheet.getCell(`B${end_row}`).value = `: PANELBOARD SCHEDULE`;
+					worksheet.getCell(`B${end_row + 2}`).value = `: ${parent?.panel_data?.name ?? '--'}`;
+					worksheet.getCell(`B${end_row + 3}`).value = `: ${panel_name}`;
 
-						worksheet.getCell('B1').value = `: PANELBOARD SCHEDULE`;
-						worksheet.getCell('B3').value = `: ${parent?.panel_data?.name ?? '--'}`;
-						worksheet.getCell('B4').value = `: ${panel_name}`;
-
-						// Bold formatting to all headers
-						['A1', 'A2', 'A3', 'A4', 'J3', 'J4'].forEach((cell) => {
+					// Bold formatting to all headers
+					description_label_column_position_data
+						.map((e) => e.column)
+						.forEach((cell) => {
 							worksheet.getCell(cell).font = { bold: true };
 						});
 
-						// Set headers for load schedule with styling.
-						type Header = { text: string; cols: number; subText?: string };
-						const headers: Header[] = [
-							{ text: 'CKT NO.', cols: 1 },
-							{ text: 'LOAD DESCRIPTION', cols: 1 },
-							{ text: 'CAPACITY', cols: 1, subText: '(VA)' },
-							{ text: 'VOLTAGE', cols: 1, subText: '(V)' },
-							{ text: 'AB', cols: 1 },
-							{ text: 'CURRENT', cols: 1, subText: 'BC' },
-							{ text: 'CA', cols: 1 },
-							{ text: 'CIRCUIT BREAKER', cols: 3 },
-							{ text: 'FEEDER CONDUCTOR', cols: 1 },
-							{ text: 'EGC', cols: 1 },
-							{ text: 'CONDUIT', cols: 1 }
-						];
+					// Set headers for load schedule with styling.
+					type Header = { text: string; cols: number; subText?: string };
 
-						let currentCol = 1;
-						headers.forEach((header: Header) => {
-							const cell = worksheet.getCell(5, currentCol);
-							if (header.subText) {
-								cell.value = header.text;
-								cell.font = { bold: true };
-								cell.alignment = { horizontal: 'center' };
-								cell.border = { top: { style: 'thin' } };
+					const table_headers: Header[] = [
+						{ text: 'CKT NO.', cols: 1 },
+						{ text: 'LOAD DESCRIPTION', cols: 1 },
+						{ text: 'CAPACITY', cols: 1, subText: '(VA)' },
+						{ text: 'VOLTAGE', cols: 1, subText: '(V)' },
+						{ text: 'AB', cols: 1 },
+						{ text: 'CURRENT', cols: 1, subText: 'BC' },
+						{ text: 'CA', cols: 1 },
+						{ text: 'CIRCUIT BREAKER', cols: 3 },
+						{ text: 'FEEDER CONDUCTOR', cols: 1 },
+						{ text: 'EGC', cols: 1 },
+						{ text: 'CONDUIT', cols: 1 }
+					];
 
-								const subCell = worksheet.getCell(6, currentCol);
-								subCell.value = header.subText;
-								subCell.font = { bold: true };
-								subCell.alignment = { horizontal: 'center' };
-								subCell.border = { bottom: { style: 'thick' } };
-							} else if (header.text === 'AB' || header.text === 'CA') {
-								const top_cell = worksheet.getCell(5, currentCol);
-								top_cell.border = { top: { style: 'thin' } };
+					let currentCol = 1;
+					table_headers.forEach((header: Header) => {
+						const cell = worksheet.getCell(end_row + 4, currentCol);
+						if (header.subText) {
+							cell.value = header.text;
+							cell.font = { bold: true };
+							cell.alignment = { horizontal: 'center' };
+							cell.border = { top: { style: 'thin' } };
 
-								const cell = worksheet.getCell(6, currentCol);
-								cell.value = header.text;
-								cell.font = { bold: true };
-								cell.alignment = { horizontal: 'center' };
-								cell.border = { bottom: { style: 'thick' } };
-							} else if (header.cols === 1) {
-								worksheet.mergeCells(5, currentCol, 6, currentCol);
-								cell.value = header.text;
-								cell.font = { bold: true };
-								cell.alignment = { vertical: 'middle', horizontal: 'center' };
-								cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
-							} else {
-								worksheet.mergeCells(5, currentCol, 5, currentCol + header.cols - 1);
-								const cell = worksheet.getCell(5, currentCol);
-								cell.value = header.text;
-								cell.font = { bold: true };
-								cell.alignment = { horizontal: 'center' };
-								cell.border = { top: { style: 'thin' } };
+							const subCell = worksheet.getCell(end_row + 5, currentCol);
+							subCell.value = header.subText;
+							subCell.font = { bold: true };
+							subCell.alignment = { horizontal: 'center' };
+							subCell.border = { bottom: { style: 'thick' } };
+						} else if (header.text === 'AB' || header.text === 'CA') {
+							const top_cell = worksheet.getCell(end_row + 4, currentCol);
+							top_cell.border = { top: { style: 'thin' } };
 
-								// Sub-headers for circuit breaker
-								if (header.text === 'CIRCUIT BREAKER') {
-									const subHeaders: string[] = ['AT', 'AF', 'POLE'];
-									subHeaders.forEach((text: string, i: number) => {
-										const subCell = worksheet.getCell(6, currentCol + i);
-										subCell.value = text;
-										subCell.font = { bold: true };
-										subCell.alignment = { horizontal: 'center' };
-										subCell.border = { bottom: { style: 'thick' } };
-									});
-								}
+							const cell = worksheet.getCell(end_row + 5, currentCol);
+							cell.value = header.text;
+							cell.font = { bold: true };
+							cell.alignment = { horizontal: 'center' };
+							cell.border = { bottom: { style: 'thick' } };
+						} else if (header.cols === 1) {
+							worksheet.mergeCells(end_row + 4, currentCol, end_row + 5, currentCol);
+							cell.value = header.text;
+							cell.font = { bold: true };
+							cell.alignment = { vertical: 'middle', horizontal: 'center' };
+							cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
+						} else {
+							worksheet.mergeCells(
+								end_row + 4,
+								currentCol,
+								end_row + 4,
+								currentCol + header.cols - 1
+							);
+							const cell = worksheet.getCell(end_row + 4, currentCol);
+							cell.value = header.text;
+							cell.font = { bold: true };
+							cell.alignment = { horizontal: 'center' };
+							cell.border = { top: { style: 'thin' } };
+
+							// Sub-headers for circuit breaker
+							if (header.text === 'CIRCUIT BREAKER') {
+								const subHeaders: string[] = ['AT', 'AF', 'POLE'];
+								subHeaders.forEach((text: string, i: number) => {
+									const subCell = worksheet.getCell(end_row + 5, currentCol + i);
+									subCell.value = text;
+									subCell.font = { bold: true };
+									subCell.alignment = { horizontal: 'center' };
+									subCell.border = { bottom: { style: 'thick' } };
+								});
 							}
-							currentCol += header.cols;
-						});
+						}
+						currentCol += header.cols;
+					});
 
-						// Set column widths
-						worksheet.columns = [
-							{ width: 15 },
-							{ width: 30 },
-							{ width: 15 },
-							{ width: 15 },
-							{ width: 15 },
-							{ width: 15 },
-							{ width: 15 },
-							{ width: 10 },
-							{ width: 10 },
-							{ width: 10 },
-							{ width: 25 },
-							{ width: 15 },
-							{ width: 15 }
-						];
-					}
+					// Set column widths
+					worksheet.columns = [
+						{ width: 15 },
+						{ width: 30 },
+						{ width: 15 },
+						{ width: 15 },
+						{ width: 15 },
+						{ width: 15 },
+						{ width: 15 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 10 },
+						{ width: 25 },
+						{ width: 15 },
+						{ width: 15 }
+					];
+
 					// Get and write panel loads
 					const loads = await getChildNodesByParentId(child.id);
-					let currentRow = 7;
+					let last_row = end_row + 6;
 					for (const load of loads) {
 						if (load.node_type === 'load' && load.load_data) {
 							const worksheet = workbook.getWorksheet(panel_level);
 							if (!worksheet) {
 								return {
 									valid: false,
-									message: 'Failed to get worksheet of load level'
+									message: 'Failed to get worksheet of load level',
+									is_system_error: true
 								};
 							}
 							const centerAlignment: Partial<Alignment> = {
@@ -179,62 +194,63 @@
 								horizontal: 'center'
 							};
 
-							const cellA = worksheet.getCell(`A${currentRow}`);
+							const cellA = worksheet.getCell(`A${last_row}`);
 							cellA.value = load.circuit_number;
 							cellA.alignment = centerAlignment;
 
-							const cellB = worksheet.getCell(`B${currentRow}`);
+							const cellB = worksheet.getCell(`B${last_row}`);
 							cellB.value = load.load_data.load_description;
 							cellB.alignment = { vertical: 'middle', horizontal: 'left' };
 
-							const cellC = worksheet.getCell(`C${currentRow}`);
+							const cellC = worksheet.getCell(`C${last_row}`);
 							cellC.value = 'TBA';
 							cellC.alignment = centerAlignment;
 
-							const cellD = worksheet.getCell(`D${currentRow}`);
+							const cellD = worksheet.getCell(`D${last_row}`);
 							cellD.value = 'TBA';
 							cellD.alignment = centerAlignment;
 
-							const cellE = worksheet.getCell(`E${currentRow}`);
+							const cellE = worksheet.getCell(`E${last_row}`);
 							cellE.value = 'TBA';
 							cellE.alignment = centerAlignment;
 
-							const cellF = worksheet.getCell(`F${currentRow}`);
+							const cellF = worksheet.getCell(`F${last_row}`);
 							cellF.value = 'TBA';
 							cellF.alignment = centerAlignment;
 
-							const cellG = worksheet.getCell(`G${currentRow}`);
+							const cellG = worksheet.getCell(`G${last_row}`);
 							cellG.value = 'TBA';
 							cellG.alignment = centerAlignment;
 
-							const cellH = worksheet.getCell(`H${currentRow}`);
+							const cellH = worksheet.getCell(`H${last_row}`);
 							cellH.value = 'TBA';
 							cellH.alignment = centerAlignment;
 
-							const cellI = worksheet.getCell(`I${currentRow}`);
+							const cellI = worksheet.getCell(`I${last_row}`);
 							cellI.value = 'TBA';
 							cellI.alignment = centerAlignment;
 
-							const cellJ = worksheet.getCell(`J${currentRow}`);
+							const cellJ = worksheet.getCell(`J${last_row}`);
 							cellJ.value = 'TBA';
 							cellJ.alignment = centerAlignment;
 
-							const cellK = worksheet.getCell(`K${currentRow}`);
+							const cellK = worksheet.getCell(`K${last_row}`);
 							cellK.value = 'TBA';
 							cellK.alignment = centerAlignment;
 
-							const cellL = worksheet.getCell(`L${currentRow}`);
+							const cellL = worksheet.getCell(`L${last_row}`);
 							cellL.value = 'TBA';
 							cellL.alignment = centerAlignment;
 
-							const cellM = worksheet.getCell(`M${currentRow}`);
+							const cellM = worksheet.getCell(`M${last_row}`);
 							cellM.value = 'TBA';
 							cellM.alignment = centerAlignment;
 
-							currentRow++;
+							last_row++;
 						}
 					}
-					await processNodeChildren(child.id, child, depth + 1);
+					end_row += last_row + 2;
+					await processNodeChildren(child.id, child, depth + 1, last_row);
 				}
 				const node_type = parent?.node_type;
 				dev &&
@@ -250,7 +266,9 @@
 		const process_result = await processNodeChildren(root_node.id);
 		if (!process_result.valid) {
 			toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-				description: 'This is a system error and should not be here, the error has been logged.'
+				description: process_result?.is_system_error
+					? 'This is a system error and should not be here, the error has been logged.'
+					: undefined
 			});
 			return;
 		}
