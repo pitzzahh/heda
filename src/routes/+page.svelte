@@ -1,16 +1,18 @@
 <script>
 	import { Button } from '@/components/ui/button';
-	import HedaLogo from '$lib/assets/heda_logo.png';
+	import HedaLogoForDark from '$lib/assets/heda_logo_for_dark.png';
+	import HedaLogoForWhite from '$lib/assets/heda_logo_for_light.png';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
 	<div class="flex min-h-screen w-[80%] flex-col justify-between">
 		<div
-			class="h-[150px] w-full border-b-4 border-l-4 border-r-4 border-black bg-primary dark:border-white"
+			class="h-[150px] w-full border-b-4 border-l-4 border-r-4 bg-primary dark:border-white"
 		></div>
 
 		<div class="flex items-center justify-center gap-8">
-			<img src={HedaLogo} alt="Heda Logo" />
+			<img src={HedaLogoForDark} alt="Heda Logo" class="hidden dark:block" />
+			<img src={HedaLogoForWhite} alt="Heda Logo" class="block dark:hidden" />
 
 			<div class="grid gap-4">
 				<div class="w-auto text-center">
