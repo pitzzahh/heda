@@ -411,14 +411,33 @@
 			};
 		}
 
-		const process_result = await processNodeChildren(root_node.id);
-		if (!process_result.valid) {
-			toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-				description: process_result?.is_system_error
-					? 'This is a system error and should not be here, the error has been logged.'
-					: (process_result?.description ?? undefined)
-			});
-			return;
+		switch (highest_unit?.phase) {
+			case '1P':
+				workbook.subject = '1P Load Schedule';
+				workbook.description = 'Load schedule for 1 phase load schedule';
+				const process_result = await processNodeChildren(root_node.id);
+				if (!process_result.valid) {
+					toast.warning(process_result.message ?? 'Something went wrong while exporting', {
+						description: process_result?.is_system_error
+							? 'This is a system error and should not be here, the error has been logged.'
+							: (process_result?.description ?? undefined)
+					});
+					return;
+				}
+				break;
+			case '3P':
+				workbook.subject = '3P Load Schedule';
+				workbook.description = 'Load schedule for 3 phase load schedule';
+				toast.warning('This feature is still under development', {
+					description: 'Three phase load schedule is not yet supported'
+				});
+				return;
+			default:
+				workbook.subject = 'Unknown Load Schedule';
+				toast.warning('Something went wrong while exporting', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+				return;
 		}
 
 		// Write the workbook and trigger download
