@@ -224,37 +224,29 @@
 
 							if (load.node_type === 'load' && load.load_data) {
 								const load_data = load.load_data;
-
-								circuit_number_cell.value = load.circuit_number;
-								load_description_cell.value = load_data.load_description;
-								capacity_cell.value = 'TBA';
 								voltage_cell.value = load.voltage;
 								ab_cell.value = 'TBA';
 								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
-								at_cell.value = 'TBA';
-								af_cell.value = 'TBA';
-								pole_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
 								conduit_cell.value = 'TBA';
 							} else if (load.node_type === 'panel' && load.panel_data) {
 								const panel_data = load.panel_data;
-
-								circuit_number_cell.value = load.circuit_number;
-								load_description_cell.value = panel_data.name;
-								capacity_cell.value = 'TBA';
 								voltage_cell.value = 'TBA';
 								ab_cell.value = 'TBA';
 								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
-								at_cell.value = 'TBA';
-								af_cell.value = 'TBA';
-								pole_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
 								conduit_cell.value = 'TBA';
 							}
+							circuit_number_cell.value = load.circuit_number;
+							load_description_cell.value = load.load_description;
+							capacity_cell.value = load.va;
+							at_cell.value = load.at;
+							af_cell.value = load.overrided_ampere_frames;
+							pole_cell.value = load.pole;
 							last_row++;
 						}
 					}
