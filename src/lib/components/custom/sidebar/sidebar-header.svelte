@@ -66,9 +66,7 @@
 						{ column: `A${end_row}`, value: 'DESCRIPTION' },
 						{ column: `A${end_row + 1}`, value: 'SUPPLY' },
 						{ column: `A${end_row + 2}`, value: 'FROM' },
-						{ column: `A${end_row + 3}`, value: 'NAME' },
-						{ column: `J${end_row + 2}`, value: 'USE' },
-						{ column: `J${end_row + 3}`, value: 'FEEDER' }
+						{ column: `A${end_row + 3}`, value: 'NAME' }
 					];
 					description_label_column_position_data.forEach(
 						({ column, value }) => (worksheet.getCell(column).value = value)
@@ -126,7 +124,12 @@
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { bottom: { style: 'thick' } };
 						} else if (header.cols === 1) {
-							worksheet.mergeCells(end_row + 4, current_header_column, end_row + 5, current_header_column);
+							worksheet.mergeCells(
+								end_row + 4,
+								current_header_column,
+								end_row + 5,
+								current_header_column
+							);
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -181,14 +184,6 @@
 					let last_row = end_row + 6;
 					for (const load of loads) {
 						if (load.node_type === 'load' && load.load_data) {
-							const worksheet = workbook.getWorksheet(panel_level);
-							if (!worksheet) {
-								return {
-									valid: false,
-									message: 'Failed to get worksheet of load level',
-									is_system_error: true
-								};
-							}
 							const centerAlignment: Partial<Alignment> = {
 								vertical: 'middle',
 								horizontal: 'center'
@@ -247,7 +242,7 @@
 							cellM.alignment = centerAlignment;
 
 							last_row++;
-						} else if(load.node_type === 'panel' && load.panel_data) {
+						} else if (load.node_type === 'panel' && load.panel_data) {
 							const worksheet = workbook.getWorksheet(panel_level);
 							const panel_data = load.panel_data;
 							if (!worksheet) {
@@ -317,6 +312,36 @@
 							last_row++;
 						}
 					}
+					// Add main total
+					if (!worksheet) {
+						return {
+							valid: false,
+							message: 'Failed to get worksheet of load level',
+							is_system_error: true
+						};
+					}
+					const centerAlignment: Partial<Alignment> = {
+						vertical: 'middle',
+						horizontal: 'center'
+					};
+
+					const set_main_cell = (column: string, value: string) => {
+						const cell = worksheet.getCell(`${column}${last_row}`);
+						cell.value = value;
+						cell.font = { bold: true };
+						cell.alignment = centerAlignment;
+					};
+
+					const main_columns = [
+						{ column: 'A', value: 'TOTAL' },
+						{ column: 'B', value: 'TBA' },
+						{ column: 'C', value: 'TBA' },
+						{ column: 'D', value: 'TBA' },
+						{ column: 'E', value: 'TBA' }
+					];
+
+					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
+
 					end_row += last_row + 2;
 					await processNodeChildren(child.id, child, depth + 1, last_row);
 				}
