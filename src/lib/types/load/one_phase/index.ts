@@ -36,6 +36,11 @@ export type PhaseLoadSchedule = {
 	va: number;
 	current: number;
 	at: number;
+	conductor_size: number;
+	egc_size: number;
+	adjusted_current: number;
+	conduit_size: number;
+	ampere_frames: number;
 	// ab: number;
 	// bc: number;
 	// ca: number;
@@ -46,8 +51,4 @@ export type PhaseLoadSchedule = {
 	// p_plus_p_insulation: string;
 	// three_phase_size: string;
 	// three_phase_insulation: string;
-	// egc_size: string;
-	// egc_insulation: string;
-	// conduit_size: string;
-	// conduit_type: string;
 } & Node;

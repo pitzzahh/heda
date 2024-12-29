@@ -97,6 +97,53 @@ export function isValidDate(dateString?: string): boolean {
 	);
 }
 
+/**
+ * Checks if an object has all required keys with valid data.
+ * @param obj - The object to check.
+ * @param requiredKeys - An array of required keys to verify in the object.
+ * @returns True if the object contains all required keys with valid data; false otherwise.
+ */
+export function hasRequiredData<T extends object>(
+	obj: Partial<T>,
+	requiredKeys: (keyof T)[]
+): boolean {
+	return requiredKeys.every((key) => {
+		const value = obj[key];
+		if (value === null || value === undefined) return false;
+		if (typeof value === 'string') return value.trim() !== '';
+		if (Array.isArray(value)) {
+			return value.length > 0 && value.every(item => {
+				if (item === null || item === undefined) return false;
+				if (typeof item === 'object') return hasRequiredData<Record<string, unknown>>(item, Object.keys(item));
+				return true;
+			});
+		}
+		if (typeof value === 'object') return hasRequiredData<Record<string, unknown>>(value, Object.keys(value));
+		return true;
+	});
+}
+
+type NestedKey = string | string[];
+
+/**
+ * Checks if the required keys exist in the object and are not null/undefined.
+ * @param obj - The object to check.
+ * @param keys - The required keys, including paths to nested keys as arrays.
+ * @returns True if all required keys are present and have data, otherwise false.
+ */
+export function hasRequiredFields<T extends Record<string, any>>(obj: T, keys: NestedKey[]): boolean {
+    const isPresent = (value: any): boolean => value !== null && value !== undefined;
+
+    const checkKey = (obj: any, path: NestedKey): boolean => {
+        if (typeof path === "string") {
+            return isPresent(obj[path]);
+        }
+
+        return path.reduce((subObj, key) => (isPresent(subObj) ? subObj[key] : undefined), obj) !== undefined;
+    };
+
+    return keys.every((key) => checkKey(obj, key));
+}
 
 export function hasRequiredKeys<T extends object>(
 	obj: T,

@@ -19,7 +19,6 @@
 	import { Loader } from '@/assets/icons';
 	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
 	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
-	import { disable } from 'effect/RuntimeFlagsPatch';
 
 	let {
 		title = 'Are you absolutely sure?',

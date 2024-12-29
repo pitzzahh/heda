@@ -17,3 +17,15 @@ export function formatFraction(input: string): string {
     // Match single digits (if specific formatting is needed)
     .replace(/\b(\d+)\b/g, '$1');
 }
+
+/**
+ * Formats a number into an ordinal suffix.
+ * 
+ * @param n - The number to be formatted.
+ * @returns The number with an ordinal suffix.
+ */
+export function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}

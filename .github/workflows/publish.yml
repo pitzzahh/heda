@@ -1,12 +1,12 @@
-name: 'publish'
+name: "publish"
 
 on:
   push:
     tags:
-      - '*.*.*'
+      - "*.*.*"
 
 env:
-  APP_NAME: 'Hierarchical Electrical Design Analyzer'
+  APP_NAME: "Hierarchical Electrical Design Analyzer"
 
 jobs:
   release:
@@ -16,14 +16,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          # - platform: 'macos-latest' # for Arm based macs (M1 and above).
+          #   args: '--target aarch64-apple-darwin'
+          # - platform: 'macos-latest' # for Intel based macs.
+          #   args: '--target x86_64-apple-darwin'
+          # - platform: 'ubuntu-22.04'
+          #   args: ''
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -58,7 +58,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install frontend
         run: |
@@ -68,7 +68,7 @@ jobs:
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: 'Windows Installers'
+          name: "Windows Installers"
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
@@ -85,9 +85,11 @@ jobs:
         env:
           CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: '${{ env.APP_NAME }} v__VERSION__'
+          releaseName: "${{ env.APP_NAME }} v__VERSION__"
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: false
           prerelease: false

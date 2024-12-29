@@ -22,9 +22,10 @@
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
+	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -89,7 +90,7 @@
 						break;
 				}
 
-				await invalidateAll();
+				invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 				closeDialog();
 			}
 		}
@@ -99,6 +100,7 @@
 	let open_panel_phase_popover = $state(false);
 	let open_terminal_temp = $state(false);
 	let open_phase_type = $state(false);
+	let open_ambient_temp = $state(false);
 	let is_circuit_number_taken_state = $state({
 		is_circuit_number_taken: false,
 		circuit_number: 0
@@ -107,6 +109,7 @@
 	const phase_trigger_id = useId();
 	const panel_phase_type_trigger_id = useId();
 	const terminal_temp_trigger_id = useId();
+	const ambient_temp_trigger_id = useId();
 
 	// We want to refocus the trigger button when the user selects
 	// an item from the list so users can continue navigating the
@@ -115,6 +118,7 @@
 		open_terminal_temp = false;
 		open_panel_phase_popover = false;
 		open_phase_type = false;
+		open_ambient_temp = false;
 		tick().then(() => {
 			document.getElementById(trigger_id)?.focus();
 		});
@@ -135,13 +139,14 @@
 		}
 		const {
 			circuit_number,
-			panel_data: { terminal_temperature, phase, name }
+			panel_data: { terminal_temperature, phase, name, ambient_temperature }
 		} = node_to_edit;
 
 		$formData.circuit_number = circuit_number as number;
 		$formData.name = name ?? 'Unknown';
 		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 		$formData.phase = phase as Phase;
+		$formData.ambient_temperature = ambient_temperature;
 	});
 </script>
 
@@ -216,19 +221,20 @@
 							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 							<Command.Empty>No terminal temp found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as ambient_temp}
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
 									<Command.Item
-										value={ambient_temp}
+										value={terminal_temp}
 										onSelect={() => {
-											$formData.terminal_temperature = ambient_temp;
+											$formData.terminal_temperature = terminal_temp;
 											closeAndFocusTrigger(terminal_temp_trigger_id);
 										}}
+										disabled={terminal_temp !== 'Standard Temperature'}
 									>
-										{convertToNormalText(ambient_temp)}
+										{convertToNormalText(terminal_temp)}
 										<Check
 											class={cn(
 												'ml-auto size-4',
-												ambient_temp !== $formData.terminal_temperature && 'text-transparent'
+												terminal_temp !== $formData.terminal_temperature && 'text-transparent'
 											)}
 										/>
 									</Command.Item>
@@ -244,16 +250,72 @@
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
-		{#if main_phase !== '1P'}
-			<div>
+
+		<div>
+			{#if main_phase !== '1P'}
 				{@render PanelType()}
 				{@render PanelPhase()}
-			</div>
-		{:else}
-			<div>
+			{:else}
 				{@render PanelPhase()}
-			</div>
-		{/if}
+			{/if}
+			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
+				<Popover.Root bind:open={open_ambient_temp}>
+					<Form.Control id={ambient_temp_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label>Ambient Temperature</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.ambient_temperature && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{$formData.ambient_temperature
+									? $formData.ambient_temperature
+									: 'Select an ambient temperature'}
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.ambient_temperature} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
+							<Command.Empty>No terminal temp found.</Command.Empty>
+							<Command.Group>
+								<ScrollArea class="h-64 pr-2.5">
+									{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
+										<Command.Item
+											value={ambient_temp.toString()}
+											onSelect={() => {
+												$formData.ambient_temperature = ambient_temp;
+												closeAndFocusTrigger(ambient_temp_trigger_id);
+											}}
+											disabled={ambient_temp !== 30}
+										>
+											{ambient_temp}
+											<Check
+												class={cn(
+													'ml-auto size-4',
+													ambient_temp !== $formData.ambient_temperature && 'text-transparent'
+												)}
+											/>
+										</Command.Item>
+									{/each}
+								</ScrollArea>
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.Description>
+					This is the ambient temp that will determine the ambient temp of the panel wire to the
+					main.
+				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+		</div>
 	</div>
 	<Form.Button class="w-full" type="submit">Save</Form.Button>
 </form>

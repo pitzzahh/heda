@@ -36,7 +36,7 @@
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
-	<SidebarHeader />
+	<SidebarHeader {project} {root_node} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>Unit Hierarchy</Sidebar.GroupLabel>

@@ -1,7 +1,7 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Hierarchical Electrical Design Analyzer",
-	"version": "0.1.21",
+	"version": "0.3.26",
 	"identifier": "me.araopj.heda",
 	"build": {
 		"frontendDist": "../build",
@@ -12,20 +12,25 @@
 	"app": {
 		"windows": [
 			{
-				"title": "Hierarchical Electrical Design Analyzer v0.1.21",
-				"width": 800,
-				"height": 600,
-				"minWidth": 800,
-				"minHeight": 600,
+				"center": true,
+				"title": "Hierarchical Electrical Design Analyzer v0.3.26",
+				"width": 950,
+				"height": 650,
+				"minWidth": 950,
+				"minHeight": 650,
 				"resizable": true,
 				"fullscreen": false
 			}
 		],
 		"security": {
-			"csp": null
+			"csp": null,
+			"capabilities": [
+				"default"
+			]
 		}
 	},
 	"bundle": {
+		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
 		"windows": {
@@ -40,5 +45,16 @@
 			"icons/icon.icns",
 			"icons/icon.ico"
 		]
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI0QUY2NUJGOEZBRTE5MzQKUldRMEdhNlB2Mld2dEQrK2hKYytHSWZIWS9adDYvMnlTckczbkh0VEo1Q0ZYams0WEY4cGJqNjAK",
+			"endpoints": [
+				"https://github.com/pitzzahh/heda/releases/latest/download/latest.json"
+			],
+			"windows": {
+				"installMode": "passive"
+			}
+		}
 	}
 }

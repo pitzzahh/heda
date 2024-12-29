@@ -15,7 +15,7 @@
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { AddLoadDialog } from '../load';
@@ -43,7 +43,7 @@
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
 
-	const params = $derived($page.params);
+	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
 
 	let open_panel_context_menu = $state(false);
@@ -282,12 +282,15 @@
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else await removeNode(node.id);
-										toast.success(
-											node.node_type === 'root'
-												? 'Project removed succesfully'
-												: 'Panel removed succesfully'
-										);
-										invalidate('app:workspace/load-schedule').then(() => (button_state = 'stale'));
+										invalidate('app:workspace/load-schedule')
+											.then(() => (button_state = 'stale'))
+											.finally(() => {
+												toast.success(
+													node.node_type === 'root'
+														? `${project?.project_name ?? 'Project'} removed succesfully`
+														: `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+												);
+											});
 									}}
 								/>
 							{/snippet}
@@ -405,14 +408,14 @@
 				.finally(() => {
 					button_state = 'stale';
 					open_tree_delete_dialog = false;
+					toast.success(
+						node.node_type === 'root'
+							? `${project?.project_name ?? 'Project'} removed succesfully`
+							: node.node_type === 'panel'
+								? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+								: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
+					);
 				});
-			toast.success(
-				node.node_type === 'root'
-					? 'Remove Project'
-					: node.node_type === 'panel'
-						? 'Remove Panel'
-						: 'Remove Load'
-			);
 		}}
 	/>
 {/snippet}

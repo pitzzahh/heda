@@ -15,7 +15,7 @@ export const entries = () => {
 };
 
 export const load = async ({ depends, params }) => {
-	depends('app:workspace/load-schedule')
+	depends('app:workspace/load-schedule');
 	const node_id = params.id.split('_').at(-1) as string;
 	const project = await getCurrentProject();
 	const root_node = await getRootNode();
@@ -27,14 +27,10 @@ export const load = async ({ depends, params }) => {
 	const current_node = await getNodeById(node_id);
 	if (!current_node) goto('/workspace');
 
-	// MAIIBA PA KANI ANG SHAPE, PETE DAHIL DUMAN SA COMPUTATION.
-	//  PANSAMANTALA MUNA NA LOAD LANG MUNA I RENDER KANG TABLE
 	const nodes = await getComputedLoads(node_id);
-
-	// TODO: CREATE A SEPARATE QUERY THAT ALSO GETS THE PANEL WITH ITS COMPUTED VALUES AND CREATE ITS SEPARATE TYPE
-	// NOTE:  bawal ang nested objects digdi. bale magibo kita separate query for computed child panels and loads na maga match sa accesor key kang table
-	// const loads = nodes?.filter((node) => node.node_type === 'load');
-
+	console.log(nodes);
+	
+	console.log('curr node ', current_node);
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		project,
