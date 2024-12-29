@@ -267,7 +267,6 @@
 							if (load.node_type === 'load' && load.load_data) {
 								const load_data = load.load_data;
 								ab_cell.value = 'TBA';
-								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
@@ -276,7 +275,6 @@
 								const panel_data = load.panel_data;
 								voltage_cell.value = 'TBA';
 								ab_cell.value = 'TBA';
-								current_bc_cell.value = 'TBA';
 								ca_cell.value = 'TBA';
 								feeder_conductor_cell.value = 'TBA';
 								egc_cell.value = 'TBA';
