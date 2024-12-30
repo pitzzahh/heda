@@ -98,7 +98,7 @@
 		</header>
 
 		<svelte:boundary>
-			<div class="mt-16 grid w-full place-items-stretch gap-4 p-4">
+			<div class="flex w-full items-center justify-center gap-4 p-4">
 				{@render children?.()}
 			</div>
 			{#snippet failed(error, reset)}
