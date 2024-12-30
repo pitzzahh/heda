@@ -89,7 +89,7 @@ export function computeConductorSize({
 
 	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
 	const range = AMPACITY_RANGES.find(
-		(range) => adjusted_current >= range.min && adjusted_current <= range.max
+		(range) => adjusted_current > range.min && adjusted_current <= range.max
 	);
 
 	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
@@ -128,7 +128,6 @@ export function computeAdjustedCurrent({
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
 
-	console.log(load_type, adjusted_current);
 	return adjusted_current;
 }
 
@@ -170,6 +169,10 @@ export function getEgcSize(at: number): number | 'error' {
 }
 
 export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
+	if (conductor_size > 530) {
+		return 'Error';
+	}
+
 	const row = CONDUIT_TABLE.conductor_rows.find((row) => row.conductor_size === conductor_size);
 
 	if (!row) {
