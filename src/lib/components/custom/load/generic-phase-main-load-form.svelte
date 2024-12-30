@@ -27,7 +27,7 @@
 		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidate, invalidateAll } from '$app/navigation';
@@ -150,7 +150,7 @@
 	});
 	const { form: formData, enhance } = form;
 
-	const panel_id_from_params = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id_from_params = page.params?.id?.split('_')?.at(-1) || ''; //gets the id of the parent node (panel) of the loads
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
