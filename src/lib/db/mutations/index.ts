@@ -342,7 +342,8 @@ export async function deleteProject(project_id: string) {
 			return await removeNode(rootNodeId);
 		}
 
-		return await query.remove();
+		await query.remove();
+		await database.projects.find().remove(); // remove the other projects
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
 		throw error;
