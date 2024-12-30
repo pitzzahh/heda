@@ -37,11 +37,11 @@
 		$state('stale');
 	let download_progress = $state(0);
 
-	let is_adjustment_factor_constant = $state(
-		project?.settings.is_adjustment_factor_constant || false
+	let is_adjustment_factor_dynamic = $state(
+		project?.settings.is_adjustment_factor_dynamic || false
 	);
 	let has_changes = $derived(
-		project && project.settings.is_adjustment_factor_constant !== is_adjustment_factor_constant
+		project && project.settings.is_adjustment_factor_dynamic !== is_adjustment_factor_dynamic
 	);
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -53,7 +53,7 @@
 	async function handleSaveChanges() {
 		if (!project) return;
 
-		await updateProjectSettings(project.id, { is_adjustment_factor_constant });
+		await updateProjectSettings(project.id, { is_adjustment_factor_dynamic });
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Adjustment Factor applied');
 	}
@@ -62,7 +62,7 @@
 		if (open) return;
 		// reset all the fields if not open
 		if (!open) {
-			is_adjustment_factor_constant = project?.settings.is_adjustment_factor_constant || false;
+			is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic || false;
 			update_state = 'stale';
 			app_update = null;
 		}
@@ -91,7 +91,7 @@
 								<Switch
 									disabled={!!!project}
 									id="adjustment_factor"
-									bind:checked={is_adjustment_factor_constant}
+									bind:checked={is_adjustment_factor_dynamic}
 								/>
 
 								{#if has_changes}
@@ -100,9 +100,9 @@
 							</div>
 
 							<p class="text-xs text-muted-foreground">
-								{is_adjustment_factor_constant
-									? 'The adjustment factor for all loads will be set to 100%.'
-									: 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'}
+								{is_adjustment_factor_dynamic
+									? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
+									: 'The adjustment factor for all loads will be set to 100%.'}
 							</p>
 						</div>
 					</div>

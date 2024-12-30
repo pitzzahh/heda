@@ -21,7 +21,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 			root_node_id: created_root_node._data.id,
 			project_name: 'Untitled',
 			settings: {
-				is_adjustment_factor_constant: false
+				is_adjustment_factor_dynamic: false
 			}
 		});
 
@@ -38,7 +38,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 export async function updateProjectSettings(
 	project_id: string,
 	settings: {
-		is_adjustment_factor_constant: boolean;
+		is_adjustment_factor_dynamic: boolean;
 	}
 ) {
 	const database = await databaseInstance();
