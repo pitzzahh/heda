@@ -9,7 +9,7 @@
 	import { cn } from '@/utils';
 	import Separator from '@/components/ui/separator/separator.svelte';
 	import { getNodeById } from '@/db/queries';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
@@ -57,7 +57,7 @@
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Supply From:</h4>
-								{#await getNodeById(panel_id_from_tree || $page.params.id
+								{#await getNodeById(panel_id_from_tree || page.params.id
 											.split('_')
 											.at(-1) || '') then parent_node}
 									<p>
