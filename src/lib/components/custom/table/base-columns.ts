@@ -228,7 +228,16 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 					return info.getValue();
 				},
 				header: () => 'SIZE',
-				footer: (props) => current_node.conduit_size
+				footer: (props) => {
+					if (current_node.adjusted_current > 530 && !current_node.overrided_conduit_size) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'Insufficient Information'
+						});
+					}
+
+					return current_node.conduit_size;
+				}
 			},
 			{
 				accessorKey: 'conduit_type',
