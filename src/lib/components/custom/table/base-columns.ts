@@ -20,14 +20,15 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
-		header: () =>
-			renderComponent(AddLoadDialog, {
-				phase_main_load_form,
-				highest_unit,
-				latest_circuit_node,
-				'aria-label': 'Select row',
-				class: 'translate-y-[2px]'
-			}),
+		// header: () =>
+		// 	renderComponent(AddLoadDialog, {
+		// 		phase_main_load_form,
+		// 		highest_unit,
+		// 		latest_circuit_node,
+		// 		'aria-label': 'Select row',
+		// 		class: 'translate-y-[2px]'
+		// 	}),
+		header: () => 'CRKT #',
 		footer: () => 'Total'
 	},
 	{
