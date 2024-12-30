@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Tween } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 	import * as Tooltip from '@/components/ui/tooltip';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Select from '@/components/ui/select';
@@ -31,11 +33,12 @@
 	const settingsState = getSettingsState();
 	const selectedFont = $derived(settingsState.font);
 
+	const tween = new Tween(0, { duration: 500, easing: cubicOut });
+
 	let open = $state(false);
 	let app_update: Update | null = $state(null);
 	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading' =
 		$state('stale');
-	let download_progress = $state(0);
 
 	let is_adjustment_factor_dynamic = $state(
 		project?.settings.is_adjustment_factor_dynamic || false
@@ -167,19 +170,16 @@
 						<svelte:boundary>
 							<Button
 								variant={update_state === 'available' ? 'default' : 'outline'}
-								style={download_progress > 0
-									? `background: linear-gradient(to right, var(--primary) ${download_progress}%, transparent ${download_progress}%)`
-									: ''}
-								class={cn({
+								class={cn('button-background', {
 									'!cursor-not-allowed opacity-50':
 										update_state === 'processing' || update_state === 'no_updates'
 								})}
 								onclick={async () => {
 									if (update_state === 'available' && app_update) {
-										download_progress = 0;
+										tween.target = 0;
 										update_state = 'downloading';
 										return installUpdate(app_update, true, (progress) => {
-											download_progress = progress;
+											tween.target = Math.round(progress);
 										});
 									}
 									if (update_state === 'processing' || update_state === 'no_updates') return;
@@ -212,7 +212,7 @@
 									{:else if update_state === 'no_updates'}
 										No updates available
 									{:else if update_state === 'downloading'}
-										{Math.round(download_progress)}%
+										{tween.target}%
 									{:else if update_state === 'error'}
 										Something went wrong while checking for updates
 									{:else}
@@ -232,3 +232,22 @@
 		<Tooltip.Content>Settings</Tooltip.Content>
 	</Tooltip.Root>
 </Tooltip.Provider>
+
+<style>
+	.button-background {
+		position: relative;
+		overflow: hidden;
+	}
+
+	.button-background::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: var(--progress, 0%);
+		height: 100%;
+		background-color: var(--primary); /* Highlight color */
+		pointer-events: none;
+		transition: width 0.1s ease; /* Smooth transition */
+	}
+</style>
