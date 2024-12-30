@@ -17,6 +17,12 @@
 
 	const settingsState = getSettingsState();
 
+	type ButtonState = 'idle' | 'loading';
+
+	let button_states = $state({
+		export_to_excel: 'idle' as ButtonState
+	});
+
 	function handleSave() {
 		// TODO: Implement save functionality
 		toast.warning('This feature is not yet implemented');
@@ -41,6 +47,12 @@
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
 		}
+		const file_name = project?.project_name ?? 'Exported Panelboard Schedule';
+		button_states.export_to_excel = 'loading';
+		toast.loading(`Exporting to Excel... ${file_name}.xlsx`, {
+			description: 'Please wait, this should last very long.',
+			position: 'bottom-center'
+		});
 
 		const workbook = new ExcelJS.Workbook();
 		workbook.title = 'Exported Panelboard Schedule';
@@ -457,13 +469,17 @@
 		// Create a link and download the file
 		const link = document.createElement('a');
 		link.href = url;
-		link.download = `${project?.project_name ?? 'Exported Data'}.xlsx`;
+		link.download = `${file_name}.xlsx`;
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
 
 		// Free resources
 		URL.revokeObjectURL(url);
+		toast.success('Export finished successfully.', {
+			description: 'The file has been downloaded successfully'
+		});
+		button_states.export_to_excel = 'idle';
 	}
 </script>
 
@@ -507,6 +523,7 @@
 	<Tooltip.Provider>
 		<Tooltip.Root>
 			<Tooltip.Trigger
+				disabled={button_states.export_to_excel === 'loading'}
 				class={buttonVariants({ variant: 'outline', size: 'sm' })}
 				onclick={exportToExcel}
 			>
