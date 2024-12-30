@@ -10,6 +10,7 @@ import AtFooterCell from './(components)/at-footer-cell.svelte';
 import InsulationsDropdown from './(components)/insulations-dropdown.svelte';
 import PoleDropdown from './(components)/pole-dropdown.svelte';
 import LoadDescriptionCell from './(components)/load-description-cell.svelte';
+import ErrorCell from './(components)/error-cell.svelte';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -215,7 +216,16 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 		columns: [
 			{
 				accessorKey: 'conduit_size',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const data = info.row.original;
+					if (data.adjusted_current > 530 && !data.overrided_conduit_size) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'Insufficient Information'
+						});
+					}
+					return info.getValue();
+				},
 				header: () => 'SIZE',
 				footer: (props) => current_node.conduit_size
 			},
@@ -223,7 +233,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_type',
 				cell: (info) => info.getValue(),
 				header: () => 'TYPE',
-				footer: (props) => ''
+				footer: (props) => current_node.conduit_type
 			}
 		]
 	},
