@@ -69,7 +69,7 @@ export async function getNodeById(target_id: string) {
 	const db = await databaseInstance();
 
 	const project = await getCurrentProject();
-	const is_adjustment_factor_constant = project?.settings.is_adjustment_factor_constant;
+	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const node = await db.nodes
 		.findOne({
@@ -119,7 +119,7 @@ export async function getNodeById(target_id: string) {
 				load_type,
 				at,
 				ambient_temp,
-				is_adjustment_factor_constant: is_adjustment_factor_constant || false
+				is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 			});
 		const adjusted_current = computeAdjustedCurrent({
 			set: conductor_set,
@@ -128,7 +128,7 @@ export async function getNodeById(target_id: string) {
 			load_type,
 			at,
 			ambient_temp,
-			is_adjustment_factor_constant: is_adjustment_factor_constant || false
+			is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 		});
 		const conduit_size =
 			overrided_conduit_size || getConduitSize(conductor_size, conductor_set * conductor_qty + 1);
@@ -257,7 +257,7 @@ export async function getParentNodes(excluded_id?: string) {
 
 export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSchedule[]> {
 	const project = await getCurrentProject();
-	const is_adjustment_factor_constant = project?.settings.is_adjustment_factor_constant;
+	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const db = await databaseInstance();
 	const childNodes = await db.nodes
@@ -290,7 +290,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 					load_type: data.load_data?.load_type as LoadType | 'Main',
 					at,
 					ambient_temp: data.load_data?.ambient_temperature || 30,
-					is_adjustment_factor_constant: is_adjustment_factor_constant || false
+					is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 				});
 			const adjusted_current = computeAdjustedCurrent({
 				set: conductor_set,
@@ -299,7 +299,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 				load_type: data.load_data?.load_type as LoadType | 'Main',
 				at,
 				ambient_temp: data.load_data?.ambient_temperature || 30,
-				is_adjustment_factor_constant: is_adjustment_factor_constant || false
+				is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 			});
 			const conduit_size =
 				data.overrided_conduit_size ||
@@ -325,7 +325,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 					load_type: 'Main',
 					at: main_at,
 					ambient_temp: data.panel_data.ambient_temperature,
-					is_adjustment_factor_constant: is_adjustment_factor_constant || false
+					is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 				});
 				const adjusted_current = computeAdjustedCurrent({
 					set: conductor_set as number,
@@ -334,7 +334,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 					load_type: 'Main',
 					at: main_at,
 					ambient_temp: data.panel_data.ambient_temperature,
-					is_adjustment_factor_constant: is_adjustment_factor_constant || false
+					is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 				});
 				const conduit_size =
 					data.overrided_conduit_size ||
