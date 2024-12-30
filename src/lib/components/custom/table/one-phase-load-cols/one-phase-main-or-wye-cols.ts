@@ -73,7 +73,13 @@ export function onePhaseMainOrWyeCols(
 						// 	load_type: 'Main',
 						// 	at: main_at,
 						// 	ambient_temp: current_node.panel_data?.ambient_temperature || 30
-						// });
+						// })
+						if (current_node.adjusted_current > 530 && !current_node.overrided_conductor_size) {
+							return renderComponent(ErrorCell, {
+								trigger_value: '-',
+								tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
+							});
+						}
 
 						return current_node.conductor_size;
 					}
