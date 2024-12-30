@@ -46,7 +46,7 @@
 		workbook.title = 'Exported Panelboard Schedule';
 		workbook.creator = 'HEDA(Desktop App)';
 
-		async function processNodeChildren(
+		async function processOnePhaseExcelPanelBoardSchedule(
 			nodeId: string,
 			parent?: Node,
 			depth: number = 1,
@@ -75,7 +75,7 @@
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
 				if (child.node_type === 'root') {
-					await processNodeChildren(child.id, child, depth + 1);
+					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1);
 				} else if (child.node_type === 'panel') {
 					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
 					const panel_level = getOrdinalSuffix(depth + 1);
@@ -388,7 +388,7 @@
 						{ column: 'N', value: node_data_summary.egc_size.toString() },
 						{ column: 'O', value: node_data_summary.egc_insulation ?? 'N/A' },
 						{ column: 'P', value: node_data_summary.conduit_size.toString() },
-						{ column: 'Q', value: ' ' }
+						{ column: 'Q', value: node_data_summary.conduit_type ?? 'N/A' }
 					];
 
 					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
@@ -403,7 +403,7 @@
 					// last_total_cell.alignment = centerAlignment;
 
 					end_row += last_row + 3;
-					await processNodeChildren(child.id, child, depth + 1, last_row);
+					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1, last_row);
 				}
 				const node_type = parent?.node_type;
 				dev &&
@@ -421,7 +421,7 @@
 				workbook.subject = '1P Load Schedule';
 				workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
 				workbook.description = 'Load schedule for 1 phase load schedule';
-				const process_result = await processNodeChildren(root_node.id);
+				const process_result = await processOnePhaseExcelPanelBoardSchedule(root_node.id);
 				if (!process_result.valid) {
 					toast.warning(process_result.message ?? 'Something went wrong while exporting', {
 						description: process_result?.is_system_error
