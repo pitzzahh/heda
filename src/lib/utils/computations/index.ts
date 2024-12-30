@@ -66,7 +66,7 @@ export function computeConductorSize({
 	load_type,
 	at,
 	current,
-	is_adjustment_factor_constant
+	is_adjustment_factor_dynamic
 }: {
 	set: number;
 	qty: number;
@@ -74,7 +74,7 @@ export function computeConductorSize({
 	load_type: LoadType | 'Main';
 	at: number;
 	current: number;
-	is_adjustment_factor_constant: boolean;
+	is_adjustment_factor_dynamic: boolean;
 }) {
 	const motor_loads = ['1P Motor - Rated Horse Power', '1P Motor - Rated Current'];
 	const adjusted_current = computeAdjustedCurrent({
@@ -84,12 +84,12 @@ export function computeConductorSize({
 		load_type,
 		at,
 		current,
-		is_adjustment_factor_constant
+		is_adjustment_factor_dynamic
 	});
 
 	// NOTE: THIS AMPACITY RANGES MAY VARY DEPENDING ON THE TERMINAL TEMPERATURE
 	const range = AMPACITY_RANGES.find(
-		(range) => adjusted_current >= range.min && adjusted_current <= range.max
+		(range) => adjusted_current > range.min && adjusted_current <= range.max
 	);
 
 	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
@@ -105,7 +105,7 @@ export function computeAdjustedCurrent({
 	load_type,
 	at,
 	current,
-	is_adjustment_factor_constant
+	is_adjustment_factor_dynamic
 }: {
 	set: number;
 	qty: number;
@@ -113,7 +113,7 @@ export function computeAdjustedCurrent({
 	load_type: LoadType | 'Main';
 	at: number;
 	current: number;
-	is_adjustment_factor_constant: boolean;
+	is_adjustment_factor_dynamic: boolean;
 }) {
 	const load_type_parameter = getLoadTypeParams(load_type);
 	const total_num_of_conductors = set * qty;
@@ -122,13 +122,12 @@ export function computeAdjustedCurrent({
 		AMBIENT_TEMP_RATINGS.find((temp_rating) => ambient_temp <= temp_rating.max_temp)?.factor ?? 1; // digdi ang usage kang ambient temp
 	const adjustment_factor = getAdjustmentFactor(
 		total_num_of_conductors,
-		is_adjustment_factor_constant
+		is_adjustment_factor_dynamic
 	);
 
 	const load_type_output = load_type_parameter === 'at' ? at : 1.25 * current;
 	const adjusted_current = load_type_output / (correction_factor * adjustment_factor * set);
 
-	console.log(load_type, adjusted_current);
 	return adjusted_current;
 }
 
@@ -142,25 +141,27 @@ function getLoadTypeParams(load_type: LoadType | 'Main'): 'at' | 'multiply-curre
 
 function getAdjustmentFactor(
 	numberOfConductors: number,
-	is_adjustment_factor_constant?: boolean
+	is_adjustment_factor_dynamic: boolean
 ): number {
-	if (numberOfConductors <= 3 || is_adjustment_factor_constant) {
-		return 1.0;
-	}
+	if (is_adjustment_factor_dynamic) {
+		if (numberOfConductors <= 3) {
+			return 1.0;
+		}
 
-	if (numberOfConductors <= 6) {
-		return 0.8;
-	} else if (numberOfConductors <= 9) {
-		return 0.7;
-	} else if (numberOfConductors <= 20) {
-		return 0.5;
-	} else if (numberOfConductors <= 30) {
-		return 0.45;
-	} else if (numberOfConductors <= 40) {
-		return 0.4;
-	} else {
-		return 0.35;
-	}
+		if (numberOfConductors <= 6) {
+			return 0.8;
+		} else if (numberOfConductors <= 9) {
+			return 0.7;
+		} else if (numberOfConductors <= 20) {
+			return 0.5;
+		} else if (numberOfConductors <= 30) {
+			return 0.45;
+		} else if (numberOfConductors <= 40) {
+			return 0.4;
+		} else {
+			return 0.35;
+		}
+	} else return 1.0;
 }
 
 export function getEgcSize(at: number): number | 'error' {
@@ -170,6 +171,10 @@ export function getEgcSize(at: number): number | 'error' {
 }
 
 export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
+	if (conductor_size > 530) {
+		return 'Error';
+	}
+
 	const row = CONDUIT_TABLE.conductor_rows.find((row) => row.conductor_size === conductor_size);
 
 	if (!row) {

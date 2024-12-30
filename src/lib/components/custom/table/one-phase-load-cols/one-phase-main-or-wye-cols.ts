@@ -7,6 +7,7 @@ import type { Node } from '@/db/schema';
 import { renderComponent } from '@/components/ui/data-table';
 import ConductorSetsCell from '../(components)/conductor-sets-cell.svelte';
 import InsulationsDropdown from '../(components)/insulations-dropdown.svelte';
+import ErrorCell from '../(components)/error-cell.svelte';
 
 export function onePhaseMainOrWyeCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -49,7 +50,16 @@ export function onePhaseMainOrWyeCols(
 				{
 					accessorKey: 'conductor_size',
 					header: () => 'Size (mm²)',
-					cell: (info) => info.getValue(),
+					cell: (info) => {
+						const data = info.row.original;
+						if (data.adjusted_current > 530 && !data.overrided_conductor_size) {
+							return renderComponent(ErrorCell, {
+								trigger_value: '-',
+								tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
+							});
+						}
+						return info.getValue();
+					},
 					footer: (props) => {
 						// const total_current = props.table
 						// 	.getFilteredRowModel()
@@ -64,6 +74,7 @@ export function onePhaseMainOrWyeCols(
 						// 	at: main_at,
 						// 	ambient_temp: current_node.panel_data?.ambient_temperature || 30
 						// });
+
 						return current_node.conductor_size;
 					}
 				},

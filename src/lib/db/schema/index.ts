@@ -14,7 +14,7 @@ const project_schema_literal = {
 		settings: {
 			type: 'object',
 			properties: {
-				is_adjustment_factor_constant: {
+				is_adjustment_factor_dynamic: {
 					type: 'boolean',
 					default: false
 				}
