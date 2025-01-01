@@ -37,19 +37,21 @@
 		dev && console.log('Root:', root_node);
 		if (!root_node) {
 			return toast.warning('No project found', {
-				description: 'Cannot proceed with the export.'
+				description: 'Cannot proceed with the export.',
+				position: 'bottom-center'
 			});
 		}
 
 		const highest_unit = root_node?.highest_unit_form;
 		if (!highest_unit) {
 			return toast.warning('No highest unit found, nothing to export', {
-				description: 'This is a system error and should not be here, the error has been logged.'
+				description: 'This is a system error and should not be here, the error has been logged.',
+				position: 'bottom-center'
 			});
 		}
 		const file_name = project?.project_name ?? 'Exported Panelboard Schedule';
 		button_states.export_to_excel = 'loading';
-		toast.loading(`Exporting to Excel... ${file_name}.xlsx`, {
+		toast.info(`Exporting to Excel... ${file_name}.xlsx`, {
 			description: 'Please wait, this should last very long.',
 			position: 'bottom-center'
 		});
@@ -76,7 +78,9 @@
 				depth === 1 &&
 				(children.length === 0 || children.every((child) => child.node_type !== 'panel'))
 			) {
-				toast.warning('No panels found');
+				toast.warning('No panels found', {
+					position: 'bottom-center'
+				});
 				return {
 					valid: false,
 					message: 'No panels found',
@@ -435,10 +439,12 @@
 				workbook.description = 'Load schedule for 1 phase load schedule';
 				const process_result = await processOnePhaseExcelPanelBoardSchedule(root_node.id);
 				if (!process_result.valid) {
+					button_states.export_to_excel = 'idle';
 					toast.warning(process_result.message ?? 'Something went wrong while exporting', {
 						description: process_result?.is_system_error
 							? 'This is a system error and should not be here, the error has been logged.'
-							: (process_result?.description ?? undefined)
+							: (process_result?.description ?? undefined),
+						position: 'bottom-center'
 					});
 					return;
 				}
@@ -448,13 +454,16 @@
 				workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
 				workbook.description = 'Load schedule for 3 phase load schedule';
 				toast.warning('This feature is still under development', {
-					description: 'Three phase load schedule is not yet supported'
+					description: 'Three phase load schedule is not yet supported',
+					position: 'bottom-center'
 				});
 				return;
 			default:
+				button_states.export_to_excel = 'idle';
 				workbook.subject = 'Unknown Load Schedule';
 				toast.warning('Something went wrong while exporting', {
-					description: 'This is a system error and should not be here, the error has been logged.'
+					description: 'This is a system error and should not be here, the error has been logged.',
+					position: 'bottom-center'
 				});
 				return;
 		}
@@ -477,7 +486,8 @@
 		// Free resources
 		URL.revokeObjectURL(url);
 		toast.success('Export finished successfully.', {
-			description: 'The file has been downloaded successfully'
+			description: 'The file has been downloaded successfully',
+			position: 'bottom-center'
 		});
 		button_states.export_to_excel = 'idle';
 	}
