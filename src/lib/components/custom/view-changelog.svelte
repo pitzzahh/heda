@@ -1,30 +1,18 @@
 <script lang="ts">
 	import DOMPurify from 'dompurify';
 	import Markdown from 'svelte-exmarkdown';
-	// import { marked } from 'marked';
 	import { buttonVariants } from '@/components/ui/button';
 	import * as Sheet from '@/components/ui/sheet/index.js';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
-	import { History } from '@/assets/icons';
-	import Skeleton from '../ui/skeleton/skeleton.svelte';
+	import { History, CloudAlert } from '@/assets/icons';
+	import { Skeleton } from '@/components/ui/skeleton//index.js';
 	import { cn } from '@/utils';
-	import CircleAlert from 'lucide-svelte/icons/circle-alert';
-	import { CloudAlert } from 'lucide-svelte';
-	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
+	import { IsMounted } from 'runed';
 
-	let has_connection = $state(false);
+	const isMounted = new IsMounted();
 
-	$effect(() => {
-		const interval = setInterval(() => {
-			fetch('https://raw.githubusercontent.com', { method: 'HEAD', mode: 'no-cors' })
-				.then(() => (has_connection = true))
-				.catch(() => (has_connection = false));
-		}, 2000);
-
-		return () => {
-			clearInterval(interval);
-		};
-	});
+	let has_connection = $derived(isMounted && navigator && navigator.onLine);
 </script>
 
 <Sheet.Root>
@@ -33,14 +21,9 @@
 		View Changelog
 	</Sheet.Trigger>
 	<Sheet.Content class="min-w-[55%]">
-		<Sheet.Header class="flex w-full flex-row items-center justify-between">
-			<div>
-				<Sheet.Title>Changelog</Sheet.Title>
-				<Sheet.Description>This contains the changelog</Sheet.Description>
-			</div>
-
+		<Sheet.Header>
 			{#if !has_connection}
-				<Alert.Root variant="destructive" class="mr-4 max-w-[350px] bg-red-600/5">
+				<Alert.Root variant="destructive" class="w-full">
 					<CloudAlert class="size-4" />
 					<Alert.Title class="font-semibold">No Internet Connection</Alert.Title>
 					<Alert.Description class="text-xs">
@@ -55,8 +38,7 @@
 			{#await raw_changelog.text()}
 				{@render textSkeleton()}
 			{:then response_body}
-				<ScrollArea class="mt-2 h-[90%]">
-					<!-- {@html marked(DOMPurify.sanitize(response_body))} -->
+				<ScrollArea class="prose mt-2 h-[90%] max-w-none dark:prose-invert">
 					<Markdown md={DOMPurify.sanitize(response_body)} />
 				</ScrollArea>
 			{:catch error}
