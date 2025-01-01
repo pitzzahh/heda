@@ -7,12 +7,14 @@
 	import { DIALOG_STATE_CTX, MISC_STATE_CTX } from '@/state/constants';
 	import { setSettingsState } from '@/hooks/settings-state.svelte';
 	import { setProjectState } from '@/hooks/project.svelte';
+	import { setUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	let { children } = $props();
 
 	// INIT GLOBAL STATES
 	setSettingsState($mode === 'light' ? 'light' : 'dark');
 	setProjectState();
+	setUndoRedoState();
 	setState<DialogState>(
 		{
 			highestUnit: false
