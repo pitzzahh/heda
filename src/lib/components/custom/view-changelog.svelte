@@ -16,7 +16,7 @@
 
 	$effect(() => {
 		const interval = setInterval(() => {
-			fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' })
+			fetch('https://raw.githubusercontent.com', { method: 'HEAD', mode: 'no-cors' })
 				.then(() => (has_connection = true))
 				.catch(() => (has_connection = false));
 		}, 2000);
