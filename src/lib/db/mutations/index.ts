@@ -86,11 +86,13 @@ export async function updateProjectTitle(id: string, project_name: string) {
 export async function addNode({
 	load_data,
 	panel_data,
-	parent_id
+	parent_id,
+	existing_id
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
+	existing_id?: string;
 }) {
 	const database = await databaseInstance();
 
@@ -105,7 +107,7 @@ export async function addNode({
 		}
 
 		const created_node = await database.nodes.insert({
-			id: createId(),
+			id: existing_id || createId(),
 			node_type: load_data ? 'load' : 'panel',
 			circuit_number: load_data?.circuit_number ?? panel_data?.circuit_number ?? 0,
 			panel_data: panel_data as Node['panel_data'],
@@ -121,7 +123,7 @@ export async function addNode({
 			}
 		});
 
-		return created_node;
+		return created_node._data;
 	} catch (error) {
 		console.error('Error adding a node:', error);
 		throw error;
