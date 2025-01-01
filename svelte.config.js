@@ -1,11 +1,12 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { mdsx } from 'mdsx';
+import { mdsxConfig } from './mdsx.config.js';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	// Consult https://svelte.dev/docs/kit/integrations
-	// for more information about preprocessors
-	preprocess: vitePreprocess(),
+	preprocess: [mdsx(mdsxConfig), vitePreprocess()],
+	extensions: ['.svelte', '.md'],
 	kit: {
 		adapter: adapter(),
 		paths: {
