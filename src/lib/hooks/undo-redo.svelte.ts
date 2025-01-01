@@ -23,18 +23,44 @@ export class UndoRedoState {
 
 	async undo() {
 		const last_action = this.undo_stack.pop();
-		console.log('last act undo', last_action);
+
+		console.log('last_action undo', last_action);
 		if (last_action) {
 			switch (last_action.action) {
 				case 'create_node':
 					await removeNode(last_action.data.id);
+					this.redo_stack = [...this.redo_stack, last_action];
+					break;
 				case 'update_node':
+					break;
 				case 'delete_node':
-				case 'update_project_title':
-				case 'copy_node':
-			}
+					const added_node = await addNode({
+						existing_id: last_action.data.id,
+						parent_id: last_action.data.parent_id as string,
+						...(last_action.data.panel_data && {
+							panel_data: {
+								...last_action.data.panel_data,
+								circuit_number: last_action.data.circuit_number
+							} as any
+						}),
+						...(last_action.data.load_data && {
+							load_data: {
+								...last_action.data.load_data,
+								circuit_number: last_action.data.circuit_number
+							} as any
+						})
+					});
 
-			this.redo_stack = [...this.redo_stack, last_action];
+					this.redo_stack = [
+						...this.redo_stack,
+						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
+					];
+					break;
+				case 'update_project_title':
+					break;
+				case 'copy_node':
+					break;
+			}
 			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		}
 	}
@@ -69,10 +95,17 @@ export class UndoRedoState {
 						...this.undo_stack,
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
 					];
+					break;
 				case 'update_node':
+					break;
 				case 'delete_node':
+					await removeNode(last_action.data.id);
+					this.undo_stack = [...this.undo_stack, last_action];
+					break;
 				case 'update_project_title':
+					break;
 				case 'copy_node':
+					break;
 			}
 
 			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
