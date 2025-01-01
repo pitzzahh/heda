@@ -28,6 +28,8 @@
 		PencilIcon,
 		Trash2Icon
 	} from './(components)';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	let {
 		node,
@@ -55,6 +57,7 @@
 	let open_tree_delete_dialog = $state(false);
 	let is_hovering_on_tree_item = $state(false);
 	let button_state: 'stale' | 'processing' = $state('stale');
+	let undo_redo_state = getUndoRedoState();
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -126,6 +129,10 @@
 								await removeNode(node.id)
 									.then(() => invalidate('app:workspace'))
 									.finally(() => invalidate('app:workspace/load-schedule'));
+								undo_redo_state.setActionToUndo({
+									data: node as PhaseLoadSchedule,
+									action: 'delete_node'
+								});
 							}}
 						/>
 					{/snippet}
@@ -281,7 +288,13 @@
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
-										} else await removeNode(node.id);
+										} else {
+											await removeNode(node.id);
+											undo_redo_state.setActionToUndo({
+												data: node as PhaseLoadSchedule,
+												action: 'delete_node'
+											});
+										}
 										invalidate('app:workspace/load-schedule')
 											.then(() => (button_state = 'stale'))
 											.finally(() => {
@@ -401,7 +414,13 @@
 			button_state = 'processing';
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
-			} else await removeNode(node.id);
+			} else {
+				await removeNode(node.id);
+				undo_redo_state.setActionToUndo({
+					data: node as PhaseLoadSchedule,
+					action: 'delete_node'
+				});
+			}
 			// TODO: Improve invalidation github issue #64
 			invalidate('app:workspace/load-schedule')
 				.then(() => invalidate('app:workspace'))
