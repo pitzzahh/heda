@@ -9,10 +9,8 @@
 	import { cn } from '@/utils';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import { IsMounted } from 'runed';
-
 	const isMounted = new IsMounted();
-
-	let has_connection = $derived(isMounted && navigator && navigator.onLine);
+	const has_connection = $derived(isMounted && navigator && navigator.onLine);
 </script>
 
 <Sheet.Root>
@@ -38,7 +36,7 @@
 			{#await raw_changelog.text()}
 				{@render textSkeleton()}
 			{:then response_body}
-				<ScrollArea class="prose mt-2 h-full max-w-none dark:prose-invert">
+				<ScrollArea class="prose mr-1.5 mt-2.5 h-full max-w-none dark:prose-invert">
 					<Markdown md={DOMPurify.sanitize(response_body)} />
 				</ScrollArea>
 			{:catch error}
