@@ -59,11 +59,11 @@
 		const workbook = new ExcelJS.Workbook();
 		workbook.title = 'Exported Panelboard Schedule';
 		workbook.creator = 'HEDA(Desktop App)';
+
 		async function processOnePhaseExcelPanelBoardSchedule(
 			nodeId: string,
 			parent?: Node,
-			depth: number = 1,
-			end_row: number = 1 // Track row position for appending panels
+			depth: number = 1
 		): Promise<{
 			valid: boolean;
 			message?: string;
@@ -72,7 +72,6 @@
 		}> {
 			const children = await getComputedLoads(nodeId);
 
-			// Bail out if there are no child panels on the root node
 			if (
 				depth === 1 &&
 				(children.length === 0 || children.every((child) => child.node_type !== 'panel'))
@@ -96,36 +95,35 @@
 
 					let worksheet = workbook.getWorksheet(panel_level);
 					if (!worksheet) {
-						end_row = 1;
 						worksheet = workbook.addWorksheet(panel_level);
 					}
 
-					// Add headers
+					const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+
 					const description_label_column_position_data = [
-						{ column: `A${end_row}`, value: 'DESCRIPTION' },
-						{ column: `A${end_row + 1}`, value: 'SUPPLY' },
-						{ column: `A${end_row + 2}`, value: 'FROM' },
-						{ column: `A${end_row + 3}`, value: 'NAME' }
+						{ column: `A${startRow}`, value: 'DESCRIPTION' },
+						{ column: `A${startRow + 1}`, value: 'SUPPLY' },
+						{ column: `A${startRow + 2}`, value: 'FROM' },
+						{ column: `A${startRow + 3}`, value: 'NAME' }
 					];
+
 					description_label_column_position_data.forEach(
 						({ column, value }) => (worksheet.getCell(column).value = value)
 					);
 
-					worksheet.getCell(`B${end_row}`).value = `: PANELBOARD SCHEDULE`;
-					worksheet.getCell(`B${end_row + 1}`).value =
+					worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
+					worksheet.getCell(`B${startRow + 1}`).value =
 						`: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
-					worksheet.getCell(`B${end_row + 2}`).value =
+					worksheet.getCell(`B${startRow + 2}`).value =
 						`: ${parent?.panel_data?.name?.toUpperCase() ?? 'Transformer'}`;
-					worksheet.getCell(`B${end_row + 3}`).value = `: ${panel_name}`;
+					worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
-					// Bold formatting to all headers
 					description_label_column_position_data
 						.map((e) => e.column)
 						.forEach((cell) => {
 							worksheet.getCell(cell).font = { bold: true };
 						});
 
-					// Set headers for load schedule with styling
 					type Header = { text: string; cols: number; subText?: string };
 
 					const table_headers: Header[] = [
@@ -142,23 +140,23 @@
 
 					let current_header_column = 1;
 					table_headers.forEach((header: Header) => {
-						const cell = worksheet.getCell(end_row + 4, current_header_column);
+						const cell = worksheet.getCell(startRow + 4, current_header_column);
 						if (header.subText) {
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { top: { style: 'thin' } };
 
-							const subCell = worksheet.getCell(end_row + 5, current_header_column);
+							const subCell = worksheet.getCell(startRow + 5, current_header_column);
 							subCell.value = header.subText;
 							subCell.font = { bold: true };
 							subCell.alignment = { horizontal: 'center' };
 							subCell.border = { bottom: { style: 'thick' } };
 						} else if (header.cols === 1) {
 							worksheet.mergeCells(
-								end_row + 4,
+								startRow + 4,
 								current_header_column,
-								end_row + 5,
+								startRow + 5,
 								current_header_column
 							);
 							cell.value = header.text;
@@ -167,9 +165,9 @@
 							cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
 						} else {
 							worksheet.mergeCells(
-								end_row + 4,
+								startRow + 4,
 								current_header_column,
-								end_row + 4,
+								startRow + 4,
 								current_header_column + header.cols - 1
 							);
 							cell.value = header.text;
@@ -177,7 +175,6 @@
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { top: { style: 'thin' } };
 
-							// Add sub-headers for grouped columns
 							const subHeadersMap: Record<string, string[]> = {
 								'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
 								CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
@@ -187,7 +184,7 @@
 
 							if (subHeadersMap[header.text]) {
 								subHeadersMap[header.text].forEach((text, i) => {
-									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
+									const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
 									subCell.value = text;
 									subCell.font = { bold: true };
 									subCell.alignment = { horizontal: 'center' };
@@ -198,7 +195,6 @@
 						current_header_column += header.cols;
 					});
 
-					// Set column widths
 					worksheet.columns = [
 						{ width: 15 },
 						{ width: 30 },
@@ -219,11 +215,9 @@
 						{ width: 15 }
 					];
 
-					// Get and write panel loads
 					const loads = await getComputedLoads(child.id);
-					let current_load_row = end_row + 7;
+					let current_load_row = startRow + 7;
 
-					// Write each load's data
 					for (const load of loads) {
 						const loadCells = [
 							{ column: 'A', value: load.circuit_number },
@@ -254,7 +248,6 @@
 						current_load_row++;
 					}
 
-					// Add main total
 					const node_data_summary = await getNodeById(child.id);
 
 					if (!node_data_summary) {
@@ -264,8 +257,6 @@
 							is_system_error: true
 						};
 					}
-
-					console.log({ node_data_summary });
 
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
@@ -295,10 +286,11 @@
 						cell.border = { top: { style: 'thin' }, bottom: { style: 'thick' } };
 					});
 
-					end_row = current_load_row + 2;
+					// Add empty row after main columns
+					const emptyRow = worksheet.getRow(current_load_row + 1);
+					emptyRow.height = 15; // Optional: set specific height for consistency
 
-					// Recurse into child panels
-					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1, end_row);
+					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1);
 				}
 			}
 
