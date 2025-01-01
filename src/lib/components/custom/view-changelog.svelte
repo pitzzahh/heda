@@ -38,14 +38,14 @@
 			{#await raw_changelog.text()}
 				{@render textSkeleton()}
 			{:then response_body}
-				<ScrollArea class="prose mt-2 h-[90%] max-w-none dark:prose-invert">
+				<ScrollArea class="prose mt-2 h-full max-w-none dark:prose-invert">
 					<Markdown md={DOMPurify.sanitize(response_body)} />
 				</ScrollArea>
 			{:catch error}
-				{@render errorIndicator()}
+				{@render errorIndicator(error)}
 			{/await}
 		{:catch error}
-			{@render errorIndicator()}
+			{@render errorIndicator(error)}
 		{/await}
 	</Sheet.Content>
 </Sheet.Root>
@@ -64,11 +64,11 @@
 	</div>
 {/snippet}
 
-{#snippet errorIndicator()}
+{#snippet errorIndicator(err?: string)}
 	<div class="grid size-full place-content-center">
 		<div class="grid place-items-center gap-1 text-muted-foreground opacity-80">
 			<CloudAlert class="size-[90px]" />
-			<p class="font-semibold">An error occured, please try again.</p>
+			<p class="font-semibold">{err ?? 'An error occured, please try again.'}</p>
 		</div>
 	</div>
 {/snippet}
