@@ -216,7 +216,7 @@
 					];
 
 					const loads = await getComputedLoads(child.id);
-					let current_load_row = startRow + 7;
+					let current_load_row = startRow + 6;
 
 					for (const load of loads) {
 						const loadCells = [
@@ -287,7 +287,7 @@
 					});
 
 					// Add empty row after main columns
-					const emptyRow = worksheet.getRow(current_load_row + 1);
+					const emptyRow = worksheet.getRow(current_load_row + 2);
 					emptyRow.height = 15; // Optional: set specific height for consistency
 
 					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1);
