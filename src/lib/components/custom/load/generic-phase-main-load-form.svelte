@@ -36,6 +36,8 @@
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -58,6 +60,8 @@
 		latest_circuit_node,
 		panel_id_from_tree
 	}: Props = $props();
+
+	let undo_redo_state = getUndoRedoState();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -125,11 +129,15 @@
 					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
-							await addNode({
+							const added_node = await addNode({
 								load_data,
 								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
+							undo_redo_state.setActionToUndo({
+								data: added_node as unknown as PhaseLoadSchedule,
+								action: 'create_node'
+							});
 							break;
 						case 'edit':
 							if (node_to_edit && selected_parent_id) {
