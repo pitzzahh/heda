@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fix
 
 - Changelog history markdown rendering.
+- Overlapping panelboard schedule excel export when heirarchy is too complex.
 
 ## [0.3.27] - 2024-12-30
 
