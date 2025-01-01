@@ -8,9 +8,7 @@
 	import { Skeleton } from '@/components/ui/skeleton//index.js';
 	import { cn } from '@/utils';
 	import * as Alert from '@/components/ui/alert/index.js';
-	import { IsMounted } from 'runed';
-	const isMounted = new IsMounted();
-	const has_connection = $derived(isMounted && navigator && navigator.onLine);
+	const has_connection = $derived(navigator && navigator.onLine);
 </script>
 
 <Sheet.Root>
