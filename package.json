@@ -6,6 +6,16 @@
 	"author": {
 		"name": "Peter John Arao"
 	},
+	"contributors": [
+		{
+			"name": "Alessandro Benig",
+			"url": "https://github.com/isipisii"
+		},
+		{
+			"name": "Peter John Arao",
+			"url": "https://github.com/pitzzahh"
+		}
+	],
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
