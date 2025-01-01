@@ -2,7 +2,7 @@
 	import ExcelJS, { type Alignment } from 'exceljs';
 	import { Save, Moon, Sun, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { buttonVariants } from '@/components/ui/button/index.js';
+	import { Button, buttonVariants } from '@/components/ui/button';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
 	import { getOrdinalSuffix } from '@/utils/format';
@@ -59,7 +59,6 @@
 		const workbook = new ExcelJS.Workbook();
 		workbook.title = 'Exported Panelboard Schedule';
 		workbook.creator = 'HEDA(Desktop App)';
-
 		async function processOnePhaseExcelPanelBoardSchedule(
 			nodeId: string,
 			parent?: Node,
@@ -73,14 +72,12 @@
 		}> {
 			const children = await getComputedLoads(nodeId);
 
-			// bail out if there are no child panels on the root node
+			// Bail out if there are no child panels on the root node
 			if (
 				depth === 1 &&
 				(children.length === 0 || children.every((child) => child.node_type !== 'panel'))
 			) {
-				toast.warning('No panels found', {
-					position: 'bottom-center'
-				});
+				toast.warning('No panels found', { position: 'bottom-center' });
 				return {
 					valid: false,
 					message: 'No panels found',
@@ -96,6 +93,7 @@
 					const panel_name = child.panel_data?.name ?? 'Unknown Panel';
 					const panel_level = getOrdinalSuffix(depth + 1);
 					dev && console.log(`Panel: ${panel_name} (${panel_level})`);
+
 					let worksheet = workbook.getWorksheet(panel_level);
 					if (!worksheet) {
 						end_row = 1;
@@ -127,7 +125,7 @@
 							worksheet.getCell(cell).font = { bold: true };
 						});
 
-					// Set headers for load schedule with styling.
+					// Set headers for load schedule with styling
 					type Header = { text: string; cols: number; subText?: string };
 
 					const table_headers: Header[] = [
@@ -174,50 +172,21 @@
 								end_row + 4,
 								current_header_column + header.cols - 1
 							);
-							const cell = worksheet.getCell(end_row + 4, current_header_column);
 							cell.value = header.text;
 							cell.font = { bold: true };
 							cell.alignment = { horizontal: 'center' };
 							cell.border = { top: { style: 'thin' } };
 
-							// Sub-headers for circuit breaker
-							if (header.text === 'CIRCUIT BREAKER') {
-								const subHeaders: string[] = ['AT', 'AF', 'Pole', 'kAIC'];
-								subHeaders.forEach((text: string, i: number) => {
-									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
-									subCell.value = text;
-									subCell.font = { bold: true };
-									subCell.alignment = { horizontal: 'center' };
-									subCell.border = { bottom: { style: 'thick' } };
-								});
-							}
+							// Add sub-headers for grouped columns
+							const subHeadersMap: Record<string, string[]> = {
+								'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
+								CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
+								EGC: ['Size', 'Insulation'],
+								CONDUIT: ['Size', 'Insulation']
+							};
 
-							// Sub-headers for conductor
-							if (header.text === 'CONDUCTOR') {
-								const subHeaders: string[] = ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'];
-								subHeaders.forEach((text: string, i: number) => {
-									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
-									subCell.value = text;
-									subCell.font = { bold: true };
-									subCell.alignment = { horizontal: 'center' };
-									subCell.border = { bottom: { style: 'thick' } };
-								});
-							}
-							// Sub-headers for egc
-							if (header.text === 'EGC') {
-								const subHeaders: string[] = ['Size', 'Insulation'];
-								subHeaders.forEach((text: string, i: number) => {
-									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
-									subCell.value = text;
-									subCell.font = { bold: true };
-									subCell.alignment = { horizontal: 'center' };
-									subCell.border = { bottom: { style: 'thick' } };
-								});
-							}
-							// Sub-headers for conduit
-							if (header.text === 'CONDUIT') {
-								const subHeaders: string[] = ['Size', 'Insulation'];
-								subHeaders.forEach((text: string, i: number) => {
+							if (subHeadersMap[header.text]) {
+								subHeadersMap[header.text].forEach((text, i) => {
 									const subCell = worksheet.getCell(end_row + 5, current_header_column + i);
 									subCell.value = text;
 									subCell.font = { bold: true };
@@ -252,115 +221,40 @@
 
 					// Get and write panel loads
 					const loads = await getComputedLoads(child.id);
-					console.log('loads data', loads);
-					let last_row = end_row + 6;
+					let current_load_row = end_row + 7;
 
-					for (let j = 0; j < loads.length; j++) {
-						const load = loads[j];
+					// Write each load's data
+					for (const load of loads) {
+						const loadCells = [
+							{ column: 'A', value: load.circuit_number },
+							{ column: 'B', value: load.load_description },
+							{ column: 'C', value: load.voltage },
+							{ column: 'D', value: load.va },
+							{ column: 'E', value: load.current },
+							{ column: 'F', value: load.at },
+							{ column: 'G', value: load.ampere_frames },
+							{ column: 'H', value: load.pole },
+							{ column: 'I', value: load.kaic },
+							{ column: 'J', value: load.conductor_sets },
+							{ column: 'K', value: load.conductor_qty },
+							{ column: 'L', value: load.conductor_size },
+							{ column: 'M', value: load.conductor_insulation },
+							{ column: 'N', value: load.egc_size },
+							{ column: 'O', value: load.egc_insulation },
+							{ column: 'P', value: load.conduit_size },
+							{ column: 'Q', value: load.conduit_type }
+						];
 
-						const circuit_number_cell = worksheet.getCell(`A${last_row}`);
-						const load_description_cell = worksheet.getCell(`B${last_row}`);
-						const voltage_cell = worksheet.getCell(`C${last_row}`);
-						const apparent_power_cell = worksheet.getCell(`D${last_row}`);
-						const current_cell = worksheet.getCell(`E${last_row}`);
-						const at_cell = worksheet.getCell(`F${last_row}`);
-						const af_cell = worksheet.getCell(`G${last_row}`);
-						const pole_cell = worksheet.getCell(`H${last_row}`);
-						const kaic_cell = worksheet.getCell(`I${last_row}`);
-						const conductor_sets_cell = worksheet.getCell(`J${last_row}`);
-						const conductor_qty_cell = worksheet.getCell(`K${last_row}`);
-						const conductor_size_cell = worksheet.getCell(`L${last_row}`);
-						const conductor_insulation_cell = worksheet.getCell(`M${last_row}`);
-						const egc_size_cell = worksheet.getCell(`N${last_row}`);
-						const egc_insulation_cell = worksheet.getCell(`O${last_row}`);
-						const conduit_size_cell = worksheet.getCell(`P${last_row}`);
-						const conduit_type_cell = worksheet.getCell(`Q${last_row}`);
-
-						const center_alignment_reference: Partial<ExcelJS.Alignment> = {
-							vertical: 'middle',
-							horizontal: 'center'
-						};
-						const bottom_border_reference: Partial<ExcelJS.Borders> = { bottom: { style: 'thin' } };
-
-						circuit_number_cell.alignment = center_alignment_reference;
-						circuit_number_cell.border = bottom_border_reference;
-
-						load_description_cell.alignment = center_alignment_reference;
-						load_description_cell.border = bottom_border_reference;
-
-						voltage_cell.alignment = center_alignment_reference;
-						voltage_cell.border = bottom_border_reference;
-
-						apparent_power_cell.alignment = center_alignment_reference;
-						apparent_power_cell.border = bottom_border_reference;
-
-						current_cell.alignment = center_alignment_reference;
-						current_cell.border = bottom_border_reference;
-
-						at_cell.alignment = center_alignment_reference;
-						at_cell.border = bottom_border_reference;
-
-						af_cell.alignment = center_alignment_reference;
-						af_cell.border = bottom_border_reference;
-
-						pole_cell.alignment = center_alignment_reference;
-						pole_cell.border = bottom_border_reference;
-
-						kaic_cell.alignment = center_alignment_reference;
-						kaic_cell.border = bottom_border_reference;
-
-						conductor_sets_cell.alignment = center_alignment_reference;
-						conductor_sets_cell.border = bottom_border_reference;
-
-						conductor_qty_cell.alignment = center_alignment_reference;
-						conductor_qty_cell.border = bottom_border_reference;
-
-						conductor_size_cell.alignment = center_alignment_reference;
-						conductor_size_cell.border = bottom_border_reference;
-
-						conductor_insulation_cell.alignment = center_alignment_reference;
-						conductor_insulation_cell.border = bottom_border_reference;
-
-						egc_size_cell.alignment = center_alignment_reference;
-						egc_size_cell.border = bottom_border_reference;
-
-						egc_insulation_cell.alignment = center_alignment_reference;
-						egc_insulation_cell.border = bottom_border_reference;
-
-						conduit_size_cell.alignment = center_alignment_reference;
-						conduit_size_cell.border = bottom_border_reference;
-
-						conduit_type_cell.alignment = center_alignment_reference;
-						conduit_type_cell.border = bottom_border_reference;
-
-						circuit_number_cell.value = load.circuit_number;
-						load_description_cell.value = load.load_description;
-						voltage_cell.value = load.voltage;
-						apparent_power_cell.value = load.va;
-						current_cell.value = load.current;
-						at_cell.value = load.at;
-						af_cell.value = load.ampere_frames;
-						pole_cell.value = load.pole;
-						kaic_cell.value = load.kaic;
-						conductor_sets_cell.value = load.conductor_sets;
-						conductor_qty_cell.value = load.conductor_qty;
-						conductor_size_cell.value = load.conductor_size;
-						conductor_insulation_cell.value = load.conductor_insulation;
-						egc_size_cell.value = load.egc_size;
-						egc_insulation_cell.value = load.egc_insulation;
-						conduit_size_cell.value = load.conduit_size;
-						conduit_type_cell.value = load.conduit_type;
-						last_row++;
+						loadCells.forEach(({ column, value }) => {
+							const cell = worksheet.getCell(`${column}${current_load_row}`);
+							cell.value = value;
+							cell.alignment = { vertical: 'middle', horizontal: 'center' };
+							cell.border = { bottom: { style: 'thin' } };
+						});
+						current_load_row++;
 					}
+
 					// Add main total
-					if (!worksheet) {
-						return {
-							valid: false,
-							message: 'Failed to get worksheet of load level',
-							is_system_error: true
-						};
-					}
-
 					const node_data_summary = await getNodeById(child.id);
 
 					if (!node_data_summary) {
@@ -372,20 +266,6 @@
 					}
 
 					console.log({ node_data_summary });
-
-					const centerAlignment: Partial<Alignment> = {
-						vertical: 'middle',
-						horizontal: 'center'
-					};
-
-					const set_main_cell = (column: string, value: string) => {
-						const cell = worksheet.getCell(`${column}${last_row}`);
-						cell.value = value;
-						cell.font = { bold: true };
-						cell.alignment =
-							column === 'B' ? { vertical: 'middle', horizontal: 'left' } : centerAlignment;
-						cell.border = { bottom: { style: 'thin' } };
-					};
 
 					const main_columns = [
 						{ column: 'A', value: 'TOTAL' },
@@ -407,65 +287,67 @@
 						{ column: 'Q', value: node_data_summary.conduit_type ?? 'N/A' }
 					];
 
-					main_columns.forEach(({ column, value }) => set_main_cell(column, value));
+					main_columns.forEach(({ column, value }) => {
+						const cell = worksheet.getCell(`${column}${current_load_row}`);
+						cell.value = value;
+						cell.font = { bold: true };
+						cell.alignment = { vertical: 'middle', horizontal: 'center' };
+						cell.border = { top: { style: 'thin' }, bottom: { style: 'thick' } };
+					});
 
-					// bottom part
-					// const last_cell = worksheet.getCell(`A${last_row + 1}`);
-					// last_cell.value =
-					// 	`l(t) = 1.25 * ${node_data_summary.voltage} `;
-					// 	last_cell.alignment = centerAlignment;
-					// const last_total_cell = worksheet.getCell(`C${last_row + 1}`)
-					// last_total_cell.value = 1.25 * node_data_summary.voltage;
-					// last_total_cell.alignment = centerAlignment;
+					end_row = current_load_row + 2;
 
-					end_row += last_row + 3;
-					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1, last_row);
+					// Recurse into child panels
+					await processOnePhaseExcelPanelBoardSchedule(child.id, child, depth + 1, end_row);
 				}
-				const node_type = parent?.node_type;
-				dev &&
-					console.log(
-						`${node_type === 'root' ? parent?.highest_unit_form?.distribution_unit : node_type === 'panel' ? parent?.panel_data?.name : 'unknown'} - ${child.load_data?.load_description}`
-					);
 			}
-			return {
-				valid: true
-			};
+
+			return { valid: true };
 		}
 
-		switch (highest_unit?.phase) {
-			case '1P':
-				workbook.subject = '1P Load Schedule';
-				workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
-				workbook.description = 'Load schedule for 1 phase load schedule';
-				const process_result = await processOnePhaseExcelPanelBoardSchedule(root_node.id);
-				if (!process_result.valid) {
-					button_states.export_to_excel = 'idle';
-					toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-						description: process_result?.is_system_error
-							? 'This is a system error and should not be here, the error has been logged.'
-							: (process_result?.description ?? undefined),
+		try {
+			switch (highest_unit?.phase) {
+				case '1P':
+					workbook.subject = '1P Load Schedule';
+					workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
+					workbook.description = 'Load schedule for 1 phase load schedule';
+					const process_result = await processOnePhaseExcelPanelBoardSchedule(root_node.id);
+					if (!process_result.valid) {
+						button_states.export_to_excel = 'idle';
+						toast.warning(process_result.message ?? 'Something went wrong while exporting', {
+							description: process_result?.is_system_error
+								? 'This is a system error and should not be here, the error has been logged.'
+								: (process_result?.description ?? undefined),
+							position: 'bottom-center'
+						});
+						return;
+					}
+					break;
+				case '3P':
+					workbook.subject = '3P Load Schedule';
+					workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
+					workbook.description = 'Load schedule for 3 phase load schedule';
+					toast.warning('This feature is still under development', {
+						description: 'Three phase load schedule is not yet supported',
 						position: 'bottom-center'
 					});
 					return;
-				}
-				break;
-			case '3P':
-				workbook.subject = '3P Load Schedule';
-				workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
-				workbook.description = 'Load schedule for 3 phase load schedule';
-				toast.warning('This feature is still under development', {
-					description: 'Three phase load schedule is not yet supported',
-					position: 'bottom-center'
-				});
-				return;
-			default:
-				button_states.export_to_excel = 'idle';
-				workbook.subject = 'Unknown Load Schedule';
-				toast.warning('Something went wrong while exporting', {
-					description: 'This is a system error and should not be here, the error has been logged.',
-					position: 'bottom-center'
-				});
-				return;
+				default:
+					button_states.export_to_excel = 'idle';
+					workbook.subject = 'Unknown Load Schedule';
+					toast.warning('Something went wrong while exporting', {
+						description:
+							'This is a system error and should not be here, the error has been logged.',
+						position: 'bottom-center'
+					});
+					return;
+			}
+		} catch (e) {
+			button_states.export_to_excel = 'idle';
+			return toast.warning(`Something went wrong while exporting:: ${e?.toString()}`, {
+				description: 'This is a system error and should not be here, the error has been logged.',
+				position: 'bottom-center'
+			});
 		}
 
 		// Write the workbook and trigger download
@@ -530,17 +412,23 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	</div>
-	<Tooltip.Provider>
-		<Tooltip.Root>
-			<Tooltip.Trigger
-				disabled={button_states.export_to_excel === 'loading'}
-				class={buttonVariants({ variant: 'outline', size: 'sm' })}
-				onclick={exportToExcel}
-			>
-				<FileUp class="h-4 w-4" />
-				Export to Excel
-			</Tooltip.Trigger>
-			<Tooltip.Content>Export project to excel</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
+	<svelte:boundary>
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					disabled={button_states.export_to_excel === 'loading'}
+					class={buttonVariants({ variant: 'outline', size: 'sm' })}
+					onclick={exportToExcel}
+				>
+					<FileUp class="h-4 w-4" />
+					Export to Excel
+				</Tooltip.Trigger>
+				<Tooltip.Content>Export project to excel</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
+		{#snippet failed(error, reset)}
+			<p class="text-sm text-muted-foreground">{error}</p>
+			<Button onclick={reset}>oops! try again</Button>
+		{/snippet}
+	</svelte:boundary>
 </div>
