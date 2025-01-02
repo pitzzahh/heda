@@ -1,14 +1,22 @@
 import { getState, setState } from '@/state/index.svelte';
 import { UNDO_REDO_STATE_CTX } from '@/state/constants';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import { addNode, removeNode } from '@/db/mutations';
+import { addNode, overrideField, removeNode, updateNode, type FieldType } from '@/db/mutations';
 import { invalidate } from '$app/navigation';
 
 type Action<T extends PhaseLoadSchedule> = {
-	// previous_data?: T;
-	// new_data: T;
+	previous_data?: T;
 	data: T;
-	action: 'create_node' | 'update_node' | 'delete_node' | 'update_project_title' | 'copy_node';
+	action:
+		| 'create_node'
+		| 'update_node'
+		| 'delete_node'
+		| 'copy_node'
+		| 'override_at'
+		| 'override_af'
+		| 'override_conduit_size'
+		| 'override_conductor_size'
+		| 'override_egc_size';
 	children_nodes?: T[];
 };
 
@@ -58,7 +66,33 @@ export class UndoRedoState {
 		return added_node;
 	}
 
+	private async handleFieldOverride({
+		is_undo = false,
+		field_data,
+		field_type,
+		node_id,
+		action
+	}: {
+		field_type: FieldType;
+		node_id: string;
+		is_undo?: boolean;
+		field_data?: number;
+		action: Action<PhaseLoadSchedule>;
+	}) {
+		await overrideField({
+			unoverride: is_undo,
+			field_type,
+			node_id: node_id,
+			field_data
+		});
+
+		is_undo
+			? (this.redo_stack = [...this.redo_stack, action])
+			: (this.undo_stack = [...this.undo_stack, action]);
+	}
+
 	async undo() {
+		console.log('UNDO STACK ', this.undo_stack);
 		const last_action = this.undo_stack.pop();
 
 		if (last_action) {
@@ -67,18 +101,45 @@ export class UndoRedoState {
 					const removed_node = await removeNode(last_action.data.id);
 					this.redo_stack = [
 						...this.redo_stack,
-						{ ...last_action, children_nodes: removed_node.children_nodes }
+						{
+							...last_action,
+							children_nodes: removed_node.children_nodes
+						}
 					];
+
 					break;
 
 				case 'update_node':
+					const previous_data = last_action.previous_data;
+					const current_data = last_action.data;
+					
+					if (previous_data) {
+						const updated_node = await updateNode({
+							id: previous_data.id,
+							whole_data: previous_data,
+							parent_id: previous_data.parent_id as string
+						});
+
+						this.redo_stack = [
+							...this.redo_stack,
+							{
+								...last_action,
+								data: updated_node as unknown as PhaseLoadSchedule,
+								previous_data: current_data
+							}
+						];
+					}
+
 					break;
 
 				case 'delete_node':
 					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
 					this.redo_stack = [
 						...this.redo_stack,
-						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
+						{
+							...last_action,
+							data: added_node as unknown as PhaseLoadSchedule
+						}
 					];
 					break;
 
@@ -86,8 +147,53 @@ export class UndoRedoState {
 					const removed_copied_node = await removeNode(last_action.data.id);
 					this.redo_stack = [
 						...this.redo_stack,
-						{ ...last_action, children_nodes: removed_copied_node.children_nodes }
+						{
+							...last_action,
+							children_nodes: removed_copied_node.children_nodes
+						}
 					];
+					break;
+
+				case 'override_at':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'at',
+						node_id: last_action.data.id
+					});
+
+					break;
+				case 'override_af':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'ampere_frames',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_conductor_size':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'conductor_size',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_conduit_size':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'conduit_size',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_egc_size':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'egc_size',
+						node_id: last_action.data.id
+					});
 					break;
 			}
 			await invalidate('app:workspace');
@@ -109,6 +215,25 @@ export class UndoRedoState {
 					break;
 
 				case 'update_node':
+					const previous_data = last_action.previous_data;
+					const current_data = last_action.data;
+
+					if (previous_data) {
+						const updated_node = await updateNode({
+							id: previous_data.id,
+							whole_data: previous_data,
+							parent_id: previous_data.parent_id as string
+						});
+
+						this.undo_stack = [
+							...this.undo_stack,
+							{
+								...last_action,
+								data: updated_node as unknown as PhaseLoadSchedule,
+								previous_data: current_data
+							}
+						];
+					}
 					break;
 
 				case 'delete_node':
@@ -128,6 +253,47 @@ export class UndoRedoState {
 						...this.undo_stack,
 						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
 					];
+					break;
+				case 'override_at':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_at as number,
+						action: last_action,
+						field_type: 'at',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_af':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_ampere_frames as number,
+						action: last_action,
+						field_type: 'ampere_frames',
+						node_id: last_action.data.id
+					});
+					break;
+
+				case 'override_conductor_size':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_conductor_size as number,
+						action: last_action,
+						field_type: 'conductor_size',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_conduit_size':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_conduit_size as number,
+						action: last_action,
+						field_type: 'conduit_size',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_egc_size':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_egc_size as number,
+						action: last_action,
+						field_type: 'egc_size',
+						node_id: last_action.data.id
+					});
 					break;
 			}
 			await invalidate('app:workspace');
