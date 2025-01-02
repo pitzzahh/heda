@@ -3,17 +3,26 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { changePole } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
 		current_pole: '1' | '2';
-		node_id: string;
+		node: PhaseLoadSchedule;
 	}
 
-	let { node_id, current_pole }: Props = $props();
+	let { node, current_pole }: Props = $props();
 	let selected_pole = $state<'1' | '2'>(current_pole);
 
+	let undo_redo_state = getUndoRedoState();
+
 	async function handleChangeInsulation(pole: '1' | '2') {
-		changePole(node_id, pole);
+		const updated_node = await changePole(node.id, pole);
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			data: updated_node as unknown as PhaseLoadSchedule,
+			previous_data: node
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 	}
 </script>
