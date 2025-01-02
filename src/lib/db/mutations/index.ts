@@ -233,12 +233,14 @@ export async function updateNode({
 	load_data,
 	panel_data,
 	parent_id,
-	id
+	id,
+	whole_data
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
+	whole_data?: Node;
 }) {
 	const database = await databaseInstance();
 
@@ -248,18 +250,10 @@ export async function updateNode({
 		});
 
 		const existing_node = await query.exec();
+
 		if (!existing_node) {
 			throw Error('Node not found');
 		}
-
-		const updatednode = await query.update({
-			$set: {
-				parent_id,
-				panel_data,
-				circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-				load_data: load_data as Node['load_data']
-			}
-		});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
@@ -295,7 +289,22 @@ export async function updateNode({
 			}
 		}
 
-		return updatednode;
+		const updated_node = whole_data
+			? await query.update({
+					$set: {
+						...whole_data
+					}
+				})
+			: await query.update({
+					$set: {
+						parent_id,
+						panel_data,
+						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+						load_data: load_data as Node['load_data']
+					}
+				});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating node:', error);
 		throw error;
@@ -376,7 +385,7 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+export type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
@@ -409,11 +418,13 @@ export async function overrideField({
 		const data = unoverride && !field_data ? undefined : field_data;
 		const field_to_update = FIELD_TYPE_MAPPING[field_type];
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				[field_to_update]: data
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error overriding data:', error);
 		throw error;
