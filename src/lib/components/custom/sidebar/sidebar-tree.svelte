@@ -79,7 +79,13 @@
 				{
 					trigger_callback: async () => {
 						await copyAndAddNodeById(node.id)
-							.then(() => invalidate('app:workspace'))
+							.then((copied_node) => {
+								undo_redo_state.setActionToUndo({
+									action: 'copy_node',
+									data: copied_node as unknown as PhaseLoadSchedule
+								});
+								invalidate('app:workspace');
+							})
 							.finally(() => invalidate('app:workspace/load-schedule'));
 					},
 					variant: 'ghost',
@@ -127,12 +133,15 @@
 							bind:some_open_state={open_load_context_menu}
 							onConfirm={async () => {
 								await removeNode(node.id)
-									.then(() => invalidate('app:workspace'))
+									.then((removed_node) => {
+										undo_redo_state.setActionToUndo({
+											data: node as PhaseLoadSchedule,
+											action: 'delete_node',
+											children_nodes: removed_node.children_nodes
+										});
+										invalidate('app:workspace');
+									})
 									.finally(() => invalidate('app:workspace/load-schedule'));
-								undo_redo_state.setActionToUndo({
-									data: node as PhaseLoadSchedule,
-									action: 'delete_node'
-								});
 							}}
 						/>
 					{/snippet}
@@ -200,7 +209,13 @@
 						{
 							trigger_callback: async () => {
 								await copyAndAddNodeById(node.id)
-									.then(() => invalidate('app:workspace'))
+									.then((copied_node) => {
+										undo_redo_state.setActionToUndo({
+											action: 'copy_node',
+											data: copied_node as unknown as PhaseLoadSchedule
+										});
+										invalidate('app:workspace');
+									})
 									.finally(() => invalidate('app:workspace/load-schedule'));
 							},
 							variant: 'ghost',
@@ -289,10 +304,11 @@
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
 										} else {
-											await removeNode(node.id);
+											const removed_node = await removeNode(node.id);
 											undo_redo_state.setActionToUndo({
 												data: node as PhaseLoadSchedule,
-												action: 'delete_node'
+												action: 'delete_node',
+												children_nodes: removed_node.children_nodes
 											});
 										}
 										invalidate('app:workspace/load-schedule')
@@ -415,10 +431,11 @@
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
 			} else {
-				await removeNode(node.id);
+				const removed_node = await removeNode(node.id);
 				undo_redo_state.setActionToUndo({
 					data: node as PhaseLoadSchedule,
-					action: 'delete_node'
+					action: 'delete_node',
+					children_nodes: removed_node.children_nodes
 				});
 			}
 			// TODO: Improve invalidation github issue #64
