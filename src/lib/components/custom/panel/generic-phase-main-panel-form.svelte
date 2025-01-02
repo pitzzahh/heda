@@ -89,12 +89,17 @@
 						break;
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
-							await updateNode({
+							const updated_node = await updateNode({
 								panel_data: form.data,
 								id: node_to_edit.id,
 								parent_id: selected_parent_id
 							});
 							toast.success('Panel updated successfully');
+							undo_redo_state.setActionToUndo({
+								data: updated_node as unknown as PhaseLoadSchedule,
+								previous_data: node_to_edit as PhaseLoadSchedule,
+								action: 'update_node'
+							});
 						}
 						break;
 				}
