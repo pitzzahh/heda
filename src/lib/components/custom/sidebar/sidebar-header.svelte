@@ -1,16 +1,12 @@
 <script lang="ts">
 	import ExcelJS from 'exceljs';
-	import { Save, Moon, Sun, FileUp } from '@/assets/icons';
+	import { Save, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
-	import { getOrdinalSuffix } from '@/utils/format';
-	import { setMode, systemPrefersMode } from 'mode-watcher';
-	import * as DropdownMenu from '@/components/ui/dropdown-menu';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
-	import { getComputedLoads, getNodeById } from '@/db/queries/index';
 	import { dev } from '$app/environment';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
 	import { processOnePhaseExcelPanelBoardSchedule } from '@/helpers/export';
@@ -28,11 +24,6 @@
 	function handleSave() {
 		// TODO: Implement save functionality
 		toast.warning('This feature is not yet implemented');
-	}
-
-	function setModeAndColor(mode: 'dark' | 'light') {
-		settingsState.setThemeColor(settingsState.themeColor, mode);
-		setMode(mode);
 	}
 
 	async function exportToExcel() {
@@ -148,27 +139,6 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		<SettingsDialog {project} />
-
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
-				<Sun
-					class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-				/>
-				<Moon
-					class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-				/>
-				<span class="sr-only">Toggle theme</span>
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end">
-				<DropdownMenu.Item onclick={() => setModeAndColor('light')}>Light</DropdownMenu.Item>
-				<DropdownMenu.Item onclick={() => setModeAndColor('dark')}>Dark</DropdownMenu.Item>
-				<DropdownMenu.Item
-					onclick={() => setModeAndColor($systemPrefersMode === 'light' ? 'light' : 'dark')}
-				>
-					System
-				</DropdownMenu.Item>
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
