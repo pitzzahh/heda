@@ -81,7 +81,11 @@
 					</DropdownMenu.Item>
 					<DropdownMenu.Item
 						onclick={async () => {
-							await copyAndAddNodeById(node.id);
+							const copied_node = await copyAndAddNodeById(node.id);
+							undo_redo_state.setActionToUndo({
+								action: 'copy_node',
+								data: copied_node as unknown as PhaseLoadSchedule
+							});
 							invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 						}}
 					>
@@ -149,7 +153,7 @@
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
 		<GenericPhaseMainLoadForm
-			action={'edit'}
+			action='edit'
 			selected_parent_id={selected_parent?.id}
 			closeDialog={() => (is_update_dialog_open = false)}
 			{phase_main_load_form}
