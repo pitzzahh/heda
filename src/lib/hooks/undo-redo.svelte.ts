@@ -21,6 +21,25 @@ export class UndoRedoState {
 		this.undo_stack = [...(this.undo_stack ? this.undo_stack : []), action];
 	}
 
+	private async addNewNode(node_data: PhaseLoadSchedule) {
+		return await addNode({
+			existing_id: node_data.id,
+			parent_id: node_data.parent_id as string,
+			...(node_data.panel_data && {
+				panel_data: {
+					...node_data.panel_data,
+					circuit_number: node_data.circuit_number
+				} as any
+			}),
+			...(node_data.load_data && {
+				load_data: {
+					...node_data.load_data,
+					circuit_number: node_data.circuit_number
+				} as any
+			})
+		});
+	}
+
 	async undo() {
 		const last_action = this.undo_stack.pop();
 
@@ -34,22 +53,7 @@ export class UndoRedoState {
 				case 'update_node':
 					break;
 				case 'delete_node':
-					const added_node = await addNode({
-						existing_id: last_action.data.id,
-						parent_id: last_action.data.parent_id as string,
-						...(last_action.data.panel_data && {
-							panel_data: {
-								...last_action.data.panel_data,
-								circuit_number: last_action.data.circuit_number
-							} as any
-						}),
-						...(last_action.data.load_data && {
-							load_data: {
-								...last_action.data.load_data,
-								circuit_number: last_action.data.circuit_number
-							} as any
-						})
-					});
+					const added_node = await this.addNewNode(last_action.data);
 
 					this.redo_stack = [
 						...this.redo_stack,
@@ -72,23 +76,7 @@ export class UndoRedoState {
 		if (last_action) {
 			switch (last_action.action) {
 				case 'create_node':
-					const added_node = await addNode({
-						existing_id: last_action.data.id,
-						parent_id: last_action.data.parent_id as string,
-						...(last_action.data.panel_data && {
-							panel_data: {
-								...last_action.data.panel_data,
-								circuit_number: last_action.data.circuit_number
-							} as any
-						}),
-						...(last_action.data.load_data && {
-							load_data: {
-								...last_action.data.load_data,
-								circuit_number: last_action.data.circuit_number
-							} as any
-						})
-					});
-
+					const added_node = await this.addNewNode(last_action.data);
 					console.log(added_node);
 
 					this.undo_stack = [
