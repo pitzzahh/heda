@@ -141,10 +141,15 @@
 							break;
 						case 'edit':
 							if (node_to_edit && selected_parent_id) {
-								await updateNode({
+								const updated_node = await updateNode({
 									load_data,
 									id: node_to_edit.id,
 									parent_id: selected_parent_id
+								});
+								undo_redo_state.setActionToUndo({
+									action: 'update_node',
+									data: updated_node as unknown as PhaseLoadSchedule,
+									previous_data: node_to_edit as PhaseLoadSchedule
 								});
 								toast.success('Load updated successfully');
 							}
