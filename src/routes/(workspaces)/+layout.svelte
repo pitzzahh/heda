@@ -16,6 +16,7 @@
 	import { updateProjectTitle } from '@/db/mutations/index.js';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import UndoRedoProvider from '@/components/custom/undo-redo-provider.svelte';
 
 	let { data, children } = $props();
 
@@ -52,73 +53,74 @@
 </script>
 
 <PageProgress />
-
-<Sidebar.Provider>
-	<AppSidebar
-		project={data.project}
-		root_node={data.root_node as Node}
-		{generic_phase_panel_form}
-		{phase_main_load_form}
-	/>
-	<Sidebar.Inset>
-		<header
-			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
-		>
-			<Sidebar.Trigger class="-ml-1" />
-
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<div class="flex items-center gap-2">
-				{#if is_editing}
-					<Input bind:value={project_title} type="text" id="project-title-input" />
-				{:else}
-					<p>
-						{data.project?.project_name || 'Untitled'}
-					</p>
-				{/if}
-
-				{#if data.project}
-					<Tooltip>
-						<TooltipTrigger>
-							<Button
-								size="icon"
-								variant="outline"
-								onclick={!is_editing ? toggleEdit : saveProjectTitle}
-							>
-								{#if is_editing}
-									<Save class="h-4 w-4" />
-								{:else}
-									<PenLine class="h-4 w-4" />
-								{/if}
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
-					</Tooltip>
-				{/if}
-			</div>
-		</header>
-
-		<svelte:boundary>
-			<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
-				{@render children?.()}
-			</div>
-			{#snippet failed(error, reset)}
-				<p class="text-sm text-muted-foreground">{error}</p>
-				<Button onclick={reset}>oops! try again</Button>
-			{/snippet}
-		</svelte:boundary>
-	</Sidebar.Inset>
-</Sidebar.Provider>
-
-<Dialog.Root bind:open={dialogs_state.highestUnit}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title class="text-center font-bold"
-				>Choose the highest unit for this project.</Dialog.Title
-			>
-		</Dialog.Header>
-		<HighestUnitForm
-			highest_unit_form={data.highest_unit_form}
-			closeDialog={() => (dialogs_state.highestUnit = false)}
+<UndoRedoProvider>
+	<Sidebar.Provider>
+		<AppSidebar
+			project={data.project}
+			root_node={data.root_node as Node}
+			{generic_phase_panel_form}
+			{phase_main_load_form}
 		/>
-	</Dialog.Content>
-</Dialog.Root>
+		<Sidebar.Inset>
+			<header
+				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
+			>
+				<Sidebar.Trigger class="-ml-1" />
+
+				<Separator orientation="vertical" class="mr-2 h-4" />
+				<div class="flex items-center gap-2">
+					{#if is_editing}
+						<Input bind:value={project_title} type="text" id="project-title-input" />
+					{:else}
+						<p>
+							{data.project?.project_name || 'Untitled'}
+						</p>
+					{/if}
+
+					{#if data.project}
+						<Tooltip>
+							<TooltipTrigger>
+								<Button
+									size="icon"
+									variant="outline"
+									onclick={!is_editing ? toggleEdit : saveProjectTitle}
+								>
+									{#if is_editing}
+										<Save class="h-4 w-4" />
+									{:else}
+										<PenLine class="h-4 w-4" />
+									{/if}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
+						</Tooltip>
+					{/if}
+				</div>
+			</header>
+
+			<svelte:boundary>
+				<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
+					{@render children?.()}
+				</div>
+				{#snippet failed(error, reset)}
+					<p class="text-sm text-muted-foreground">{error}</p>
+					<Button onclick={reset}>oops! try again</Button>
+				{/snippet}
+			</svelte:boundary>
+		</Sidebar.Inset>
+	</Sidebar.Provider>
+
+	<Dialog.Root bind:open={dialogs_state.highestUnit}>
+		<Dialog.Content>
+			<Dialog.Header>
+				<Dialog.Title class="text-center font-bold"
+					>Choose the highest unit for this project.</Dialog.Title
+				>
+			</Dialog.Header>
+			<HighestUnitForm
+				highest_unit_form={data.highest_unit_form}
+				closeDialog={() => (dialogs_state.highestUnit = false)}
+			/>
+		</Dialog.Content>
+	</Dialog.Root>
+</UndoRedoProvider>

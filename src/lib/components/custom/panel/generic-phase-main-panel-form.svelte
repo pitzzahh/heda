@@ -22,10 +22,12 @@
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
 	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -48,6 +50,8 @@
 		latest_circuit_node,
 		selected_parent_id
 	}: Props = $props();
+
+	let undo_redo_state = getUndoRedoState();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -76,16 +80,26 @@
 
 				switch (action) {
 					case 'add':
-						await addNode({ parent_id, panel_data: form.data });
+						const added_node = await addNode({ parent_id, panel_data: form.data });
+						toast.success(`${form.data.name} added successfully`);
+						undo_redo_state.setActionToUndo({
+							data: added_node as unknown as PhaseLoadSchedule,
+							action: 'create_node'
+						});
 						break;
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
-							await updateNode({
+							const updated_node = await updateNode({
 								panel_data: form.data,
 								id: node_to_edit.id,
 								parent_id: selected_parent_id
 							});
 							toast.success('Panel updated successfully');
+							undo_redo_state.setActionToUndo({
+								data: updated_node as unknown as PhaseLoadSchedule,
+								previous_data: node_to_edit as PhaseLoadSchedule,
+								action: 'update_node'
+							});
 						}
 						break;
 				}

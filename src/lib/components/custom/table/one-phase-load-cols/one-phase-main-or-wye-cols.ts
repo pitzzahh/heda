@@ -31,13 +31,13 @@ export function onePhaseMainOrWyeCols(
 					cell: (info) => {
 						return renderComponent(ConductorSetsCell, {
 							sets: info.row.original.conductor_sets as number,
-							node_id: info.row.original.id
+							node: info.row.original
 						});
 					},
 					footer: () => {
 						return renderComponent(ConductorSetsCell, {
 							sets: current_node.conductor_sets as number,
-							node_id: current_node.id
+							node: current_node
 						});
 					}
 				},
@@ -93,7 +93,7 @@ export function onePhaseMainOrWyeCols(
 							adjusted_current: data.adjusted_current,
 							type: 'conductor',
 							current_insulation: data.conductor_insulation as string,
-							node_id: data.id
+							node: data
 						});
 					},
 					footer: () =>
@@ -101,7 +101,7 @@ export function onePhaseMainOrWyeCols(
 							adjusted_current: current_node.adjusted_current,
 							type: 'conductor',
 							current_insulation: current_node.conductor_insulation as string,
-							node_id: current_node.id
+							node: current_node
 						})
 				}
 			]

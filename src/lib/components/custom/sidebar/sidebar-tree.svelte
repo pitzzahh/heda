@@ -29,6 +29,8 @@
 		PencilIcon,
 		Trash2Icon
 	} from './(components)';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	let {
 		node,
@@ -56,6 +58,7 @@
 	let open_tree_delete_dialog = $state(false);
 	let is_hovering_on_tree_item = $state(false);
 	let button_state: 'stale' | 'processing' = $state('stale');
+	let undo_redo_state = getUndoRedoState();
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -68,50 +71,22 @@
 	</Sidebar.MenuButton>
 {:then child_nodes}
 	{#if node.node_type === 'load'}
-		<Sidebar.MenuItem class="w-full">
-			<Sidebar.MenuButton
-				onmouseenter={() => (is_hovering_on_tree_item = true)}
-				onmouseleave={() => (is_hovering_on_tree_item = false)}
-				class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
-			>
-				<ContextMenu.Root bind:open={open_load_context_menu}>
-					<ContextMenu.Trigger class="flex w-full items-center gap-1">
-						<div class="flex w-full items-center gap-2">
-							<div class="w-4">
-								<PlugZap class="size-4" />
-							</div>
-							<span class="truncate">
-								{typeof node === 'string' ? node : node.load_data?.load_description}
-							</span>
-						</div>
-					</ContextMenu.Trigger>
-					<ContextMenu.Content class="grid gap-1">
-						{#snippet children()}
-							<UpdateLoadDialog
-								{highest_unit}
-								{phase_main_load_form}
-								bind:some_open_state={open_load_context_menu}
-								load_to_edit={node}
-							/>
-							<ConfirmationDialog
-								trigger_text="Remove load"
-								trigger_variant="destructive"
-								bind:some_open_state={open_load_context_menu}
-								onConfirm={async () => {
-									await removeNode(node.id)
-										.then(() => invalidate('app:workspace'))
-										.finally(() => invalidate('app:workspace/load-schedule'));
-								}}
-							/>
-						{/snippet}
-					</ContextMenu.Content>
-				</ContextMenu.Root>
-			</Sidebar.MenuButton>
+		<Sidebar.MenuButton
+			onmouseenter={() => (is_hovering_on_tree_item = true)}
+			onmouseleave={() => (is_hovering_on_tree_item = false)}
+			class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+		>
 			{@const tooltip_data = [
 				{
 					trigger_callback: async () => {
 						await copyAndAddNodeById(node.id)
-							.then(() => invalidate('app:workspace'))
+						.then((copied_node) => {
+								undo_redo_state.setActionToUndo({
+									action: 'copy_node',
+									data: copied_node as unknown as PhaseLoadSchedule
+								});
+								invalidate('app:workspace');
+							})
 							.finally(() => invalidate('app:workspace/load-schedule'));
 					},
 					variant: 'ghost',
@@ -134,58 +109,66 @@
 					className: 'hover:bg-destructive hover:text-white'
 				}
 			]}
-			{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-				{#if !hidden}
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								class={buttonVariants({
-									variant: variant as ButtonVariant,
-									size: 'icon',
-									className
-								})}
-								onclick={() => trigger_callback()}
-							>
-								{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								{tooltip_content}
-							</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
-				{/if}
-			{/each}
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Sidebar.MenuAction {...props}>
-							<Ellipsis />
-							<span class="sr-only">Actions</span>
-						</Sidebar.MenuAction>
+			<ContextMenu.Root bind:open={open_load_context_menu}>
+				<ContextMenu.Trigger class="flex w-full items-center gap-1">
+					<div class="flex w-full items-center gap-2">
+						<div class="w-4">
+							<PlugZap class="size-4" />
+						</div>
+						<span class="truncate">
+							{typeof node === 'string' ? node : node.load_data?.load_description}
+						</span>
+					</div>
+				</ContextMenu.Trigger>
+				<ContextMenu.Content class="grid gap-1">
+					{#snippet children()}
+						<UpdateLoadDialog
+							{highest_unit}
+							{phase_main_load_form}
+							bind:some_open_state={open_load_context_menu}
+							load_to_edit={node}
+						/>
+						<ConfirmationDialog
+							trigger_text="Remove load"
+							trigger_variant="destructive"
+							bind:some_open_state={open_load_context_menu}
+							onConfirm={async () => {
+								await removeNode(node.id)
+									.then(() => invalidate('app:workspace'))
+									.finally(() => invalidate('app:workspace/load-schedule'));
+							}}
+						/>
 					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content
-					class="grid rounded-lg"
-					side={sidebar_context.isMobile ? 'bottom' : 'left'}
-					align={sidebar_context.isMobile ? 'end' : 'start'}
-				>
-					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-						{#if !hidden}
-							<DropdownMenu.Item
-								class={buttonVariants({
-									variant: variant as ButtonVariant,
-									className: `w-full ${className}`
-								})}
-								onclick={() => trigger_callback()}
-							>
-								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
-								<span>{tooltip_content}</span>
-							</DropdownMenu.Item>
-						{/if}
-					{/each}
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
-		</Sidebar.MenuItem>
+				</ContextMenu.Content>
+			</ContextMenu.Root>
+			<div
+				class={cn('hidden items-center gap-1.5', {
+					flex: is_hovering_on_tree_item
+				})}
+			>
+				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+					{#if !hidden}
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class={buttonVariants({
+										variant: variant as ButtonVariant,
+										size: 'icon',
+										className
+									})}
+									onclick={() => trigger_callback()}
+								>
+									{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									{tooltip_content}
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+					{/if}
+				{/each}
+			</div>
+		</Sidebar.MenuButton>
 	{:else}
 		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
@@ -202,6 +185,64 @@
 						}
 					)}
 				>
+					{@const tooltip_data = [
+						{
+							trigger_callback: () => (open_tree_add_panel_dialog = true),
+							variant: 'ghost',
+							icon: Grid2x2PlusIcon,
+							hidden: false,
+							tooltip_content: 'Add Panel'
+						},
+						{
+							trigger_callback: () => (open_tree_add_load_dialog = true),
+							variant: 'ghost',
+							icon: CirclePlusIcon,
+							hidden: false,
+							tooltip_content: 'Add Load'
+						},
+						{
+							trigger_callback: async () => {
+								await copyAndAddNodeById(node.id)
+									.then((copied_node) => {
+										undo_redo_state.setActionToUndo({
+											action: 'copy_node',
+											data: copied_node as unknown as PhaseLoadSchedule
+										});
+										invalidate('app:workspace');
+									})
+									.finally(() => invalidate('app:workspace/load-schedule'));
+							},
+							variant: 'ghost',
+							icon: CopyIcon,
+							hidden: node.node_type === 'root',
+							tooltip_content: 'Copy Panel'
+						},
+						{
+							trigger_callback: () => {
+								if (!node.parent_id) {
+									// TODO: Log system error
+									return toast.warning('Failed to identify the panel supplier', {
+										description:
+											'This is a system error and should not be here, the error has been logged.'
+									});
+								}
+								open_tree_edit_panel_action_dialog = true;
+							},
+							variant: 'ghost',
+							icon: PencilIcon,
+							hidden: node.node_type === 'root',
+							tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`
+						},
+
+						{
+							trigger_callback: () => (open_tree_delete_dialog = true),
+							variant: 'ghost',
+							icon: Trash2Icon,
+							hidden: false,
+							tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
+							className: 'hover:bg-destructive hover:text-white'
+						}
+					]}
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
@@ -256,7 +297,14 @@
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
-										} else await removeNode(node.id);
+										} else {
+											const removed_node = await removeNode(node.id);
+											undo_redo_state.setActionToUndo({
+												data: node as PhaseLoadSchedule,
+												action: 'delete_node',
+												children_nodes: removed_node.children_nodes
+											});
+										}
 										invalidate('app:workspace/load-schedule')
 											.then(() => (button_state = 'stale'))
 											.finally(() => {
@@ -434,7 +482,14 @@
 			button_state = 'processing';
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
-			} else await removeNode(node.id);
+			} else {
+				const removed_node = await removeNode(node.id);
+				undo_redo_state.setActionToUndo({
+					data: node as PhaseLoadSchedule,
+					action: 'delete_node',
+					children_nodes: removed_node.children_nodes
+				});
+			}
 			// TODO: Improve invalidation github issue #64
 			invalidate('app:workspace/load-schedule')
 				.then(() => invalidate('app:workspace'))
