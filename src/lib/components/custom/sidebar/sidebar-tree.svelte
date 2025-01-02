@@ -68,11 +68,45 @@
 	</Sidebar.MenuButton>
 {:then child_nodes}
 	{#if node.node_type === 'load'}
-		<Sidebar.MenuButton
-			onmouseenter={() => (is_hovering_on_tree_item = true)}
-			onmouseleave={() => (is_hovering_on_tree_item = false)}
-			class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
-		>
+		<Sidebar.MenuItem class="w-full">
+			<Sidebar.MenuButton
+				onmouseenter={() => (is_hovering_on_tree_item = true)}
+				onmouseleave={() => (is_hovering_on_tree_item = false)}
+				class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+			>
+				<ContextMenu.Root bind:open={open_load_context_menu}>
+					<ContextMenu.Trigger class="flex w-full items-center gap-1">
+						<div class="flex w-full items-center gap-2">
+							<div class="w-4">
+								<PlugZap class="size-4" />
+							</div>
+							<span class="truncate">
+								{typeof node === 'string' ? node : node.load_data?.load_description}
+							</span>
+						</div>
+					</ContextMenu.Trigger>
+					<ContextMenu.Content class="grid gap-1">
+						{#snippet children()}
+							<UpdateLoadDialog
+								{highest_unit}
+								{phase_main_load_form}
+								bind:some_open_state={open_load_context_menu}
+								load_to_edit={node}
+							/>
+							<ConfirmationDialog
+								trigger_text="Remove load"
+								trigger_variant="destructive"
+								bind:some_open_state={open_load_context_menu}
+								onConfirm={async () => {
+									await removeNode(node.id)
+										.then(() => invalidate('app:workspace'))
+										.finally(() => invalidate('app:workspace/load-schedule'));
+								}}
+							/>
+						{/snippet}
+					</ContextMenu.Content>
+				</ContextMenu.Root>
+			</Sidebar.MenuButton>
 			{@const tooltip_data = [
 				{
 					trigger_callback: async () => {
@@ -100,66 +134,58 @@
 					className: 'hover:bg-destructive hover:text-white'
 				}
 			]}
-			<ContextMenu.Root bind:open={open_load_context_menu}>
-				<ContextMenu.Trigger class="flex w-full items-center gap-1">
-					<div class="flex w-full items-center gap-2">
-						<div class="w-4">
-							<PlugZap class="size-4" />
-						</div>
-						<span class="truncate">
-							{typeof node === 'string' ? node : node.load_data?.load_description}
-						</span>
-					</div>
-				</ContextMenu.Trigger>
-				<ContextMenu.Content class="grid gap-1">
-					{#snippet children()}
-						<UpdateLoadDialog
-							{highest_unit}
-							{phase_main_load_form}
-							bind:some_open_state={open_load_context_menu}
-							load_to_edit={node}
-						/>
-						<ConfirmationDialog
-							trigger_text="Remove load"
-							trigger_variant="destructive"
-							bind:some_open_state={open_load_context_menu}
-							onConfirm={async () => {
-								await removeNode(node.id)
-									.then(() => invalidate('app:workspace'))
-									.finally(() => invalidate('app:workspace/load-schedule'));
-							}}
-						/>
+			{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+				{#if !hidden}
+					<Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger
+								class={buttonVariants({
+									variant: variant as ButtonVariant,
+									size: 'icon',
+									className
+								})}
+								onclick={() => trigger_callback()}
+							>
+								{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								{tooltip_content}
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
+				{/if}
+			{/each}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Sidebar.MenuAction {...props}>
+							<Ellipsis />
+							<span class="sr-only">Actions</span>
+						</Sidebar.MenuAction>
 					{/snippet}
-				</ContextMenu.Content>
-			</ContextMenu.Root>
-			<div
-				class={cn('hidden items-center gap-1.5', {
-					flex: is_hovering_on_tree_item
-				})}
-			>
-				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-					{#if !hidden}
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class={buttonVariants({
-										variant: variant as ButtonVariant,
-										size: 'icon',
-										className
-									})}
-									onclick={() => trigger_callback()}
-								>
-									{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									{tooltip_content}
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					{/if}
-				{/each}
-			</div>
-		</Sidebar.MenuButton>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content
+					class="grid rounded-lg"
+					side={sidebar_context.isMobile ? 'bottom' : 'left'}
+					align={sidebar_context.isMobile ? 'end' : 'start'}
+				>
+					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+						{#if !hidden}
+							<DropdownMenu.Item
+								class={buttonVariants({
+									variant: variant as ButtonVariant,
+									className: `w-full ${className}`
+								})}
+								onclick={() => trigger_callback()}
+							>
+								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
+								<span>{tooltip_content}</span>
+							</DropdownMenu.Item>
+						{/if}
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</Sidebar.MenuItem>
 	{:else}
 		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
