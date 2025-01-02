@@ -13,6 +13,7 @@
 			<Tooltip.Trigger
 				class={buttonVariants({ variant: 'outline', size: 'icon' })}
 				onclick={() => undo_redo_state.undo()}
+				disabled={!undo_redo_state.hasUndoActions()}
 			>
 				<Undo class="h-4 w-4" />
 			</Tooltip.Trigger>
@@ -25,6 +26,7 @@
 			<Tooltip.Trigger
 				class={buttonVariants({ variant: 'outline', size: 'icon' })}
 				onclick={() => undo_redo_state.redo()}
+				disabled={!undo_redo_state.hasRedoActions()}
 			>
 				<Redo class="h-4 w-4" />
 			</Tooltip.Trigger>
