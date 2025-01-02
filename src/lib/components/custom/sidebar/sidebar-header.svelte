@@ -74,33 +74,30 @@
 					);
 					if (!process_result.valid) {
 						button_states.export_to_excel = 'idle';
-						toast.warning(process_result.message ?? 'Something went wrong while exporting', {
+						return toast.warning(process_result.message ?? 'Something went wrong while exporting', {
 							description: process_result?.is_system_error
 								? 'This is a system error and should not be here, the error has been logged.'
 								: (process_result?.description ?? undefined),
 							position: 'bottom-center'
 						});
-						return;
 					}
 					break;
 				case '3P':
 					workbook.subject = '3P Load Schedule';
 					workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
 					workbook.description = 'Load schedule for 3 phase load schedule';
-					toast.warning('This feature is still under development', {
+					return toast.warning('This feature is still under development', {
 						description: 'Three phase load schedule is not yet supported',
 						position: 'bottom-center'
 					});
-					return;
 				default:
 					button_states.export_to_excel = 'idle';
 					workbook.subject = 'Unknown Load Schedule';
-					toast.warning('Something went wrong while exporting', {
+					return toast.warning('Something went wrong while exporting', {
 						description:
 							'This is a system error and should not be here, the error has been logged.',
 						position: 'bottom-center'
 					});
-					return;
 			}
 		} catch (e) {
 			button_states.export_to_excel = 'idle';
