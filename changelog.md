@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.29] - 2025-01-01
+
+### Fix
+
+- Fix extra shifted load data row, add one more row spacing.
+
+## [0.3.28] - 2025-01-01
+
+### Fix
+
+- Changelog history markdown rendering.
+- Overlapping panelboard schedule excel export when heirarchy is too complex.
+
+## [0.3.27] - 2024-12-30
+
+### Add
+
+- Toast notification when performing export to excel.
+- Add ErrorCell component and integrate error handling for conduit and conductor sizes in table columns.
+- Updated app logo.
+
+### Fix
+
+- Remove adding load in crkt no. cell in load schedule.
+- Update column headers and improve rendering logic in base columns for better clarity and functionality.
+- Adjust ampacity range condition and add error handling for conduit size in computations.
+- Enhance error handling in sidebar header by adding a description field for improved clarity on export failures.
+- Improve export error handling in sidebar header by adding descriptive messages for missing project and highest unit.
+- Swap voltage and apparent power values in sidebar header for correct data representation.
+- Adjust calculation placement for l(t) in sidebar header to correct row positioning.
+- Fix alignment and value assignment for l(t) calculation in sidebar header.
+- Update load schedule handling for 1P and 3P phases in sidebar header.
+
 ## [0.3.26] - 2024-12-30
 
 ### Test

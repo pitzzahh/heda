@@ -19,7 +19,8 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
 async function createDatabase(
-	name: string = 'mydatabase'
+	name: string = 'mydatabase',
+	memory: boolean = true
 ): Promise<RxDatabase<MyDatabaseCollections>> {
 	if (dbInstance) {
 		return dbInstance;
@@ -34,7 +35,7 @@ async function createDatabase(
 	dbInstance = await createRxDatabase({
 		name,
 		// @ts-ignore
-		storage: dev ? getRxStorageMemory() : getRxStorageDexie()
+		storage: memory ? getRxStorageMemory() : getRxStorageDexie()
 	});
 	return dbInstance;
 }
@@ -45,7 +46,7 @@ async function createDatabase(
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
 export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollections>> {
-	const database = await createDatabase();
+	const database = await createDatabase('heda', false);
 
 	if (!database.projects || !database.nodes) {
 		try {
