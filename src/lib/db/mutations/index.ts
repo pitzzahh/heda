@@ -3,6 +3,7 @@ import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { Project, Node } from '@/db/schema';
+import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 export async function createProject(highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
@@ -221,7 +222,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			}
 		}
 
-		return created_node;
+		return created_node._data;
 	} catch (error) {
 		console.error('Error copying and adding a node:', error);
 		throw error;
@@ -301,27 +302,50 @@ export async function updateNode({
 	}
 }
 
-export async function removeNode(id: string, visited: Set<string> = new Set()) {
+export async function removeNode(
+	id: string,
+	visited: Set<string> = new Set()
+): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }> {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
 	}
 	visited.add(id);
 
 	const database = await databaseInstance();
+	const children_nodes: PhaseLoadSchedule[] = [];
 
 	try {
-		// find and remove child nodes recursively
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child._data.id, visited);
+			const { removed_node, children_nodes: grand_children } = await removeNode(
+				child._data.id,
+				visited
+			);
+
+			// [...children_nodes, removed_node, ...grand_children]
+			children_nodes.push(removed_node, ...grand_children);
 		}
 
-		// remove the current node
 		const query = database.nodes.findOne({ selector: { id } });
+		const removed_node = await query.exec();
+
+		if (!removed_node) {
+			throw Error(`Node with ID ${id} not found.`);
+		}
+
+		await query.remove();
 
 		console.log(`Node ${id} removed successfully`);
-		return await query.remove();
+		console.log({
+			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
+			children_nodes
+		});
+
+		return {
+			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
+			children_nodes
+		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
 		throw error;
