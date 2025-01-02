@@ -18,6 +18,7 @@
 	import { RefreshCcw } from 'lucide-svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import OverrideSelectors from '../../override-selectors.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	let {
 		node,
@@ -36,6 +37,7 @@
 	let open_dropdown_menu = $state(false);
 	let is_confirmation_open = $state(false);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
+	let undo_redo_state = getUndoRedoState();
 
 	$effect(() => {
 		if (node.parent_id) {
@@ -49,7 +51,12 @@
 	});
 
 	async function handleRemoveLoad() {
-		await removeNode(node.id);
+		const removed_node = await removeNode(node.id);
+		undo_redo_state.setActionToUndo({
+			action: 'delete_node',
+			data: node,
+			children_nodes: removed_node.children_nodes
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 	}
