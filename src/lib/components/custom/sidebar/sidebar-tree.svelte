@@ -326,7 +326,7 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content
-					class="z-[100] flex flex-col rounded-lg"
+					class="grid rounded-lg"
 					side={sidebar_context.isMobile ? 'bottom' : 'left'}
 					align={sidebar_context.isMobile ? 'end' : 'start'}
 				>
@@ -335,7 +335,7 @@
 							<DropdownMenu.Item
 								class={buttonVariants({
 									variant: variant as ButtonVariant,
-									className: 'w-full'
+									className: `w-full ${className}`
 								})}
 								onclick={() => trigger_callback()}
 							>
