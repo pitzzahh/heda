@@ -3,6 +3,7 @@ import { createId } from '@paralleldrive/cuid2';
 import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { Project, Node } from '@/db/schema';
+import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 export async function createProject(highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
@@ -86,11 +87,13 @@ export async function updateProjectTitle(id: string, project_name: string) {
 export async function addNode({
 	load_data,
 	panel_data,
-	parent_id
+	parent_id,
+	existing_id
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
+	existing_id?: string;
 }) {
 	const database = await databaseInstance();
 
@@ -105,7 +108,7 @@ export async function addNode({
 		}
 
 		const created_node = await database.nodes.insert({
-			id: createId(),
+			id: existing_id || createId(),
 			node_type: load_data ? 'load' : 'panel',
 			circuit_number: load_data?.circuit_number ?? panel_data?.circuit_number ?? 0,
 			panel_data: panel_data as Node['panel_data'],
@@ -121,7 +124,7 @@ export async function addNode({
 			}
 		});
 
-		return created_node;
+		return created_node._data;
 	} catch (error) {
 		console.error('Error adding a node:', error);
 		throw error;
@@ -219,7 +222,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			}
 		}
 
-		return created_node;
+		return created_node._data;
 	} catch (error) {
 		console.error('Error copying and adding a node:', error);
 		throw error;
@@ -230,12 +233,14 @@ export async function updateNode({
 	load_data,
 	panel_data,
 	parent_id,
-	id
+	id,
+	whole_data
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
+	whole_data?: Node;
 }) {
 	const database = await databaseInstance();
 
@@ -245,18 +250,10 @@ export async function updateNode({
 		});
 
 		const existing_node = await query.exec();
+
 		if (!existing_node) {
 			throw Error('Node not found');
 		}
-
-		const updatednode = await query.update({
-			$set: {
-				parent_id,
-				panel_data,
-				circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-				load_data: load_data as Node['load_data']
-			}
-		});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
@@ -292,34 +289,80 @@ export async function updateNode({
 			}
 		}
 
-		return updatednode;
+		const update_query = !!whole_data
+			? query.update({
+					$set: {
+						...{
+							...whole_data,
+							panel_data: whole_data.panel_data
+								? JSON.parse(JSON.stringify(whole_data.panel_data))
+								: undefined,
+							load_data: whole_data.load_data
+								? JSON.parse(JSON.stringify(whole_data.load_data))
+								: undefined
+						}
+					}
+				})
+			: query.update({
+					$set: {
+						parent_id,
+						panel_data,
+						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+						load_data: load_data as Node['load_data']
+					}
+				});
+
+		return (await update_query)?._data;
 	} catch (error) {
 		console.error('Error updating node:', error);
 		throw error;
 	}
 }
 
-export async function removeNode(id: string, visited: Set<string> = new Set()) {
+export async function removeNode(
+	id: string,
+	visited: Set<string> = new Set()
+): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }> {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
 	}
 	visited.add(id);
 
 	const database = await databaseInstance();
+	const children_nodes: PhaseLoadSchedule[] = [];
 
 	try {
-		// find and remove child nodes recursively
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			await removeNode(child._data.id, visited);
+			const { removed_node, children_nodes: grand_children } = await removeNode(
+				child._data.id,
+				visited
+			);
+
+			// [...children_nodes, removed_node, ...grand_children]
+			children_nodes.push(removed_node, ...grand_children);
 		}
 
-		// remove the current node
 		const query = database.nodes.findOne({ selector: { id } });
+		const removed_node = await query.exec();
+
+		if (!removed_node) {
+			throw Error(`Node with ID ${id} not found.`);
+		}
+
+		await query.remove();
 
 		console.log(`Node ${id} removed successfully`);
-		return await query.remove();
+		console.log({
+			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
+			children_nodes
+		});
+
+		return {
+			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
+			children_nodes
+		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
 		throw error;
@@ -350,7 +393,7 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+export type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
@@ -383,11 +426,13 @@ export async function overrideField({
 		const data = unoverride && !field_data ? undefined : field_data;
 		const field_to_update = FIELD_TYPE_MAPPING[field_type];
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				[field_to_update]: data
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error overriding data:', error);
 		throw error;
@@ -404,11 +449,13 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				conductor_sets: sets
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor sets:', error);
 		throw error;
@@ -454,9 +501,7 @@ export async function updateLoadDescription({
 			}
 		});
 
-		return (
-			updated_node?._data.load_data?.load_description || updated_node?._data.panel_data?.name || ''
-		);
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor load_description:', error);
 		throw error;
@@ -481,12 +526,14 @@ export async function changeInsulation({
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				...(type === 'egc' && { egc_insulation: insulation }),
 				...(type === 'conductor' && { conductor_insulation: insulation })
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing insulation:', error);
 		throw error;
@@ -503,11 +550,13 @@ export async function changePole(node_id: string, pole: string) {
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				pole
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing pole:', error);
 		throw error;

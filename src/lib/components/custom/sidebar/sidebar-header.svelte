@@ -12,6 +12,7 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getComputedLoads, getNodeById } from '@/db/queries/index';
 	import { dev } from '$app/environment';
+	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
 	import { processOnePhaseExcelPanelBoardSchedule } from '@/helpers/export';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
@@ -168,6 +169,7 @@
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
 		<Tooltip.Provider>

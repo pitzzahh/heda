@@ -44,7 +44,8 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			return renderComponent(LoadDescriptionCell, {
 				load_description: data.load_description,
 				node_id: data.id,
-				node_type: data.node_type as 'panel' | 'load'
+				node_type: data.node_type as 'panel' | 'load',
+				node: data
 			});
 		},
 		footer: () => 'MAIN'
@@ -154,7 +155,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 					const data = info.row.original;
 					return renderComponent(PoleDropdown, {
 						current_pole: data.pole as '1' | '2',
-						node_id: data.id
+						node: data
 					});
 				},
 
@@ -162,7 +163,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				footer: (props) => {
 					return renderComponent(PoleDropdown, {
 						current_pole: current_node.pole as '1' | '2',
-						node_id: current_node.id
+						node: current_node
 					});
 				}
 			},
@@ -198,7 +199,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 						adjusted_current: data.adjusted_current,
 						type: 'egc',
 						current_insulation: data.egc_insulation as string,
-						node_id: data.id
+						node: data
 					});
 				},
 				header: () => 'INSULATION',
@@ -207,7 +208,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 						adjusted_current: current_node.adjusted_current,
 						type: 'egc',
 						current_insulation: current_node.egc_insulation as string,
-						node_id: current_node.id
+						node: current_node
 					})
 			}
 		]

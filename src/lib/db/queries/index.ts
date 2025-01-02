@@ -260,14 +260,13 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const db = await databaseInstance();
-	const childNodes = await db.nodes
-		.find({ selector: { parent_id } })
-		.sort({ circuit_number: 'asc' })
-		.exec();
+	const childNodes = (
+		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
+	).map((doc) => doc._data);
 
 	const loadsWithComputedFields = await Promise.all(
 		childNodes.map(async (doc) => {
-			const data = doc._data;
+			const data = doc;
 			const voltage = 230; // this may change depending on phase
 			const conductor_set = data.conductor_sets as number;
 			const conductor_qty = data.conductor_qty as number;
