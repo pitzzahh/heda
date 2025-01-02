@@ -2,19 +2,19 @@
 	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 	import * as Tooltip from '@/components/ui/tooltip';
-	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
+	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck } from '@/assets/icons';
+	import { Cog, Loader, PackageCheck, SunMoon, Moon, Sun } from '@/assets/icons';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import * as Dialog from '@/components/ui/dialog';
 	import { Label } from '@/components/ui/label/index.js';
-	import { mode } from 'mode-watcher';
 	import type { Settings } from '@/types/settings';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
 	import { ViewChangelog } from '.';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
+	import { Separator } from '@/components/ui/separator/index.js';
+	import { Switch } from '@/components/ui/switch/index.js';
 	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
@@ -22,6 +22,8 @@
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
+	import { mode, systemPrefersMode } from 'mode-watcher';
+	import { setModeAndColor } from '@/helpers/theme';
 
 	let { project }: { project?: Project } = $props();
 
@@ -112,8 +114,63 @@
 					<Separator class="my-1 w-full" />
 					<div class="flex flex-col gap-3">
 						<p class="font-semibold">Preferences</p>
-						<div class="grid grid-cols-2">
-							<div class="flex flex-col gap-3">
+						<div class="flex items-center justify-between gap-2">
+							<div class="flex w-full flex-col items-center justify-center gap-2">
+								<Label for="colors">Theme</Label>
+								<RadioGroup.Root
+									value={$mode}
+									class="grid grid-cols-3"
+									onValueChange={(v) =>
+										setModeAndColor(
+											settingsState,
+											v === 'system'
+												? $systemPrefersMode === 'light'
+													? 'light'
+													: 'dark'
+												: v === 'light'
+													? 'light'
+													: 'dark'
+										)}
+								>
+									<Label
+										for="light"
+										class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+									>
+										<RadioGroup.Item
+											value="light"
+											id="light"
+											class="sr-only"
+											aria-label="Light Theme"
+										/>
+										<Sun class="h-4 w-4" />
+									</Label>
+									<Label
+										for="dark"
+										class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+									>
+										<RadioGroup.Item
+											value="dark"
+											id="dark"
+											class="sr-only"
+											aria-label="Dark Theme"
+										/>
+										<Moon class="h-4 w-4" />
+									</Label>
+									<Label
+										for="system"
+										class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+									>
+										<RadioGroup.Item
+											value="system"
+											id="system"
+											class="sr-only"
+											aria-label="System default theme"
+										/>
+										<SunMoon class="h-4 w-4" />
+									</Label>
+								</RadioGroup.Root>
+							</div>
+							<div class="flex w-full flex-col items-center justify-center gap-2">
 								<Label for="colors">Theme Color</Label>
 								<div id="colors" class="flex items-center gap-2">
 									{#each themeColors as themeColor, index (index)}
