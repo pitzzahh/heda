@@ -1,12 +1,13 @@
 <script lang="ts">
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import * as Collapsible from '@/components/ui/collapsible/index.js';
+	import * as Sidebar from '@/components/ui/sidebar/index.js';
+	import * as Tooltip from '@/components/ui/tooltip/index.js';
 	import { cn } from '@/utils';
-	import { buttonVariants, type ButtonVariant } from '$lib/components/ui/button/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
-	import { ChevronRight, DatabaseZap, PlugZap, PanelsLeftBottom } from '@/assets/icons';
+	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
+	import { Skeleton } from '@/components/ui/skeleton/index.js';
+	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
+	import * as ContextMenu from '@/components/ui/context-menu/index.js';
+	import { ChevronRight, DatabaseZap, Ellipsis, PlugZap, PanelsLeftBottom } from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
@@ -175,58 +176,6 @@
 						}
 					)}
 				>
-					{@const tooltip_data = [
-						{
-							trigger_callback: () => (open_tree_add_panel_dialog = true),
-							variant: 'ghost',
-							icon: Grid2x2PlusIcon,
-							hidden: false,
-							tooltip_content: 'Add Panel'
-						},
-						{
-							trigger_callback: () => (open_tree_add_load_dialog = true),
-							variant: 'ghost',
-							icon: CirclePlusIcon,
-							hidden: false,
-							tooltip_content: 'Add Load'
-						},
-						{
-							trigger_callback: async () => {
-								await copyAndAddNodeById(node.id)
-									.then(() => invalidate('app:workspace'))
-									.finally(() => invalidate('app:workspace/load-schedule'));
-							},
-							variant: 'ghost',
-							icon: CopyIcon,
-							hidden: node.node_type === 'root',
-							tooltip_content: 'Copy Panel'
-						},
-						{
-							trigger_callback: () => {
-								if (!node.parent_id) {
-									// TODO: Log system error
-									return toast.warning('Failed to identify the panel supplier', {
-										description:
-											'This is a system error and should not be here, the error has been logged.'
-									});
-								}
-								open_tree_edit_panel_action_dialog = true;
-							},
-							variant: 'ghost',
-							icon: PencilIcon,
-							hidden: node.node_type === 'root',
-							tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`
-						},
-
-						{
-							trigger_callback: () => (open_tree_delete_dialog = true),
-							variant: 'ghost',
-							icon: Trash2Icon,
-							hidden: false,
-							tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
-							className: 'hover:bg-destructive hover:text-white'
-						}
-					]}
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
 							<ChevronRight class="transition-transform" {...props} />
@@ -296,54 +245,6 @@
 							{/snippet}
 						</ContextMenu.Content>
 					</ContextMenu.Root>
-					<div
-						class={cn('hidden w-fit	items-center gap-1.5 py-1', {
-							'absolute right-0 flex': is_hovering_on_tree_item,
-							hidden: sidebar_context.isResizing
-						})}
-					>
-						{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-							{#if !hidden}
-								<Tooltip.Provider>
-									<Tooltip.Root>
-										<Tooltip.Trigger
-											class={buttonVariants({
-												variant: variant as ButtonVariant,
-												size: 'icon',
-												className
-											})}
-											onclick={() => trigger_callback()}
-										>
-											{@render icon(i === tooltip_data.length - 1 ? 'text-inherit' : undefined)}
-										</Tooltip.Trigger>
-										<Tooltip.Content>
-											{tooltip_content}
-										</Tooltip.Content>
-									</Tooltip.Root>
-								</Tooltip.Provider>
-							{/if}
-						{/each}
-					</div>
-					{@const node_name = (node.highest_unit_form?.distribution_unit ||
-						node.panel_data?.name) as string}
-					<AddPanelAndViewTrigger
-						id={node.id}
-						panel_name={node_name}
-						{generic_phase_panel_form}
-						{highest_unit}
-						is_parent_root_node={node.node_type === 'root'}
-						parent_id={node.id}
-						bind:open_dialog_state={open_tree_add_panel_dialog}
-						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-					/>
-					<AddLoadDialog
-						{phase_main_load_form}
-						{highest_unit}
-						remove_trigger={true}
-						bind:open_dialog_state={open_tree_add_load_dialog}
-						latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-						panel_id_from_tree={node.id}
-					/>
 				</Sidebar.MenuButton>
 
 				<Collapsible.Content class="w-full">
@@ -359,6 +260,112 @@
 					</Sidebar.MenuSub>
 				</Collapsible.Content>
 			</Collapsible.Root>
+
+			{@const tooltip_data = [
+				{
+					trigger_callback: () => (open_tree_add_panel_dialog = true),
+					variant: 'ghost',
+					icon: Grid2x2PlusIcon,
+					hidden: false,
+					tooltip_content: 'Add Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (open_tree_add_load_dialog = true),
+					variant: 'ghost',
+					icon: CirclePlusIcon,
+					hidden: false,
+					tooltip_content: 'Add Load',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						await copyAndAddNodeById(node.id)
+							.then(() => invalidate('app:workspace'))
+							.finally(() => invalidate('app:workspace/load-schedule'));
+					},
+					variant: 'ghost',
+					icon: CopyIcon,
+					hidden: node.node_type === 'root',
+					tooltip_content: 'Copy Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => {
+						if (!node.parent_id) {
+							// TODO: Log system error
+							return toast.warning('Failed to identify the panel supplier', {
+								description:
+									'This is a system error and should not be here, the error has been logged.'
+							});
+						}
+						open_tree_edit_panel_action_dialog = true;
+					},
+					variant: 'ghost',
+					icon: PencilIcon,
+					hidden: node.node_type === 'root',
+					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (open_tree_delete_dialog = true),
+					variant: 'ghost',
+					icon: Trash2Icon,
+					hidden: false,
+					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
+					className: 'hover:bg-destructive hover:text-white text-muted-foreground'
+				}
+			]}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Sidebar.MenuAction {...props}>
+							<Ellipsis />
+							<span class="sr-only">Actions</span>
+						</Sidebar.MenuAction>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content
+					class="z-[100] flex flex-col rounded-lg"
+					side={sidebar_context.isMobile ? 'bottom' : 'left'}
+					align={sidebar_context.isMobile ? 'end' : 'start'}
+				>
+					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+						{#if !hidden}
+							<DropdownMenu.Item
+								class={buttonVariants({
+									variant: variant as ButtonVariant,
+									className: 'w-full'
+								})}
+								onclick={() => trigger_callback()}
+							>
+								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
+								<span>{tooltip_content}</span>
+							</DropdownMenu.Item>
+						{/if}
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+			{@const node_name = (node.highest_unit_form?.distribution_unit ||
+				node.panel_data?.name) as string}
+			<AddPanelAndViewTrigger
+				id={node.id}
+				panel_name={node_name}
+				{generic_phase_panel_form}
+				{highest_unit}
+				is_parent_root_node={node.node_type === 'root'}
+				parent_id={node.id}
+				bind:open_dialog_state={open_tree_add_panel_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+			/>
+			<AddLoadDialog
+				{phase_main_load_form}
+				{highest_unit}
+				remove_trigger={true}
+				bind:open_dialog_state={open_tree_add_load_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+				panel_id_from_tree={node.id}
+			/>
 		</Sidebar.MenuItem>
 	{/if}
 {:catch error}
