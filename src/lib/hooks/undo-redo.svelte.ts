@@ -9,6 +9,7 @@ type Action<T extends PhaseLoadSchedule> = {
 	// new_data: T;
 	data: T;
 	action: 'create_node' | 'update_node' | 'delete_node' | 'update_project_title' | 'copy_node';
+	children_nodes?: T[];
 };
 
 export class UndoRedoState {
@@ -21,8 +22,16 @@ export class UndoRedoState {
 		this.undo_stack = [...(this.undo_stack ? this.undo_stack : []), action];
 	}
 
-	private async addNewNode(node_data: PhaseLoadSchedule) {
-		return await addNode({
+	hasRedoActions() {
+		return this.redo_stack.length > 0;
+	}
+
+	hasUndoActions() {
+		return this.undo_stack.length > 0;
+	}
+
+	private async addNewNode(node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
+		const added_node = await addNode({
 			existing_id: node_data.id,
 			parent_id: node_data.parent_id as string,
 			...(node_data.panel_data && {
@@ -38,65 +47,91 @@ export class UndoRedoState {
 				} as any
 			})
 		});
+
+		//we want to revert the deleted node's children as well
+		if (children_nodes && children_nodes.length > 0) {
+			for (const child_node of children_nodes) {
+				await this.addNewNode(child_node);
+			}
+		}
+
+		return added_node;
 	}
 
 	async undo() {
 		const last_action = this.undo_stack.pop();
 
-		console.log('last_action undo', last_action);
 		if (last_action) {
 			switch (last_action.action) {
 				case 'create_node':
-					await removeNode(last_action.data.id);
-					this.redo_stack = [...this.redo_stack, last_action];
+					const removed_node = await removeNode(last_action.data.id);
+					this.redo_stack = [
+						...this.redo_stack,
+						{ ...last_action, children_nodes: removed_node.children_nodes }
+					];
 					break;
+
 				case 'update_node':
 					break;
-				case 'delete_node':
-					const added_node = await this.addNewNode(last_action.data);
 
+				case 'delete_node':
+					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
 					this.redo_stack = [
 						...this.redo_stack,
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
 					];
 					break;
-				case 'update_project_title':
-					break;
+
 				case 'copy_node':
+					const removed_copied_node = await removeNode(last_action.data.id);
+					this.redo_stack = [
+						...this.redo_stack,
+						{ ...last_action, children_nodes: removed_copied_node.children_nodes }
+					];
 					break;
 			}
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			await invalidate('app:workspace');
+			await invalidate('app:workspace/load-schedule');
 		}
 	}
 
 	async redo() {
 		const last_action = this.redo_stack.pop();
-		console.log('last act redo', last_action);
 
 		if (last_action) {
 			switch (last_action.action) {
 				case 'create_node':
-					const added_node = await this.addNewNode(last_action.data);
-					console.log(added_node);
-
+					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
 					this.undo_stack = [
 						...this.undo_stack,
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
 					];
 					break;
+
 				case 'update_node':
 					break;
+
 				case 'delete_node':
-					await removeNode(last_action.data.id);
-					this.undo_stack = [...this.undo_stack, last_action];
+					const removed_node = await removeNode(last_action.data.id);
+					this.undo_stack = [
+						...this.undo_stack,
+						{ ...last_action, children_nodes: removed_node.children_nodes }
+					];
 					break;
-				case 'update_project_title':
-					break;
+
 				case 'copy_node':
+					const added_copied_node = await this.addNewNode(
+						last_action.data,
+						last_action.children_nodes
+					);
+					this.undo_stack = [
+						...this.undo_stack,
+						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
+					];
 					break;
 			}
-
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			await invalidate('app:workspace');
+			await invalidate('app:workspace/load-schedule');
 		}
 	}
 }
