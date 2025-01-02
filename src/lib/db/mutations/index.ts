@@ -289,13 +289,21 @@ export async function updateNode({
 			}
 		}
 
-		const updated_node = whole_data
-			? await query.update({
+		const update_query = !!whole_data
+			? query.update({
 					$set: {
-						...whole_data
+						...{
+							...whole_data,
+							panel_data: whole_data.panel_data
+								? JSON.parse(JSON.stringify(whole_data.panel_data))
+								: undefined,
+							load_data: whole_data.load_data
+								? JSON.parse(JSON.stringify(whole_data.load_data))
+								: undefined
+						}
 					}
 				})
-			: await query.update({
+			: query.update({
 					$set: {
 						parent_id,
 						panel_data,
@@ -304,7 +312,7 @@ export async function updateNode({
 					}
 				});
 
-		return updated_node?._data;
+		return (await update_query)?._data;
 	} catch (error) {
 		console.error('Error updating node:', error);
 		throw error;
@@ -441,11 +449,13 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				conductor_sets: sets
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor sets:', error);
 		throw error;
@@ -491,9 +501,7 @@ export async function updateLoadDescription({
 			}
 		});
 
-		return (
-			updated_node?._data.load_data?.load_description || updated_node?._data.panel_data?.name || ''
-		);
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor load_description:', error);
 		throw error;
@@ -518,12 +526,14 @@ export async function changeInsulation({
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				...(type === 'egc' && { egc_insulation: insulation }),
 				...(type === 'conductor' && { conductor_insulation: insulation })
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing insulation:', error);
 		throw error;
@@ -540,11 +550,13 @@ export async function changePole(node_id: string, pole: string) {
 			}
 		});
 
-		return await query.update({
+		const updated_node = await query.update({
 			$set: {
 				pole
 			}
 		});
+
+		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing pole:', error);
 		throw error;
