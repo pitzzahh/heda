@@ -38,6 +38,7 @@
 	import { formatFraction } from '@/utils/format';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -62,6 +63,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -138,6 +140,7 @@
 								data: added_node as unknown as PhaseLoadSchedule,
 								action: 'create_node'
 							});
+							collapsibles.addNodeId(panel_id_from_tree || panel_id_from_params);
 							break;
 						case 'edit':
 							if (node_to_edit && selected_parent_id) {

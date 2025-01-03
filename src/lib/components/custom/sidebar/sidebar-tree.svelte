@@ -1,9 +1,7 @@
 <script lang="ts">
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import * as Tooltip from '@/components/ui/tooltip/index.js';
 	import { cn } from '@/utils';
-	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
@@ -39,6 +37,7 @@
 	} from './(components)';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '@/helpers/export';
 
 	let {
@@ -67,7 +66,9 @@
 	let open_tree_delete_dialog = $state(false);
 	let is_hovering_on_tree_item = $state(false);
 	let button_state: 'stale' | 'processing' = $state('stale');
+
 	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -160,7 +161,7 @@
 	{:else}
 		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
-				open
+				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
@@ -175,7 +176,11 @@
 				>
 					<Collapsible.Trigger>
 						{#snippet child({ props })}
-							<ChevronRight class="transition-transform" {...props} />
+							<ChevronRight
+								class="transition-transform"
+								{...props}
+								onclick={() => collapsibles.toggleCollapsible(node.id)}
+							/>
 						{/snippet}
 					</Collapsible.Trigger>
 					<ContextMenu.Root bind:open={open_panel_context_menu}>
@@ -285,7 +290,13 @@
 				{
 					trigger_callback: async () => {
 						await copyAndAddNodeById(node.id)
-							.then(() => invalidate('app:workspace'))
+							.then((copied_node) => {
+								undo_redo_state.setActionToUndo({
+									action: 'copy_node',
+									data: copied_node as unknown as PhaseLoadSchedule
+								});
+								invalidate('app:workspace');
+							})
 							.finally(() => invalidate('app:workspace/load-schedule'));
 					},
 					variant: 'ghost',
@@ -409,6 +420,7 @@
 			button_state = 'processing';
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
+				collapsibles.removeAllNodeId();
 			} else {
 				const removed_node = await removeNode(node.id);
 				undo_redo_state.setActionToUndo({
@@ -416,6 +428,7 @@
 					action: 'delete_node',
 					children_nodes: removed_node.children_nodes
 				});
+				collapsibles.removeNodeId(node.id);
 			}
 			// TODO: Improve invalidation github issue #64
 			invalidate('app:workspace/load-schedule')
@@ -452,9 +465,9 @@
 				align={sidebar_context.isMobile ? 'end' : 'start'}
 			>
 				<DropdownMenu.Group>
-					{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
+					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
 						{#if !hidden}
-							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn(className)}>
+							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn('z-auto', className)}>
 								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
 								<span class="text-sm">{tooltip_content}</span>
 							</DropdownMenu.Item>

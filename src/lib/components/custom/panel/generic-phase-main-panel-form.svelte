@@ -28,6 +28,7 @@
 	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -52,6 +53,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -86,6 +88,7 @@
 							data: added_node as unknown as PhaseLoadSchedule,
 							action: 'create_node'
 						});
+						collapsibles.addNodeId(parent_id);
 						break;
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
