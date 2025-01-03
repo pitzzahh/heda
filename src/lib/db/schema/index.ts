@@ -17,7 +17,11 @@ const project_schema_literal = {
 				is_adjustment_factor_dynamic: {
 					type: 'boolean',
 					default: false
-				}
+				},
+				show_loads_on_unit_hierarchy: {
+					type: 'boolean',
+					default: true
+				},
 			}
 		},
 		root_node_id: { type: 'string' }
