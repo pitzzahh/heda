@@ -123,7 +123,7 @@
 									onValueChange={(v) =>
 										setModeAndColor(
 											settingsState,
-											v === 'system'
+											v === 'system' || v === undefined
 												? $systemPrefersMode === 'light'
 													? 'light'
 													: 'dark'
