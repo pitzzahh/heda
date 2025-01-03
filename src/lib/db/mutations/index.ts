@@ -38,9 +38,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 
 export async function updateProjectSettings(
 	project_id: string,
-	settings: {
-		is_adjustment_factor_dynamic: boolean;
-	}
+	settings: Partial<Project['settings']>
 ) {
 	const database = await databaseInstance();
 
