@@ -444,15 +444,14 @@
 				</Sidebar.MenuAction>
 			{/snippet}
 		</DropdownMenu.Trigger>
+		<!-- TODO: Utilize isolate -->
 		<DropdownMenu.Content
 			class="grid rounded-lg"
 			side={sidebar_context.isMobile ? 'bottom' : 'left'}
 			align={sidebar_context.isMobile ? 'end' : 'start'}
 		>
 			<DropdownMenu.Group>
-				<!-- <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
-				<DropdownMenu.Separator /> -->
-				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+				{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
 					{#if !hidden}
 						<DropdownMenu.Item onclick={() => trigger_callback()} class={cn(className)}>
 							{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
