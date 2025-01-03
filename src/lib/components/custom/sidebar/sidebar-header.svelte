@@ -1,14 +1,12 @@
 <script lang="ts">
-	import ExcelJS from 'exceljs';
 	import { Save, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
 	import type { Project, Node } from '@/db/schema';
-	import { dev } from '$app/environment';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
-	import { exportToExcel, processOnePhaseExcelPanelBoardSchedule } from '@/helpers/export';
+	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
