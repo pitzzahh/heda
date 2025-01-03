@@ -1,25 +1,31 @@
 <script lang="ts">
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import * as Tooltip from '@/components/ui/tooltip/index.js';
 	import { cn } from '@/utils';
-	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
-	import { ChevronRight, DatabaseZap, Ellipsis, PlugZap, PanelsLeftBottom } from '@/assets/icons';
+	import {
+		ChevronRight,
+		DatabaseZap,
+		Ellipsis,
+		FileUp,
+		PlugZap,
+		PanelsLeftBottom
+	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { getChildNodesByParentId, getNodeById } from '@/db/queries/index';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/state';
+	import { Portal } from 'bits-ui';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { AddLoadDialog } from '../load';
+	import { AddLoadDialog } from '@/components/custom/load';
 	import { toast } from 'svelte-sonner';
 	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
 	import {
@@ -32,6 +38,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
+	import { exportToExcel } from '@/helpers/export';
 
 	let {
 		node,
@@ -316,6 +323,32 @@
 					className: 'text-muted-foreground'
 				},
 				{
+					trigger_callback: async () => {
+						const some_name = node.panel_data?.name ?? 'Panel';
+						if (node.node_type !== 'root' && !node.parent_id) {
+							return toast.warning(`Cannot identify ${some_name} supply from.`, {
+								description:
+									'This is a system error and should not be here, the error has been logged.',
+								position: 'bottom-center'
+							});
+						}
+						console.log('Exporting to excel', node);
+						exportToExcel(
+							node.id,
+							highest_unit,
+							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
+						);
+					},
+					variant: 'ghost',
+					icon: FileUp,
+					hidden: false,
+					tooltip_content:
+						node.node_type === 'root'
+							? `Export ${project?.project_name ?? 'Project'}`
+							: `Export ${node.panel_data?.name ?? 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
 					trigger_callback: () => (open_tree_delete_dialog = true),
 					variant: 'ghost',
 					icon: Trash2Icon,
@@ -425,23 +458,23 @@
 				</Sidebar.MenuAction>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content
-			class="grid rounded-lg"
-			side={sidebar_context.isMobile ? 'bottom' : 'left'}
-			align={sidebar_context.isMobile ? 'end' : 'start'}
-		>
-			<DropdownMenu.Group>
-				<!-- <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
-				<DropdownMenu.Separator /> -->
-				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-					{#if !hidden}
-						<DropdownMenu.Item onclick={() => trigger_callback()} class={cn('z-auto', className)}>
-							{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
-							<span class="text-sm">{tooltip_content}</span>
-						</DropdownMenu.Item>
-					{/if}
-				{/each}
-			</DropdownMenu.Group>
-		</DropdownMenu.Content>
+		<Portal>
+			<DropdownMenu.Content
+				class="grid rounded-lg"
+				side={sidebar_context.isMobile ? 'bottom' : 'left'}
+				align={sidebar_context.isMobile ? 'end' : 'start'}
+			>
+				<DropdownMenu.Group>
+					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+						{#if !hidden}
+							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn('z-auto', className)}>
+								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
+								<span class="text-sm">{tooltip_content}</span>
+							</DropdownMenu.Item>
+						{/if}
+					{/each}
+				</DropdownMenu.Group>
+			</DropdownMenu.Content>
+		</Portal>
 	</DropdownMenu.Root>
 {/snippet}
