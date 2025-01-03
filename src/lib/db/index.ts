@@ -49,7 +49,7 @@ async function createDatabase(
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
 export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollections>> {
-	const database = await createDatabase('heda', false);
+	const database = await createDatabase('heda', true);
 
 	if (!database.projects || !database.nodes) {
 		try {
