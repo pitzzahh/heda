@@ -22,7 +22,8 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 			root_node_id: created_root_node._data.id,
 			project_name: 'Untitled',
 			settings: {
-				is_adjustment_factor_dynamic: false
+				is_adjustment_factor_dynamic: false,
+				show_loads_on_unit_hierarchy: true
 			}
 		});
 
@@ -255,26 +256,26 @@ export async function updateNode({
 
 		const update_query = !!whole_data
 			? query.update({
-					$set: {
-						...{
-							...whole_data,
-							panel_data: whole_data.panel_data
-								? JSON.parse(JSON.stringify(whole_data.panel_data))
-								: undefined,
-							load_data: whole_data.load_data
-								? JSON.parse(JSON.stringify(whole_data.load_data))
-								: undefined
-						}
+				$set: {
+					...{
+						...whole_data,
+						panel_data: whole_data.panel_data
+							? JSON.parse(JSON.stringify(whole_data.panel_data))
+							: undefined,
+						load_data: whole_data.load_data
+							? JSON.parse(JSON.stringify(whole_data.load_data))
+							: undefined
 					}
-				})
+				}
+			})
 			: query.update({
-					$set: {
-						parent_id,
-						panel_data,
-						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-						load_data: load_data as Node['load_data']
-					}
-				});
+				$set: {
+					parent_id,
+					panel_data,
+					circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+					load_data: load_data as Node['load_data']
+				}
+			});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
@@ -484,18 +485,18 @@ export async function updateLoadDescription({
 			$set: {
 				...(node_type === 'panel' &&
 					node_data?.panel_data && {
-						panel_data: {
-							...node_data.panel_data,
-							name: load_description
-						}
-					}),
+					panel_data: {
+						...node_data.panel_data,
+						name: load_description
+					}
+				}),
 				...(node_type === 'load' &&
 					node_data?.load_data && {
-						load_data: {
-							...node_data.load_data,
-							load_description
-						}
-					})
+					load_data: {
+						...node_data.load_data,
+						load_description
+					}
+				})
 			}
 		});
 
