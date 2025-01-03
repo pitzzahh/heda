@@ -31,7 +31,7 @@
 	}: Props = $props();
 </script>
 
-<div class="flex flex-col gap-2 p-1">
+<div class="flex flex-col gap-2">
 	{#if !remove_trigger}
 		CRKT NO.
 	{/if}

@@ -134,6 +134,7 @@
 					},
 					variant: 'ghost',
 					icon: CopyIcon,
+					className: 'text-muted-foreground',
 					tooltip_content: 'Copy Load'
 				},
 				{
@@ -141,6 +142,7 @@
 					variant: 'ghost',
 					icon: PencilIcon,
 					hidden: false,
+					className: 'text-muted-foreground',
 					tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
 				},
 				{
@@ -149,7 +151,7 @@
 					icon: Trash2Icon,
 					hidden: false,
 					tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
-					className: 'hover:bg-destructive hover:text-white'
+					className: '!text-red-600 hover:!bg-red-600/10'
 				}
 			]}
 			{@render heirarchy_actions(tooltip_data)}
@@ -340,7 +342,7 @@
 					icon: Trash2Icon,
 					hidden: false,
 					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
-					className: 'hover:bg-destructive hover:text-white text-muted-foreground'
+					className: '!text-red-600 hover:!bg-red-600/10'
 				}
 			]}
 			{@render heirarchy_actions(tooltip_data)}
@@ -447,20 +449,18 @@
 			side={sidebar_context.isMobile ? 'bottom' : 'left'}
 			align={sidebar_context.isMobile ? 'end' : 'start'}
 		>
-			{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
-				{#if !hidden}
-					<DropdownMenu.Item
-						class={buttonVariants({
-							variant: variant as ButtonVariant,
-							className: `w-full ${className}`
-						})}
-						onclick={() => trigger_callback()}
-					>
-						{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
-						<span>{tooltip_content}</span>
-					</DropdownMenu.Item>
-				{/if}
-			{/each}
+			<DropdownMenu.Group>
+				<!-- <DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
+				<DropdownMenu.Separator /> -->
+				{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+					{#if !hidden}
+						<DropdownMenu.Item onclick={() => trigger_callback()} class={cn(className)}>
+							{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
+							<span class="text-sm">{tooltip_content}</span>
+						</DropdownMenu.Item>
+					{/if}
+				{/each}
+			</DropdownMenu.Group>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 {/snippet}

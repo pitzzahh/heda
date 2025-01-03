@@ -255,40 +255,6 @@ export async function updateNode({
 			throw Error('Node not found');
 		}
 
-		const is_changing_parent = parent_id !== existing_node._data.parent_id;
-
-		if (is_changing_parent) {
-			// remove the node from its current parent
-			if (existing_node._data.parent_id) {
-				const current_parent_query = database.nodes.findOne({
-					selector: { id: existing_node._data.parent_id }
-				});
-				const current_parent = await current_parent_query.exec();
-
-				if (current_parent) {
-					return await current_parent_query.update({
-						$set: {
-							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
-						}
-					});
-				}
-			}
-
-			// addd the node to the new parent
-			const new_parent_query = database.nodes.findOne({
-				selector: { id: parent_id }
-			});
-			const new_parent = await new_parent_query.exec();
-
-			if (new_parent) {
-				return await new_parent_query.update({
-					$set: {
-						child_ids: [...new_parent._data.child_ids, id]
-					}
-				});
-			}
-		}
-
 		const update_query = !!whole_data
 			? query.update({
 					$set: {
@@ -311,6 +277,40 @@ export async function updateNode({
 						load_data: load_data as Node['load_data']
 					}
 				});
+
+		const is_changing_parent = parent_id !== existing_node._data.parent_id;
+
+		if (is_changing_parent) {
+			// remove the node from its current parent
+			if (existing_node._data.parent_id) {
+				const current_parent_query = database.nodes.findOne({
+					selector: { id: existing_node._data.parent_id }
+				});
+				const current_parent = await current_parent_query.exec();
+
+				if (current_parent) {
+					await current_parent_query.update({
+						$set: {
+							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
+						}
+					});
+				}
+			}
+
+			// addd the node to the new parent
+			const new_parent_query = database.nodes.findOne({
+				selector: { id: parent_id }
+			});
+			const new_parent = await new_parent_query.exec();
+
+			if (new_parent) {
+				await new_parent_query.update({
+					$set: {
+						child_ids: [...new_parent._data.child_ids, id]
+					}
+				});
+			}
+		}
 
 		return (await update_query)?._data;
 	} catch (error) {
@@ -380,9 +380,9 @@ export async function deleteProject(project_id: string) {
 			throw Error(`Project with ID ${project_id} not found`);
 		}
 
-		const rootNodeId = project._data.root_node_id;
-		if (rootNodeId) {
-			return await removeNode(rootNodeId);
+		const root_node_id = project._data.root_node_id;
+		if (root_node_id) {
+			await removeNode(root_node_id);
 		}
 
 		await query.remove();
