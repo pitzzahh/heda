@@ -37,9 +37,6 @@
 
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
 
-	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading' =
-		$state('stale');
-
 	interface ComponentState {
 		settings_open: boolean;
 		app_update: Update | null;
@@ -240,7 +237,7 @@
 					</div>
 					<Separator class="my-1 w-full" />
 					<div class="flex flex-col gap-2">
-						{#if update_state === 'available'}
+						{#if component_state.update_state === 'available'}
 							<Alert.Root>
 								<PackageCheck class="size-4" />
 								<Alert.Description
@@ -258,25 +255,32 @@
 						</div>
 						<svelte:boundary>
 							<Button
-								variant={update_state === 'available' ? 'default' : 'outline'}
+								variant={component_state.update_state === 'available' ? 'default' : 'outline'}
 								class={cn('button-background', {
 									'!cursor-not-allowed opacity-50':
-										update_state === 'processing' || update_state === 'no_updates'
+										component_state.update_state === 'processing' ||
+										component_state.update_state === 'no_updates'
 								})}
 								onclick={async () => {
-									if (update_state === 'available' && component_state.app_update) {
+									if (component_state.update_state === 'available' && component_state.app_update) {
 										tween.target = 0;
-										update_state = 'downloading';
+										component_state.update_state = 'downloading';
 										return installUpdate(component_state.app_update, true, (progress) => {
 											tween.target = Math.round(progress);
 										});
 									}
-									if (update_state === 'processing' || update_state === 'no_updates') return;
-									update_state = 'processing';
+									if (
+										component_state.update_state === 'processing' ||
+										component_state.update_state === 'no_updates'
+									)
+										return;
+									component_state.update_state = 'processing';
 									try {
 										component_state.app_update = await checkForUpdates();
 										console.log('component_state.app_update', component_state.app_update);
-										update_state = component_state.app_update ? 'available' : 'no_updates';
+										component_state.update_state = component_state.app_update
+											? 'available'
+											: 'no_updates';
 										if (!component_state.app_update) {
 											toast.info('No updates available');
 										} else {
@@ -285,26 +289,26 @@
 											);
 										}
 									} catch (error) {
-										update_state = 'error';
+										component_state.update_state = 'error';
 										toast.warning(`Failed to check for updates: ${error}`);
 									}
 								}}
 							>
 								<Loader
 									class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-										block: update_state === 'processing'
+										block: component_state.update_state === 'processing'
 									})}
 								/>
 								<span>
-									{#if update_state === 'processing'}
+									{#if component_state.update_state === 'processing'}
 										Checking
-									{:else if update_state === 'available'}
+									{:else if component_state.update_state === 'available'}
 										Download and install v{component_state.app_update?.version}
-									{:else if update_state === 'no_updates'}
+									{:else if component_state.update_state === 'no_updates'}
 										No updates available
-									{:else if update_state === 'downloading'}
+									{:else if component_state.update_state === 'downloading'}
 										{tween.target}%
-									{:else if update_state === 'error'}
+									{:else if component_state.update_state === 'error'}
 										Something went wrong while checking for updates
 									{:else}
 										Check for updates
