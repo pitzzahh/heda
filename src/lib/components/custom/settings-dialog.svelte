@@ -79,7 +79,7 @@
 		toast.success('Adjustment Factor applied');
 	}
 
-	function handleSaveShowLoadsOnUnitHierarchy() {
+	$effect(() => {
 		if (!project) return;
 
 		updateProjectSettings(project.id, {
@@ -87,7 +87,7 @@
 		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Show Loads on Unit Hierarchy applied');
-	}
+	}) 
 
 	$effect(() => {
 		if (component_state.settings_open) return;
@@ -215,6 +215,16 @@
 							</div>
 						</div>
 
+						<div class="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
+							<Label for="font-trigger">Show loads in Unit Heirarchy</Label>
+							<div class="space-y-0.5">
+								<Label>Security emails</Label>
+								<p class="text-sm text-muted-foreground">
+									Receive emails about your account security.
+								</p>
+							</div>
+							<Switch bind:checked={component_state.show_loads_on_unit_hierarchy} />
+						</div>
 						<div class="flex flex-col gap-3">
 							<Label for="font-trigger">Font</Label>
 							<Select.Root
