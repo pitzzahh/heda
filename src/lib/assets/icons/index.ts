@@ -30,3 +30,5 @@ export { default as FileClock } from 'lucide-svelte/icons/file-clock';
 export { default as History } from 'lucide-svelte/icons/history';
 export { default as PackageCheck } from 'lucide-svelte/icons/package-check';
 export { default as FileUp } from 'lucide-svelte/icons/file-up';
+export { default as CloudAlert } from 'lucide-svelte/icons/cloud-alert';
+export { default as  SunMoon } from 'lucide-svelte/icons/sun-moon';

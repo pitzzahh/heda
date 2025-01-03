@@ -1,30 +1,14 @@
 <script lang="ts">
 	import DOMPurify from 'dompurify';
 	import Markdown from 'svelte-exmarkdown';
-	// import { marked } from 'marked';
 	import { buttonVariants } from '@/components/ui/button';
 	import * as Sheet from '@/components/ui/sheet/index.js';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
-	import { History } from '@/assets/icons';
-	import Skeleton from '../ui/skeleton/skeleton.svelte';
+	import { History, CloudAlert } from '@/assets/icons';
+	import { Skeleton } from '@/components/ui/skeleton//index.js';
 	import { cn } from '@/utils';
-	import CircleAlert from 'lucide-svelte/icons/circle-alert';
-	import { CloudAlert } from 'lucide-svelte';
-	import * as Alert from '$lib/components/ui/alert/index.js';
-
-	let has_connection = $state(false);
-
-	$effect(() => {
-		const interval = setInterval(() => {
-			fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' })
-				.then(() => (has_connection = true))
-				.catch(() => (has_connection = false));
-		}, 2000);
-
-		return () => {
-			clearInterval(interval);
-		};
-	});
+	import * as Alert from '@/components/ui/alert/index.js';
+	const has_connection = $derived(navigator && navigator.onLine);
 </script>
 
 <Sheet.Root>
@@ -33,14 +17,9 @@
 		View Changelog
 	</Sheet.Trigger>
 	<Sheet.Content class="min-w-[55%]">
-		<Sheet.Header class="flex w-full flex-row items-center justify-between">
-			<div>
-				<Sheet.Title>Changelog</Sheet.Title>
-				<Sheet.Description>This contains the changelog</Sheet.Description>
-			</div>
-
+		<Sheet.Header>
 			{#if !has_connection}
-				<Alert.Root variant="destructive" class="mr-4 max-w-[350px] bg-red-600/5">
+				<Alert.Root variant="destructive" class="w-full">
 					<CloudAlert class="size-4" />
 					<Alert.Title class="font-semibold">No Internet Connection</Alert.Title>
 					<Alert.Description class="text-xs">
@@ -55,15 +34,14 @@
 			{#await raw_changelog.text()}
 				{@render textSkeleton()}
 			{:then response_body}
-				<ScrollArea class="mt-2 h-[90%]">
-					<!-- {@html marked(DOMPurify.sanitize(response_body))} -->
+				<ScrollArea class="prose mr-1.5 mt-2.5 h-full max-w-none dark:prose-invert">
 					<Markdown md={DOMPurify.sanitize(response_body)} />
 				</ScrollArea>
 			{:catch error}
-				{@render errorIndicator()}
+				{@render errorIndicator(error)}
 			{/await}
 		{:catch error}
-			{@render errorIndicator()}
+			{@render errorIndicator(error)}
 		{/await}
 	</Sheet.Content>
 </Sheet.Root>
@@ -82,11 +60,11 @@
 	</div>
 {/snippet}
 
-{#snippet errorIndicator()}
+{#snippet errorIndicator(err?: string)}
 	<div class="grid size-full place-content-center">
 		<div class="grid place-items-center gap-1 text-muted-foreground opacity-80">
 			<CloudAlert class="size-[90px]" />
-			<p class="font-semibold">An error occured, please try again.</p>
+			<p class="font-semibold">{err ?? 'An error occured, please try again.'}</p>
 		</div>
 	</div>
 {/snippet}

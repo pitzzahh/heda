@@ -16,8 +16,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-					id: project_id
-				}
+				id: project_id
+			}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
@@ -260,14 +260,13 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const db = await databaseInstance();
-	const childNodes = await db.nodes
-		.find({ selector: { parent_id } })
-		.sort({ circuit_number: 'asc' })
-		.exec();
+	const childNodes = (
+		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
+	).map((doc) => doc._data);
 
 	const loadsWithComputedFields = await Promise.all(
 		childNodes.map(async (doc) => {
-			const data = doc._data;
+			const data = doc;
 			const voltage = 230; // this may change depending on phase
 			const conductor_set = data.conductor_sets as number;
 			const conductor_qty = data.conductor_qty as number;
@@ -373,4 +372,18 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 
 	// sorted loads by circuit_number
 	return loadsWithComputedFields as PhaseLoadSchedule[];
+}
+
+// Utility function to calculate the actual depth of the node in the hierarchy
+export async function getNodeDepth(nodeId: string): Promise<number> {
+	let depth = 1;
+	let currentNode = await getNodeById(nodeId);
+
+	// Traverse up the node tree to calculate depth
+	while (currentNode && currentNode.parent_id) {
+		depth++;
+		currentNode = await getNodeById(currentNode.parent_id);
+	}
+
+	return depth;
 }

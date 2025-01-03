@@ -13,6 +13,7 @@ export class SettingsState {
 
 	themeColor = $state<ThemeColor>('excel');
 	font = $state<Font>('default');
+	show_loads_on_unit_hierarchy = $state(false)
 
 	constructor(mode: ThemeMode) {
 		const localStorage = new LocalStorage<Settings>('settings');
@@ -48,6 +49,16 @@ export class SettingsState {
 		this.font = font;
 		this.localStorage.current = updatedData;
 		this.setGlobalFont(font);
+	}
+
+	setShowLoadsOnUnitHeirarchy(show_loads_on_unit_hierarchy: boolean) {
+		const updatedData = (this.localStorage.current = {
+			...this.localStorage.current,
+			show_loads_on_unit_hierarchy
+		});
+
+		this.show_loads_on_unit_hierarchy = show_loads_on_unit_hierarchy;
+		this.localStorage.current = updatedData;
 	}
 }
 export function setSettingsState(mode: ThemeMode) {

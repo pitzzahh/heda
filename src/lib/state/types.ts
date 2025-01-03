@@ -1,4 +1,13 @@
-export type State = MainState | RouteState | DialogState | CountState | MiscState | SettingsState;
+import { SettingsState } from '@/hooks/settings-state.svelte';
+import { UndoRedoState } from '@/hooks/undo-redo.svelte';
+export type State =
+	| MainState
+	| RouteState
+	| DialogState
+	| CountState
+	| MiscState
+	| SettingsState
+	| UndoRedoState;
 
 export type MainState = {
 	isArchiving: boolean;
@@ -33,9 +42,4 @@ export type MiscState = {
 		data?: unknown;
 		label?: string;
 	};
-};
-
-export type SettingsState = {
-	themeColor: 'excel' | 'autocad';
-	font: string;
 };

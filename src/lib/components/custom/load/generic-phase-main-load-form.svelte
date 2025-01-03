@@ -27,7 +27,7 @@
 		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidate, invalidateAll } from '$app/navigation';
@@ -36,6 +36,9 @@
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -58,6 +61,9 @@
 		latest_circuit_node,
 		panel_id_from_tree
 	}: Props = $props();
+
+	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -125,18 +131,28 @@
 					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
-							await addNode({
+							const added_node = await addNode({
 								load_data,
 								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
+							undo_redo_state.setActionToUndo({
+								data: added_node as unknown as PhaseLoadSchedule,
+								action: 'create_node'
+							});
+							collapsibles.addNodeId(panel_id_from_tree || panel_id_from_params);
 							break;
 						case 'edit':
 							if (node_to_edit && selected_parent_id) {
-								await updateNode({
+								const updated_node = await updateNode({
 									load_data,
 									id: node_to_edit.id,
 									parent_id: selected_parent_id
+								});
+								undo_redo_state.setActionToUndo({
+									action: 'update_node',
+									data: updated_node as unknown as PhaseLoadSchedule,
+									previous_data: node_to_edit as PhaseLoadSchedule
 								});
 								toast.success('Load updated successfully');
 							}
@@ -150,7 +166,7 @@
 	});
 	const { form: formData, enhance } = form;
 
-	const panel_id_from_params = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id_from_params = page.params?.id?.split('_')?.at(-1) || ''; //gets the id of the parent node (panel) of the loads
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'

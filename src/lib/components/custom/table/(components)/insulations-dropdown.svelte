@@ -3,17 +3,20 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { changeInsulation } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
 		adjusted_current: number;
 		type: 'conductor' | 'egc';
 		current_insulation: string;
-		node_id: string;
+		node: PhaseLoadSchedule;
 	}
 	type Insulations = (typeof insulations)[number];
 
-	let { adjusted_current, type, current_insulation, node_id }: Props = $props();
+	let { adjusted_current, type, current_insulation, node }: Props = $props();
 	let selected_insulation = $state<Insulations>(current_insulation as Insulations);
+	let undo_redo_state = getUndoRedoState();
 
 	const insulations = ['TW-Cu', 'THWN-Cu', 'THWN-2-Cu', 'THHN-Cu'] as const;
 	const insulations_to_map =
@@ -30,7 +33,12 @@
 	});
 
 	async function handleChangeInsulation(insulation: Insulations) {
-		await changeInsulation({ node_id, insulation, type });
+		const updated_node = await changeInsulation({ node_id: node.id, insulation, type });
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			data: updated_node as unknown as PhaseLoadSchedule,
+			previous_data: node
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 	}
 </script>

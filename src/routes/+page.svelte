@@ -5,23 +5,31 @@
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-	<div class="flex min-h-screen w-[80%] flex-col justify-between">
+	<div class="flex min-h-screen w-[90%] flex-col justify-between">
 		<div
-			class="h-[150px] w-full border-b-4 border-l-4 border-r-4 bg-primary dark:border-white"
+			class="h-[140px] w-full border-b-4 border-l-4 border-r-4 bg-primary dark:border-white"
 		></div>
 
 		<div class="flex items-center justify-center gap-8">
-			<img src={HedaLogoForDark} alt="Heda Logo" class="hidden dark:block" />
-			<img src={HedaLogoForWhite} alt="Heda Logo" class="block dark:hidden" />
+			<img
+				src={HedaLogoForDark}
+				alt="Heda Logo"
+				class="hidden w-[280px] dark:block lg:w-[350px] xl:w-[450px]"
+			/>
+			<img
+				src={HedaLogoForWhite}
+				alt="Heda Logo"
+				class="block w-[280px] dark:hidden lg:w-[350px] xl:w-[450px]"
+			/>
 
 			<div class="grid gap-4">
 				<div class="w-auto text-center">
 					<h1
-						class="app-name scroll-m-20 stroke-primary text-[200px] font-extrabold uppercase tracking-widest"
+						class="app-name lg:text:-[170px] scroll-m-20 stroke-primary text-[120px] font-extrabold uppercase tracking-widest xl:text-[200px]"
 					>
 						HEDA
 					</h1>
-					<p class="mb-2 text-2xl uppercase leading-7">
+					<p class="mb-2 text-lg uppercase leading-7 lg:text-xl xl:text-2xl">
 						<!-- DESIGN ANALYSIS SOFTWARE IN COMPLIANCE WITH THE PHILIPPINE ELECTRICAL CODE 2017 EDITION -->
 						HIERARCHICAL ELECTRICAL DESIGN ANALYZER
 					</p>
@@ -30,7 +38,7 @@
 				<div class="flex items-center justify-center gap-8">
 					<Button
 						size="2xl"
-						class="border border-black dark:border-white/90"
+						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
 						href="/workspace?new_file=true">New File</Button
 					>
 					<!-- What if digdi na lang su Highest Unit Form? -->
@@ -49,13 +57,17 @@
 							/>
 						</Dialog.Content>
 					</Dialog.Root> -->
-					<Button size="2xl" class="border border-black dark:border-white/90">Load File</Button>
+					<Button
+						size="2xl"
+						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
+						>Load File</Button
+					>
 				</div>
 			</div>
 		</div>
 
 		<div
-			class="h-[150px] w-full border-l-4 border-r-4 border-t-4 border-black bg-primary dark:border-white"
+			class="h-[140px] w-full border-l-4 border-r-4 border-t-4 border-black bg-primary dark:border-white lg:h-[140px]"
 		></div>
 	</div>
 </div>
