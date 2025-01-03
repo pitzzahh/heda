@@ -9,7 +9,6 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
   node_id: string,
   highest_unit?: Node['highest_unit_form'],
-  parent?: Node,
   depth: number = 1,
 ): Promise<{
   valid: boolean;
@@ -33,8 +32,9 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
+    const parent_node = child.parent_id ? await getNodeById(child.parent_id) : undefined;
     if (child.node_type === 'root') {
-      await processOnePhaseExcelPanelBoardSchedule(workbook, child.id, highest_unit, child, depth + 1);
+      await processOnePhaseExcelPanelBoardSchedule(workbook, child.id, highest_unit, depth + 1);
     } else if (child.node_type === 'panel') {
       const panel_name = child.panel_data?.name ?? 'Unknown Panel';
       const panel_level = getOrdinalSuffix(depth + 1);
@@ -61,7 +61,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       worksheet.getCell(`B${startRow + 1}`).value =
         `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
       worksheet.getCell(`B${startRow + 2}`).value =
-        `: ${parent?.panel_data?.name?.toUpperCase() ?? 'Transformer'}`;
+        `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
       worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
       description_label_column_position_data
@@ -236,7 +236,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       const emptyRow = worksheet.getRow(current_load_row + 2);
       emptyRow.height = 15; // Optional: set specific height for consistency
 
-      await processOnePhaseExcelPanelBoardSchedule(workbook, child.id, highest_unit, child, depth + 1);
+      await processOnePhaseExcelPanelBoardSchedule(workbook, child.id, highest_unit, depth + 1);
     }
   }
 
@@ -246,7 +246,6 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 export async function exportToExcel(
   node_id: string,
   highest_unit?: Node['highest_unit_form'],
-  parent?: Node,
   file_name?: string,
   idle_callaback?: () => void,
   loading_calback?: () => void
@@ -284,8 +283,7 @@ export async function exportToExcel(
         const process_result = await processOnePhaseExcelPanelBoardSchedule(
           workbook,
           node_id,
-          highest_unit,
-          parent
+          highest_unit
         );
         if (!process_result.valid) {
           idle_callaback && idle_callaback()
