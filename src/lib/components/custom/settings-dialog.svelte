@@ -37,25 +37,33 @@
 
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
 
-	let open = $state(false);
-	let app_update: Update | null = $state(null);
 	let update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading' =
 		$state('stale');
 
-	let is_adjustment_factor_dynamic = $state(
-		project?.settings.is_adjustment_factor_dynamic || false
-	);
+	interface ComponentState {
+		settings_open: boolean;
+		app_update: Update | null;
+		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
+		is_adjustment_factor_dynamic: boolean;
+		show_loads_on_unit_hierarchy: boolean;
+	}
 
-	let show_loads_on_unit_hierarchy = $state(
-		project?.settings.show_loads_on_unit_hierarchy || false
-	);
+	let component_state: ComponentState = $state({
+		settings_open: false,
+		app_update: null,
+		update_state: 'stale',
+		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false,
+		show_loads_on_unit_hierarchy: project?.settings.show_loads_on_unit_hierarchy || false
+	});
 
 	let is_adjustment_factor_dynamic_changed = $derived(
-		project && project.settings.is_adjustment_factor_dynamic !== is_adjustment_factor_dynamic
+		project &&
+			project.settings.is_adjustment_factor_dynamic !== component_state.is_adjustment_factor_dynamic
 	);
 
 	let is_show_loads_on_unit_hierarchy_changed = $derived(
-		project && project.settings.show_loads_on_unit_hierarchy !== show_loads_on_unit_hierarchy
+		project &&
+			project.settings.show_loads_on_unit_hierarchy !== component_state.show_loads_on_unit_hierarchy
 	);
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -67,7 +75,9 @@
 	async function handleSaveAdjustmentFactorDynamic() {
 		if (!project) return;
 
-		await updateProjectSettings(project.id, { is_adjustment_factor_dynamic });
+		await updateProjectSettings(project.id, {
+			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Adjustment Factor applied');
 	}
@@ -75,24 +85,27 @@
 	function handleSaveShowLoadsOnUnitHierarchy() {
 		if (!project) return;
 
-		updateProjectSettings(project.id, { show_loads_on_unit_hierarchy });
+		updateProjectSettings(project.id, {
+			show_loads_on_unit_hierarchy: component_state.show_loads_on_unit_hierarchy
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Show Loads on Unit Hierarchy applied');
 	}
 
 	$effect(() => {
-		if (open) return;
-		// reset all the fields if not open
-		if (!open) {
-			is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic || false;
-			update_state = 'stale';
-			app_update = null;
+		if (component_state.settings_open) return;
+		// reset all the fields if not settings_open
+		if (!component_state.settings_open) {
+			component_state.is_adjustment_factor_dynamic =
+				project?.settings.is_adjustment_factor_dynamic || false;
+			component_state.update_state = 'stale';
+			component_state.app_update = null;
 		}
 	});
 </script>
 
 <Tooltip.Provider>
-	<Tooltip.Root bind:open>
+	<Tooltip.Root bind:open={component_state.settings_open}>
 		<Tooltip.Trigger>
 			<Dialog.Root>
 				<Dialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
@@ -113,16 +126,17 @@
 								<Switch
 									disabled={!!!project}
 									id="adjustment_factor"
-									bind:checked={is_adjustment_factor_dynamic}
+									bind:checked={component_state.is_adjustment_factor_dynamic}
 								/>
 
 								{#if is_adjustment_factor_dynamic_changed}
-									<Button size="sm" onclick={handleSaveAdjustmentFactorDynamic}>Save Changes</Button>
+									<Button size="sm" onclick={handleSaveAdjustmentFactorDynamic}>Save Changes</Button
+									>
 								{/if}
 							</div>
 
 							<p class="text-xs text-muted-foreground">
-								{is_adjustment_factor_dynamic
+								{component_state.is_adjustment_factor_dynamic
 									? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
 									: 'The adjustment factor for all loads will be set to 100%.'}
 							</p>
@@ -230,7 +244,8 @@
 							<Alert.Root>
 								<PackageCheck class="size-4" />
 								<Alert.Description
-									>New version available: v{app_update?.version ?? 'unknown'}</Alert.Description
+									>New version available: v{component_state.app_update?.version ??
+										'unknown'}</Alert.Description
 								>
 							</Alert.Root>
 						{/if}
@@ -249,23 +264,25 @@
 										update_state === 'processing' || update_state === 'no_updates'
 								})}
 								onclick={async () => {
-									if (update_state === 'available' && app_update) {
+									if (update_state === 'available' && component_state.app_update) {
 										tween.target = 0;
 										update_state = 'downloading';
-										return installUpdate(app_update, true, (progress) => {
+										return installUpdate(component_state.app_update, true, (progress) => {
 											tween.target = Math.round(progress);
 										});
 									}
 									if (update_state === 'processing' || update_state === 'no_updates') return;
 									update_state = 'processing';
 									try {
-										app_update = await checkForUpdates();
-										console.log('app_update', app_update);
-										update_state = app_update ? 'available' : 'no_updates';
-										if (!app_update) {
+										component_state.app_update = await checkForUpdates();
+										console.log('component_state.app_update', component_state.app_update);
+										update_state = component_state.app_update ? 'available' : 'no_updates';
+										if (!component_state.app_update) {
 											toast.info('No updates available');
 										} else {
-											toast.success(`New version available: v${app_update.version}`);
+											toast.success(
+												`New version available: v${component_state.app_update.version}`
+											);
 										}
 									} catch (error) {
 										update_state = 'error';
@@ -282,7 +299,7 @@
 									{#if update_state === 'processing'}
 										Checking
 									{:else if update_state === 'available'}
-										Download and install v{app_update?.version}
+										Download and install v{component_state.app_update?.version}
 									{:else if update_state === 'no_updates'}
 										No updates available
 									{:else if update_state === 'downloading'}
