@@ -436,16 +436,16 @@
 {/snippet}
 
 {#snippet heirarchy_actions(tooltip_data: any[])}
-	<Portal>
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class="mr-2">
-				{#snippet child({ props })}
-					<Sidebar.MenuAction {...props}>
-						<Ellipsis />
-						<span class="sr-only">Actions</span>
-					</Sidebar.MenuAction>
-				{/snippet}
-			</DropdownMenu.Trigger>
+	<DropdownMenu.Root>
+		<DropdownMenu.Trigger class="mr-2">
+			{#snippet child({ props })}
+				<Sidebar.MenuAction {...props}>
+					<Ellipsis />
+					<span class="sr-only">Actions</span>
+				</Sidebar.MenuAction>
+			{/snippet}
+		</DropdownMenu.Trigger>
+		<Portal>
 			<!-- TODO: Utilize isolate -->
 			<DropdownMenu.Content
 				class="grid rounded-lg"
@@ -463,6 +463,6 @@
 					{/each}
 				</DropdownMenu.Group>
 			</DropdownMenu.Content>
-		</DropdownMenu.Root>
-	</Portal>
+		</Portal>
+	</DropdownMenu.Root>
 {/snippet}
