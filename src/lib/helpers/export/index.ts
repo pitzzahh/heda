@@ -1,15 +1,13 @@
 import { getOrdinalSuffix } from "@/utils/format";
 import type { Node } from '@/db/schema';
-import { getComputedLoads, getNodeById } from "@/db/queries";
+import { getComputedLoads, getNodeById, getNodeDepth } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
 
 export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
   node_id: string,
-  highest_unit?: Node['highest_unit_form'],
-  depth: number = 1,
-  start_from_root: boolean = true
+  highest_unit?: Node['highest_unit_form']
 ): Promise<{
   valid: boolean;
   message?: string;
@@ -18,7 +16,6 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 }> {
   const current_node = await getNodeById(node_id);
   const children = await getComputedLoads(node_id);
-  const effective_depth = start_from_root ? depth : 1;
 
   if (!current_node) {
     return {
@@ -28,185 +25,185 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     };
   }
 
-  // Process current node if it's a panel
-  if (current_node.node_type === 'panel') {
-    const panel_name = current_node.panel_data?.name ?? 'Unknown Panel';
-    const panel_level = getOrdinalSuffix(effective_depth);
-    const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
+  // Use the existing getNodeDepth2 function to calculate the depth
+  const actualDepth = await getNodeDepth(node_id);
+  const panel_name = current_node.panel_data?.name ?? 'Unknown Panel';
+  const panel_level = getOrdinalSuffix(actualDepth);
 
-    let worksheet = workbook.getWorksheet(panel_level);
-    if (!worksheet) {
-      worksheet = workbook.addWorksheet(panel_level);
-    }
+  const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
 
-    const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+  let worksheet = workbook.getWorksheet(panel_level);
+  if (!worksheet) {
+    worksheet = workbook.addWorksheet(panel_level);
+  }
 
-    const description_label_column_position_data = [
-      { column: `A${startRow}`, value: 'DESCRIPTION' },
-      { column: `A${startRow + 1}`, value: 'SUPPLY' },
-      { column: `A${startRow + 2}`, value: 'FROM' },
-      { column: `A${startRow + 3}`, value: 'NAME' }
-    ];
+  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
 
-    description_label_column_position_data.forEach(
-      ({ column, value }) => (worksheet.getCell(column).value = value)
-    );
+  const description_label_column_position_data = [
+    { column: `A${startRow}`, value: 'DESCRIPTION' },
+    { column: `A${startRow + 1}`, value: 'SUPPLY' },
+    { column: `A${startRow + 2}`, value: 'FROM' },
+    { column: `A${startRow + 3}`, value: 'NAME' }
+  ];
 
-    worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
-    worksheet.getCell(`B${startRow + 1}`).value =
-      `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
-    worksheet.getCell(`B${startRow + 2}`).value =
-      `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
-    worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
+  description_label_column_position_data.forEach(
+    ({ column, value }) => (worksheet.getCell(column).value = value)
+  );
 
-    description_label_column_position_data
-      .map((e) => e.column)
-      .forEach((cell) => {
-        worksheet.getCell(cell).font = { bold: true };
-      });
+  worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
+  worksheet.getCell(`B${startRow + 1}`).value =
+    `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
+  worksheet.getCell(`B${startRow + 2}`).value =
+    `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
+  worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
-    type Header = { text: string; cols: number; subText?: string };
-
-    const table_headers: Header[] = [
-      { text: ' ', cols: 1, subText: 'CKT NO.' },
-      { text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
-      { text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
-      { text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
-      { text: ' ', cols: 1, subText: 'CURRENT (A)' },
-      { text: 'CIRCUIT BREAKER', cols: 4 },
-      { text: 'CONDUCTOR', cols: 4 },
-      { text: 'EGC', cols: 2 },
-      { text: 'CONDUIT', cols: 2 }
-    ];
-
-    let current_header_column = 1;
-    table_headers.forEach((header: Header) => {
-      const cell = worksheet.getCell(startRow + 4, current_header_column);
-      if (header.subText) {
-        cell.value = header.text;
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: 'center' };
-        cell.border = { top: { style: 'thin' } };
-
-        const subCell = worksheet.getCell(startRow + 5, current_header_column);
-        subCell.value = header.subText;
-        subCell.font = { bold: true };
-        subCell.alignment = { horizontal: 'center' };
-        subCell.border = { bottom: { style: 'thick' } };
-      } else if (header.cols === 1) {
-        worksheet.mergeCells(
-          startRow + 4,
-          current_header_column,
-          startRow + 5,
-          current_header_column
-        );
-        cell.value = header.text;
-        cell.font = { bold: true };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
-      } else {
-        worksheet.mergeCells(
-          startRow + 4,
-          current_header_column,
-          startRow + 4,
-          current_header_column + header.cols - 1
-        );
-        cell.value = header.text;
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: 'center' };
-        cell.border = { top: { style: 'thin' } };
-
-        const subHeadersMap: Record<string, string[]> = {
-          'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
-          CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
-          EGC: ['Size', 'Insulation'],
-          CONDUIT: ['Size', 'Insulation']
-        };
-
-        if (subHeadersMap[header.text]) {
-          subHeadersMap[header.text].forEach((text, i) => {
-            const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
-            subCell.value = text;
-            subCell.font = { bold: true };
-            subCell.alignment = { horizontal: 'center' };
-            subCell.border = { bottom: { style: 'thick' } };
-          });
-        }
-      }
-      current_header_column += header.cols;
+  description_label_column_position_data
+    .map((e) => e.column)
+    .forEach((cell) => {
+      worksheet.getCell(cell).font = { bold: true };
     });
 
-    worksheet.columns = [
-      { width: 15 }, { width: 30 }, { width: 15 }, { width: 30 }, { width: 15 },
-      { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
-      { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
-      { width: 10 }, { width: 15 }
-    ];
+  type Header = { text: string; cols: number; subText?: string };
 
-    const loads = await getComputedLoads(node_id);
-    let current_load_row = startRow + 6;
+  const table_headers: Header[] = [
+    { text: ' ', cols: 1, subText: 'CKT NO.' },
+    { text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
+    { text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
+    { text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
+    { text: ' ', cols: 1, subText: 'CURRENT (A)' },
+    { text: 'CIRCUIT BREAKER', cols: 4 },
+    { text: 'CONDUCTOR', cols: 4 },
+    { text: 'EGC', cols: 2 },
+    { text: 'CONDUIT', cols: 2 }
+  ];
 
-    for (const load of loads) {
-      const loadCells = [
-        { column: 'A', value: load.circuit_number },
-        { column: 'B', value: load.load_description },
-        { column: 'C', value: load.voltage },
-        { column: 'D', value: load.va },
-        { column: 'E', value: load.current },
-        { column: 'F', value: load.at },
-        { column: 'G', value: load.ampere_frames },
-        { column: 'H', value: load.pole },
-        { column: 'I', value: load.kaic },
-        { column: 'J', value: load.conductor_sets },
-        { column: 'K', value: load.conductor_qty },
-        { column: 'L', value: load.conductor_size },
-        { column: 'M', value: load.conductor_insulation },
-        { column: 'N', value: load.egc_size },
-        { column: 'O', value: load.egc_insulation },
-        { column: 'P', value: load.conduit_size },
-        { column: 'Q', value: load.conduit_type }
-      ];
+  let current_header_column = 1;
+  table_headers.forEach((header: Header) => {
+    const cell = worksheet.getCell(startRow + 4, current_header_column);
+    if (header.subText) {
+      cell.value = header.text;
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'center' };
+      cell.border = { top: { style: 'thin' } };
 
-      loadCells.forEach(({ column, value }) => {
-        const cell = worksheet.getCell(`${column}${current_load_row}`);
-        cell.value = value;
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = { bottom: { style: 'thin' } };
-      });
-      current_load_row++;
-    }
-
-    const main_columns = [
-      { column: 'A', value: 'TOTAL' },
-      { column: 'B', value: 'MAIN' },
-      { column: 'C', value: current_node.voltage.toString() },
-      { column: 'D', value: current_node.va.toString() },
-      { column: 'E', value: current_node.current.toString() },
-      { column: 'F', value: current_node.at.toString() },
-      { column: 'G', value: current_node.ampere_frames.toString() },
-      { column: 'H', value: current_node.pole ?? 'N/A' },
-      { column: 'I', value: current_node.kaic ?? 'N/A' },
-      { column: 'J', value: current_node.conductor_sets?.toString() ?? 'N/A' },
-      { column: 'K', value: current_node.conductor_qty?.toString() ?? 'N/A' },
-      { column: 'L', value: current_node.conductor_size.toString() },
-      { column: 'M', value: current_node.conductor_insulation ?? 'N/A' },
-      { column: 'N', value: current_node.egc_size.toString() },
-      { column: 'O', value: current_node.egc_insulation ?? 'N/A' },
-      { column: 'P', value: current_node.conduit_size.toString() },
-      { column: 'Q', value: current_node.conduit_type ?? 'N/A' }
-    ];
-
-    main_columns.forEach(({ column, value }) => {
-      const cell = worksheet.getCell(`${column}${current_load_row}`);
-      cell.value = value;
+      const subCell = worksheet.getCell(startRow + 5, current_header_column);
+      subCell.value = header.subText;
+      subCell.font = { bold: true };
+      subCell.alignment = { horizontal: 'center' };
+      subCell.border = { bottom: { style: 'thick' } };
+    } else if (header.cols === 1) {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 5,
+        current_header_column
+      );
+      cell.value = header.text;
       cell.font = { bold: true };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = { top: { style: 'thin' }, bottom: { style: 'thick' } };
-    });
+      cell.border = { bottom: { style: 'thin' }, top: { style: 'thin' } };
+    } else {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 4,
+        current_header_column + header.cols - 1
+      );
+      cell.value = header.text;
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'center' };
+      cell.border = { top: { style: 'thin' } };
 
-    const emptyRow = worksheet.getRow(current_load_row + 2);
-    emptyRow.height = 15;
+      const subHeadersMap: Record<string, string[]> = {
+        'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
+        CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
+        EGC: ['Size', 'Insulation'],
+        CONDUIT: ['Size', 'Insulation']
+      };
+
+      if (subHeadersMap[header.text]) {
+        subHeadersMap[header.text].forEach((text, i) => {
+          const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+          subCell.value = text;
+          subCell.font = { bold: true };
+          subCell.alignment = { horizontal: 'center' };
+          subCell.border = { bottom: { style: 'thick' } };
+        });
+      }
+    }
+    current_header_column += header.cols;
+  });
+
+  worksheet.columns = [
+    { width: 15 }, { width: 30 }, { width: 15 }, { width: 30 }, { width: 15 },
+    { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
+    { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
+    { width: 10 }, { width: 15 }
+  ];
+
+  const loads = await getComputedLoads(node_id);
+  let current_load_row = startRow + 6;
+
+  for (const load of loads) {
+    const loadCells = [
+      { column: 'A', value: load.circuit_number },
+      { column: 'B', value: load.load_description },
+      { column: 'C', value: load.voltage },
+      { column: 'D', value: load.va },
+      { column: 'E', value: load.current },
+      { column: 'F', value: load.at },
+      { column: 'G', value: load.ampere_frames },
+      { column: 'H', value: load.pole },
+      { column: 'I', value: load.kaic },
+      { column: 'J', value: load.conductor_sets },
+      { column: 'K', value: load.conductor_qty },
+      { column: 'L', value: load.conductor_size },
+      { column: 'M', value: load.conductor_insulation },
+      { column: 'N', value: load.egc_size },
+      { column: 'O', value: load.egc_insulation },
+      { column: 'P', value: load.conduit_size },
+      { column: 'Q', value: load.conduit_type }
+    ];
+
+    loadCells.forEach(({ column, value }) => {
+      const cell = worksheet.getCell(`${column}${current_load_row}`);
+      cell.value = value;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thin' } };
+    });
+    current_load_row++;
   }
+
+  const main_columns = [
+    { column: 'A', value: 'TOTAL' },
+    { column: 'B', value: 'MAIN' },
+    { column: 'C', value: current_node.voltage.toString() },
+    { column: 'D', value: current_node.va.toString() },
+    { column: 'E', value: current_node.current.toString() },
+    { column: 'F', value: current_node.at.toString() },
+    { column: 'G', value: current_node.ampere_frames.toString() },
+    { column: 'H', value: current_node.pole ?? 'N/A' },
+    { column: 'I', value: current_node.kaic ?? 'N/A' },
+    { column: 'J', value: current_node.conductor_sets?.toString() ?? 'N/A' },
+    { column: 'K', value: current_node.conductor_qty?.toString() ?? 'N/A' },
+    { column: 'L', value: current_node.conductor_size.toString() },
+    { column: 'M', value: current_node.conductor_insulation ?? 'N/A' },
+    { column: 'N', value: current_node.egc_size.toString() },
+    { column: 'O', value: current_node.egc_insulation ?? 'N/A' },
+    { column: 'P', value: current_node.conduit_size.toString() },
+    { column: 'Q', value: current_node.conduit_type ?? 'N/A' }
+  ];
+
+  main_columns.forEach(({ column, value }) => {
+    const cell = worksheet.getCell(`${column}${current_load_row}`);
+    cell.value = value;
+    cell.font = { bold: true };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = { top: { style: 'thin' }, bottom: { style: 'thick' } };
+  });
+
+  const emptyRow = worksheet.getRow(current_load_row + 2);
+  emptyRow.height = 15;
 
   // Process children
   for (const child of children) {
@@ -214,9 +211,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       await processOnePhaseExcelPanelBoardSchedule(
         workbook,
         child.id,
-        highest_unit,
-        effective_depth + 1,
-        start_from_root
+        highest_unit
       );
     }
   }
