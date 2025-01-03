@@ -87,7 +87,7 @@
 		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success('Show Loads on Unit Hierarchy applied');
-	}) 
+	});
 
 	$effect(() => {
 		if (component_state.settings_open) return;
@@ -216,11 +216,10 @@
 						</div>
 
 						<div class="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
-							<Label for="font-trigger">Show loads in Unit Heirarchy</Label>
 							<div class="space-y-0.5">
-								<Label>Security emails</Label>
+								<Label>Show loads in Unit Heirarchy</Label>
 								<p class="text-sm text-muted-foreground">
-									Receive emails about your account security.
+									Show or hide loads in the unit hierarchy, minimizing the heirarchy view.
 								</p>
 							</div>
 							<Switch bind:checked={component_state.show_loads_on_unit_hierarchy} />
