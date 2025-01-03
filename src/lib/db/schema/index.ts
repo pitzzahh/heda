@@ -20,7 +20,7 @@ const project_schema_literal = {
 				},
 				show_loads_on_unit_hierarchy: {
 					type: 'boolean',
-					default: true
+					default: false
 				},
 			}
 		},
