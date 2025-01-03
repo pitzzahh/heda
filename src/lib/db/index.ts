@@ -16,11 +16,13 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 /**
  * Creates a new RxDatabase instance if it doesn't already exist.
  *
- * @param {string} [name='mydatabase'] - The name of the database.
+ * @param {string} [name='heda'] - The name of the database.
+ * @param {boolean} [memory=true] - Whether to use memory storage.
+ * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
 async function createDatabase(
-	name: string = 'mydatabase',
+	name: string = 'heda',
 	memory: boolean = true,
 	validate_storage: boolean = false
 ): Promise<RxDatabase<MyDatabaseCollections>> {
@@ -46,10 +48,15 @@ async function createDatabase(
 /**
  * Returns the database instance with all required collections initialized.
  *
+ * @param {string} [name='heda'] - The name of the database.
+ * @param {boolean} [memory=true] - Whether to use memory storage.
+ * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
-export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollections>> {
-	const database = await createDatabase('heda', true);
+export async function databaseInstance(name: string = 'heda',
+	memory: boolean = true,
+	validate_storage: boolean = false): Promise<RxDatabase<MyDatabaseCollections>> {
+	const database = await createDatabase(name, memory, validate_storage);
 
 	if (!database.projects || !database.nodes) {
 		try {
@@ -63,8 +70,7 @@ export async function databaseInstance(): Promise<RxDatabase<MyDatabaseCollectio
 			});
 			console.log('Collections added:', added_collections_result);
 		} catch (error) {
-			await removeRxDatabase("mydatabase", getRxStorageDexie())
-
+			await removeRxDatabase(name, getRxStorageDexie())
 			console.error('Error adding collections:', error);
 			throw new Error('Failed to add collections');
 		}
