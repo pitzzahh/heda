@@ -16,8 +16,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-					id: project_id
-				}
+				id: project_id
+			}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
