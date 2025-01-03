@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.29] - 2025-01-01
 
+### Add
+
+- Dropdown menu for selecting heirarchy actions
+- Ability to export specific panelboard schedule.
+- Add preference to show or hide loads in Unit Heirarchy.
+
 ### Fix
 
 - Fix extra shifted load data row, add one more row spacing.
+- Unit Heirarchy tree re-rendering behavior when modifying load schedule, now updates only affected nodes.
 
 ## [0.3.28] - 2025-01-01
 
