@@ -373,3 +373,46 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 	// sorted loads by circuit_number
 	return loadsWithComputedFields as PhaseLoadSchedule[];
 }
+
+export async function getNodeDepth(nodeId: string): Promise<number> {
+	const db = await databaseInstance();
+
+	// Fetch the node by ID
+	const node = await db.nodes.findOne({
+		selector: {
+			id: nodeId
+		}
+	}).exec();
+
+	// If no node is found, return -1 as an invalid depth
+	if (!node) return -1;
+
+	const depth = await calculateNodeDepth(node._data);
+	return depth;
+}
+
+// Recursive function to calculate the depth
+async function calculateNodeDepth(node: Node, currentDepth: number = 0): Promise<number> {
+	// If the node has no parent (root node), return the current depth
+	if (!node.parent_id) {
+		return currentDepth;
+	}
+
+	const db = await databaseInstance();
+
+	// Fetch parent node to continue the traversal
+	const parentNode = await db.nodes.findOne({
+		selector: {
+			id: node.parent_id
+		}
+	}).exec();
+
+	if (!parentNode) {
+		// If no parent node is found, return -1 indicating an error
+		return -1;
+	}
+
+	// Recursively calculate the depth by increasing the current depth
+	return await calculateNodeDepth(parentNode._data, currentDepth + 1);
+}
+
