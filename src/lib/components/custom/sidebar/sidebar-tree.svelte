@@ -24,9 +24,10 @@
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/state';
+	import { Portal } from 'bits-ui';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { AddLoadDialog } from '../load';
+	import { AddLoadDialog } from '@/components/custom/load';
 	import { toast } from 'svelte-sonner';
 	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
 	import {
@@ -435,31 +436,33 @@
 {/snippet}
 
 {#snippet heirarchy_actions(tooltip_data: any[])}
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger class="mr-2">
-			{#snippet child({ props })}
-				<Sidebar.MenuAction {...props}>
-					<Ellipsis />
-					<span class="sr-only">Actions</span>
-				</Sidebar.MenuAction>
-			{/snippet}
-		</DropdownMenu.Trigger>
-		<!-- TODO: Utilize isolate -->
-		<DropdownMenu.Content
-			class="grid rounded-lg"
-			side={sidebar_context.isMobile ? 'bottom' : 'left'}
-			align={sidebar_context.isMobile ? 'end' : 'start'}
-		>
-			<DropdownMenu.Group>
-				{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
-					{#if !hidden}
-						<DropdownMenu.Item onclick={() => trigger_callback()} class={cn(className)}>
-							{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
-							<span class="text-sm">{tooltip_content}</span>
-						</DropdownMenu.Item>
-					{/if}
-				{/each}
-			</DropdownMenu.Group>
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
+	<Portal>
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class="mr-2">
+				{#snippet child({ props })}
+					<Sidebar.MenuAction {...props}>
+						<Ellipsis />
+						<span class="sr-only">Actions</span>
+					</Sidebar.MenuAction>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<!-- TODO: Utilize isolate -->
+			<DropdownMenu.Content
+				class="grid rounded-lg"
+				side={sidebar_context.isMobile ? 'bottom' : 'left'}
+				align={sidebar_context.isMobile ? 'end' : 'start'}
+			>
+				<DropdownMenu.Group>
+					{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
+						{#if !hidden}
+							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn(className)}>
+								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
+								<span class="text-sm">{tooltip_content}</span>
+							</DropdownMenu.Item>
+						{/if}
+					{/each}
+				</DropdownMenu.Group>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	</Portal>
 {/snippet}
