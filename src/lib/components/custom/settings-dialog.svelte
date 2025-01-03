@@ -73,6 +73,7 @@
 		})
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
+		settingsState.setShowLoadsOnUnitHeirarchy(component_state.show_loads_on_unit_hierarchy);
 	}
 
 	$effect.pre(() => {
