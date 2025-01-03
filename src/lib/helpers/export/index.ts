@@ -3,6 +3,7 @@ import type { Node } from '@/db/schema';
 import { getComputedLoads, getNodeById } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
+import type { ButtonState } from "@/types/misc";
 
 export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
@@ -19,8 +20,8 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   const children = await getComputedLoads(node_id);
 
   if (
-    depth === 1 &&
-    (children.length === 0 || children.every((child) => child.node_type !== 'panel'))
+    depth === 1 && parent && parent.node_type === 'root' &&
+    (children.length === 0 && children.every((child) => child.node_type !== 'panel'))
   ) {
     toast.warning('No panels found', { position: 'bottom-center' });
     return {
@@ -240,4 +241,107 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   }
 
   return { valid: true };
+}
+
+export async function exportToExcel(
+  node_id: string,
+  highest_unit?: Node['highest_unit_form'],
+  parent?: Node,
+  file_name?: string,
+  idle_callaback?: () => void,
+  loading_calback?: () => void
+) {
+  if (!highest_unit) {
+    return toast.warning('No project found', {
+      description: 'Cannot proceed with the export.',
+      position: 'bottom-center'
+    });
+  }
+
+  if (!highest_unit) {
+    return toast.warning('No highest unit found, nothing to export', {
+      description: 'This is a system error and should not be here, the error has been logged.',
+      position: 'bottom-center'
+    });
+  }
+  const _file_name = file_name ?? 'Exported Panelboard Schedule';
+  loading_calback && loading_calback();
+  toast.info(`Exporting to Excel... ${_file_name}.xlsx`, {
+    description: 'Please wait, this should last very long.',
+    position: 'bottom-center'
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.title = 'Exported Panelboard Schedule';
+  workbook.creator = 'HEDA(Desktop App)';
+
+  try {
+    switch (highest_unit?.phase) {
+      case '1P':
+        workbook.subject = '1P Load Schedule';
+        workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
+        workbook.description = 'Load schedule for 1 phase load schedule';
+        const process_result = await processOnePhaseExcelPanelBoardSchedule(
+          workbook,
+          node_id,
+          highest_unit,
+          parent
+        );
+        if (!process_result.valid) {
+          idle_callaback && idle_callaback()
+          return toast.warning(process_result.message ?? 'Something went wrong while exporting', {
+            description: process_result?.is_system_error
+              ? 'This is a system error and should not be here, the error has been logged.'
+              : (process_result?.description ?? undefined),
+            position: 'bottom-center'
+          });
+        }
+        break;
+      case '3P':
+        workbook.subject = '3P Load Schedule';
+        workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
+        workbook.description = 'Load schedule for 3 phase load schedule';
+        return toast.warning('This feature is still under development', {
+          description: 'Three phase load schedule is not yet supported',
+          position: 'bottom-center'
+        });
+      default:
+        idle_callaback && idle_callaback()
+        workbook.subject = 'Unknown Load Schedule';
+        return toast.warning('Something went wrong while exporting', {
+          description:
+            'This is a system error and should not be here, the error has been logged.',
+          position: 'bottom-center'
+        });
+    }
+  } catch (e) {
+    idle_callaback && idle_callaback()
+    return toast.warning(`Something went wrong while exporting:: ${e?.toString()}`, {
+      description: 'This is a system error and should not be here, the error has been logged.',
+      position: 'bottom-center'
+    });
+  }
+
+  // Write the workbook and trigger download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const url = URL.createObjectURL(blob);
+
+  // Create a link and download the file
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${file_name}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // Free resources
+  URL.revokeObjectURL(url);
+  toast.success('Export finished successfully.', {
+    description: 'The file has been downloaded successfully',
+    position: 'bottom-center'
+  });
+  idle_callaback && idle_callaback()
 }
