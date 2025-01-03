@@ -105,7 +105,15 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'at',
 				cell: (info) => {
 					const at = info.getValue();
-					return !at ? '' : at;
+
+					if (!at) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid AT found for the given current.'
+						});
+					}
+
+					return 	at;
 				},
 				header: () => 'AT',
 				footer: (props) => {
@@ -136,6 +144,13 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 					const has_greater_child_at = child_load_ampere_trips.some(
 						(child_at) => child_at && child_at >= current_node.at
 					);
+
+					if (!current_node.at) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid AT found for the given current.'
+						});
+					}
 
 					return renderComponent(AtFooterCell, {
 						at: !current_node.at ? '' : current_node.at.toString(),
@@ -187,9 +202,27 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 		columns: [
 			{
 				accessorKey: 'egc_size',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					if (info.getValue() === -1) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid EGC size found for the given AT.'
+						});
+					}
+
+					return info.getValue();
+				},
 				header: () => 'SIZE',
-				footer: (props) => current_node.egc_size
+				footer: (props) => {
+					if (current_node.egc_size === -1) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid EGC size found for the given AT.'
+						});
+					}
+
+					return current_node.egc_size;
+				}
 			},
 			{
 				accessorKey: 'egc_insulation',
@@ -226,6 +259,14 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 							tooltip_content: 'Insufficient Information'
 						});
 					}
+
+					if (data.conduit_size === -1 && !data.overrided_conduit_size) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid conduit size found for the given total conductors.'
+						});
+					}
+
 					return info.getValue();
 				},
 				header: () => 'SIZE',
@@ -234,6 +275,13 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
 							tooltip_content: 'Insufficient Information'
+						});
+					}
+
+					if (current_node.conduit_size === -1 && !current_node.overrided_conduit_size) {
+						return renderComponent(ErrorCell, {
+							trigger_value: '-',
+							tooltip_content: 'No valid conduit size found for the given total conductors.'
 						});
 					}
 

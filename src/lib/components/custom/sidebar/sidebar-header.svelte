@@ -5,15 +5,12 @@
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { SettingsDialog } from '..';
 	import { toast } from 'svelte-sonner';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import type { Project, Node } from '@/db/schema';
 	import { dev } from '$app/environment';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
 	import { processOnePhaseExcelPanelBoardSchedule } from '@/helpers/export';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
-
-	const settingsState = getSettingsState();
 
 	type ButtonState = 'idle' | 'loading';
 
