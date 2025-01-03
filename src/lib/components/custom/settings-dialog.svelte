@@ -64,31 +64,18 @@
 		}
 	}
 
-	$effect(() => {
+	async function savePreference(message: string) {
 		if (!project) return;
 
-		updateProjectSettings(project.id, {
-			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic
-		}).then(() =>
-			invalidate('app:workspace')
-				.then(() => invalidate('app:workspace/load-schedule'))
-				.finally(() => toast.success('Adjustment Factor applied'))
-		);
-	});
-
-	$effect(() => {
-		if (!project) return;
-
-		updateProjectSettings(project.id, {
+		await updateProjectSettings(project.id, {
+			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic,
 			show_loads_on_unit_hierarchy: component_state.show_loads_on_unit_hierarchy
-		}).then(() =>
-			invalidate('app:workspace')
-				.then(() => invalidate('app:workspace/load-schedule'))
-				.finally(() => toast.success('Show Loads on Unit Hierarchy applied'))
-		);
-	});
+		})
+			.finally(() => toast.success(message))
+			.catch((e) => toast.warning(e));
+	}
 
-	$effect(() => {
+	$effect.pre(() => {
 		if (component_state.settings_open) return;
 		// reset all the fields if not settings_open
 		if (!component_state.settings_open) {
@@ -116,21 +103,22 @@
 					</Dialog.Header>
 					<div class="flex flex-col gap-2">
 						<p class="font-semibold">Project</p>
-						<div class="flex flex-col gap-3">
-							<Label for="adjustment_factor">Adjustment Factor</Label>
-							<div class="flex w-full justify-between">
-								<Switch
-									disabled={!!!project}
-									id="adjustment_factor"
-									bind:checked={component_state.is_adjustment_factor_dynamic}
-								/>
+						<div class="flex flex-row items-center justify-between gap-3">
+							<div class="space-y-0.5">
+								<Label for="adjustment_factor">Adjustment Factor</Label>
+								<p class="text-xs text-muted-foreground">
+									{component_state.is_adjustment_factor_dynamic
+										? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
+										: 'The adjustment factor for all loads will be set to 100%.'}
+								</p>
 							</div>
-
-							<p class="text-xs text-muted-foreground">
-								{component_state.is_adjustment_factor_dynamic
-									? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
-									: 'The adjustment factor for all loads will be set to 100%.'}
-							</p>
+							<Switch
+								disabled={!!!project}
+								id="adjustment_factor"
+								bind:checked={component_state.is_adjustment_factor_dynamic}
+								onCheckedChange={async (v) =>
+									await savePreference('Adjustment factor applied successfully')}
+							/>
 						</div>
 					</div>
 					<Separator class="my-1 w-full" />
@@ -209,14 +197,18 @@
 							</div>
 						</div>
 
-						<div class="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
+						<div class="flex flex-row items-center justify-between gap-3">
 							<div class="space-y-0.5">
 								<Label>Show loads in Unit Heirarchy</Label>
 								<p class="text-sm text-muted-foreground">
 									Show or hide loads in the unit hierarchy, minimizing the heirarchy view.
 								</p>
 							</div>
-							<Switch bind:checked={component_state.show_loads_on_unit_hierarchy} />
+							<Switch
+								bind:checked={component_state.show_loads_on_unit_hierarchy}
+								onCheckedChange={async (v) =>
+									await savePreference('Show loads in Unit Heirarchy applied successfully')}
+							/>
 						</div>
 						<div class="flex flex-col gap-3">
 							<Label for="font-trigger">Font</Label>
