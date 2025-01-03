@@ -9,6 +9,7 @@ import type { MyDatabaseCollections } from '@/types/db';
 import { project_schema, node_schema } from '@/db/schema/index.js';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { dev } from '$app/environment';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
 let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 
@@ -31,11 +32,12 @@ async function createDatabase(
 
 	addRxPlugin(RxDBUpdatePlugin);
 	addRxPlugin(RxDBQueryBuilderPlugin);
-
 	dbInstance = await createRxDatabase({
 		name,
 		// @ts-ignore
-		storage: memory ? getRxStorageMemory() : getRxStorageDexie()
+		storage: memory ? getRxStorageMemory() : wrappedValidateAjvStorage({
+			storage: getRxStorageDexie()
+		})
 	});
 	return dbInstance;
 }
