@@ -324,7 +324,7 @@
 						exportToExcel(
 							node.id,
 							highest_unit,
-							await getNodeById(node?.parent_id),
+							await getNodeById(node.parent_id),
 							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
 						);
 					},
@@ -446,7 +446,6 @@
 			{/snippet}
 		</DropdownMenu.Trigger>
 		<Portal>
-			<!-- TODO: Utilize isolate -->
 			<DropdownMenu.Content
 				class="grid rounded-lg"
 				side={sidebar_context.isMobile ? 'bottom' : 'left'}
