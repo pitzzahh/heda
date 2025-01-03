@@ -21,7 +21,8 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  */
 async function createDatabase(
 	name: string = 'mydatabase',
-	memory: boolean = true
+	memory: boolean = true,
+	validate_storage: boolean = false
 ): Promise<RxDatabase<MyDatabaseCollections>> {
 	if (dbInstance) {
 		return dbInstance;
@@ -35,9 +36,9 @@ async function createDatabase(
 	dbInstance = await createRxDatabase({
 		name,
 		// @ts-ignore
-		storage: memory ? getRxStorageMemory() : wrappedValidateAjvStorage({
+		storage: memory ? getRxStorageMemory() : validate_storage ? wrappedValidateAjvStorage({
 			storage: getRxStorageDexie()
-		})
+		}) : getRxStorageDexie()
 	});
 	return dbInstance;
 }
