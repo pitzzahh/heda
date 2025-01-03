@@ -20,13 +20,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   const children = await getComputedLoads(node_id);
 
   if (
-    depth === 1 && parent && parent.node_type === 'root' &&
-    (children.length === 0 && children.every((child) => child.node_type !== 'panel'))
+    depth === 1 &&
+    (children.length === 0 && (children.every((child) => child.node_type !== 'panel') || children.every((child) => child.node_type !== 'load')))
   ) {
-    toast.warning('No panels found', { position: 'bottom-center' });
+    toast.warning('No panels/loads found', { position: 'bottom-center' });
     return {
       valid: false,
-      message: 'No panels found',
+      message: 'No panels found/loads',
       description: 'Cannot proceed with the export.'
     };
   }
