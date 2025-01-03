@@ -7,12 +7,19 @@
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
-	import { ChevronRight, DatabaseZap, Ellipsis, PlugZap, PanelsLeftBottom } from '@/assets/icons';
+	import {
+		ChevronRight,
+		DatabaseZap,
+		Ellipsis,
+		FileUp,
+		PlugZap,
+		PanelsLeftBottom
+	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { getChildNodesByParentId, getNodeById } from '@/db/queries/index';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
@@ -31,6 +38,7 @@
 	} from './(components)';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { exportToExcel } from '@/helpers/export';
 
 	let {
 		node,
@@ -298,6 +306,32 @@
 					icon: PencilIcon,
 					hidden: node.node_type === 'root',
 					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						const some_name = node.panel_data?.name ?? 'Panel';
+						if (!node.parent_id) {
+							return toast.warning(`Cannot identify ${some_name} supply from.`, {
+								description:
+									'This is a system error and should not be here, the error has been logged.',
+								position: 'bottom-center'
+							});
+						}
+						exportToExcel(
+							node.id,
+							highest_unit,
+							await getNodeById(node?.parent_id),
+							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
+						);
+					},
+					variant: 'ghost',
+					icon: FileUp,
+					hidden: false,
+					tooltip_content:
+						node.node_type === 'root'
+							? `Export ${project?.project_name ?? 'Project'}`
+							: `Export ${node.panel_data?.name ?? 'Panel'}`,
 					className: 'text-muted-foreground'
 				},
 				{
