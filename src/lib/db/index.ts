@@ -17,13 +17,13 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * Creates a new RxDatabase instance if it doesn't already exist.
  *
  * @param {string} [name='heda'] - The name of the database.
- * @param {boolean} [memory=true] - Whether to use memory storage.
+ * @param {boolean} [memory=false] - Whether to use memory storage.
  * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
 async function createDatabase(
 	name: string = 'heda',
-	memory: boolean = true,
+	memory: boolean = false,
 	validate_storage: boolean = false
 ): Promise<RxDatabase<MyDatabaseCollections>> {
 	if (dbInstance) {
@@ -49,12 +49,12 @@ async function createDatabase(
  * Returns the database instance with all required collections initialized.
  *
  * @param {string} [name='heda'] - The name of the database.
- * @param {boolean} [memory=true] - Whether to use memory storage.
+ * @param {boolean} [memory=false] - Whether to use memory storage.
  * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
 export async function databaseInstance(name: string = 'heda',
-	memory: boolean = true,
+	memory: boolean = false,
 	validate_storage: boolean = false): Promise<RxDatabase<MyDatabaseCollections>> {
 	const database = await createDatabase(name, memory, validate_storage);
 
