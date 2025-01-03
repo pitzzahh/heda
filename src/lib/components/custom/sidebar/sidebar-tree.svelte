@@ -39,6 +39,7 @@
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '@/helpers/export';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
 	let {
 		node,
@@ -56,6 +57,7 @@
 
 	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
+	const settings_state = getSettingsState();
 
 	let open_panel_context_menu = $state(false);
 	let open_load_context_menu = $state(false);
@@ -81,83 +83,85 @@
 	</Sidebar.MenuButton>
 {:then child_nodes}
 	{#if node.node_type === 'load'}
-		<Sidebar.MenuItem class="w-full">
-			<Sidebar.MenuButton
-				onmouseenter={() => (is_hovering_on_tree_item = true)}
-				onmouseleave={() => (is_hovering_on_tree_item = false)}
-				class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
-			>
-				<ContextMenu.Root bind:open={open_load_context_menu}>
-					<ContextMenu.Trigger class="flex w-full items-center gap-1">
-						<div class="flex w-full items-center gap-2">
-							<div class="w-4">
-								<PlugZap class="size-4" />
+		{#if settings_state.show_loads_on_unit_hierarchy}
+			<Sidebar.MenuItem class="w-full">
+				<Sidebar.MenuButton
+					onmouseenter={() => (is_hovering_on_tree_item = true)}
+					onmouseleave={() => (is_hovering_on_tree_item = false)}
+					class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+				>
+					<ContextMenu.Root bind:open={open_load_context_menu}>
+						<ContextMenu.Trigger class="flex w-full items-center gap-1">
+							<div class="flex w-full items-center gap-2">
+								<div class="w-4">
+									<PlugZap class="size-4" />
+								</div>
+								<span class="truncate">
+									{typeof node === 'string' ? node : node.load_data?.load_description}
+								</span>
 							</div>
-							<span class="truncate">
-								{typeof node === 'string' ? node : node.load_data?.load_description}
-							</span>
-						</div>
-					</ContextMenu.Trigger>
-					<ContextMenu.Content class="grid gap-1">
-						{#snippet children()}
-							<UpdateLoadDialog
-								{highest_unit}
-								{phase_main_load_form}
-								bind:some_open_state={open_load_context_menu}
-								load_to_edit={node}
-							/>
-							<ConfirmationDialog
-								trigger_text="Remove load"
-								trigger_variant="destructive"
-								bind:some_open_state={open_load_context_menu}
-								onConfirm={async () => {
-									await removeNode(node.id)
-										.then(() => invalidate('app:workspace'))
-										.finally(() => invalidate('app:workspace/load-schedule'));
-								}}
-							/>
-						{/snippet}
-					</ContextMenu.Content>
-				</ContextMenu.Root>
-			</Sidebar.MenuButton>
+						</ContextMenu.Trigger>
+						<ContextMenu.Content class="grid gap-1">
+							{#snippet children()}
+								<UpdateLoadDialog
+									{highest_unit}
+									{phase_main_load_form}
+									bind:some_open_state={open_load_context_menu}
+									load_to_edit={node}
+								/>
+								<ConfirmationDialog
+									trigger_text="Remove load"
+									trigger_variant="destructive"
+									bind:some_open_state={open_load_context_menu}
+									onConfirm={async () => {
+										await removeNode(node.id)
+											.then(() => invalidate('app:workspace'))
+											.finally(() => invalidate('app:workspace/load-schedule'));
+									}}
+								/>
+							{/snippet}
+						</ContextMenu.Content>
+					</ContextMenu.Root>
+				</Sidebar.MenuButton>
 
-			{@const tooltip_data = [
-				{
-					trigger_callback: async () => {
-						await copyAndAddNodeById(node.id)
-							.then((copied_node) => {
-								undo_redo_state.setActionToUndo({
-									action: 'copy_node',
-									data: copied_node as unknown as PhaseLoadSchedule
-								});
-								invalidate('app:workspace');
-							})
-							.finally(() => invalidate('app:workspace/load-schedule'));
+				{@const tooltip_data = [
+					{
+						trigger_callback: async () => {
+							await copyAndAddNodeById(node.id)
+								.then((copied_node) => {
+									undo_redo_state.setActionToUndo({
+										action: 'copy_node',
+										data: copied_node as unknown as PhaseLoadSchedule
+									});
+									invalidate('app:workspace');
+								})
+								.finally(() => invalidate('app:workspace/load-schedule'));
+						},
+						variant: 'ghost',
+						icon: CopyIcon,
+						className: 'text-muted-foreground',
+						tooltip_content: 'Copy Load'
 					},
-					variant: 'ghost',
-					icon: CopyIcon,
-					className: 'text-muted-foreground',
-					tooltip_content: 'Copy Load'
-				},
-				{
-					trigger_callback: () => (open_tree_edit_load_action_dialog = true),
-					variant: 'ghost',
-					icon: PencilIcon,
-					hidden: false,
-					className: 'text-muted-foreground',
-					tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
-				},
-				{
-					trigger_callback: () => (open_tree_delete_dialog = true),
-					variant: 'ghost',
-					icon: Trash2Icon,
-					hidden: false,
-					tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
-					className: '!text-red-600 hover:!bg-red-600/10'
-				}
-			]}
-			{@render heirarchy_actions(tooltip_data)}
-		</Sidebar.MenuItem>
+					{
+						trigger_callback: () => (open_tree_edit_load_action_dialog = true),
+						variant: 'ghost',
+						icon: PencilIcon,
+						hidden: false,
+						className: 'text-muted-foreground',
+						tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
+					},
+					{
+						trigger_callback: () => (open_tree_delete_dialog = true),
+						variant: 'ghost',
+						icon: Trash2Icon,
+						hidden: false,
+						tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
+						className: '!text-red-600 hover:!bg-red-600/10'
+					}
+				]}
+				{@render heirarchy_actions(tooltip_data)}
+			</Sidebar.MenuItem>
+		{/if}
 	{:else}
 		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
