@@ -314,17 +314,17 @@
 				{
 					trigger_callback: async () => {
 						const some_name = node.panel_data?.name ?? 'Panel';
-						if (!node.parent_id) {
+						if (node.node_type !== 'root' && !node.parent_id) {
 							return toast.warning(`Cannot identify ${some_name} supply from.`, {
 								description:
 									'This is a system error and should not be here, the error has been logged.',
 								position: 'bottom-center'
 							});
 						}
+						console.log('Exporting to excel', node);
 						exportToExcel(
 							node.id,
 							highest_unit,
-							await getNodeById(node.parent_id),
 							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
 						);
 					},

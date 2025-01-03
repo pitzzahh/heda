@@ -50,7 +50,6 @@
 						exportToExcel(
 							root_node.id,
 							root_node?.highest_unit_form,
-							undefined,
 							project?.project_name,
 							() => (button_states.export_to_excel = 'idle'),
 							() => (button_states.export_to_excel = 'loading')
