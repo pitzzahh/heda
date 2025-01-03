@@ -58,35 +58,34 @@
 			project.settings.is_adjustment_factor_dynamic !== component_state.is_adjustment_factor_dynamic
 	);
 
-	let is_show_loads_on_unit_hierarchy_changed = $derived(
-		project &&
-			project.settings.show_loads_on_unit_hierarchy !== component_state.show_loads_on_unit_hierarchy
-	);
-
 	function handleChangeThemeColor(themeColor: Settings['color']) {
 		if ($mode) {
 			settingsState.setThemeColor(themeColor, $mode);
 		}
 	}
 
-	async function handleSaveAdjustmentFactorDynamic() {
+	$effect(() => {
 		if (!project) return;
 
-		await updateProjectSettings(project.id, {
+		updateProjectSettings(project.id, {
 			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic
-		});
-		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-		toast.success('Adjustment Factor applied');
-	}
+		}).then(() =>
+			invalidate('app:workspace')
+				.then(() => invalidate('app:workspace/load-schedule'))
+				.finally(() => toast.success('Adjustment Factor applied'))
+		);
+	});
 
 	$effect(() => {
 		if (!project) return;
 
 		updateProjectSettings(project.id, {
 			show_loads_on_unit_hierarchy: component_state.show_loads_on_unit_hierarchy
-		});
-		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-		toast.success('Show Loads on Unit Hierarchy applied');
+		}).then(() =>
+			invalidate('app:workspace')
+				.then(() => invalidate('app:workspace/load-schedule'))
+				.finally(() => toast.success('Show Loads on Unit Hierarchy applied'))
+		);
 	});
 
 	$effect(() => {
@@ -125,11 +124,6 @@
 									id="adjustment_factor"
 									bind:checked={component_state.is_adjustment_factor_dynamic}
 								/>
-
-								{#if is_adjustment_factor_dynamic_changed}
-									<Button size="sm" onclick={handleSaveAdjustmentFactorDynamic}>Save Changes</Button
-									>
-								{/if}
 							</div>
 
 							<p class="text-xs text-muted-foreground">
