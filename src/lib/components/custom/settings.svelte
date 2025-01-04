@@ -30,6 +30,7 @@
 </script>
 
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
@@ -99,7 +100,9 @@
 								</Breadcrumb.Item>
 								<Breadcrumb.Separator class="hidden md:block" />
 								<Breadcrumb.Item>
-									<Breadcrumb.Page>Messages & media</Breadcrumb.Page>
+									<Breadcrumb.Page>
+										{component_state.active_setting}
+									</Breadcrumb.Page>
 								</Breadcrumb.Item>
 							</Breadcrumb.List>
 						</Breadcrumb.Root>
@@ -107,7 +110,7 @@
 				</header>
 				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
 					{#each Array.from({ length: 10 }) as _, i (i)}
-						<div class="aspect-video max-w-3xl rounded-xl bg-muted/50"></div>
+						<div transition:slide class="aspect-video max-w-3xl rounded-xl bg-muted/50">{i}</div>
 					{/each}
 				</div>
 			</main>
