@@ -20,6 +20,10 @@ export const generic_phase_panel_schema = z.object({
 			required_error: 'You need to select an ambient temperature'
 		})
 		.default(30),
+	length: z.number({
+		message: 'Please enter a valid length.',
+		required_error: 'Length is required'
+	}),
 	terminal_temperature: z
 		.enum(
 			DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value) as [
