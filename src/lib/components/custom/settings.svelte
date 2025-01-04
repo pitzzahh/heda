@@ -1,16 +1,8 @@
 <script module lang="ts">
 	const navData = [
-		{ name: 'System', icon: Bell },
-		{ name: 'Navigation', icon: Menu },
-		{ name: 'Home', icon: House },
-		{ name: 'Appearance', icon: Paintbrush },
-		{ name: 'Messages & media', icon: MessageCircle },
-		{ name: 'Language & region', icon: Globe },
-		{ name: 'Accessibility', icon: Keyboard },
-		{ name: 'Mark as read', icon: Check },
-		{ name: 'Audio & video', icon: Video },
-		{ name: 'Connected accounts', icon: Link },
-		{ name: 'Privacy & visibility', icon: Lock },
+		{ name: 'Project', icon: Bell },
+		{ name: 'Preferences', icon: Menu },
+		{ name: 'Updates', icon: House },
 		{ name: 'Advanced', icon: Settings }
 	] as const;
 
@@ -31,26 +23,19 @@
 
 <script lang="ts">
 	import { slide } from 'svelte/transition';
+	import { PersistedState } from 'runed';
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import { Cog } from '@/assets/icons';
 	import Bell from 'lucide-svelte/icons/bell';
-	import Check from 'lucide-svelte/icons/check';
-	import Globe from 'lucide-svelte/icons/globe';
 	import House from 'lucide-svelte/icons/house';
-	import Keyboard from 'lucide-svelte/icons/keyboard';
-	import Link from 'lucide-svelte/icons/link';
-	import Lock from 'lucide-svelte/icons/lock';
 	import Menu from 'lucide-svelte/icons/menu';
-	import MessageCircle from 'lucide-svelte/icons/message-circle';
-	import Paintbrush from 'lucide-svelte/icons/paintbrush';
 	import Settings from 'lucide-svelte/icons/settings';
-	import Video from 'lucide-svelte/icons/video';
 
-	let component_state = $state<ComponentType>({
-		active_setting: 'Home'
+	const component_state = new PersistedState<ComponentType>('settings_state', {
+		active_setting: 'Project'
 	});
 </script>
 
@@ -72,12 +57,14 @@
 							<Sidebar.Menu>
 								{#each data.nav as item (item.name)}
 									<Sidebar.MenuItem>
-										<Sidebar.MenuButton isActive={item.name === component_state.active_setting}>
+										<Sidebar.MenuButton
+											isActive={item.name === component_state.current.active_setting}
+										>
 											{#snippet child({ props })}
 												<a
 													href="##"
 													{...props}
-													onclick={() => (component_state.active_setting = item.name)}
+													onclick={() => (component_state.current.active_setting = item.name)}
 												>
 													<item.icon />
 													<span>{item.name}</span>
@@ -104,7 +91,7 @@
 								<Breadcrumb.Separator class="hidden md:block" />
 								<Breadcrumb.Item>
 									<Breadcrumb.Page>
-										{component_state.active_setting}
+										{component_state.current.active_setting}
 									</Breadcrumb.Page>
 								</Breadcrumb.Item>
 							</Breadcrumb.List>
