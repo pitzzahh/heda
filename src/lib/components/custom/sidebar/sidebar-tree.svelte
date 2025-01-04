@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
+	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { cn } from '@/utils';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
@@ -11,7 +12,12 @@
 		Ellipsis,
 		FileUp,
 		PlugZap,
-		PanelsLeftBottom
+		PanelsLeftBottom,
+		CirclePlus,
+		Copy,
+		Grid2x2Plus,
+		Pencil,
+		Trash2
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -28,13 +34,6 @@
 	import { AddLoadDialog } from '@/components/custom/load';
 	import { toast } from 'svelte-sonner';
 	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
-	import {
-		CirclePlusIcon,
-		CopyIcon,
-		Grid2x2PlusIcon,
-		PencilIcon,
-		Trash2Icon
-	} from './(components)';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
@@ -138,14 +137,14 @@
 								.finally(() => invalidate('app:workspace/load-schedule'));
 						},
 						variant: 'ghost',
-						icon: CopyIcon,
+						icon: Copy,
 						className: 'text-muted-foreground',
 						tooltip_content: 'Copy Load'
 					},
 					{
 						trigger_callback: () => (open_tree_edit_load_action_dialog = true),
 						variant: 'ghost',
-						icon: PencilIcon,
+						icon: Pencil,
 						hidden: false,
 						className: 'text-muted-foreground',
 						tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
@@ -153,7 +152,7 @@
 					{
 						trigger_callback: () => (open_tree_delete_dialog = true),
 						variant: 'ghost',
-						icon: Trash2Icon,
+						icon: Trash2,
 						hidden: false,
 						tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
 						className: '!text-red-600 hover:!bg-red-600/10'
@@ -278,7 +277,7 @@
 				{
 					trigger_callback: () => (open_tree_add_panel_dialog = true),
 					variant: 'ghost',
-					icon: Grid2x2PlusIcon,
+					icon: Grid2x2Plus,
 					hidden: false,
 					tooltip_content: 'Add Panel',
 					className: 'text-muted-foreground'
@@ -286,7 +285,7 @@
 				{
 					trigger_callback: () => (open_tree_add_load_dialog = true),
 					variant: 'ghost',
-					icon: CirclePlusIcon,
+					icon: CirclePlus,
 					hidden: false,
 					tooltip_content: 'Add Load',
 					className: 'text-muted-foreground'
@@ -304,7 +303,7 @@
 							.finally(() => invalidate('app:workspace/load-schedule'));
 					},
 					variant: 'ghost',
-					icon: CopyIcon,
+					icon: Copy,
 					hidden: node.node_type === 'root',
 					tooltip_content: 'Copy Panel',
 					className: 'text-muted-foreground'
@@ -321,7 +320,7 @@
 						open_tree_edit_panel_action_dialog = true;
 					},
 					variant: 'ghost',
-					icon: PencilIcon,
+					icon: Pencil,
 					hidden: node.node_type === 'root',
 					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
 					className: 'text-muted-foreground'
@@ -355,7 +354,7 @@
 				{
 					trigger_callback: () => (open_tree_delete_dialog = true),
 					variant: 'ghost',
-					icon: Trash2Icon,
+					icon: Trash2,
 					hidden: false,
 					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
 					className: '!text-red-600 hover:!bg-red-600/10'
@@ -465,7 +464,7 @@
 		<Portal>
 			<DropdownMenu.Content
 				class="grid rounded-lg"
-				side={sidebar_context.isMobile ? 'bottom' : 'left'}
+				side={sidebar_context.isMobile ? 'bottom' : 'right'}
 				align={sidebar_context.isMobile ? 'end' : 'start'}
 			>
 				<DropdownMenu.Group>
