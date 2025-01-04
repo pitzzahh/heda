@@ -22,6 +22,14 @@ const project_schema_literal = {
 					type: 'boolean',
 					default: false
 				},
+				has_panel_copy_count: {
+					type: 'boolean',
+					default: false
+				},
+				has_load_copy_count: {
+					type: 'boolean',
+					default: false
+				},
 			}
 		},
 		root_node_id: { type: 'string' }
