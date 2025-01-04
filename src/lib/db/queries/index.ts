@@ -10,6 +10,7 @@ import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+import type { ComputeCommonProperties, NodeByIdResult } from '@/types/db';
 
 export async function getCurrentProject(project_id?: string): Promise<Project | undefined> {
 	const db = await databaseInstance();
@@ -65,7 +66,8 @@ export async function checkNodeExists({
 	}
 }
 
-export async function getNodeById(target_id: string) {
+
+export async function getNodeById(target_id: string): Promise<NodeByIdResult | null> {
 	const db = await databaseInstance();
 
 	const project = await getCurrentProject();
@@ -79,10 +81,10 @@ export async function getNodeById(target_id: string) {
 		})
 		.exec();
 
-	if (!node) return;
+	if (!node) return null;
 
-	const data = node._data;
-	if (!data) return;
+	const data: Node = node._data;
+	if (!data) return null;
 
 	const voltage = 230;
 
@@ -97,18 +99,7 @@ export async function getNodeById(target_id: string) {
 		overrided_conductor_size,
 		overrided_egc_size,
 		overrided_conduit_size
-	}: {
-		va: number;
-		current: number;
-		conductor_set: number;
-		conductor_qty: number;
-		load_type: LoadType | 'Main';
-		ambient_temp: number;
-		overrided_at?: number;
-		overrided_conductor_size?: number;
-		overrided_egc_size?: number;
-		overrided_conduit_size?: number;
-	}) => {
+	}: ComputeCommonProperties) => {
 		const at = overrided_at || computeAmpereTrip(current);
 		const conductor_size =
 			overrided_conductor_size ||
@@ -214,8 +205,8 @@ export async function getNodeById(target_id: string) {
 		load_description: data.load_data?.load_description || '',
 		voltage,
 		va,
-		current: parseFloat(current.toFixed(2)),
 		ampere_frames: data.overrided_ampere_frames || common.at,
+		current: parseFloat(current.toFixed(2)),
 		...common
 	};
 }
