@@ -16,8 +16,13 @@
 		nav: navData
 	};
 
-	interface ComponentType {
+	export interface SettingsComponentType {
 		active_setting: NavName;
+		settings_open: boolean;
+		app_update: Update | null;
+		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
+		is_adjustment_factor_dynamic: boolean;
+		show_loads_on_unit_hierarchy: boolean;
 	}
 </script>
 
@@ -28,15 +33,65 @@
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import { Cog } from '@/assets/icons';
 	import Bell from 'lucide-svelte/icons/bell';
 	import House from 'lucide-svelte/icons/house';
 	import Menu from 'lucide-svelte/icons/menu';
 	import Settings from 'lucide-svelte/icons/settings';
+	import { Tween } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
+	import * as Tooltip from '@/components/ui/tooltip';
+	import * as Alert from '@/components/ui/alert/index.js';
+	import * as RadioGroup from '@/components/ui/radio-group/index.js';
+	import * as Select from '@/components/ui/select';
+	import { Cog, Loader, PackageCheck, SunMoon, Moon, Sun } from '@/assets/icons';
+	import { Label } from '@/components/ui/label/index.js';
+	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
+	import { cn } from '@/utils';
+	import { ViewChangelog } from '.';
+	import { Separator } from '@/components/ui/separator/index.js';
+	import { Switch } from '@/components/ui/switch/index.js';
+	import type { Project } from '@/db/schema';
+	import { updateProjectSettings } from '@/db/mutations';
+	import { invalidate } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
+	import { checkForUpdates, installUpdate } from '@/utils/update';
+	import { Update } from '@tauri-apps/plugin-updater';
+	import * as pj from '../../../../package.json';
+	import { mode, systemPrefersMode } from 'mode-watcher';
+	import { setModeAndColor } from '@/helpers/theme';
 
-	const component_state = new PersistedState<ComponentType>('settings_state', {
-		active_setting: 'Project'
+	let { project }: { project?: Project } = $props();
+
+	const themeColors = [
+		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
+		{ name: 'Excel', value: 'excel', bg: 'bg-[#20B356]' }
+	] as const;
+
+	const settingsState = getSettingsState();
+	const selectedFont = $derived(settingsState.font);
+
+	const tween = new Tween(0, { duration: 500, easing: cubicOut });
+
+	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
+		active_setting: 'Project',
+		settings_open: false,
+		app_update: null,
+		update_state: 'stale',
+		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false,
+		show_loads_on_unit_hierarchy: project?.settings.show_loads_on_unit_hierarchy || false
 	});
+
+	async function savePreference(message: string) {
+		if (!project) return;
+
+		await updateProjectSettings(project.id, {
+			is_adjustment_factor_dynamic: component_state.current.is_adjustment_factor_dynamic,
+			show_loads_on_unit_hierarchy: component_state.current.show_loads_on_unit_hierarchy
+		})
+			.finally(() => toast.success(message))
+			.catch((e) => toast.warning(e));
+		settingsState.setShowLoadsOnUnitHeirarchy(component_state.current.show_loads_on_unit_hierarchy);
+	}
 </script>
 
 <Dialog.Root>
@@ -98,12 +153,36 @@
 						</Breadcrumb.Root>
 					</div>
 				</header>
+
 				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
-					{#each Array.from({ length: 10 }) as _, i (i)}
-						<div transition:slide class="aspect-video max-w-3xl rounded-xl bg-muted/50">{i}</div>
-					{/each}
+					{#if component_state.current.active_setting === 'Project'}
+						{@render project_settings()}
+					{/if}
 				</div>
 			</main>
 		</Sidebar.Provider>
 	</Dialog.Content>
 </Dialog.Root>
+
+{#snippet project_settings()}
+	<div class="flex flex-col gap-2">
+		<p class="font-semibold">Project</p>
+		<div class="flex flex-row items-center justify-between gap-3">
+			<div class="space-y-0.5">
+				<Label for="adjustment_factor">Adjustment Factor</Label>
+				<p class="text-xs text-muted-foreground">
+					{component_state.current.is_adjustment_factor_dynamic
+						? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
+						: 'The adjustment factor for all loads will be set to 100%.'}
+				</p>
+			</div>
+			<Switch
+				disabled={project === undefined}
+				id="adjustment_factor"
+				bind:checked={component_state.current.is_adjustment_factor_dynamic}
+				onCheckedChange={async (v) =>
+					await savePreference('Adjustment factor applied successfully')}
+			/>
+		</div>
+	</div>
+{/snippet}
