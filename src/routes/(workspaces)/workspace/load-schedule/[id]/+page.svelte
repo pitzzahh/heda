@@ -5,20 +5,25 @@
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import { getNodeById } from '@/db/queries/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import type { Node } from '@/db/schema';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
+	import type { NodeByIdResult } from '@/types/db/index.js';
 
 	let { data } = $props();
-	let params = $derived(page.params);
+
 	const { root_node } = data;
+	const params = $derived(page.params);
+	const loads = $derived(data?.nodes);
+
 	let supply_from_name = $state('');
-	let loads = $derived(data?.nodes);
+	let node: NodeByIdResult | undefined = $state(undefined);
 
 	$effect(() => {
 		const nodeId = params.id.split('_').at(-1) as string;
 
 		getNodeById(nodeId).then((current_node) => {
 			const parentId = current_node?.parent_id;
-
+			node = current_node;
 			if (parentId) {
 				getNodeById(parentId).then((node) => {
 					supply_from_name =
@@ -33,9 +38,7 @@
 	<div class="grid grid-cols-2">
 		<div>
 			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal"
-					>{root_node?.highest_unit_form?.distribution_unit}</span
-				>
+				Distribution Unit: <span class="font-normal">{node?.panel_data?.name ?? 'NOT FOUND'}</span>
 			</p>
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
