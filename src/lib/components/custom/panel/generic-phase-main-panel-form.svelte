@@ -156,6 +156,7 @@
 		}
 		const {
 			circuit_number,
+			length,
 			panel_data: { terminal_temperature, phase, name, ambient_temperature }
 		} = node_to_edit;
 
@@ -164,6 +165,7 @@
 		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 		$formData.phase = phase as Phase;
 		$formData.ambient_temperature = ambient_temperature;
+		$formData.length = length as number;
 	});
 </script>
 
@@ -330,6 +332,24 @@
 					This is the ambient temp that will determine the ambient temp of the panel wire to the
 					main.
 				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+
+			<Form.Field {form} name="length"  class="mt-[.19rem] flex flex-col">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Length</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							min={1}
+							bind:value={$formData.length}
+							placeholder="Enter the length"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.Description>This is the length of the load</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
