@@ -5,7 +5,6 @@
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import { getNodeById } from '@/db/queries/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import type { Node } from '@/db/schema';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import type { NodeByIdResult } from '@/types/db/index.js';
 
@@ -16,7 +15,7 @@
 	const loads = $derived(data?.nodes);
 
 	let supply_from_name = $state('');
-	let node: NodeByIdResult | undefined = $state(undefined);
+	let node: NodeByIdResult | null = $state(null);
 
 	$effect(() => {
 		const nodeId = params.id.split('_').at(-1) as string;
