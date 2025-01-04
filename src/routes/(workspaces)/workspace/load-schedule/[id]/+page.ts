@@ -5,7 +5,8 @@ import {
 	getCurrentProject,
 	getNodeById,
 	getRootNode,
-	getComputedLoads
+	getComputedLoads,
+	getComputedVoltageDrops
 } from '@/db/queries/index.js';
 import { goto } from '$app/navigation';
 import type { Node } from '@/db/schema';
@@ -29,13 +30,16 @@ export const load = async ({ depends, params }) => {
 
 	const nodes = await getComputedLoads(node_id);
 	console.log(nodes);
-	
+
+	const voltage_drops = await getComputedVoltageDrops() 
+
 	console.log('curr node ', current_node);
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		project,
 		nodes: nodes && nodes?.length > 0 ? nodes : [],
 		root_node: root_node as Node,
-		current_node
+		current_node,
+		voltage_drops
 	};
 };

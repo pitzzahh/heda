@@ -1,31 +1,45 @@
+import type { VoltageDrop } from '@/types/voltage-drop';
 import type { ColumnDef } from '@tanstack/table-core';
+import { renderComponent } from '@/components/ui/data-table';
+import VdCurrentCell from '../(components)/vd-current-cell.svelte';
 
-export const voltageDropColumns = <T extends any>(): ColumnDef<T>[] => [
+export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
-		accessorKey: 'to_node',
+		accessorKey: 'from_node_name',
+		cell: (info) => info.getValue(),
+		header: () => 'From NODE'
+	},
+	{
+		accessorKey: 'to_node_name',
+		cell: (info) => info.getValue(),
 		header: () => 'To NODE'
-		// footer: () => 'Total'
 	},
 	{
 		header: 'CABLE',
 		columns: [
 			{
-				accessorKey: 'cable_sets',
-				cell: (info) => info.getValue(),
-				header: () => 'Sets'
-				// footer: (props) => ""
+				accessorKey: 'conductor_sets',
+				header: () => 'Sets',
+				cell: (info) => info.getValue()
 			},
 			{
-				accessorKey: 'cable_qty',
-				cell: (info) => info.getValue(),
-				header: () => 'Qty'
-				// footer: (props) => ''
+				accessorKey: 'conductor_qty',
+				header: () => 'Qty',
+				cell: (info) => info.getValue()
 			},
 			{
-				accessorKey: 'cable_size',
-				cell: (info) => info.getValue(),
-				header: () => 'Size (mm2)'
-				// footer: (props) => ''
+				accessorKey: 'conductor_size',
+				header: () => 'Size (mm²)',
+				cell: (info) => {
+					// const data = info.row.original;
+					// if (data.adjusted_current > 530 && !data.overrided_conductor_size) {
+					// 	return renderComponent(ErrorCell, {
+					// 		trigger_value: '-',
+					// 		tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
+					// 	});
+					// }
+					return info.getValue();
+				}
 			}
 		]
 	},
@@ -36,41 +50,45 @@ export const voltageDropColumns = <T extends any>(): ColumnDef<T>[] => [
 				accessorKey: 'z',
 				cell: (info) => info.getValue(),
 				header: () => '(Ω/305m)'
-				// footer: (props) => ""
 			}
 		]
 	},
 	{
-		header: 'LENGTH CURRENT',
+		header: 'LENGTH',
 		columns: [
 			{
-				accessorKey: '(m)',
+				accessorKey: 'length',
 				cell: (info) => info.getValue(),
-				header: () => '(m)'
-				// footer: (props) => ""
-			},
-			{
-				accessorKey: '(A)',
-				cell: (info) => info.getValue(),
-				header: () => '(A)'
-				// footer: (props) => ""
-			},
-			{
-				accessorKey: '(Ω)',
-				cell: (info) => info.getValue(),
-				header: () => '(Ω)'
-				// footer: (props) => ""
+				header: '(m)'
 			}
 		]
 	},
 	{
-		header: 'Z',
+		header: 'CURRENT',
 		columns: [
 			{
-				accessorKey: 'zz',
+				accessorKey: 'current',
+				cell: (info) => {
+					const current = info.getValue();
+					const node = info.row.original;
+					
+					return renderComponent(VdCurrentCell, {
+						current,
+						is_at_used: node.is_at_used_as_currents_value as boolean,
+						node
+					});
+				},
+				header: '(A)'
+			}
+		]
+	},
+	{
+		header: 'Actual Z',
+		columns: [
+			{
+				accessorKey: 'actual_z',
 				cell: (info) => info.getValue(),
 				header: () => '(Ω)'
-				// footer: (props) => ""
 			}
 		]
 	},
@@ -78,13 +96,13 @@ export const voltageDropColumns = <T extends any>(): ColumnDef<T>[] => [
 		header: 'VOLTAGE DROP (V)',
 		columns: [
 			{
-				accessorKey: 'per_segment',
+				accessorKey: 'voltage_per_segment',
 				cell: (info) => info.getValue(),
 				header: () => 'Per Segment'
 				// footer: (props) => ""
 			},
 			{
-				accessorKey: 'at_end_circuit',
+				accessorKey: 'voltage_at_end_circuit',
 				cell: (info) => info.getValue(),
 				header: () => 'At End Circuit'
 				// footer: (props) => ""

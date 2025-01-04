@@ -42,15 +42,13 @@
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
 		is_adjustment_factor_dynamic: boolean;
-		show_loads_on_unit_hierarchy: boolean;
 	}
 
 	let component_state: ComponentState = $state({
 		settings_open: false,
 		app_update: null,
 		update_state: 'stale',
-		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false,
-		show_loads_on_unit_hierarchy: project?.settings.show_loads_on_unit_hierarchy || false
+		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false
 	});
 
 	let is_adjustment_factor_dynamic_changed = $derived(
@@ -68,12 +66,13 @@
 		if (!project) return;
 
 		await updateProjectSettings(project.id, {
-			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic,
-			show_loads_on_unit_hierarchy: component_state.show_loads_on_unit_hierarchy
+			is_adjustment_factor_dynamic: component_state.is_adjustment_factor_dynamic
 		})
-			.finally(() => toast.success(message))
+			.finally(() => {
+				invalidate('app:workspace/load-schedule');
+				toast.success(message);
+			})
 			.catch((e) => toast.warning(e));
-		settingsState.setShowLoadsOnUnitHeirarchy(component_state.show_loads_on_unit_hierarchy);
 	}
 
 	$effect.pre(() => {
@@ -201,14 +200,13 @@
 						<div class="flex flex-row items-center justify-between gap-3">
 							<div class="space-y-0.5">
 								<Label>Show loads in Unit Heirarchy</Label>
-								<p class="text-sm text-muted-foreground">
-									Show or hide loads in the unit hierarchy, minimizing the heirarchy view.
+								<p class="text-xs text-muted-foreground">
+									Show or hide loads in the unit hierarchy, minimizing the hierarchy view.
 								</p>
 							</div>
 							<Switch
-								bind:checked={component_state.show_loads_on_unit_hierarchy}
-								onCheckedChange={async (v) =>
-									await savePreference('Show loads in Unit Heirarchy applied successfully')}
+								checked={settingsState.show_loads_on_unit_hierarchy}
+								onCheckedChange={(v) => settingsState.setShowLoadsOnUnitHeirarchy(v)}
 							/>
 						</div>
 						<div class="flex flex-col gap-3">

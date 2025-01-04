@@ -22,8 +22,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 			root_node_id: created_root_node._data.id,
 			project_name: 'Untitled',
 			settings: {
-				is_adjustment_factor_dynamic: false,
-				show_loads_on_unit_hierarchy: true
+				is_adjustment_factor_dynamic: false
 			}
 		});
 
@@ -109,6 +108,7 @@ export async function addNode({
 		const created_node = await database.nodes.insert({
 			id: existing_id || createId(),
 			node_type: load_data ? 'load' : 'panel',
+			length: load_data?.length || panel_data?.length,
 			circuit_number: load_data?.circuit_number ?? panel_data?.circuit_number ?? 0,
 			panel_data: panel_data as Node['panel_data'],
 			load_data: load_data as Node['load_data'],
@@ -172,12 +172,18 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			overrided_conductor_size,
 			conductor_insulation,
 			egc_insulation,
-			conduit_type
+			conduit_type,
+			length,
+			overrided_ampere_frames,
+			pole,
+			kaic,
+			is_at_used_as_currents_value
 		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
 			node_type,
 			circuit_number: next_circuit_num,
+			length,
 			panel_data,
 			load_data,
 			parent_id: sub_parent_id || parent_id,
@@ -190,6 +196,10 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			conductor_insulation,
 			egc_insulation,
 			conduit_type,
+			overrided_ampere_frames,
+			pole,
+			kaic,
+			is_at_used_as_currents_value,
 			child_ids: []
 		});
 
@@ -256,26 +266,27 @@ export async function updateNode({
 
 		const update_query = !!whole_data
 			? query.update({
-				$set: {
-					...{
-						...whole_data,
-						panel_data: whole_data.panel_data
-							? JSON.parse(JSON.stringify(whole_data.panel_data))
-							: undefined,
-						load_data: whole_data.load_data
-							? JSON.parse(JSON.stringify(whole_data.load_data))
-							: undefined
+					$set: {
+						...{
+							...whole_data,
+							panel_data: whole_data.panel_data
+								? JSON.parse(JSON.stringify(whole_data.panel_data))
+								: undefined,
+							load_data: whole_data.load_data
+								? JSON.parse(JSON.stringify(whole_data.load_data))
+								: undefined
+						}
 					}
-				}
-			})
+				})
 			: query.update({
-				$set: {
-					parent_id,
-					panel_data,
-					circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-					load_data: load_data as Node['load_data']
-				}
-			});
+					$set: {
+						parent_id,
+						panel_data,
+						length: load_data?.length || panel_data?.length,
+						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+						load_data: load_data as Node['load_data']
+					}
+				});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
@@ -485,18 +496,18 @@ export async function updateLoadDescription({
 			$set: {
 				...(node_type === 'panel' &&
 					node_data?.panel_data && {
-					panel_data: {
-						...node_data.panel_data,
-						name: load_description
-					}
-				}),
+						panel_data: {
+							...node_data.panel_data,
+							name: load_description
+						}
+					}),
 				...(node_type === 'load' &&
 					node_data?.load_data && {
-					load_data: {
-						...node_data.load_data,
-						load_description
-					}
-				})
+						load_data: {
+							...node_data.load_data,
+							load_description
+						}
+					})
 			}
 		});
 
@@ -558,6 +569,29 @@ export async function changePole(node_id: string, pole: string) {
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing pole:', error);
+		throw error;
+	}
+}
+
+export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
+	const database = await databaseInstance();
+
+	try {
+		const query = database.nodes.findOne({
+			selector: {
+				id: node_id
+			}
+		});
+
+		const updated_node = await query.update({
+			$set: {
+				is_at_used_as_currents_value: is_use
+			}
+		});
+
+		return updated_node?._data;
+	} catch (error) {
+		console.error('Error changing data:', error);
 		throw error;
 	}
 }

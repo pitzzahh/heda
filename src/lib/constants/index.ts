@@ -241,6 +241,30 @@ export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	530: 500
 };
 
+export const ALTERNATING_CURRENT_REACTANCE: Record<number, number> = {
+	2.0: 2.7,
+	3.5: 1.7,
+	5.5: 1.1,
+	8.0: 0.69,
+	14: 0.44,
+	22: 0.29,
+	30: 0.19,
+	38: 0.16,
+	50: 0.13,
+	60: 0.11,
+	80: 0.088,
+	100: 0.074,
+	125: 0.066,
+	150: 0.059,
+	175: 0.053,
+	200: 0.049,
+	250: 0.043,
+	325: 0.04,
+	375: 0.036,
+	400: 0.036,
+	500: 0.032,
+} 
+
 
 export const CONDUIT_TABLE = {
 	conduit_columns: [16, 21, 27, 35, 41, 53, 63, 78, 91, 103, 128, 155],

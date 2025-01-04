@@ -13,7 +13,9 @@
 	const { root_node } = data;
 	const params = $derived(page.params);
 	const loads = $derived(data?.nodes);
-
+	const loads = $derived(data?.nodes);
+	const voltage_drops = $derived(data?.voltage_drops);
+  
 	let supply_from_name = $state('');
 	let node: NodeByIdResult | null = $state(null);
 
@@ -66,12 +68,12 @@
 						root_node?.highest_unit_form,
 						loads && loads.length > 0 ? loads.at(-1) : undefined
 					)}
-					is_root_node={data.current_node?.node_type === 'root'}
+					is_footer_shown={data.current_node?.node_type !== 'root'}
 				/>
 			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			<DataTable data={[]} columns={voltageDropColumns()} is_root_node={false} />
+			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>

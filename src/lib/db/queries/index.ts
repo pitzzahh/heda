@@ -10,6 +10,8 @@ import { databaseInstance } from '..';
 import type { LoadType } from '@/types/load';
 import type { Node, Project } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+import type { VoltageDrop } from '@/types/voltage-drop';
+import { ALTERNATING_CURRENT_REACTANCE } from '@/constants';
 import type { ComputeCommonProperties, NodeByIdResult } from '@/types/db';
 
 export async function getCurrentProject(project_id?: string): Promise<Project | undefined> {
@@ -17,8 +19,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-				id: project_id
-			}
+					id: project_id
+				}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
@@ -251,12 +253,12 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const db = await databaseInstance();
-	const childNodes = (
+	const child_nodes = (
 		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
 	).map((doc) => doc._data);
 
 	const loadsWithComputedFields = await Promise.all(
-		childNodes.map(async (doc) => {
+		child_nodes.map(async (doc) => {
 			const data = doc;
 			const voltage = 230; // this may change depending on phase
 			const conductor_set = data.conductor_sets as number;
@@ -377,4 +379,71 @@ export async function getNodeDepth(nodeId: string): Promise<number> {
 	}
 
 	return depth;
+}
+
+export async function getComputedVoltageDrops() {
+	const db = await databaseInstance();
+	let nodes = [] as PhaseLoadSchedule[];
+
+	const root_node = await db.nodes
+		.findOne({
+			selector: {
+				node_type: 'root'
+			}
+		})
+		.exec();
+
+	if (root_node) {
+		async function fetchChildNodes(parentId: string) {
+			const child_nodes = await getComputedLoads(parentId);
+			nodes = [...nodes, ...child_nodes];
+
+			for (const child_node of child_nodes) {
+				await fetchChildNodes(child_node.id);
+			}
+		}
+
+		await fetchChildNodes(root_node._data.id);
+	}
+
+	const nodes_with_additional_fields: VoltageDrop[] = [];
+
+	for (const node of nodes) {
+		const parent_node = await getNodeById(node.parent_id as string);
+
+		const parent_voltage_at_end_circuit = nodes_with_additional_fields.find(
+			(n) => n.id === node.parent_id
+		)?.voltage_at_end_circuit;
+
+		const conductor_size = node.overrided_conductor_size || node.conductor_size;
+		const length = node.length as number;
+		const z = ALTERNATING_CURRENT_REACTANCE[conductor_size];
+		const actual_z = Number(((length * z) / 305).toFixed(4));
+		const voltage_per_segment = Number((node.current * actual_z).toFixed(4));
+		const voltage_at_end_circuit =
+			parent_node?.node_type === 'root'
+				? voltage_per_segment
+				: parent_voltage_at_end_circuit
+					? Number((parent_voltage_at_end_circuit + voltage_per_segment).toFixed(4))
+					: 0;
+		const voltage_at_receiving_end = 230 - voltage_at_end_circuit;
+		const percent_voltage_drop = Number(((1 - voltage_at_receiving_end / 230) * 100).toFixed(4));
+		const current = node.is_at_used_as_currents_value ? node.at : node.current;
+
+		nodes_with_additional_fields.push({
+			z,
+			length,
+			actual_z,
+			voltage_per_segment,
+			voltage_at_end_circuit,
+			voltage_at_receiving_end,
+			percent_voltage_drop,
+			from_node_name:
+				parent_node?.highest_unit_form?.distribution_unit || parent_node?.panel_data?.name || '',
+			to_node_name: node.panel_data?.name || node.load_data?.load_description || '',
+			...{ ...node, current }
+		});
+	}
+
+	return nodes_with_additional_fields;
 }

@@ -224,6 +224,7 @@
 
 		const {
 			circuit_number,
+			length,
 			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
 		} = node_to_edit;
 
@@ -234,6 +235,7 @@
 		$formData.quantity = quantity;
 		$formData.varies = varies;
 		$formData.continuous = continuous;
+		$formData.length = length as number;
 	});
 </script>
 
@@ -330,64 +332,84 @@
 			</Form.Field>
 		</div>
 
-		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
-			<Popover.Root bind:open={open_terminal_temp}>
-				<Form.Control id={terminal_temp_trigger_id}>
-					{#snippet children({ props })}
-						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
-								!$formData.terminal_temperature && 'text-muted-foreground'
-							)}
-							role="combobox"
-							{...props}
-						>
-							{$formData.terminal_temperature
-								? convertToNormalText(
-										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-											(f) => f === $formData.terminal_temperature
+		<div>
+			<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
+				<Popover.Root bind:open={open_terminal_temp}>
+					<Form.Control id={terminal_temp_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.terminal_temperature && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{$formData.terminal_temperature
+									? convertToNormalText(
+											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
+												(f) => f === $formData.terminal_temperature
+											)
 										)
-									)
-								: 'Select a terminal temperature'}
-							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<input hidden value={$formData.terminal_temperature} name={props.name} />
+									: 'Select a terminal temperature'}
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.terminal_temperature} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
+							<Command.Empty>No terminal temp found.</Command.Empty>
+							<Command.Group>
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
+									<Command.Item
+										value={terminal_temp}
+										onSelect={() => {
+											$formData.terminal_temperature = terminal_temp;
+											closeAndFocusTrigger(terminal_temp_trigger_id);
+										}}
+										disabled={terminal_temp !== 'Standard Temperature'}
+									>
+										{convertToNormalText(terminal_temp)}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												terminal_temp !== $formData.terminal_temperature && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.Description>
+					This is the terminal temp that will determine the terminal temp of the wire to the main.
+				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+
+			<Form.Field {form} name="length">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Length</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							min={1}
+							bind:value={$formData.length}
+							placeholder="Enter the length"
+						/>
 					{/snippet}
 				</Form.Control>
-				<Popover.Content class="w-auto p-0">
-					<Command.Root>
-						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-						<Command.Empty>No terminal temp found.</Command.Empty>
-						<Command.Group>
-							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
-								<Command.Item
-									value={terminal_temp}
-									onSelect={() => {
-										$formData.terminal_temperature = terminal_temp;
-										closeAndFocusTrigger(terminal_temp_trigger_id);
-									}}
-									disabled={terminal_temp !== 'Standard Temperature'}
-								>
-									{convertToNormalText(terminal_temp)}
-									<Check
-										class={cn(
-											'ml-auto size-4',
-											terminal_temp !== $formData.terminal_temperature && 'text-transparent'
-										)}
-									/>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
-			<Form.Description>
-				This is the terminal temp that will determine the terminal temp of the wire to the main.
-			</Form.Description>
-			<Form.FieldErrors />
-		</Form.Field>
+				<Form.Description>This is the length of the load</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+		</div>
 	</div>
 
 	{#if !load_type}
