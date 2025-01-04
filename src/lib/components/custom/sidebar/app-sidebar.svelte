@@ -44,7 +44,7 @@
 	<SidebarHeader {project} {root_node} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Unit Hierarchy</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#if root_node?.highest_unit_form}
