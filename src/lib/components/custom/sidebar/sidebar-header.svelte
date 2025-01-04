@@ -39,7 +39,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root bind:open={component_state.settings_open}>
 				<Tooltip.Trigger>
-					<Settings />
+					<Settings {project} />
 				</Tooltip.Trigger>
 				<Tooltip.Content>New Settings</Tooltip.Content>
 			</Tooltip.Root>
