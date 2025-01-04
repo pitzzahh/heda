@@ -10,6 +10,12 @@
 		open_tree_delete_dialog: boolean;
 		is_hovering_on_tree_item: boolean;
 		button_state: 'stale' | 'processing';
+		node_name: string;
+		multi_copy: {
+			valid: boolean;
+			value: number;
+			error?: string;
+		};
 	}
 </script>
 
@@ -17,6 +23,7 @@
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Label } from '@/components/ui/label/index.js';
 	import { cn } from '@/utils';
@@ -25,6 +32,7 @@
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
 	import {
 		ChevronRight,
+		CircleAlert,
 		DatabaseZap,
 		Ellipsis,
 		FileUp,
@@ -86,13 +94,17 @@
 		open_tree_add_load_dialog: false,
 		open_tree_delete_dialog: false,
 		is_hovering_on_tree_item: false,
-		button_state: 'stale'
+		button_state: 'stale',
+		node_name: 'Unknown',
+		multi_copy: { valid: true, value: 1 }
 	});
 
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = new Collapsibles();
 
 	async function copyNodeById(node_id: string) {
+		component_state.node_name =
+			node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (component_state.open_copy_dialog) return;
 		await copyAndAddNodeById(node_id)
 			.then((copied_node) => {
@@ -103,6 +115,13 @@
 				invalidate('app:workspace');
 			})
 			.finally(() => invalidate('app:workspace/load-schedule'));
+	}
+
+	async function handleMultiCopy() {
+		const copy_count = (document.getElementById('copy_count') as HTMLInputElement).value;
+		if (!copy_count) return;
+		await copyNodeById(node.id);
+		component_state.open_copy_dialog = false;
 	}
 </script>
 
@@ -504,15 +523,35 @@
 <Dialog.Root bind:open={component_state.open_copy_dialog}>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
-			<Dialog.Title>Copy</Dialog.Title>
-			<Dialog.Description>Specify the number of panel/load to be copied.</Dialog.Description>
+			<Dialog.Title>Copy {component_state.node_name}</Dialog.Title>
+			<Dialog.Description
+				>Specify the number of {component_state.node_name} to be copied.</Dialog.Description
+			>
 		</Dialog.Header>
+		{#if component_state.multi_copy.valid}
+			<Alert.Root variant="warning">
+				<CircleAlert class="size-4" />
+				<Alert.Description
+					>{component_state.multi_copy.error ??
+						'Invalid copy count, must be greater than 0'}.</Alert.Description
+				>
+			</Alert.Root>
+		{/if}
 		<div class="grid grid-cols-4 items-center gap-4">
 			<Label for="copy_count" class="text-right">Copy count</Label>
-			<Input id="copy_count" value={0} class="col-span-3" />
+			<Input
+				id="copy_count"
+				type="number"
+				placeholder="Enter the circuit number"
+				bind:value={component_state.multi_copy.value}
+				class={cn("col-span-3", {
+					'border-red-600': !component_state.multi_copy.valid
+				})}
+				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
+			/>
 		</div>
 		<Dialog.Footer>
-			<Button type="submit">Save changes</Button>
+			<Button type="submit" onclick={handleMultiCopy}>Save changes</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
