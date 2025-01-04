@@ -425,7 +425,7 @@ export async function getComputedVoltageDrops() {
 		)?.voltage_at_end_circuit;
 
 		const conductor_size = node.overrided_conductor_size || node.conductor_size;
-		const length = 10;
+		const length = node.length as number;
 		const z = ALTERNATING_CURRENT_REACTANCE[conductor_size];
 		const actual_z = Number(((length * z) / 305).toFixed(4));
 		const voltage_per_segment = Number((node.current * actual_z).toFixed(4));
@@ -437,6 +437,7 @@ export async function getComputedVoltageDrops() {
 					: 0;
 		const voltage_at_receiving_end = 230 - voltage_at_end_circuit;
 		const percent_voltage_drop = Number(((1 - voltage_at_receiving_end / 230) * 100).toFixed(4));
+		const current = node.is_at_used_as_currents_value ? node.at : node.current;
 
 		nodes_with_additional_fields.push({
 			z,
@@ -446,9 +447,10 @@ export async function getComputedVoltageDrops() {
 			voltage_at_end_circuit,
 			voltage_at_receiving_end,
 			percent_voltage_drop,
-			from_node_name: parent_node?.highest_unit_form?.distribution_unit || parent_node?.panel_data?.name || '',
+			from_node_name:
+				parent_node?.highest_unit_form?.distribution_unit || parent_node?.panel_data?.name || '',
 			to_node_name: node.panel_data?.name || node.load_data?.load_description || '',
-			...node
+			...{ ...node, current }
 		});
 	}
 
