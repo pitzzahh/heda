@@ -1,5 +1,6 @@
 <script module lang="ts">
 	interface ComponentState {
+		open_copy_dialog: boolean;
 		open_panel_context_menu: boolean;
 		open_load_context_menu: boolean;
 		open_tree_edit_panel_action_dialog: boolean;
@@ -76,6 +77,7 @@
 	const settings_state = getSettingsState();
 
 	let component_state = $state<ComponentState>({
+		open_copy_dialog: false,
 		open_panel_context_menu: false,
 		open_load_context_menu: false,
 		open_tree_edit_panel_action_dialog: false,
@@ -89,6 +91,19 @@
 
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = new Collapsibles();
+
+	async function copyNodeById(node_id: string) {
+		if (component_state.open_copy_dialog) return;
+		await copyAndAddNodeById(node_id)
+			.then((copied_node) => {
+				undo_redo_state.setActionToUndo({
+					action: 'copy_node',
+					data: copied_node as unknown as PhaseLoadSchedule
+				});
+				invalidate('app:workspace');
+			})
+			.finally(() => invalidate('app:workspace/load-schedule'));
+	}
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -145,15 +160,8 @@
 				{@const tooltip_data = [
 					{
 						trigger_callback: async () => {
-							await copyAndAddNodeById(node.id)
-								.then((copied_node) => {
-									undo_redo_state.setActionToUndo({
-										action: 'copy_node',
-										data: copied_node as unknown as PhaseLoadSchedule
-									});
-									invalidate('app:workspace');
-								})
-								.finally(() => invalidate('app:workspace/load-schedule'));
+							component_state.open_copy_dialog = settings_state.has_load_copy_count;
+							await copyNodeById(node.id);
 						},
 						variant: 'ghost',
 						icon: Copy,
@@ -311,15 +319,8 @@
 				},
 				{
 					trigger_callback: async () => {
-						await copyAndAddNodeById(node.id)
-							.then((copied_node) => {
-								undo_redo_state.setActionToUndo({
-									action: 'copy_node',
-									data: copied_node as unknown as PhaseLoadSchedule
-								});
-								invalidate('app:workspace');
-							})
-							.finally(() => invalidate('app:workspace/load-schedule'));
+						component_state.open_copy_dialog = settings_state.has_panel_copy_count;
+						await copyNodeById(node.id);
 					},
 					variant: 'ghost',
 					icon: Copy,
@@ -500,28 +501,18 @@
 	</DropdownMenu.Root>
 {/snippet}
 
-{#snippet copy_count_prompt({ what_to_copy }: { what_to_copy: string })}
-	<Dialog.Root>
-		<Dialog.Content class="sm:max-w-[425px]">
-			<Dialog.Header>
-				<Dialog.Title>Copy {what_to_copy}</Dialog.Title>
-				<Dialog.Description>
-					Make changes to your profile here. Click save when you're done.
-				</Dialog.Description>
-			</Dialog.Header>
-			<div class="grid gap-4 py-4">
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="name" class="text-right">Name</Label>
-					<Input id="name" value="Pedro Duarte" class="col-span-3" />
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="username" class="text-right">Username</Label>
-					<Input id="username" value="@peduarte" class="col-span-3" />
-				</div>
-			</div>
-			<Dialog.Footer>
-				<Button type="submit">Save changes</Button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Root>
-{/snippet}
+<Dialog.Root bind:open={component_state.open_copy_dialog}>
+	<Dialog.Content class="sm:max-w-[425px]">
+		<Dialog.Header>
+			<Dialog.Title>Copy</Dialog.Title>
+			<Dialog.Description>Specify the number of panel/load to be copied.</Dialog.Description>
+		</Dialog.Header>
+		<div class="grid grid-cols-4 items-center gap-4">
+			<Label for="copy_count" class="text-right">Copy count</Label>
+			<Input id="copy_count" value={0} class="col-span-3" />
+		</div>
+		<Dialog.Footer>
+			<Button type="submit">Save changes</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
