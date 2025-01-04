@@ -17,11 +17,11 @@ const project_schema_literal = {
 				is_adjustment_factor_dynamic: {
 					type: 'boolean',
 					default: false
-				},
-				show_loads_on_unit_hierarchy: {
-					type: 'boolean',
-					default: false
-				},
+				}
+				// show_loads_on_unit_hierarchy: {
+				// 	type: 'boolean',
+				// 	default: false
+				// }
 			}
 		},
 		root_node_id: { type: 'string' }
@@ -49,6 +49,8 @@ const node_literal = {
 		conduit_type: { type: 'string', default: 'PVC' },
 		pole: { type: 'string', default: '2' },
 		kaic: { type: 'string', default: '5' },
+		length: { type: 'number' },
+		is_at_used_as_currents_value: { type: 'boolean', default: false },
 		panel_data: {
 			type: 'object',
 			properties: {
