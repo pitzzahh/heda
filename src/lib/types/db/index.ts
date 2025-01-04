@@ -18,3 +18,17 @@ export type MyDatabaseCollections = {
   projects: ProjectCollection,
   nodes: NodeCollection
 }
+
+
+export type NodeByIdResult = Node & {
+  load_description: string;
+  voltage: number;
+  va: number;
+  ampere_frames: number;
+  current: number;
+  at: number;
+  conductor_size: number;
+  adjusted_current: number;
+  conduit_size: string | number;
+  egc_size: number | 'error';
+};
