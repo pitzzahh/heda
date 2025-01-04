@@ -1,5 +1,7 @@
 import type { VoltageDrop } from '@/types/voltage-drop';
 import type { ColumnDef } from '@tanstack/table-core';
+import { renderComponent } from '@/components/ui/data-table';
+import VdCurrentCell from '../(components)/vd-current-cell.svelte';
 
 export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
@@ -66,7 +68,16 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 		columns: [
 			{
 				accessorKey: 'current',
-				cell: (info) => info.getValue(),
+				cell: (info) => {
+					const current = info.getValue();
+					const node = info.row.original;
+					
+					return renderComponent(VdCurrentCell, {
+						current,
+						is_at_used: node.is_at_used_as_currents_value as boolean,
+						node
+					});
+				},
 				header: '(A)'
 			}
 		]
