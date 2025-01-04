@@ -1,5 +1,6 @@
 import type { Project, Node } from "@/db/schema";
 import type { RxCollection } from "rxdb";
+import type { LoadType } from "@/types/load";
 
 // we declare one static ORM-method for the collection
 export type ProjectCollectionMethods = {
@@ -32,3 +33,15 @@ export type NodeByIdResult = Node & {
   conduit_size: string | number;
   egc_size: number | 'error';
 };
+export type ComputeCommonProperties = {
+  va: number;
+  current: number;
+  conductor_set: number;
+  conductor_qty: number;
+  load_type: LoadType | 'Main';
+  ambient_temp: number;
+  overrided_at?: number;
+  overrided_conductor_size?: number;
+  overrided_egc_size?: number;
+  overrided_conduit_size?: number;
+}
