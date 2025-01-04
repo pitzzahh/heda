@@ -12,6 +12,7 @@
 	const { root_node } = data;
 	let supply_from_name = $state('');
 	let loads = $derived(data?.nodes);
+	let voltage_drops = $derived(data?.voltage_drops);
 
 	$effect(() => {
 		const nodeId = params.id.split('_').at(-1) as string;
@@ -64,12 +65,12 @@
 						root_node?.highest_unit_form,
 						loads && loads.length > 0 ? loads.at(-1) : undefined
 					)}
-					is_root_node={data.current_node?.node_type === 'root'}
+					is_footer_shown={data.current_node?.node_type !== 'root'}
 				/>
 			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			<DataTable data={[]} columns={voltageDropColumns()} is_root_node={false} />
+			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
