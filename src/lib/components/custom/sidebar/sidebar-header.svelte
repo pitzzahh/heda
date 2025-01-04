@@ -41,7 +41,7 @@
 				<Tooltip.Trigger>
 					<Settings />
 				</Tooltip.Trigger>
-				<Tooltip.Content>Settings</Tooltip.Content>
+				<Tooltip.Content>New Settings</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		<SettingsDialog {project} />
