@@ -13,7 +13,7 @@ export class SettingsState {
 
 	themeColor = $state<ThemeColor>('excel');
 	font = $state<Font>('default');
-	show_loads_on_unit_hierarchy = $state(false)
+	show_loads_on_unit_hierarchy = $state(false);
 
 	constructor(mode: ThemeMode) {
 		const localStorage = new LocalStorage<Settings>('settings');
@@ -21,6 +21,7 @@ export class SettingsState {
 		setGlobalColorTheme(mode, localStorage?.current?.color || 'excel');
 		this.setGlobalFont(localStorage?.current?.font || 'default');
 		this.localStorage = localStorage;
+		this.show_loads_on_unit_hierarchy = localStorage?.current?.show_loads_on_unit_hierarchy;
 	}
 
 	private setGlobalFont(font: Font) {
