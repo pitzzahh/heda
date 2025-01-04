@@ -1,23 +1,54 @@
+<script module lang="ts">
+	interface ComponentState {
+		open_copy_dialog: boolean;
+		open_panel_context_menu: boolean;
+		open_load_context_menu: boolean;
+		open_tree_edit_panel_action_dialog: boolean;
+		open_tree_edit_load_action_dialog: boolean;
+		open_tree_add_panel_dialog: boolean;
+		open_tree_add_load_dialog: boolean;
+		open_tree_delete_dialog: boolean;
+		is_hovering_on_tree_item: boolean;
+		button_state: 'stale' | 'processing';
+		node_name: string;
+		multi_copy: {
+			valid: boolean;
+			value: number;
+			error?: string;
+		};
+	}
+</script>
+
 <script lang="ts">
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
+	import * as Dialog from '@/components/ui/dialog/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
+	import { Input } from '@/components/ui/input/index.js';
+	import { Label } from '@/components/ui/label/index.js';
 	import { cn } from '@/utils';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
 	import {
 		ChevronRight,
+		CircleAlert,
 		DatabaseZap,
 		Ellipsis,
 		FileUp,
 		PlugZap,
-		PanelsLeftBottom
+		PanelsLeftBottom,
+		CirclePlus,
+		Copy,
+		Grid2x2Plus,
+		Pencil,
+		Trash2
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId, getNodeById } from '@/db/queries/index';
+	import { getChildNodesByParentId } from '@/db/queries/index';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
@@ -28,18 +59,12 @@
 	import { AddLoadDialog } from '@/components/custom/load';
 	import { toast } from 'svelte-sonner';
 	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
-	import {
-		CirclePlusIcon,
-		CopyIcon,
-		Grid2x2PlusIcon,
-		PencilIcon,
-		Trash2Icon
-	} from './(components)';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '@/helpers/export';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { Button } from '@/components/ui/button';
 
 	let {
 		node,
@@ -59,18 +84,45 @@
 	const sidebar_context = useSidebar();
 	const settings_state = getSettingsState();
 
-	let open_panel_context_menu = $state(false);
-	let open_load_context_menu = $state(false);
-	let open_tree_edit_panel_action_dialog = $state(false);
-	let open_tree_edit_load_action_dialog = $state(false);
-	let open_tree_add_panel_dialog = $state(false);
-	let open_tree_add_load_dialog = $state(false);
-	let open_tree_delete_dialog = $state(false);
-	let is_hovering_on_tree_item = $state(false);
-	let button_state: 'stale' | 'processing' = $state('stale');
+	let component_state = $state<ComponentState>({
+		open_copy_dialog: false,
+		open_panel_context_menu: false,
+		open_load_context_menu: false,
+		open_tree_edit_panel_action_dialog: false,
+		open_tree_edit_load_action_dialog: false,
+		open_tree_add_panel_dialog: false,
+		open_tree_add_load_dialog: false,
+		open_tree_delete_dialog: false,
+		is_hovering_on_tree_item: false,
+		button_state: 'stale',
+		node_name: 'Unknown',
+		multi_copy: { valid: true, value: 1 }
+	});
 
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = new Collapsibles();
+
+	async function copyNodeById(node_id: string) {
+		component_state.node_name =
+			node.panel_data?.name || node.load_data?.load_description || 'Unknown';
+		if (component_state.open_copy_dialog) return;
+		await copyAndAddNodeById(node_id)
+			.then((copied_node) => {
+				undo_redo_state.setActionToUndo({
+					action: 'copy_node',
+					data: copied_node as unknown as PhaseLoadSchedule
+				});
+				invalidate('app:workspace');
+			})
+			.finally(() => invalidate('app:workspace/load-schedule'));
+	}
+
+	async function handleMultiCopy() {
+		const copy_count = (document.getElementById('copy_count') as HTMLInputElement).value;
+		if (!copy_count) return;
+		await copyNodeById(node.id);
+		component_state.open_copy_dialog = false;
+	}
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -86,11 +138,11 @@
 		{#if settings_state.show_loads_on_unit_hierarchy}
 			<Sidebar.MenuItem class="w-full">
 				<Sidebar.MenuButton
-					onmouseenter={() => (is_hovering_on_tree_item = true)}
-					onmouseleave={() => (is_hovering_on_tree_item = false)}
+					onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
+					onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
 					class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 				>
-					<ContextMenu.Root bind:open={open_load_context_menu}>
+					<ContextMenu.Root bind:open={component_state.open_load_context_menu}>
 						<ContextMenu.Trigger class="flex w-full items-center gap-1">
 							<div class="flex w-full items-center gap-2">
 								<div class="w-4">
@@ -106,13 +158,13 @@
 								<UpdateLoadDialog
 									{highest_unit}
 									{phase_main_load_form}
-									bind:some_open_state={open_load_context_menu}
+									bind:some_open_state={component_state.open_load_context_menu}
 									load_to_edit={node}
 								/>
 								<ConfirmationDialog
 									trigger_text="Remove load"
 									trigger_variant="destructive"
-									bind:some_open_state={open_load_context_menu}
+									bind:some_open_state={component_state.open_load_context_menu}
 									onConfirm={async () => {
 										await removeNode(node.id)
 											.then(() => invalidate('app:workspace'))
@@ -127,33 +179,26 @@
 				{@const tooltip_data = [
 					{
 						trigger_callback: async () => {
-							await copyAndAddNodeById(node.id)
-								.then((copied_node) => {
-									undo_redo_state.setActionToUndo({
-										action: 'copy_node',
-										data: copied_node as unknown as PhaseLoadSchedule
-									});
-									invalidate('app:workspace');
-								})
-								.finally(() => invalidate('app:workspace/load-schedule'));
+							component_state.open_copy_dialog = settings_state.has_load_copy_count;
+							await copyNodeById(node.id);
 						},
 						variant: 'ghost',
-						icon: CopyIcon,
+						icon: Copy,
 						className: 'text-muted-foreground',
 						tooltip_content: 'Copy Load'
 					},
 					{
-						trigger_callback: () => (open_tree_edit_load_action_dialog = true),
+						trigger_callback: () => (component_state.open_tree_edit_load_action_dialog = true),
 						variant: 'ghost',
-						icon: PencilIcon,
+						icon: Pencil,
 						hidden: false,
 						className: 'text-muted-foreground',
 						tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
 					},
 					{
-						trigger_callback: () => (open_tree_delete_dialog = true),
+						trigger_callback: () => (component_state.open_tree_delete_dialog = true),
 						variant: 'ghost',
-						icon: Trash2Icon,
+						icon: Trash2,
 						hidden: false,
 						tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
 						className: '!text-red-600 hover:!bg-red-600/10'
@@ -169,8 +214,8 @@
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
-					onmouseenter={() => (is_hovering_on_tree_item = true)}
-					onmouseleave={() => (is_hovering_on_tree_item = false)}
+					onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
+					onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
 					class={cn(
 						'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 						{
@@ -187,7 +232,7 @@
 							/>
 						{/snippet}
 					</Collapsible.Trigger>
-					<ContextMenu.Root bind:open={open_panel_context_menu}>
+					<ContextMenu.Root bind:open={component_state.open_panel_context_menu}>
 						<ContextMenu.Trigger class="flex w-full items-center justify-between">
 							{@const node_name = (node.highest_unit_form?.distribution_unit ||
 								node.panel_data?.name) as string}
@@ -223,7 +268,7 @@
 										{highest_unit}
 										trigger_text={`Edit ${node.panel_data?.name || 'Panel'}`}
 										show_trigger={true}
-										bind:some_open_state={open_panel_context_menu}
+										bind:some_open_state={component_state.open_panel_context_menu}
 										parent_id={node.parent_id}
 									/>
 								{/if}
@@ -231,8 +276,8 @@
 									show_trigger={true}
 									trigger_text={node.node_type === 'root' ? 'Remove Project' : 'Remove Panel'}
 									trigger_variant="destructive"
-									bind:button_state
-									bind:some_open_state={open_panel_context_menu}
+									bind:button_state={component_state.button_state}
+									bind:some_open_state={component_state.open_panel_context_menu}
 									onConfirm={async () => {
 										if (node.node_type === 'root' && project) {
 											await deleteProject(project.id);
@@ -245,7 +290,7 @@
 											});
 										}
 										invalidate('app:workspace/load-schedule')
-											.then(() => (button_state = 'stale'))
+											.then(() => (component_state.button_state = 'stale'))
 											.finally(() => {
 												toast.success(
 													node.node_type === 'root'
@@ -276,35 +321,28 @@
 
 			{@const tooltip_data = [
 				{
-					trigger_callback: () => (open_tree_add_panel_dialog = true),
+					trigger_callback: () => (component_state.open_tree_add_panel_dialog = true),
 					variant: 'ghost',
-					icon: Grid2x2PlusIcon,
+					icon: Grid2x2Plus,
 					hidden: false,
 					tooltip_content: 'Add Panel',
 					className: 'text-muted-foreground'
 				},
 				{
-					trigger_callback: () => (open_tree_add_load_dialog = true),
+					trigger_callback: () => (component_state.open_tree_add_load_dialog = true),
 					variant: 'ghost',
-					icon: CirclePlusIcon,
+					icon: CirclePlus,
 					hidden: false,
 					tooltip_content: 'Add Load',
 					className: 'text-muted-foreground'
 				},
 				{
 					trigger_callback: async () => {
-						await copyAndAddNodeById(node.id)
-							.then((copied_node) => {
-								undo_redo_state.setActionToUndo({
-									action: 'copy_node',
-									data: copied_node as unknown as PhaseLoadSchedule
-								});
-								invalidate('app:workspace');
-							})
-							.finally(() => invalidate('app:workspace/load-schedule'));
+						component_state.open_copy_dialog = settings_state.has_panel_copy_count;
+						await copyNodeById(node.id);
 					},
 					variant: 'ghost',
-					icon: CopyIcon,
+					icon: Copy,
 					hidden: node.node_type === 'root',
 					tooltip_content: 'Copy Panel',
 					className: 'text-muted-foreground'
@@ -318,10 +356,10 @@
 									'This is a system error and should not be here, the error has been logged.'
 							});
 						}
-						open_tree_edit_panel_action_dialog = true;
+						component_state.open_tree_edit_panel_action_dialog = true;
 					},
 					variant: 'ghost',
-					icon: PencilIcon,
+					icon: Pencil,
 					hidden: node.node_type === 'root',
 					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
 					className: 'text-muted-foreground'
@@ -353,9 +391,9 @@
 					className: 'text-muted-foreground'
 				},
 				{
-					trigger_callback: () => (open_tree_delete_dialog = true),
+					trigger_callback: () => (component_state.open_tree_delete_dialog = true),
 					variant: 'ghost',
-					icon: Trash2Icon,
+					icon: Trash2,
 					hidden: false,
 					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
 					className: '!text-red-600 hover:!bg-red-600/10'
@@ -371,14 +409,14 @@
 				{highest_unit}
 				is_parent_root_node={node.node_type === 'root'}
 				parent_id={node.id}
-				bind:open_dialog_state={open_tree_add_panel_dialog}
+				bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
 				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 			/>
 			<AddLoadDialog
 				{phase_main_load_form}
 				{highest_unit}
 				remove_trigger={true}
-				bind:open_dialog_state={open_tree_add_load_dialog}
+				bind:open_dialog_state={component_state.open_tree_add_load_dialog}
 				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 				panel_id_from_tree={node.id}
 			/>
@@ -393,8 +431,8 @@
 	{highest_unit}
 	{phase_main_load_form}
 	remove_trigger={true}
-	bind:open_load_dialog={open_tree_edit_load_action_dialog}
-	bind:some_open_state={open_load_context_menu}
+	bind:open_load_dialog={component_state.open_tree_edit_load_action_dialog}
+	bind:some_open_state={component_state.open_load_context_menu}
 	load_to_edit={node}
 />
 {#if node.parent_id}
@@ -402,8 +440,8 @@
 		panel_to_edit={node}
 		{generic_phase_panel_form}
 		{highest_unit}
-		bind:open_panel_dialog={open_tree_edit_panel_action_dialog}
-		bind:some_open_state={open_panel_context_menu}
+		bind:open_panel_dialog={component_state.open_tree_edit_panel_action_dialog}
+		bind:some_open_state={component_state.open_panel_context_menu}
 		parent_id={node.parent_id}
 	/>
 {/if}
@@ -418,10 +456,10 @@
 				? 'Remove Panel'
 				: 'Remove Load'}
 		trigger_variant="destructive"
-		bind:open_dialog_state={open_tree_delete_dialog}
-		bind:button_state
+		bind:open_dialog_state={component_state.open_tree_delete_dialog}
+		bind:button_state={component_state.button_state}
 		onConfirm={async () => {
-			button_state = 'processing';
+			component_state.button_state = 'processing';
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
 				collapsibles.removeAllNodeId();
@@ -434,12 +472,11 @@
 				});
 				collapsibles.removeNodeId(node.id);
 			}
-			// TODO: Improve invalidation github issue #64
-			invalidate('app:workspace/load-schedule')
-				.then(() => invalidate('app:workspace'))
+			invalidate('app:workspace')
+				.then(() => invalidate('app:workspace/load-schedule'))
 				.finally(() => {
-					button_state = 'stale';
-					open_tree_delete_dialog = false;
+					component_state.button_state = 'stale';
+					component_state.open_tree_delete_dialog = false;
 					toast.success(
 						node.node_type === 'root'
 							? `${project?.project_name ?? 'Project'} removed succesfully`
@@ -465,7 +502,7 @@
 		<Portal>
 			<DropdownMenu.Content
 				class="grid rounded-lg"
-				side={sidebar_context.isMobile ? 'bottom' : 'left'}
+				side={sidebar_context.isMobile ? 'bottom' : 'right'}
 				align={sidebar_context.isMobile ? 'end' : 'start'}
 			>
 				<DropdownMenu.Group>
@@ -482,3 +519,39 @@
 		</Portal>
 	</DropdownMenu.Root>
 {/snippet}
+
+<Dialog.Root bind:open={component_state.open_copy_dialog}>
+	<Dialog.Content class="sm:max-w-[425px]">
+		<Dialog.Header>
+			<Dialog.Title>Copy {component_state.node_name}</Dialog.Title>
+			<Dialog.Description
+				>Specify the number of {component_state.node_name} to be copied.</Dialog.Description
+			>
+		</Dialog.Header>
+		{#if component_state.multi_copy.valid}
+			<Alert.Root variant="warning">
+				<CircleAlert class="size-4" />
+				<Alert.Description
+					>{component_state.multi_copy.error ??
+						'Invalid copy count, must be greater than 0'}.</Alert.Description
+				>
+			</Alert.Root>
+		{/if}
+		<div class="grid grid-cols-4 items-center gap-4">
+			<Label for="copy_count" class="text-right">Copy count</Label>
+			<Input
+				id="copy_count"
+				type="number"
+				placeholder="Enter the circuit number"
+				bind:value={component_state.multi_copy.value}
+				class={cn("col-span-3", {
+					'border-red-600': !component_state.multi_copy.valid
+				})}
+				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
+			/>
+		</div>
+		<Dialog.Footer>
+			<Button type="submit" onclick={handleMultiCopy}>Save changes</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

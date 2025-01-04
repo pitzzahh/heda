@@ -2,7 +2,7 @@
 	import { Save, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
-	import { SettingsDialog } from '..';
+	import { SettingsDialog, Settings } from '..';
 	import { toast } from 'svelte-sonner';
 	import type { Project, Node } from '@/db/schema';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
@@ -11,8 +11,9 @@
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
-	let button_states = $state({
-		export_to_excel: 'idle' as ButtonState
+	let component_state = $state({
+		export_to_excel: 'idle' as ButtonState,
+		settings_open: false
 	});
 
 	function handleSave() {
@@ -35,6 +36,14 @@
 				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
+		<Tooltip.Provider>
+			<Tooltip.Root bind:open={component_state.settings_open}>
+				<Tooltip.Trigger>
+					<Settings {project} />
+				</Tooltip.Trigger>
+				<Tooltip.Content>New Settings</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 		<SettingsDialog {project} />
 		<UndoRedoButtons />
 	</div>
@@ -42,15 +51,15 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger
-					disabled={button_states.export_to_excel === 'loading'}
+					disabled={component_state.export_to_excel === 'loading'}
 					class={buttonVariants({ variant: 'outline', size: 'sm' })}
 					onclick={() =>
 						exportToExcel(
 							root_node.id,
 							root_node?.highest_unit_form,
 							project?.project_name,
-							() => (button_states.export_to_excel = 'idle'),
-							() => (button_states.export_to_excel = 'loading')
+							() => (component_state.export_to_excel = 'idle'),
+							() => (component_state.export_to_excel = 'loading')
 						)}
 				>
 					<FileUp class="h-4 w-4" />
