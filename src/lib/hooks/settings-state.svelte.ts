@@ -1,4 +1,4 @@
-import { LocalStorage } from './storage.svelte';
+import { PersistedState } from 'runed';
 import type { Settings } from '@/types/settings';
 import setGlobalColorTheme from '@/theme-colors/theme-colors';
 import { setState, getState } from '@/state/index.svelte';
@@ -9,21 +9,31 @@ type ThemeColor = 'autocad' | 'excel';
 type ThemeMode = 'dark' | 'light';
 
 export class SettingsState {
-	localStorage: LocalStorage<Settings>;
+	localStorage: PersistedState<Settings>;
 
 	themeColor = $state<ThemeColor>('excel');
 	font = $state<Font>('default');
 	show_loads_on_unit_hierarchy = $state(false);
-	has_panel_copy_count = $state(false);
-	has_load_copy_count = $state(false);
+	is_adjustment_factor_dynamic = $state(false);
+	is_panel_multi_copy = $state(false);
+	is_load_multi_copy = $state(false);
 
 	constructor(mode: ThemeMode) {
-		const localStorage = new LocalStorage<Settings>('settings');
+		const localStorage = new PersistedState<Settings>('settings', {
+			color: 'excel',
+			font: 'default',
+			show_loads_on_unit_hierarchy: false,
+			is_adjustment_factor_dynamic: false,
+			is_panel_multi_copy: false,
+			is_load_multi_copy: false,
+		});
 
 		setGlobalColorTheme(mode, localStorage?.current?.color || 'excel');
 		this.setGlobalFont(localStorage?.current?.font || 'default');
+		this.setShowLoadsOnUnitHeirarchy(localStorage?.current?.show_loads_on_unit_hierarchy || false);
+		this.setIsPanelMultiCopy(localStorage?.current?.is_panel_multi_copy || false);
+		this.setisLoadMultiCopy(localStorage?.current?.is_load_multi_copy || false);
 		this.localStorage = localStorage;
-		this.show_loads_on_unit_hierarchy = localStorage?.current?.show_loads_on_unit_hierarchy;
 	}
 
 	private setGlobalFont(font: Font) {
@@ -64,23 +74,23 @@ export class SettingsState {
 		this.localStorage.current = updatedData;
 	}
 
-	setHasPanelCopyCount(has_panel_copy_count: boolean) {
+	setIsPanelMultiCopy(is_panel_multi_copy: boolean) {
 		const updatedData = (this.localStorage.current = {
 			...this.localStorage.current,
-			has_panel_copy_count
+			is_panel_multi_copy
 		});
 
-		this.has_panel_copy_count = has_panel_copy_count;
+		this.is_panel_multi_copy = is_panel_multi_copy;
 		this.localStorage.current = updatedData;
 	}
 
-	setHasLoadCopyCount(has_load_copy_count: boolean) {
+	setisLoadMultiCopy(is_load_multi_copy: boolean) {
 		const updatedData = (this.localStorage.current = {
 			...this.localStorage.current,
-			has_load_copy_count
+			is_load_multi_copy
 		});
 
-		this.has_load_copy_count = has_load_copy_count;
+		this.is_load_multi_copy = is_load_multi_copy;
 		this.localStorage.current = updatedData;
 	}
 }
