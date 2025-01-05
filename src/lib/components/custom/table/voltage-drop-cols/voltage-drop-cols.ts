@@ -2,6 +2,7 @@ import type { VoltageDrop } from '@/types/voltage-drop';
 import type { ColumnDef } from '@tanstack/table-core';
 import { renderComponent } from '@/components/ui/data-table';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';
+import { ActionsColumnDropdown } from '../(components)';
 
 export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
@@ -71,7 +72,7 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 				cell: (info) => {
 					const current = info.getValue();
 					const node = info.row.original;
-					
+
 					return renderComponent(VdCurrentCell, {
 						current,
 						is_at_used: node.is_at_used_as_currents_value as boolean,
@@ -118,5 +119,15 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 		header: 'PERCENT VOLTAGE DROP (%)',
 		accessorKey: 'percent_voltage_drop',
 		cell: (info) => info.getValue()
+	},
+
+	{
+		header: 'Actions',
+		cell: ({ row }) => {
+			return renderComponent(ActionsColumnDropdown, {
+				node: row.original,
+				is_in_vd_table: true
+			});
+		}
 	}
 ];
