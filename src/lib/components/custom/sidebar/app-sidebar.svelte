@@ -12,7 +12,6 @@
 	import type { Project } from '@/db/schema';
 	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
 	let {
 		ref = $bindable(null),
@@ -28,16 +27,7 @@
 		root_node: Node;
 	} = $props();
 
-	// const projectState = getProjectState();
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-	const settings_state = getSettingsState();
-
-	$effect(() => {
-		settings_state.show_loads_on_unit_hierarchy =
-			project?.settings.show_loads_on_unit_hierarchy ?? false;
-		settings_state.has_panel_copy_count = project?.settings.has_panel_copy_count ?? false;
-		settings_state.has_load_copy_count = project?.settings.has_load_copy_count ?? false;
-	});
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>

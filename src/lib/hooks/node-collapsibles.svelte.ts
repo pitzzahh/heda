@@ -1,9 +1,9 @@
-import { LocalStorage } from './storage.svelte';
+import { PersistedState } from 'runed';
 export class Collapsibles {
-	local_storage: LocalStorage<string[]>;
+	persisted_state: PersistedState<string[]>;
 
 	constructor() {
-		this.local_storage = new LocalStorage<string[]>('collapsible-node-ids', []);
+		this.persisted_state = new PersistedState<string[]>('collapsible-node-ids', []);
 	}
 
 	toggleCollapsible(node_id: string) {
@@ -13,23 +13,23 @@ export class Collapsibles {
 			this.addNodeId(node_id);
 			return;
 		}
-		
+
 		this.removeNodeId(node_id);
 	}
 
 	removeNodeId(node_id: string) {
-		this.local_storage.current = this.local_storage.current.filter((id) => id !== node_id);
+		this.persisted_state.current = this.persisted_state.current.filter((id) => id !== node_id);
 	}
 
 	checkIsIdExisting(node_id: string) {
-		return this.local_storage.current ? this.local_storage.current.includes(node_id) : false;
+		return this.persisted_state.current ? this.persisted_state.current.includes(node_id) : false;
 	}
 
 	addNodeId(node_id: string) {
-		this.local_storage.current = [...this.local_storage.current, node_id];
+		this.persisted_state.current = [...this.persisted_state.current, node_id];
 	}
 
 	removeAllNodeId() {
-		this.local_storage.current = [];
+		this.persisted_state.current = [];
 	}
 }

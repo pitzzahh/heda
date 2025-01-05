@@ -1,4 +1,4 @@
-import { LocalStorage } from './storage.svelte';
+import { PersistedState } from 'runed';
 import type { Settings } from '@/types/settings';
 import setGlobalColorTheme from '@/theme-colors/theme-colors';
 import { setState, getState } from '@/state/index.svelte';
@@ -9,21 +9,31 @@ type ThemeColor = 'autocad' | 'excel';
 type ThemeMode = 'dark' | 'light';
 
 export class SettingsState {
-	localStorage: LocalStorage<Settings>;
+	persisted_state: PersistedState<Settings>;
 
 	themeColor = $state<ThemeColor>('excel');
 	font = $state<Font>('default');
 	show_loads_on_unit_hierarchy = $state(false);
-	has_panel_copy_count = $state(false);
-	has_load_copy_count = $state(false);
+	is_adjustment_factor_dynamic = $state(false);
+	is_panel_multi_copy = $state(false);
+	is_load_multi_copy = $state(false);
 
 	constructor(mode: ThemeMode) {
-		const localStorage = new LocalStorage<Settings>('settings');
+		const persisted_state = new PersistedState<Settings>('settings', {
+			color: 'excel',
+			font: 'default',
+			show_loads_on_unit_hierarchy: false,
+			is_adjustment_factor_dynamic: false,
+			is_panel_multi_copy: false,
+			is_load_multi_copy: false,
+		});
 
-		setGlobalColorTheme(mode, localStorage?.current?.color || 'excel');
-		this.setGlobalFont(localStorage?.current?.font || 'default');
-		this.localStorage = localStorage;
-		this.show_loads_on_unit_hierarchy = localStorage?.current?.show_loads_on_unit_hierarchy;
+		this.persisted_state = persisted_state;
+		// this.setThemeColor(this.persisted_state?.current?.color || 'excel', mode);
+		// this.setGlobalFont(this.persisted_state?.current?.font || 'default');
+		// this.setShowLoadsOnUnitHeirarchy(this.persisted_state?.current?.show_loads_on_unit_hierarchy || false);
+		// this.setIsPanelMultiCopy(this.persisted_state?.current?.is_panel_multi_copy || false);
+		// this.setisLoadMultiCopy(this.persisted_state?.current?.is_load_multi_copy || false);
 	}
 
 	private setGlobalFont(font: Font) {
@@ -33,55 +43,53 @@ export class SettingsState {
 	}
 
 	setThemeColor(color: ThemeColor, mode: ThemeMode) {
-		const updatedData = (this.localStorage.current = {
-			...this.localStorage.current,
-			color
-		});
-
 		this.themeColor = color;
-		this.localStorage.current = updatedData;
 		setGlobalColorTheme(mode, color);
+		this.persisted_state.current = {
+			...this.persisted_state.current,
+			color
+		};
 	}
 
 	setFont(font: Font) {
-		const updatedData = (this.localStorage.current = {
-			...this.localStorage.current,
+		const updatedData = (this.persisted_state.current = {
+			...this.persisted_state.current,
 			font
 		});
 
 		this.font = font;
-		this.localStorage.current = updatedData;
+		this.persisted_state.current = updatedData;
 		this.setGlobalFont(font);
 	}
 
 	setShowLoadsOnUnitHeirarchy(show_loads_on_unit_hierarchy: boolean) {
-		const updatedData = (this.localStorage.current = {
-			...this.localStorage.current,
+		const updatedData = (this.persisted_state.current = {
+			...this.persisted_state.current,
 			show_loads_on_unit_hierarchy
 		});
 
 		this.show_loads_on_unit_hierarchy = show_loads_on_unit_hierarchy;
-		this.localStorage.current = updatedData;
+		this.persisted_state.current = updatedData;
 	}
 
-	setHasPanelCopyCount(has_panel_copy_count: boolean) {
-		const updatedData = (this.localStorage.current = {
-			...this.localStorage.current,
-			has_panel_copy_count
+	setIsPanelMultiCopy(is_panel_multi_copy: boolean) {
+		const updatedData = (this.persisted_state.current = {
+			...this.persisted_state.current,
+			is_panel_multi_copy
 		});
 
-		this.has_panel_copy_count = has_panel_copy_count;
-		this.localStorage.current = updatedData;
+		this.is_panel_multi_copy = is_panel_multi_copy;
+		this.persisted_state.current = updatedData;
 	}
 
-	setHasLoadCopyCount(has_load_copy_count: boolean) {
-		const updatedData = (this.localStorage.current = {
-			...this.localStorage.current,
-			has_load_copy_count
+	setisLoadMultiCopy(is_load_multi_copy: boolean) {
+		const updatedData = (this.persisted_state.current = {
+			...this.persisted_state.current,
+			is_load_multi_copy
 		});
 
-		this.has_load_copy_count = has_load_copy_count;
-		this.localStorage.current = updatedData;
+		this.is_load_multi_copy = is_load_multi_copy;
+		this.persisted_state.current = updatedData;
 	}
 }
 export function setSettingsState(mode: ThemeMode) {

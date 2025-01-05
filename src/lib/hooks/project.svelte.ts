@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Load } from '@/types/load';
-import { LocalStorage } from './storage.svelte';
+import { PersistedState } from 'runed';
 import type { Panel } from '@/types/panel';
 import { getContext, setContext } from 'svelte';
 
@@ -10,27 +10,30 @@ type Project = {
 };
 
 export class ProjectState {
-	private localStorage = new LocalStorage<Project>('project');
+	private persisted_state = new PersistedState<Project>('project', {
+		highest_unit_form: null,
+		tree: []
+	});
 	// localStorage.current = this.localStorage.current;
-	project = $state<Project | null>(this.localStorage.current || null);
+	project = $state<Project | null>(this.persisted_state.current || null);
 
-	constructor() {}
+	constructor() { }
 
 	private updateProjectData(updatedData: Project) {
-		this.localStorage.current = updatedData;
+		this.persisted_state.current = updatedData;
 		this.project = updatedData;
 	}
 
 	createProject(highestUnitFormData: any) {
 		console.log(highestUnitFormData);
-		this.localStorage.current = { highest_unit_form: highestUnitFormData, tree: [] };
+		this.persisted_state.current = { highest_unit_form: highestUnitFormData, tree: [] };
 		this.project = { highest_unit_form: highestUnitFormData, tree: [] };
 	}
 
 	addPanel(panel: Panel) {
 		const updatedData = {
-			...this.localStorage.current,
-			tree: [...this.localStorage.current.tree, panel]
+			...this.persisted_state.current,
+			tree: [...this.persisted_state.current.tree, panel]
 		};
 		this.updateProjectData(updatedData);
 	}
@@ -39,12 +42,12 @@ export class ProjectState {
 
 	// Add a load to the specified panel or recursively to a load
 	addLoad(targetId: number | string, loadData: Load) {
-		const updatedTree = this.addLoadToTree(this.localStorage.current.tree, targetId, loadData);
+		const updatedTree = this.addLoadToTree(this.persisted_state.current.tree, targetId, loadData);
 		if (!updatedTree) {
 			throw new Error(`Target with ID ${targetId} not found.`);
 		}
 		const updatedData: Project = {
-			...this.localStorage.current,
+			...this.persisted_state.current,
 			tree: updatedTree
 		};
 		this.updateProjectData(updatedData);
