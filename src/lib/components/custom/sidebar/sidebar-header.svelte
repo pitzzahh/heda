@@ -2,7 +2,7 @@
 	import { Save, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
-	import { SettingsDialog, Settings } from '..';
+	import { Settings } from '..';
 	import { toast } from 'svelte-sonner';
 	import type { Project, Node } from '@/db/schema';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
