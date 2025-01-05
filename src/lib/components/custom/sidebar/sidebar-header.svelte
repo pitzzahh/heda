@@ -40,7 +40,7 @@
 				<Tooltip.Trigger>
 					<Settings {project} />
 				</Tooltip.Trigger>
-				<Tooltip.Content>New Settings</Tooltip.Content>
+				<Tooltip.Content>Settings</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		<UndoRedoButtons />
