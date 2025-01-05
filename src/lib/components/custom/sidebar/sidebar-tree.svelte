@@ -210,7 +210,7 @@
 	{:else}
 		<Sidebar.MenuItem class="w-full">
 			<Collapsible.Root
-				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
+				open={collapsibles.checkIsIdExisting(node.id)}
 				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
 				<Sidebar.MenuButton
@@ -544,7 +544,7 @@
 				type="number"
 				placeholder="Enter the circuit number"
 				bind:value={component_state.multi_copy.value}
-				class={cn("col-span-3", {
+				class={cn('col-span-3', {
 					'border-red-600': !component_state.multi_copy.valid
 				})}
 				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
