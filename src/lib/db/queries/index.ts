@@ -381,6 +381,25 @@ export async function getNodeDepth(nodeId: string): Promise<number> {
 	return depth;
 }
 
+export async function getNumberOfChildren(nodeId: string): Promise<number> {
+	const db = await databaseInstance();
+	let count = 0;
+
+	async function countChildren(parentId: string) {
+		const childNodes = await db.nodes.find({ selector: { parent_id: parentId } }).exec();
+		count += childNodes.length;
+
+		for (const childNode of childNodes) {
+			if (childNode._data.node_type === 'panel') {
+				await countChildren(childNode._data.id);
+			}
+		}
+	}
+
+	await countChildren(nodeId);
+	return count;
+}
+
 export async function getComputedVoltageDrops() {
 	const db = await databaseInstance();
 	let nodes = [] as PhaseLoadSchedule[];
@@ -447,3 +466,4 @@ export async function getComputedVoltageDrops() {
 
 	return nodes_with_additional_fields;
 }
+
