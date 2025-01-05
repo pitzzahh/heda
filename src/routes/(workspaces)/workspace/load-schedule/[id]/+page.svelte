@@ -13,7 +13,6 @@
 	const { root_node } = data;
 	const params = $derived(page.params);
 	const loads = $derived(data?.nodes);
-	const loads = $derived(data?.nodes);
 	const voltage_drops = $derived(data?.voltage_drops);
   
 	let supply_from_name = $state('');
