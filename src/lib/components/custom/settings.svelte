@@ -78,15 +78,14 @@
 		app_update: null,
 		update_state: 'stale',
 		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false,
-		show_loads_on_unit_hierarchy: project?.settings.show_loads_on_unit_hierarchy || false
+		show_loads_on_unit_hierarchy: settingsState.show_loads_on_unit_hierarchy
 	});
 
 	async function savePreference(message: string) {
 		if (!project) return;
 
 		await updateProjectSettings(project.id, {
-			is_adjustment_factor_dynamic: component_state.current.is_adjustment_factor_dynamic,
-			show_loads_on_unit_hierarchy: component_state.current.show_loads_on_unit_hierarchy
+			is_adjustment_factor_dynamic: component_state.current.is_adjustment_factor_dynamic
 		})
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
