@@ -12,8 +12,7 @@
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
 	let component_state = $state({
-		export_to_excel: 'idle' as ButtonState,
-		settings_open: false
+		export_to_excel: 'idle' as ButtonState
 	});
 
 	function handleSave() {
@@ -37,9 +36,9 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		<Tooltip.Provider>
-			<Tooltip.Root bind:open={component_state.settings_open}>
+			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<Settings {project} bind:settings_open={component_state.settings_open} />
+					<Settings {project} />
 				</Tooltip.Trigger>
 				<Tooltip.Content>New Settings</Tooltip.Content>
 			</Tooltip.Root>
