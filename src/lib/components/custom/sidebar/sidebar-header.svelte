@@ -43,7 +43,6 @@
 				<Tooltip.Content>New Settings</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
-		<SettingsDialog {project} />
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
