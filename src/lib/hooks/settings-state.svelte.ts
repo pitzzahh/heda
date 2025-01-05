@@ -36,7 +36,7 @@ export class SettingsState {
 		this.setShowLoadsOnUnitHeirarchy(_persisted_state?.current?.show_loads_on_unit_hierarchy || false);
 		this.setIsAdjustmentFactorDynamic(_persisted_state?.current?.is_adjustment_factor_dynamic || false);
 		this.setIsPanelMultiCopy(_persisted_state?.current?.is_panel_multi_copy || false);
-		this.setisLoadMultiCopy(_persisted_state?.current?.is_load_multi_copy || false);
+		this.setIsLoadMultiCopy(_persisted_state?.current?.is_load_multi_copy || false);
 	}
 
 	private setGlobalFont(font: Font) {
@@ -87,7 +87,7 @@ export class SettingsState {
 		};
 	}
 
-	setisLoadMultiCopy(is_load_multi_copy: boolean) {
+	setIsLoadMultiCopy(is_load_multi_copy: boolean) {
 		this.is_load_multi_copy = is_load_multi_copy;
 		this.persisted_state.current = {
 			...this.persisted_state.current,
