@@ -83,7 +83,6 @@
 		})
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
-		settingsState.setShowLoadsOnUnitHeirarchy(settingsState.show_loads_on_unit_hierarchy);
 	}
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -93,9 +92,10 @@
 	}
 
 	$effect.pre(() => {
+		settingsState.setIsAdjustmentFactorDynamic(
+			project?.settings.is_adjustment_factor_dynamic || false
+		);
 		if (!settings_open) {
-			settingsState.is_adjustment_factor_dynamic =
-				project?.settings.is_adjustment_factor_dynamic || false;
 			component_state.current.update_state = 'stale';
 			component_state.current.app_update = null;
 		}
