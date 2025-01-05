@@ -15,7 +15,7 @@
 			valid: boolean;
 			value: number;
 			processing: boolean;
-			
+			might_take_long: boolean;
 			error?: string;
 		};
 	}
