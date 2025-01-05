@@ -28,9 +28,10 @@ export class SettingsState {
 			is_load_multi_copy: false,
 		});
 
+		// must be set before calling setters
 		this.persisted_state = _persisted_state;
 
-		this.setThemeColor(localStorage?.current?.color || 'excel', mode);
+		this.setThemeColor(_persisted_state?.current?.color || 'excel', mode);
 		this.setGlobalFont(_persisted_state?.current?.font ?? 'default');
 		this.setShowLoadsOnUnitHeirarchy(_persisted_state?.current?.show_loads_on_unit_hierarchy || false);
 		this.setIsAdjustmentFactorDynamic(_persisted_state?.current?.is_adjustment_factor_dynamic || false);
