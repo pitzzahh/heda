@@ -50,6 +50,8 @@ const node_literal = {
 		pole: { type: 'string', default: '2' },
 		kaic: { type: 'string', default: '5' },
 		length: { type: 'number' },
+		overrided_length: { type: 'number' },
+		overrided_z: { type: 'number' },
 		is_at_used_as_currents_value: { type: 'boolean', default: false },
 		panel_data: {
 			type: 'object',
