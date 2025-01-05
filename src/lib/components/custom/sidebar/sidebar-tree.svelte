@@ -118,10 +118,15 @@
 	}
 
 	async function handleMultiCopy() {
-		const copy_count = (document.getElementById('copy_count') as HTMLInputElement).value;
-		if (!copy_count) return;
-		await copyNodeById(node.id);
+		if (!component_state.multi_copy.valid) {
+			return toast.warning('Invalid copy count, must be greater than 0');
+		}
+		const copy_count = Number(component_state.multi_copy.value);
+		for (let i = 0; i < copy_count; i++) {
+			await copyNodeById(node.id);
+		}
 		component_state.open_copy_dialog = false;
+		return toast.success(`${copy_count} ${component_state.node_name} copied successfully`);
 	}
 </script>
 
@@ -179,7 +184,7 @@
 				{@const tooltip_data = [
 					{
 						trigger_callback: async () => {
-							component_state.open_copy_dialog = settings_state.has_load_copy_count;
+							component_state.open_copy_dialog = settings_state.is_load_multi_copy;
 							await copyNodeById(node.id);
 						},
 						variant: 'ghost',
@@ -338,7 +343,7 @@
 				},
 				{
 					trigger_callback: async () => {
-						component_state.open_copy_dialog = settings_state.has_panel_copy_count;
+						component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
 						await copyNodeById(node.id);
 					},
 					variant: 'ghost',
@@ -528,7 +533,7 @@
 				>Specify the number of {component_state.node_name} to be copied.</Dialog.Description
 			>
 		</Dialog.Header>
-		{#if component_state.multi_copy.valid}
+		{#if !component_state.multi_copy.valid}
 			<Alert.Root variant="warning">
 				<CircleAlert class="size-4" />
 				<Alert.Description
@@ -544,8 +549,8 @@
 				type="number"
 				placeholder="Enter the circuit number"
 				bind:value={component_state.multi_copy.value}
-				class={cn("col-span-3", {
-					'border-red-600': !component_state.multi_copy.valid
+				class={cn('col-span-3', {
+					'border-red-600 outline-red-600 ring ring-red-600': !component_state.multi_copy.valid
 				})}
 				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
 			/>
