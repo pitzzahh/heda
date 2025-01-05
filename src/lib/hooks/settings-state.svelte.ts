@@ -6,7 +6,7 @@ import { THEME_COLOR_STATE_CTX } from '@/state/constants';
 
 export type Font = 'isocpeur' | 'verdana' | 'default';
 type ThemeColor = 'autocad' | 'excel';
-type ThemeMode = 'dark' | 'light';
+type ThemeMode = 'dark' | 'light' | 'system';
 
 export class SettingsState {
 	persisted_state: PersistedState<Settings>;

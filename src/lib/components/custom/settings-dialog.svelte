@@ -130,17 +130,10 @@
 								<RadioGroup.Root
 									value={$mode}
 									class="grid grid-cols-3"
-									onValueChange={(v) =>
-										setModeAndColor(
-											settingsState,
-											v === 'system' || v === undefined
-												? $systemPrefersMode === 'light'
-													? 'light'
-													: 'dark'
-												: v === 'light'
-													? 'light'
-													: 'dark'
-										)}
+									onValueChange={(v) => {
+										toast.info('Theme changed successfully');
+										setModeAndColor(settingsState, v as 'light' | 'dark' | 'system');
+									}}
 								>
 									<Label
 										for="light"

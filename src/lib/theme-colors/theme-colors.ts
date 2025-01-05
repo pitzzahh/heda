@@ -126,7 +126,7 @@ const themes: Record<string, any> = {
 	}
 };
 
-export default function setGlobalColorTheme(themeMode: 'light' | 'dark', color: string) {
+export default function setGlobalColorTheme(themeMode: 'light' | 'dark' | "system", color: string) {
 	const theme = themes[color][themeMode] as {
 		[key: string]: string;
 	};

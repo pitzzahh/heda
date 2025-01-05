@@ -53,7 +53,7 @@
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode, systemPrefersMode } from 'mode-watcher';
+	import { mode, setMode, systemPrefersMode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 
@@ -193,35 +193,31 @@
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme</Label>
-			<RadioGroup.Root
-				value={$mode}
-				class="grid grid-cols-3"
-				onValueChange={(v) => {
-					if (!component_state.current.settings_open) return;
-					setModeAndColor(
-						settingsState,
-						v === 'system' || v === undefined
-							? $systemPrefersMode === 'light'
-								? 'light'
-								: 'dark'
-							: v === 'light'
-								? 'light'
-								: 'dark'
-					);
-				}}
-			>
+			<RadioGroup.Root value={$mode} class="grid grid-cols-3">
 				<Label
 					for="light"
 					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
 				>
-					<RadioGroup.Item value="light" id="light" class="sr-only" aria-label="Light Theme" />
+					<RadioGroup.Item
+						value="light"
+						id="light"
+						class="sr-only"
+						aria-label="Light Theme"
+						onclick={() => setModeAndColor(settingsState, 'light')}
+					/>
 					<Sun class="h-4 w-4" />
 				</Label>
 				<Label
 					for="dark"
 					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
 				>
-					<RadioGroup.Item value="dark" id="dark" class="sr-only" aria-label="Dark Theme" />
+					<RadioGroup.Item
+						value="dark"
+						id="dark"
+						class="sr-only"
+						aria-label="Dark Theme"
+						onclick={() => setModeAndColor(settingsState, 'dark')}
+					/>
 					<Moon class="h-4 w-4" />
 				</Label>
 				<Label
@@ -233,6 +229,7 @@
 						id="system"
 						class="sr-only"
 						aria-label="System default theme"
+						onclick={() => setModeAndColor(settingsState, 'system')}
 					/>
 					<SunMoon class="h-4 w-4" />
 				</Label>
