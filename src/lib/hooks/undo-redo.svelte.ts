@@ -16,7 +16,10 @@ type Action<T extends PhaseLoadSchedule> = {
 		| 'override_af'
 		| 'override_conduit_size'
 		| 'override_conductor_size'
-		| 'override_egc_size';
+		| 'override_egc_size'
+		| 'override_z'
+		| 'override_length';
+
 	children_nodes?: T[];
 };
 
@@ -112,7 +115,7 @@ export class UndoRedoState {
 				case 'update_node':
 					const previous_data = last_action.previous_data;
 					const current_data = last_action.data;
-					
+
 					if (previous_data) {
 						const updated_node = await updateNode({
 							id: previous_data.id,
@@ -192,6 +195,24 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'egc_size',
+						node_id: last_action.data.id
+					});
+					break;
+
+				case 'override_z':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'z',
+						node_id: last_action.data.id
+					});
+					break;
+
+				case 'override_length':
+					await this.handleFieldOverride({
+						is_undo: true,
+						action: last_action,
+						field_type: 'length',
 						node_id: last_action.data.id
 					});
 					break;
@@ -292,6 +313,22 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_egc_size as number,
 						action: last_action,
 						field_type: 'egc_size',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_z':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_z as number,
+						action: last_action,
+						field_type: 'z',
+						node_id: last_action.data.id
+					});
+					break;
+				case 'override_length':
+					await this.handleFieldOverride({
+						field_data: last_action.data.overrided_length as number,
+						action: last_action,
+						field_type: 'length',
 						node_id: last_action.data.id
 					});
 					break;
