@@ -1,18 +1,20 @@
 <script module lang="ts">
+	import { MonitorCog, Rss, WandSparkles, Sliders } from '@/assets/icons';
+
 	const navData = [
-		{ name: 'Project', icon: Bell },
-		{ name: 'Preferences', icon: Menu },
-		{ name: 'Updates', icon: House },
-		{ name: 'Advanced', icon: Settings }
+		{ name: 'Project', icon: MonitorCog },
+		{ name: 'Preferences', icon: WandSparkles },
+		{ name: 'Updates', icon: Rss },
+		{ name: 'Advanced', icon: Sliders }
 	] as const;
 
 	type NavName = (typeof navData)[number]['name'];
 
-	type Data = {
+	type NavData = {
 		nav: Readonly<{ name: NavName; icon: any }[]>;
 	};
 
-	const data: Data = {
+	const settings_links: NavData = {
 		nav: navData
 	};
 
@@ -21,8 +23,6 @@
 		settings_open: boolean;
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
-		is_adjustment_factor_dynamic: boolean;
-		show_loads_on_unit_hierarchy: boolean;
 	}
 </script>
 
@@ -33,10 +33,6 @@
 	import { buttonVariants } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import Bell from 'lucide-svelte/icons/bell';
-	import House from 'lucide-svelte/icons/house';
-	import Menu from 'lucide-svelte/icons/menu';
-	import Settings from 'lucide-svelte/icons/settings';
 	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 	import * as Tooltip from '@/components/ui/tooltip';
@@ -59,6 +55,7 @@
 	import * as pj from '../../../../package.json';
 	import { mode, systemPrefersMode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
+	import type { Settings } from '@/types/settings';
 
 	let { project }: { project?: Project } = $props();
 
@@ -76,20 +73,24 @@
 		active_setting: 'Project',
 		settings_open: false,
 		app_update: null,
-		update_state: 'stale',
-		is_adjustment_factor_dynamic: project?.settings.is_adjustment_factor_dynamic || false,
-		show_loads_on_unit_hierarchy: settingsState.show_loads_on_unit_hierarchy
+		update_state: 'stale'
 	});
 
 	async function savePreference(message: string) {
 		if (!project) return;
 
 		await updateProjectSettings(project.id, {
-			is_adjustment_factor_dynamic: component_state.current.is_adjustment_factor_dynamic
+			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
-		settingsState.setShowLoadsOnUnitHeirarchy(component_state.current.show_loads_on_unit_hierarchy);
+		settingsState.setShowLoadsOnUnitHeirarchy(settingsState.show_loads_on_unit_hierarchy);
+	}
+
+	function handleChangeThemeColor(themeColor: Settings['color']) {
+		if ($mode) {
+			settingsState.setThemeColor(themeColor, $mode);
+		}
 	}
 </script>
 
@@ -109,7 +110,7 @@
 					<Sidebar.Group>
 						<Sidebar.GroupContent>
 							<Sidebar.Menu>
-								{#each data.nav as item (item.name)}
+								{#each settings_links.nav as item (item.name)}
 									<Sidebar.MenuItem>
 										<Sidebar.MenuButton
 											isActive={item.name === component_state.current.active_setting}
@@ -156,6 +157,8 @@
 				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
 					{#if component_state.current.active_setting === 'Project'}
 						{@render project_settings()}
+					{:else if component_state.current.active_setting === 'Preferences'}
+						{@render preferences_settings()}
 					{/if}
 				</div>
 			</main>
@@ -170,7 +173,7 @@
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
 				<p class="text-xs text-muted-foreground">
-					{component_state.current.is_adjustment_factor_dynamic
+					{settingsState.is_adjustment_factor_dynamic
 						? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
 						: 'The adjustment factor for all loads will be set to 100%.'}
 				</p>
@@ -178,10 +181,109 @@
 			<Switch
 				disabled={project === undefined}
 				id="adjustment_factor"
-				bind:checked={component_state.current.is_adjustment_factor_dynamic}
+				bind:checked={settingsState.is_adjustment_factor_dynamic}
 				onCheckedChange={async (v) =>
 					await savePreference('Adjustment factor applied successfully')}
 			/>
 		</div>
+	</div>
+{/snippet}
+
+{#snippet preferences_settings()}
+	<div class="flex items-center justify-between gap-2">
+		<div class="flex w-full flex-col items-center justify-center gap-2">
+			<Label for="colors">Theme</Label>
+			<RadioGroup.Root
+				value={$mode}
+				class="grid grid-cols-3"
+				onValueChange={(v) =>
+					setModeAndColor(
+						settingsState,
+						v === 'system' || v === undefined
+							? $systemPrefersMode === 'light'
+								? 'light'
+								: 'dark'
+							: v === 'light'
+								? 'light'
+								: 'dark'
+					)}
+			>
+				<Label
+					for="light"
+					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+				>
+					<RadioGroup.Item value="light" id="light" class="sr-only" aria-label="Light Theme" />
+					<Sun class="h-4 w-4" />
+				</Label>
+				<Label
+					for="dark"
+					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+				>
+					<RadioGroup.Item value="dark" id="dark" class="sr-only" aria-label="Dark Theme" />
+					<Moon class="h-4 w-4" />
+				</Label>
+				<Label
+					for="system"
+					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+				>
+					<RadioGroup.Item
+						value="system"
+						id="system"
+						class="sr-only"
+						aria-label="System default theme"
+					/>
+					<SunMoon class="h-4 w-4" />
+				</Label>
+			</RadioGroup.Root>
+		</div>
+
+		<div class="flex w-full flex-col items-center justify-center gap-2">
+			<Label for="colors">Theme Color</Label>
+			<div id="colors" class="flex items-center gap-2">
+				{#each themeColors as themeColor, index (index)}
+					<button
+						aria-label="color"
+						class={cn(themeColor.bg, 'size-8 rounded-full', {
+							'outline outline-2 outline-offset-1 outline-blue-500':
+								themeColor.value === settingsState.themeColor
+						})}
+						onclick={() => handleChangeThemeColor(themeColor.value)}
+					></button>
+				{/each}
+			</div>
+		</div>
+	</div>
+	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label>Show loads in Unit Heirarchy</Label>
+			<p class="text-xs text-muted-foreground">
+				Show or hide loads in the unit hierarchy, minimizing the hierarchy view.
+			</p>
+		</div>
+		<Switch
+			checked={settingsState.show_loads_on_unit_hierarchy}
+			onCheckedChange={(v) => settingsState.setShowLoadsOnUnitHeirarchy(v)}
+		/>
+	</div>
+	<Separator class="my-1 w-full" />
+	<div class="flex flex-col gap-3">
+		<Label for="font-trigger">Font</Label>
+		<Select.Root
+			type="single"
+			value={selectedFont}
+			onValueChange={(value) => settingsState.setFont(value as Font)}
+		>
+			<Select.Trigger class="w-[180px]" id="font-trigger" placeholder="Select a font">
+				{selectedFont.charAt(0).toUpperCase().concat(selectedFont.slice(1))}
+			</Select.Trigger>
+			<Select.Content>
+				{#each ['default', 'isocpeur', 'verdana'] as item, index (index)}
+					<Select.Item class={item} disabled={selectedFont === item} value={item}
+						>{item.charAt(0).toUpperCase().concat(item.slice(1))}</Select.Item
+					>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 	</div>
 {/snippet}
