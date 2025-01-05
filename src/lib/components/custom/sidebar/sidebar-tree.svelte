@@ -39,6 +39,7 @@
 		Ellipsis,
 		FileUp,
 		PlugZap,
+		Loader,
 		PanelsLeftBottom,
 		CirclePlus,
 		Copy,
@@ -50,7 +51,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
@@ -126,6 +127,14 @@
 		component_state.multi_copy.processing = true;
 		const copy_count = Number(component_state.multi_copy.value);
 		let latest_node = await copyAndAddNodeById(node_id);
+		if (latest_node.node_type === 'panel') {
+			// check if might_take_some_time
+			const child_count = await getNumberOfChildren(node_id);
+			component_state.multi_copy.might_take_long = child_count >= 15;
+		} else if (latest_node.node_type === 'load') {
+			// check if might_take_some_time
+			component_state.multi_copy.might_take_long = copy_count >= 15;
+		}
 		for (let i = 1; i < copy_count; i++) {
 			latest_node = await copyAndAddNodeById(latest_node.id);
 			undo_redo_state.setActionToUndo({
@@ -565,7 +574,14 @@
 			/>
 		</div>
 		<Dialog.Footer>
-			<Button type="submit" onclick={() => handleMultiCopy(node.id)}>Copy</Button>
+			<Button type="submit" onclick={() => handleMultiCopy(node.id)}>
+				<Loader
+					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+						block: component_state.multi_copy.processing
+					})}
+				/>
+				<span>Copy</span>
+			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
