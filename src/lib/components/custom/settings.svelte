@@ -20,6 +20,7 @@
 
 	export interface SettingsComponentType {
 		active_setting: NavName;
+		settings_open: boolean;
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
 	}
@@ -56,8 +57,7 @@
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 
-	let { project, settings_open = $bindable() }: { project?: Project; settings_open?: boolean } =
-		$props();
+	let { project }: { project?: Project } = $props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -71,6 +71,7 @@
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
 		active_setting: 'Project',
+		settings_open: false,
 		app_update: null,
 		update_state: 'stale'
 	});
@@ -92,7 +93,7 @@
 	}
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open={component_state.current.settings_open}>
 	<Dialog.Trigger class={buttonVariants({ size: 'icon', variant: 'outline' })}>
 		<Cog class="size-4" />
 	</Dialog.Trigger>
@@ -152,7 +153,7 @@
 					</div>
 				</header>
 
-				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
+				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0" transition:slide>
 					{#if component_state.current.active_setting === 'Project'}
 						{@render project_settings()}
 					{:else if component_state.current.active_setting === 'Preferences'}
@@ -195,7 +196,8 @@
 			<RadioGroup.Root
 				value={$mode}
 				class="grid grid-cols-3"
-				onValueChange={(v) =>
+				onValueChange={(v) => {
+					if (!component_state.current.settings_open) return;
 					setModeAndColor(
 						settingsState,
 						v === 'system' || v === undefined
@@ -205,7 +207,8 @@
 							: v === 'light'
 								? 'light'
 								: 'dark'
-					)}
+					);
+				}}
 			>
 				<Label
 					for="light"
