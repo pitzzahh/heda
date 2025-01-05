@@ -29,11 +29,11 @@ export class SettingsState {
 		});
 
 		this.persisted_state = persisted_state;
-		setGlobalColorTheme(mode, persisted_state?.current?.color || 'excel');
-		this.setGlobalFont(persisted_state?.current?.font || 'default');
-		this.setShowLoadsOnUnitHeirarchy(persisted_state?.current?.show_loads_on_unit_hierarchy || false);
-		this.setIsPanelMultiCopy(persisted_state?.current?.is_panel_multi_copy || false);
-		this.setisLoadMultiCopy(persisted_state?.current?.is_load_multi_copy || false);
+		// this.setThemeColor(this.persisted_state?.current?.color || 'excel', mode);
+		// this.setGlobalFont(this.persisted_state?.current?.font || 'default');
+		// this.setShowLoadsOnUnitHeirarchy(this.persisted_state?.current?.show_loads_on_unit_hierarchy || false);
+		// this.setIsPanelMultiCopy(this.persisted_state?.current?.is_panel_multi_copy || false);
+		// this.setisLoadMultiCopy(this.persisted_state?.current?.is_load_multi_copy || false);
 	}
 
 	private setGlobalFont(font: Font) {
@@ -43,14 +43,12 @@ export class SettingsState {
 	}
 
 	setThemeColor(color: ThemeColor, mode: ThemeMode) {
-		const updatedData = (this.persisted_state.current = {
+		this.themeColor = color;
+		setGlobalColorTheme(mode, color);
+		this.persisted_state.current = {
 			...this.persisted_state.current,
 			color
-		});
-
-		this.themeColor = color;
-		this.persisted_state.current = updatedData;
-		setGlobalColorTheme(mode, color);
+		};
 	}
 
 	setFont(font: Font) {
