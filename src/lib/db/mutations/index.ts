@@ -177,7 +177,9 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			overrided_ampere_frames,
 			pole,
 			kaic,
-			is_at_used_as_currents_value
+			is_at_used_as_currents_value,
+			overrided_length,
+			overrided_z
 		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
@@ -197,6 +199,8 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			egc_insulation,
 			conduit_type,
 			overrided_ampere_frames,
+			overrided_length,
+			overrided_z,
 			pole,
 			kaic,
 			is_at_used_as_currents_value,
@@ -403,14 +407,23 @@ export async function deleteProject(project_id: string) {
 	}
 }
 
-export type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+export type FieldType =
+	| 'egc_size'
+	| 'conductor_size'
+	| 'at'
+	| 'conduit_size'
+	| 'ampere_frames'
+	| 'length'
+	| 'z';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
 	conductor_size: 'overrided_conductor_size',
 	at: 'overrided_at',
 	conduit_size: 'overrided_conduit_size',
-	ampere_frames: 'overrided_ampere_frames'
+	ampere_frames: 'overrided_ampere_frames',
+	length: 'overrided_length',
+	z: 'overrided_z'
 };
 
 export async function overrideField({
