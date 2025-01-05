@@ -14,6 +14,8 @@
 		multi_copy: {
 			valid: boolean;
 			value: number;
+			processing: boolean;
+			
 			error?: string;
 		};
 	}
@@ -96,7 +98,7 @@
 		is_hovering_on_tree_item: false,
 		button_state: 'stale',
 		node_name: 'Unknown',
-		multi_copy: { valid: true, value: 1 }
+		multi_copy: { valid: true, value: 1, processing: false, might_take_long: false }
 	});
 
 	let undo_redo_state = getUndoRedoState();
@@ -117,16 +119,24 @@
 			.finally(() => invalidate('app:workspace/load-schedule'));
 	}
 
-	async function handleMultiCopy() {
+	async function handleMultiCopy(node_id: string) {
 		if (!component_state.multi_copy.valid) {
 			return toast.warning('Invalid copy count, must be greater than 0');
 		}
+		component_state.multi_copy.processing = true;
 		const copy_count = Number(component_state.multi_copy.value);
-		for (let i = 0; i < copy_count; i++) {
-			await copyNodeById(node.id);
+		let latest_node = await copyAndAddNodeById(node_id);
+		for (let i = 1; i < copy_count; i++) {
+			latest_node = await copyAndAddNodeById(latest_node.id);
+			undo_redo_state.setActionToUndo({
+				action: 'copy_node',
+				data: latest_node as unknown as PhaseLoadSchedule
+			});
 		}
+		component_state.multi_copy.processing = false;
 		component_state.open_copy_dialog = false;
-		return toast.success(`${copy_count} ${component_state.node_name} copied successfully`);
+		await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		return toast.success(`[${copy_count}]: ${component_state.node_name} copied successfully`);
 	}
 </script>
 
@@ -552,11 +562,10 @@
 				class={cn('col-span-3', {
 					'border-red-600 outline-red-600 ring ring-red-600': !component_state.multi_copy.valid
 				})}
-				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
 			/>
 		</div>
 		<Dialog.Footer>
-			<Button type="submit" onclick={handleMultiCopy}>Save changes</Button>
+			<Button type="submit" onclick={() => handleMultiCopy(node.id)}>Copy</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
