@@ -20,6 +20,7 @@
 
 	export interface SettingsComponentType {
 		active_setting: NavName;
+		settings_open: boolean;
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
 	}
@@ -29,7 +30,7 @@
 	import { slide } from 'svelte/transition';
 	import { PersistedState } from 'runed';
 	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
-	import { buttonVariants } from '@/components/ui/button/index.js';
+	import { Button, buttonVariants } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import { Tween } from 'svelte/motion';
@@ -52,12 +53,11 @@
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode, systemPrefersMode } from 'mode-watcher';
+	import { mode, setMode, systemPrefersMode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 
-	let { project, settings_open = $bindable() }: { project?: Project; settings_open?: boolean } =
-		$props();
+	let { project }: { project?: Project } = $props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -71,6 +71,7 @@
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
 		active_setting: 'Project',
+		settings_open: false,
 		app_update: null,
 		update_state: 'stale'
 	});
@@ -83,7 +84,6 @@
 		})
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
-		settingsState.setShowLoadsOnUnitHeirarchy(settingsState.show_loads_on_unit_hierarchy);
 	}
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -91,18 +91,9 @@
 			settingsState.setThemeColor(themeColor, $mode);
 		}
 	}
-
-	$effect.pre(() => {
-		if (!settings_open) {
-			settingsState.is_adjustment_factor_dynamic =
-				project?.settings.is_adjustment_factor_dynamic || false;
-			component_state.current.update_state = 'stale';
-			component_state.current.app_update = null;
-		}
-	});
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open={component_state.current.settings_open}>
 	<Dialog.Trigger class={buttonVariants({ size: 'icon', variant: 'outline' })}>
 		<Cog class="size-4" />
 	</Dialog.Trigger>
@@ -162,11 +153,13 @@
 					</div>
 				</header>
 
-				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
+				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0" transition:slide>
 					{#if component_state.current.active_setting === 'Project'}
 						{@render project_settings()}
 					{:else if component_state.current.active_setting === 'Preferences'}
 						{@render preferences_settings()}
+					{:else if component_state.current.active_setting === 'Updates'}
+						{@render updates_settings()}
 					{/if}
 				</div>
 			</main>
@@ -190,8 +183,7 @@
 				disabled={project === undefined}
 				id="adjustment_factor"
 				bind:checked={settingsState.is_adjustment_factor_dynamic}
-				onCheckedChange={async (v) =>
-					await savePreference('Adjustment factor applied successfully')}
+				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
 			/>
 		</div>
 	</div>
@@ -201,33 +193,31 @@
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme</Label>
-			<RadioGroup.Root
-				value={$mode}
-				class="grid grid-cols-3"
-				onValueChange={(v) =>
-					setModeAndColor(
-						settingsState,
-						v === 'system' || v === undefined
-							? $systemPrefersMode === 'light'
-								? 'light'
-								: 'dark'
-							: v === 'light'
-								? 'light'
-								: 'dark'
-					)}
-			>
+			<RadioGroup.Root value={$mode} class="grid grid-cols-3">
 				<Label
 					for="light"
 					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
 				>
-					<RadioGroup.Item value="light" id="light" class="sr-only" aria-label="Light Theme" />
+					<RadioGroup.Item
+						value="light"
+						id="light"
+						class="sr-only"
+						aria-label="Light Theme"
+						onclick={() => setModeAndColor(settingsState, 'light')}
+					/>
 					<Sun class="h-4 w-4" />
 				</Label>
 				<Label
 					for="dark"
 					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
 				>
-					<RadioGroup.Item value="dark" id="dark" class="sr-only" aria-label="Dark Theme" />
+					<RadioGroup.Item
+						value="dark"
+						id="dark"
+						class="sr-only"
+						aria-label="Dark Theme"
+						onclick={() => setModeAndColor(settingsState, 'dark')}
+					/>
 					<Moon class="h-4 w-4" />
 				</Label>
 				<Label
@@ -239,6 +229,7 @@
 						id="system"
 						class="sr-only"
 						aria-label="System default theme"
+						onclick={() => setModeAndColor(settingsState, 'system')}
 					/>
 					<SunMoon class="h-4 w-4" />
 				</Label>
@@ -275,6 +266,32 @@
 		/>
 	</div>
 	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label>Enable panel multi copy</Label>
+			<p class="text-xs text-muted-foreground">
+				Enable this option to prompt for the number of panels to be copied when copying a panel.
+			</p>
+		</div>
+		<Switch
+			checked={settingsState.is_panel_multi_copy}
+			onCheckedChange={(v) => settingsState.setIsPanelMultiCopy(v)}
+		/>
+	</div>
+	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label>Enable load multi copy</Label>
+			<p class="text-xs text-muted-foreground">
+				Enable this option to prompt for the number of loads to be copied when copying a load.
+			</p>
+		</div>
+		<Switch
+			checked={settingsState.is_load_multi_copy}
+			onCheckedChange={(v) => settingsState.setIsLoadMultiCopy(v)}
+		/>
+	</div>
+	<Separator class="my-1 w-full" />
 	<div class="flex flex-col gap-3">
 		<Label for="font-trigger">Font</Label>
 		<Select.Root
@@ -293,5 +310,96 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+	</div>
+{/snippet}
+
+{#snippet updates_settings()}
+	<div class="flex flex-col gap-2">
+		{#if component_state.current.update_state === 'available'}
+			<Alert.Root>
+				<PackageCheck class="size-4" />
+				<Alert.Description
+					>New version available: v{component_state.current.app_update?.version ??
+						'unknown'}</Alert.Description
+				>
+			</Alert.Root>
+		{/if}
+		<div>
+			<div class="flex items-center justify-between">
+				<p class="font-semibold">App Version</p>
+				<ViewChangelog />
+			</div>
+			<span class="text-sm tabular-nums">v{pj.version}</span>
+		</div>
+		<svelte:boundary>
+			<Button
+				variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
+				class={cn('button-background', {
+					'!cursor-not-allowed opacity-50':
+						component_state.current.update_state === 'processing' ||
+						component_state.current.update_state === 'no_updates'
+				})}
+				onclick={async () => {
+					if (
+						component_state.current.update_state === 'available' &&
+						component_state.current.app_update
+					) {
+						tween.target = 0;
+						component_state.current.update_state = 'downloading';
+						return installUpdate(component_state.current.app_update, true, (progress) => {
+							tween.target = Math.round(progress);
+						});
+					}
+					if (
+						component_state.current.update_state === 'processing' ||
+						component_state.current.update_state === 'no_updates'
+					)
+						return;
+					component_state.current.update_state = 'processing';
+					try {
+						component_state.current.app_update = await checkForUpdates();
+						console.log('component_state.current.app_update', component_state.current.app_update);
+						component_state.current.update_state = component_state.current.app_update
+							? 'available'
+							: 'no_updates';
+						if (!component_state.current.app_update) {
+							toast.info('No updates available');
+						} else {
+							toast.success(
+								`New version available: v${component_state.current.app_update.version}`
+							);
+						}
+					} catch (error) {
+						component_state.current.update_state = 'error';
+						toast.warning(`Failed to check for updates: ${error}`);
+					}
+				}}
+			>
+				<Loader
+					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+						block: component_state.current.update_state === 'processing'
+					})}
+				/>
+				<span>
+					{#if component_state.current.update_state === 'processing'}
+						Checking
+					{:else if component_state.current.update_state === 'available'}
+						Download and install v{component_state.current.app_update?.version}
+					{:else if component_state.current.update_state === 'no_updates'}
+						No updates available
+					{:else if component_state.current.update_state === 'downloading'}
+						{tween.target}%
+					{:else if component_state.current.update_state === 'error'}
+						Something went wrong while checking for updates
+					{:else}
+						Check for updates
+					{/if}
+				</span>
+			</Button>
+			{#snippet failed(error, reset)}
+				<p class="text-sm text-muted-foreground">{error}</p>
+				<Button onclick={reset}>oops! try again</Button>
+			{/snippet}
+		</svelte:boundary>
 	</div>
 {/snippet}

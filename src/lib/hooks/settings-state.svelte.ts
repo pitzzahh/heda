@@ -6,7 +6,7 @@ import { THEME_COLOR_STATE_CTX } from '@/state/constants';
 
 export type Font = 'isocpeur' | 'verdana' | 'default';
 type ThemeColor = 'autocad' | 'excel';
-type ThemeMode = 'dark' | 'light';
+type ThemeMode = 'dark' | 'light' | 'system';
 
 export class SettingsState {
 	persisted_state: PersistedState<Settings>;
@@ -19,7 +19,7 @@ export class SettingsState {
 	is_load_multi_copy = $state(false);
 
 	constructor(mode: ThemeMode) {
-		const persisted_state = new PersistedState<Settings>('settings', {
+		const _persisted_state = new PersistedState<Settings>('settings', {
 			color: 'excel',
 			font: 'default',
 			show_loads_on_unit_hierarchy: false,
@@ -28,12 +28,15 @@ export class SettingsState {
 			is_load_multi_copy: false,
 		});
 
-		this.persisted_state = persisted_state;
-		// this.setThemeColor(this.persisted_state?.current?.color || 'excel', mode);
-		// this.setGlobalFont(this.persisted_state?.current?.font || 'default');
-		// this.setShowLoadsOnUnitHeirarchy(this.persisted_state?.current?.show_loads_on_unit_hierarchy || false);
-		// this.setIsPanelMultiCopy(this.persisted_state?.current?.is_panel_multi_copy || false);
-		// this.setisLoadMultiCopy(this.persisted_state?.current?.is_load_multi_copy || false);
+		// must be set before calling setters
+		this.persisted_state = _persisted_state;
+
+		this.setThemeColor(_persisted_state?.current?.color || 'excel', mode);
+		this.setGlobalFont(_persisted_state?.current?.font ?? 'default');
+		this.setShowLoadsOnUnitHeirarchy(_persisted_state?.current?.show_loads_on_unit_hierarchy || false);
+		this.setIsAdjustmentFactorDynamic(_persisted_state?.current?.is_adjustment_factor_dynamic || false);
+		this.setIsPanelMultiCopy(_persisted_state?.current?.is_panel_multi_copy || false);
+		this.setIsLoadMultiCopy(_persisted_state?.current?.is_load_multi_copy || false);
 	}
 
 	private setGlobalFont(font: Font) {
@@ -44,52 +47,52 @@ export class SettingsState {
 
 	setThemeColor(color: ThemeColor, mode: ThemeMode) {
 		this.themeColor = color;
-		setGlobalColorTheme(mode, color);
 		this.persisted_state.current = {
 			...this.persisted_state.current,
 			color
 		};
+		setGlobalColorTheme(mode, color);
 	}
 
 	setFont(font: Font) {
-		const updatedData = (this.persisted_state.current = {
+		this.font = font;
+		this.setGlobalFont(font);
+		this.persisted_state.current = {
 			...this.persisted_state.current,
 			font
-		});
-
-		this.font = font;
-		this.persisted_state.current = updatedData;
-		this.setGlobalFont(font);
+		};
 	}
 
 	setShowLoadsOnUnitHeirarchy(show_loads_on_unit_hierarchy: boolean) {
-		const updatedData = (this.persisted_state.current = {
+		this.show_loads_on_unit_hierarchy = show_loads_on_unit_hierarchy;
+		this.persisted_state.current = {
 			...this.persisted_state.current,
 			show_loads_on_unit_hierarchy
-		});
+		};
+	}
 
-		this.show_loads_on_unit_hierarchy = show_loads_on_unit_hierarchy;
-		this.persisted_state.current = updatedData;
+	setIsAdjustmentFactorDynamic(is_adjustment_factor_dynamic: boolean) {
+		this.is_adjustment_factor_dynamic = is_adjustment_factor_dynamic;
+		this.persisted_state.current = {
+			...this.persisted_state.current,
+			is_adjustment_factor_dynamic
+		};
 	}
 
 	setIsPanelMultiCopy(is_panel_multi_copy: boolean) {
-		const updatedData = (this.persisted_state.current = {
+		this.is_panel_multi_copy = is_panel_multi_copy;
+		this.persisted_state.current = {
 			...this.persisted_state.current,
 			is_panel_multi_copy
-		});
-
-		this.is_panel_multi_copy = is_panel_multi_copy;
-		this.persisted_state.current = updatedData;
+		};
 	}
 
-	setisLoadMultiCopy(is_load_multi_copy: boolean) {
-		const updatedData = (this.persisted_state.current = {
+	setIsLoadMultiCopy(is_load_multi_copy: boolean) {
+		this.is_load_multi_copy = is_load_multi_copy;
+		this.persisted_state.current = {
 			...this.persisted_state.current,
 			is_load_multi_copy
-		});
-
-		this.is_load_multi_copy = is_load_multi_copy;
-		this.persisted_state.current = updatedData;
+		};
 	}
 }
 export function setSettingsState(mode: ThemeMode) {
@@ -97,5 +100,5 @@ export function setSettingsState(mode: ThemeMode) {
 }
 
 export function getSettingsState() {
-	return getState<ReturnType<typeof setSettingsState>>(THEME_COLOR_STATE_CTX);
+	return getState<SettingsState>(THEME_COLOR_STATE_CTX);
 }

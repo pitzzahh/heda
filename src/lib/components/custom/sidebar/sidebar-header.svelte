@@ -2,7 +2,7 @@
 	import { Save, FileUp } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
-	import { SettingsDialog, Settings } from '..';
+	import { Settings } from '..';
 	import { toast } from 'svelte-sonner';
 	import type { Project, Node } from '@/db/schema';
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
@@ -12,8 +12,7 @@
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
 	let component_state = $state({
-		export_to_excel: 'idle' as ButtonState,
-		settings_open: false
+		export_to_excel: 'idle' as ButtonState
 	});
 
 	function handleSave() {
@@ -37,14 +36,13 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		<Tooltip.Provider>
-			<Tooltip.Root bind:open={component_state.settings_open}>
+			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<Settings {project} bind:settings_open={component_state.settings_open} />
+					<Settings {project} />
 				</Tooltip.Trigger>
-				<Tooltip.Content>New Settings</Tooltip.Content>
+				<Tooltip.Content>Settings</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
-		<SettingsDialog {project} />
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
