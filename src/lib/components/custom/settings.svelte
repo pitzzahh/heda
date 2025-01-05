@@ -266,6 +266,32 @@
 		/>
 	</div>
 	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label>Enable panel multi copy</Label>
+			<p class="text-xs text-muted-foreground">
+				Enable this option to prompt for the number of panels to be copied when copying a panel.
+			</p>
+		</div>
+		<Switch
+			checked={settingsState.is_panel_multi_copy}
+			onCheckedChange={(v) => settingsState.setIsPanelMultiCopy(v)}
+		/>
+	</div>
+	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label>Enable load multi copy</Label>
+			<p class="text-xs text-muted-foreground">
+				Enable this option to prompt for the number of loads to be copied when copying a load.
+			</p>
+		</div>
+		<Switch
+			checked={settingsState.is_load_multi_copy}
+			onCheckedChange={(v) => settingsState.setIsLoadMultiCopy(v)}
+		/>
+	</div>
+	<Separator class="my-1 w-full" />
 	<div class="flex flex-col gap-3">
 		<Label for="font-trigger">Font</Label>
 		<Select.Root
