@@ -18,10 +18,6 @@ const project_schema_literal = {
 					type: 'boolean',
 					default: false
 				}
-				// show_loads_on_unit_hierarchy: {
-				// 	type: 'boolean',
-				// 	default: false
-				// }
 			}
 		},
 		root_node_id: { type: 'string' }

@@ -14,6 +14,8 @@ export class SettingsState {
 	themeColor = $state<ThemeColor>('excel');
 	font = $state<Font>('default');
 	show_loads_on_unit_hierarchy = $state(false);
+	has_panel_copy_count = $state(false);
+	has_load_copy_count = $state(false);
 
 	constructor(mode: ThemeMode) {
 		const localStorage = new LocalStorage<Settings>('settings');
@@ -59,6 +61,26 @@ export class SettingsState {
 		});
 
 		this.show_loads_on_unit_hierarchy = show_loads_on_unit_hierarchy;
+		this.localStorage.current = updatedData;
+	}
+
+	setHasPanelCopyCount(has_panel_copy_count: boolean) {
+		const updatedData = (this.localStorage.current = {
+			...this.localStorage.current,
+			has_panel_copy_count
+		});
+
+		this.has_panel_copy_count = has_panel_copy_count;
+		this.localStorage.current = updatedData;
+	}
+
+	setHasLoadCopyCount(has_load_copy_count: boolean) {
+		const updatedData = (this.localStorage.current = {
+			...this.localStorage.current,
+			has_load_copy_count
+		});
+
+		this.has_load_copy_count = has_load_copy_count;
 		this.localStorage.current = updatedData;
 	}
 }
