@@ -349,7 +349,7 @@
 						/>
 					{/snippet}
 				</Form.Control>
-				<Form.Description>This is the length of the load</Form.Description>
+				<Form.Description>This is the length of the panel</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
