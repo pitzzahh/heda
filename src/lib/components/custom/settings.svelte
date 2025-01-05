@@ -20,7 +20,6 @@
 
 	export interface SettingsComponentType {
 		active_setting: NavName;
-		settings_open: boolean;
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
 	}
@@ -57,7 +56,8 @@
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 
-	let { project }: { project?: Project } = $props();
+	let { project, settings_open = $bindable() }: { project?: Project; settings_open?: boolean } =
+		$props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -71,7 +71,6 @@
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
 		active_setting: 'Project',
-		settings_open: false,
 		app_update: null,
 		update_state: 'stale'
 	});
@@ -92,6 +91,15 @@
 			settingsState.setThemeColor(themeColor, $mode);
 		}
 	}
+
+	$effect.pre(() => {
+		if (!settings_open) {
+			settingsState.is_adjustment_factor_dynamic =
+				project?.settings.is_adjustment_factor_dynamic || false;
+			component_state.current.update_state = 'stale';
+			component_state.current.app_update = null;
+		}
+	});
 </script>
 
 <Dialog.Root>
