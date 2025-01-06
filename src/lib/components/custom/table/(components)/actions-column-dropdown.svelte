@@ -20,6 +20,7 @@
 	import OverrideSelectors from '../../override-selectors.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { VoltageDrop } from '@/types/voltage-drop';
+	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
 
 	let {
 		node,
@@ -42,8 +43,7 @@
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 	let undo_redo_state = getUndoRedoState();
 
-
-	console.log("actions", node)
+	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	$effect(() => {
 		if (node.parent_id) {
@@ -57,14 +57,18 @@
 	});
 
 	async function handleRemoveLoad() {
-		const removed_node = await removeNode(node.id);
-		undo_redo_state.setActionToUndo({
-			action: 'delete_node',
-			data: node,
-			children_nodes: removed_node.children_nodes
-		});
+		const result = await removeNode(node.id);
+		if (result) {
+			undo_redo_state.setActionToUndo({
+				action: 'delete_node',
+				data: node,
+				children_nodes: result.children_nodes
+			});
+		}
+
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
+		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
 	}
 
 	function isVoltageDrop(data: any): data is VoltageDrop {
