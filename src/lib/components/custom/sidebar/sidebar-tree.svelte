@@ -58,7 +58,7 @@
 		removeNode,
 		updateNodeParentById
 	} from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/state';
 	import { Portal } from 'bits-ui';
@@ -368,9 +368,11 @@
 
 			<Collapsible.Root
 				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
-				class="group/collapsible [&[data-state=open]>div>button>svg:first-child]:rotate-90"
+				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
 			>
-				<div
+				<button
+					onclick={() => goto(`/workspace/load-schedule/${node_name + '_' + node.id}`)}
+					class="w-full"
 					use:droppable={{
 						container: node.id,
 						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
@@ -397,9 +399,6 @@
 						</Collapsible.Trigger>
 						<ContextMenu.Root bind:open={component_state.open_panel_context_menu}>
 							<ContextMenu.Trigger class="flex w-full items-center justify-between">
-								{@const node_name = (node.highest_unit_form?.distribution_unit ||
-									node.panel_data?.name) as string}
-
 								<div
 									use:draggable={{
 										container: node?.panel_data?.name ?? 'unknown_panel',
@@ -476,7 +475,7 @@
 							</ContextMenu.Content>
 						</ContextMenu.Root>
 					</Sidebar.MenuButton>
-				</div>
+				</button>
 				<Collapsible.Content class="w-full">
 					<Sidebar.MenuSub class="w-full">
 						{#each child_nodes as child, index (index)}
