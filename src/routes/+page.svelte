@@ -1,7 +1,8 @@
-<script>
-	import { Button } from '@/components/ui/button';
-	import HedaLogoForDark from '$lib/assets/heda_logo_for_dark.png';
-	import HedaLogoForWhite from '$lib/assets/heda_logo_for_light.png';
+<script lang="ts">
+	import { Button, buttonVariants } from '@/components/ui/button';
+	import * as Dialog from '@/components/ui/dialog/index.js';
+	import HedaLogoForDark from '@/assets/heda_logo_for_dark.png';
+	import HedaLogoForWhite from '@/assets/heda_logo_for_light.png';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -57,11 +58,24 @@
 							/>
 						</Dialog.Content>
 					</Dialog.Root> -->
-					<Button
-						size="2xl"
-						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
-						>Load File</Button
-					>
+					<Dialog.Root>
+						<Dialog.Trigger
+							type="button"
+							class={buttonVariants({
+								size: '2xl',
+								className:
+									'w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]'
+							})}>Load File</Dialog.Trigger
+						>
+						<Dialog.Content>
+							<Dialog.Header>
+								<Dialog.Title>Load recent projects</Dialog.Title>
+								<Dialog.Description>
+									Choose from the list of recent projects to load.
+								</Dialog.Description>
+							</Dialog.Header>
+						</Dialog.Content>
+					</Dialog.Root>
 				</div>
 			</div>
 		</div>
