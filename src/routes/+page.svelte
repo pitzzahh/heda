@@ -81,7 +81,9 @@
 							</Dialog.Header>
 							<ScrollArea class="grid h-72 place-content-between gap-1">
 								{#await getAllProjects(['id', 'project_name'])}
-									<Skeleton class={buttonVariants({ variant: 'ghost' })} />
+									{#each { length: 5 }}
+										<Skeleton class={buttonVariants({ variant: 'ghost', className: 'w-full' })} />
+									{/each}
 								{:then _projects}
 									{#if !_projects}
 										<Alert.Root variant="default">
@@ -94,12 +96,14 @@
 										</Button>
 									{:else}
 										{#each _projects as project (project.id)}
-											<Button variant="outline">
+											<Button variant="outline" class="w-full">
 												<MonitorCog />
 												{project?.project_name ?? 'unknown'}
 											</Button>
 										{/each}
 									{/if}
+								{:catch err}
+									{err}
 								{/await}
 							</ScrollArea>
 						</Dialog.Content>
