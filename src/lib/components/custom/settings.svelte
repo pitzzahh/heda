@@ -58,8 +58,7 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { DialogState } from '@/state/types';
-	import { databaseInstance } from '@/db';
-	import { resetData } from '@/db/queries';
+	import { resetData } from '@/db/mutations';
 
 	let { project }: { project?: Project } = $props();
 
