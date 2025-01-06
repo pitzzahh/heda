@@ -68,6 +68,8 @@
 	import { exportToExcel } from '@/helpers/export';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { Button } from '@/components/ui/button';
+	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
+	import { CheckCircled } from 'svelte-radix';
 
 	let {
 		node,
@@ -86,6 +88,7 @@
 	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
 	const settings_state = getSettingsState();
+	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	let component_state = $state<ComponentState>({
 		open_copy_dialog: false,
@@ -127,25 +130,39 @@
 		component_state.multi_copy.processing = true;
 		const copy_count = Number(component_state.multi_copy.value);
 		let latest_node = await copyAndAddNodeById(node_id);
-		if (latest_node.node_type === 'panel') {
-			// check if might_take_some_time
-			const child_count = await getNumberOfChildren(node_id);
-			component_state.multi_copy.might_take_long = child_count >= 15;
-		} else if (latest_node.node_type === 'load') {
-			// check if might_take_some_time
-			component_state.multi_copy.might_take_long = copy_count >= 15;
+
+		if (latest_node) {
+			if (latest_node.node_type === 'panel') {
+				// check if might_take_some_time
+				const child_count = await getNumberOfChildren(node_id);
+				component_state.multi_copy.might_take_long = child_count >= 15;
+			} else if (latest_node.node_type === 'load') {
+				// check if might_take_some_time
+				component_state.multi_copy.might_take_long = copy_count >= 15;
+			}
+
+			for (let i = 1; i < copy_count; i++) {
+				latest_node = await copyAndAddNodeById(latest_node.id);
+
+				if (!latest_node) {
+					component_state.multi_copy.processing = false;
+					return toast.error('An error occurred while copying nodes.');
+				}
+
+				undo_redo_state.setActionToUndo({
+					action: 'copy_node',
+					data: latest_node as unknown as PhaseLoadSchedule
+				});
+			}
+
+			component_state.multi_copy.processing = false;
+			component_state.open_copy_dialog = false;
+			await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			return toast.success(`[${copy_count}]: ${component_state.node_name} copied successfully`);
+		} else {
+			component_state.multi_copy.processing = false;
+			return toast.error('Failed to copy the initial node.');
 		}
-		for (let i = 1; i < copy_count; i++) {
-			latest_node = await copyAndAddNodeById(latest_node.id);
-			undo_redo_state.setActionToUndo({
-				action: 'copy_node',
-				data: latest_node as unknown as PhaseLoadSchedule
-			});
-		}
-		component_state.multi_copy.processing = false;
-		component_state.open_copy_dialog = false;
-		await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-		return toast.success(`[${copy_count}]: ${component_state.node_name} copied successfully`);
 	}
 </script>
 
@@ -164,7 +181,12 @@
 				<Sidebar.MenuButton
 					onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
 					onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
-					class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+					class={cn(
+						'flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent'
+						// {
+						// 	'bg-/10': select_nodes_to_delete_state.is_ctrl_pressed
+						// }
+					)}
 				>
 					<ContextMenu.Root bind:open={component_state.open_load_context_menu}>
 						<ContextMenu.Trigger class="flex w-full items-center gap-1">
@@ -175,6 +197,9 @@
 								<span class="truncate">
 									{typeof node === 'string' ? node : node.load_data?.load_description}
 								</span>
+								{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
+									<CheckCircled class="size-4 text-yellow-500" />
+								{/if}
 							</div>
 						</ContextMenu.Trigger>
 						<ContextMenu.Content class="grid gap-1">
@@ -244,6 +269,7 @@
 						'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 						{
 							'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+							// 'bg-primary/10': select_nodes_to_delete_state.is_ctrl_pressed
 						}
 					)}
 				>
@@ -280,6 +306,9 @@
 								<span class="truncate">
 									{node_name}
 								</span>
+								{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
+									<CheckCircled class="size-4 text-yellow-500" />
+								{/if}
 							</AddPanelAndViewTrigger>
 						</ContextMenu.Trigger>
 
@@ -307,11 +336,14 @@
 											await deleteProject(project.id);
 										} else {
 											const removed_node = await removeNode(node.id);
-											undo_redo_state.setActionToUndo({
-												data: node as PhaseLoadSchedule,
-												action: 'delete_node',
-												children_nodes: removed_node.children_nodes
-											});
+											if (removed_node) {
+												undo_redo_state.setActionToUndo({
+													data: node as PhaseLoadSchedule,
+													action: 'delete_node',
+													children_nodes: removed_node.children_nodes
+												});
+												collapsibles.removeNodeId(node.id);
+											}
 										}
 										invalidate('app:workspace/load-schedule')
 											.then(() => (component_state.button_state = 'stale'))
@@ -423,7 +455,9 @@
 					className: '!text-red-600 hover:!bg-red-600/10'
 				}
 			]}
+
 			{@render heirarchy_actions(tooltip_data)}
+
 			{@const node_name = (node.highest_unit_form?.distribution_unit ||
 				node.panel_data?.name) as string}
 			<AddPanelAndViewTrigger
@@ -489,12 +523,15 @@
 				collapsibles.removeAllNodeId();
 			} else {
 				const removed_node = await removeNode(node.id);
-				undo_redo_state.setActionToUndo({
-					data: node as PhaseLoadSchedule,
-					action: 'delete_node',
-					children_nodes: removed_node.children_nodes
-				});
-				collapsibles.removeNodeId(node.id);
+
+				if (removed_node) {
+					undo_redo_state.setActionToUndo({
+						data: node as PhaseLoadSchedule,
+						action: 'delete_node',
+						children_nodes: removed_node.children_nodes
+					});
+					collapsibles.removeNodeId(node.id);
+				}
 			}
 			invalidate('app:workspace')
 				.then(() => invalidate('app:workspace/load-schedule'))
