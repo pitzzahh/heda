@@ -17,7 +17,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import PressCtrlWrapper from '@/components/custom/press-ctrl-wrapper.svelte';
+	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 
 	let { data, children } = $props();
 
@@ -56,14 +56,14 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
-		<PressCtrlWrapper>
+		<PressAltWrapper>
 			<AppSidebar
 				project={data.project}
 				root_node={data.root_node as Node}
 				{generic_phase_panel_form}
 				{phase_main_load_form}
 			/>
-		</PressCtrlWrapper>
+		</PressAltWrapper>
 
 		<Sidebar.Inset>
 			<header
