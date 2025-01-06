@@ -55,6 +55,10 @@
 	import { mode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
+	import { DIALOG_STATE_CTX } from '@/state/constants';
+	import { getState } from '@/state/index.svelte';
+	import type { DialogState } from '@/state/types';
+	import { databaseInstance } from '@/db';
 
 	let { project }: { project?: Project } = $props();
 
@@ -65,7 +69,7 @@
 
 	const settingsState = getSettingsState();
 	const selectedFont = $derived(settingsState.font);
-
+	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
@@ -92,8 +96,13 @@
 	}
 
 	async function handleNewProject() {
+		const db = await databaseInstance();
+		await db.projects.find().remove();
+		await db.nodes.find().remove();
+		await db.projects.cleanup(0);
+		await db.nodes.cleanup(0);
+		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
-		await goto('/workspace?new_file=true');
 	}
 </script>
 
