@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[tauri::command]
-fn get_env_var(key: String) -> Result<String, String> {
+fn get_env_var(key: String) -> String {
     std::env::var(String::from(key)).unwrap_or(String::from(""))
 }
 
