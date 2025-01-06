@@ -35,11 +35,10 @@
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import * as Tooltip from '@/components/ui/tooltip';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck, SunMoon, Moon, Sun } from '@/assets/icons';
+	import { Cog, Loader, PackageCheck, File, SunMoon, Moon, Sun } from '@/assets/icons';
 	import { Label } from '@/components/ui/label/index.js';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
@@ -48,12 +47,12 @@
 	import { Switch } from '@/components/ui/switch/index.js';
 	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode, setMode, systemPrefersMode } from 'mode-watcher';
+	import { mode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 
@@ -90,6 +89,10 @@
 		if ($mode) {
 			settingsState.setThemeColor(themeColor, $mode);
 		}
+	}
+
+	async function handleNewProject() {
+		goto('/workspace?new_file=true');
 	}
 </script>
 
@@ -160,6 +163,8 @@
 						{@render preferences_settings()}
 					{:else if component_state.current.active_setting === 'Updates'}
 						{@render updates_settings()}
+					{:else if component_state.current.active_setting === 'Advanced'}
+						{@render advanced_settings()}
 					{/if}
 				</div>
 			</main>
@@ -401,5 +406,14 @@
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>
+	</div>
+{/snippet}
+
+{#snippet advanced_settings()}
+	<div class="grid w-full gap-1.5">
+		<Button onclick={handleNewProject} class="w-full">
+			<File />
+			New Project
+		</Button>
 	</div>
 {/snippet}
