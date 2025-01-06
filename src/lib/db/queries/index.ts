@@ -466,11 +466,3 @@ export async function getComputedVoltageDrops() {
 
 	return nodes_with_additional_fields;
 }
-
-export async function resetData(minimumDeletedTime: number = 0) {
-	const db = await databaseInstance();
-	await db.projects.find().remove();
-	await db.nodes.find().remove();
-	await db.projects.cleanup(minimumDeletedTime);
-	await db.nodes.cleanup(minimumDeletedTime);
-}
