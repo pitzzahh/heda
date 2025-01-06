@@ -59,6 +59,7 @@
 	import { getState } from '@/state/index.svelte';
 	import type { DialogState } from '@/state/types';
 	import { databaseInstance } from '@/db';
+	import { resetData } from '@/db/queries';
 
 	let { project }: { project?: Project } = $props();
 
@@ -96,11 +97,7 @@
 	}
 
 	async function handleNewProject() {
-		const db = await databaseInstance();
-		await db.projects.find().remove();
-		await db.nodes.find().remove();
-		await db.projects.cleanup(0);
-		await db.nodes.cleanup(0);
+		await resetData();
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}
@@ -420,10 +417,14 @@
 {/snippet}
 
 {#snippet advanced_settings()}
-	<div class="grid w-full gap-1.5">
+	<div class="grid w-full grid-cols-2 gap-1.5">
 		<Button onclick={handleNewProject} class="w-full">
 			<File />
 			New Project
+		</Button>
+		<Button onclick={() => resetData()} href="/" class="w-full">
+			<File />
+			Home
 		</Button>
 	</div>
 {/snippet}
