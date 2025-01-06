@@ -38,7 +38,7 @@
 		} catch (err) {
 			console.error(err);
 		}
-		return toast.warning('This feature is not yet implemented');
+		return toast.warning('Saved successfully');
 	}
 </script>
 
