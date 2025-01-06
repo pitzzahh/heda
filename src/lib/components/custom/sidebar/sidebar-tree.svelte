@@ -51,12 +51,11 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId, getNodeDepth, getNumberOfChildren } from '@/db/queries';
+	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
 	import {
 		copyAndAddNodeById,
 		deleteProject,
 		removeNode,
-		updateNode,
 		updateNodeParentById
 	} from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
