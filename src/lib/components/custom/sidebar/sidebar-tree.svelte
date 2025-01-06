@@ -52,7 +52,13 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId, getNodeDepth, getNumberOfChildren } from '@/db/queries';
-	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
+	import {
+		copyAndAddNodeById,
+		deleteProject,
+		removeNode,
+		updateNode,
+		updateNodeParentById
+	} from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/state';
@@ -160,7 +166,21 @@
 			return;
 		}
 		if (_node.id === targetContainer) {
-			toast.info(`Dragging ${getNodeName(draggedItem)} to ${getNodeName(_node)}`);
+			toast.info(`Setting ${getNodeName(draggedItem)} panel to ${getNodeName(_node)}`);
+			const updated_node = await updateNodeParentById(
+				{
+					id: draggedItem.id,
+					parent_id: draggedItem.parent_id
+				},
+				targetContainer
+			);
+			undo_redo_state.setActionToUndo({
+				action: 'update_node',
+				data: updated_node as unknown as PhaseLoadSchedule,
+				previous_data: draggedItem as PhaseLoadSchedule
+			});
+			toast.success(`${getNodeName(draggedItem)} updated successfully`);
+			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			return;
 		}
 		return;
