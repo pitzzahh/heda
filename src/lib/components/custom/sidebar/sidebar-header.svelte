@@ -38,7 +38,7 @@
 		} catch (err) {
 			console.error(err);
 		}
-		return toast.warning('Saved successfully');
+		return toast.success('Saved successfully');
 	}
 </script>
 
