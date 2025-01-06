@@ -52,8 +52,13 @@
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
 	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
-	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
+	import {
+		copyAndAddNodeById,
+		deleteProject,
+		removeNode,
+		updateNodeParentById
+	} from '@/db/mutations';
+	import { goto, invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
 	import { page } from '$app/state';
 	import { Portal } from 'bits-ui';
@@ -165,9 +170,45 @@
 	}
 
 	// Handle drops between containers
-	async function handleDrop(state: DragDropState<{ id: string }>) {
+	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
-		if (!targetContainer || sourceContainer === targetContainer) return;
+		console.log({ draggedItem, sourceContainer, targetContainer, _node });
+		if (!targetContainer || _node.id === draggedItem.parent_id) {
+			toast.warning(
+				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
+			);
+			return;
+		}
+		if (_node.id === targetContainer) {
+			toast.info(`Setting ${getNodeName(draggedItem)} panel to ${getNodeName(_node)}`);
+			const updated_node = await updateNodeParentById(
+				{
+					id: draggedItem.id,
+					parent_id: draggedItem.parent_id
+				},
+				targetContainer
+			);
+			undo_redo_state.setActionToUndo({
+				action: 'update_node',
+				data: updated_node as unknown as PhaseLoadSchedule,
+				previous_data: draggedItem as PhaseLoadSchedule
+			});
+			toast.success(`${getNodeName(draggedItem)} updated successfully`);
+			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			return;
+		}
+		return;
+	}
+
+	function getNodeName(_node?: Node) {
+		if (!_node) return 'unknown';
+		return _node.node_type === 'root'
+			? _node?.highest_unit_form?.distribution_unit
+			: _node.node_type === 'panel'
+				? _node?.panel_data?.name
+				: _node.node_type === 'load'
+					? _node?.load_data?.load_description
+					: 'unknown';
 	}
 </script>
 
@@ -182,7 +223,7 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: 'panel', dragData: node }}>
+			<div use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -256,14 +297,101 @@
 			</div>
 		{/if}
 	{:else}
-		<div
-			use:droppable={{ container: 'panel', callbacks: { onDrop: handleDrop } }}
-			use:draggable={{ container: 'panel', dragData: node }}
-		>
-			<Sidebar.MenuItem class="w-full">
-				<Collapsible.Root
-					open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
-					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+		<Sidebar.MenuItem class="w-full">
+			{@const node_name = (node.highest_unit_form?.distribution_unit ||
+				node.panel_data?.name) as string}
+			{@const tooltip_data = [
+				{
+					trigger_callback: () => (component_state.open_tree_add_panel_dialog = true),
+					variant: 'ghost',
+					icon: Grid2x2Plus,
+					hidden: false,
+					tooltip_content: 'Add Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (component_state.open_tree_add_load_dialog = true),
+					variant: 'ghost',
+					icon: CirclePlus,
+					hidden: false,
+					tooltip_content: 'Add Load',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
+						await copyNodeById(node.id);
+					},
+					variant: 'ghost',
+					icon: Copy,
+					hidden: node.node_type === 'root',
+					tooltip_content: 'Copy Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => {
+						if (!node.parent_id) {
+							// TODO: Log system error
+							return toast.warning('Failed to identify the panel supplier', {
+								description:
+									'This is a system error and should not be here, the error has been logged.'
+							});
+						}
+						component_state.open_tree_edit_panel_action_dialog = true;
+					},
+					variant: 'ghost',
+					icon: Pencil,
+					hidden: node.node_type === 'root',
+					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						const some_name = node.panel_data?.name ?? 'Panel';
+						if (node.node_type !== 'root' && !node.parent_id) {
+							return toast.warning(`Cannot identify ${some_name} supply from.`, {
+								description:
+									'This is a system error and should not be here, the error has been logged.',
+								position: 'bottom-center'
+							});
+						}
+						console.log('Exporting to excel', node);
+						exportToExcel(
+							node.id,
+							highest_unit,
+							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
+						);
+					},
+					variant: 'ghost',
+					icon: FileUp,
+					hidden: false,
+					tooltip_content:
+						node.node_type === 'root'
+							? `Export ${project?.project_name ?? 'Project'}`
+							: `Export ${node.panel_data?.name ?? 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (component_state.open_tree_delete_dialog = true),
+					variant: 'ghost',
+					icon: Trash2,
+					hidden: false,
+					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
+					className: '!text-red-600 hover:!bg-red-600/10'
+				}
+			]}
+
+			<Collapsible.Root
+				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
+				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
+			>
+				<button
+					onclick={() => goto(`/workspace/load-schedule/${node_name + '_' + node.id}`)}
+					class="w-full"
+					use:droppable={{
+						container: node.id,
+						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
+					}}
 				>
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -286,31 +414,35 @@
 						</Collapsible.Trigger>
 						<ContextMenu.Root bind:open={component_state.open_panel_context_menu}>
 							<ContextMenu.Trigger class="flex w-full items-center justify-between">
-								{@const node_name = (node.highest_unit_form?.distribution_unit ||
-									node.panel_data?.name) as string}
-
-								<AddPanelAndViewTrigger
-									id={node.id}
-									panel_name={node_name}
-									{generic_phase_panel_form}
-									{highest_unit}
-									is_parent_root_node={node.node_type === 'root'}
-									parent_id={node.id}
-									latest_circuit_node={child_nodes
-										? child_nodes[child_nodes.length - 1]
-										: undefined}
+								<div
+									use:draggable={{
+										container: node?.panel_data?.name ?? 'unknown_panel',
+										dragData: node
+									}}
 								>
-									{#if node.node_type === 'root'}
-										<div class="w-4">
-											<DatabaseZap class="size-4" />
-										</div>
-									{:else if node.node_type === 'panel'}
-										<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
-									{/if}
-									<span class="truncate">
-										{node_name}
-									</span>
-								</AddPanelAndViewTrigger>
+									<AddPanelAndViewTrigger
+										id={node.id}
+										panel_name={node_name}
+										{generic_phase_panel_form}
+										{highest_unit}
+										is_parent_root_node={node.node_type === 'root'}
+										parent_id={node.id}
+										latest_circuit_node={child_nodes
+											? child_nodes[child_nodes.length - 1]
+											: undefined}
+									>
+										{#if node.node_type === 'root'}
+											<div class="w-4">
+												<DatabaseZap class="size-4" />
+											</div>
+										{:else if node.node_type === 'panel'}
+											<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
+										{/if}
+										<span class="truncate">
+											{node_name}
+										</span>
+									</AddPanelAndViewTrigger>
+								</div>
 							</ContextMenu.Trigger>
 
 							<ContextMenu.Content class="grid gap-1">
@@ -361,124 +493,42 @@
 							</ContextMenu.Content>
 						</ContextMenu.Root>
 					</Sidebar.MenuButton>
+				</button>
+				<Collapsible.Content class="w-full">
+					<Sidebar.MenuSub class="w-full">
+						{#each child_nodes as child, index (index)}
+							<SidebarTree
+								node={child}
+								{generic_phase_panel_form}
+								{phase_main_load_form}
+								{highest_unit}
+							/>
+						{/each}
+					</Sidebar.MenuSub>
+				</Collapsible.Content>
+			</Collapsible.Root>
 
-					<Collapsible.Content class="w-full">
-						<Sidebar.MenuSub class="w-full">
-							{#each child_nodes as child, index (index)}
-								<SidebarTree
-									node={child}
-									{generic_phase_panel_form}
-									{phase_main_load_form}
-									{highest_unit}
-								/>
-							{/each}
-						</Sidebar.MenuSub>
-					</Collapsible.Content>
-				</Collapsible.Root>
+			{@render heirarchy_actions(tooltip_data)}
 
-				{@const tooltip_data = [
-					{
-						trigger_callback: () => (component_state.open_tree_add_panel_dialog = true),
-						variant: 'ghost',
-						icon: Grid2x2Plus,
-						hidden: false,
-						tooltip_content: 'Add Panel',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => (component_state.open_tree_add_load_dialog = true),
-						variant: 'ghost',
-						icon: CirclePlus,
-						hidden: false,
-						tooltip_content: 'Add Load',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: async () => {
-							component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
-							await copyNodeById(node.id);
-						},
-						variant: 'ghost',
-						icon: Copy,
-						hidden: node.node_type === 'root',
-						tooltip_content: 'Copy Panel',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => {
-							if (!node.parent_id) {
-								// TODO: Log system error
-								return toast.warning('Failed to identify the panel supplier', {
-									description:
-										'This is a system error and should not be here, the error has been logged.'
-								});
-							}
-							component_state.open_tree_edit_panel_action_dialog = true;
-						},
-						variant: 'ghost',
-						icon: Pencil,
-						hidden: node.node_type === 'root',
-						tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: async () => {
-							const some_name = node.panel_data?.name ?? 'Panel';
-							if (node.node_type !== 'root' && !node.parent_id) {
-								return toast.warning(`Cannot identify ${some_name} supply from.`, {
-									description:
-										'This is a system error and should not be here, the error has been logged.',
-									position: 'bottom-center'
-								});
-							}
-							console.log('Exporting to excel', node);
-							exportToExcel(
-								node.id,
-								highest_unit,
-								node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
-							);
-						},
-						variant: 'ghost',
-						icon: FileUp,
-						hidden: false,
-						tooltip_content:
-							node.node_type === 'root'
-								? `Export ${project?.project_name ?? 'Project'}`
-								: `Export ${node.panel_data?.name ?? 'Panel'}`,
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => (component_state.open_tree_delete_dialog = true),
-						variant: 'ghost',
-						icon: Trash2,
-						hidden: false,
-						tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
-						className: '!text-red-600 hover:!bg-red-600/10'
-					}
-				]}
-				{@render heirarchy_actions(tooltip_data)}
-				{@const node_name = (node.highest_unit_form?.distribution_unit ||
-					node.panel_data?.name) as string}
-				<AddPanelAndViewTrigger
-					id={node.id}
-					panel_name={node_name}
-					{generic_phase_panel_form}
-					{highest_unit}
-					is_parent_root_node={node.node_type === 'root'}
-					parent_id={node.id}
-					bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
-					latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-				/>
-				<AddLoadDialog
-					{phase_main_load_form}
-					{highest_unit}
-					remove_trigger={true}
-					bind:open_dialog_state={component_state.open_tree_add_load_dialog}
-					latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-					panel_id_from_tree={node.id}
-				/>
-			</Sidebar.MenuItem>
-		</div>
+			<AddPanelAndViewTrigger
+				id={node.id}
+				panel_name={node_name}
+				{generic_phase_panel_form}
+				{highest_unit}
+				is_parent_root_node={node.node_type === 'root'}
+				parent_id={node.id}
+				bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+			/>
+			<AddLoadDialog
+				{phase_main_load_form}
+				{highest_unit}
+				remove_trigger={true}
+				bind:open_dialog_state={component_state.open_tree_add_load_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+				panel_id_from_tree={node.id}
+			/>
+		</Sidebar.MenuItem>
 	{/if}
 {:catch error}
 	<!-- TODO: Enhance error page -->
@@ -567,7 +617,7 @@
 				align={sidebar_context.isMobile ? 'end' : 'start'}
 			>
 				<DropdownMenu.Group>
-					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+					{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
 						{#if !hidden}
 							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn('z-auto', className)}>
 								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
