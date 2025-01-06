@@ -8,6 +8,9 @@
 	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
+	import { getEnv, writeEncryptedFile } from '@/helpers/security';
+	import { getChildNodesByParentId } from '@/db/queries';
+	import type { FileExport } from '@/types/main';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
@@ -15,9 +18,27 @@
 		export_to_excel: 'idle' as ButtonState
 	});
 
-	function handleSave() {
-		// TODO: Implement save functionality
-		toast.warning('This feature is not yet implemented');
+	async function handleSave() {
+		try {
+			if (!project) {
+				return toast.warning('Failed to save, no project found', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+			const nodes = await getChildNodesByParentId(root_node.id);
+			const backup: FileExport = { project, nodes };
+			const secret_key = await getEnv('APP_SECRET_KEY');
+			if (!secret_key) {
+				return toast.warning('Failed to create new file', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
+			await writeEncryptedFile(project?.project_name ?? 'Untitled', backup, secret_key);
+		} catch (err) {
+			console.error(err);
+		}
+		return toast.warning('This feature is not yet implemented');
 	}
 </script>
 
@@ -26,6 +47,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger
+					disabled={project === undefined}
 					class={buttonVariants({ variant: 'default', size: 'sm' })}
 					onclick={handleSave}
 				>
