@@ -36,3 +36,4 @@ export { default as WandSparkles } from 'lucide-svelte/icons/wand-sparkles';
 export { default as MonitorCog } from 'lucide-svelte/icons/monitor-cog';
 export { default as Rss } from 'lucide-svelte/icons/rss';
 export { default as Sliders } from 'lucide-svelte/icons/sliders';
+export { default as SearchX } from 'lucide-svelte/icons/search-x';
