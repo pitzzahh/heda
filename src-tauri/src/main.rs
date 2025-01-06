@@ -7,6 +7,7 @@ fn get_env_var(key: String) -> String {
 }
 
 fn main() {
+    dotenv::load().ok();
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
