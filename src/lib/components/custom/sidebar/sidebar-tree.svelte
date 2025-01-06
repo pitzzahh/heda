@@ -51,7 +51,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
+	import { getChildNodesByParentId, getNodeDepth, getNumberOfChildren } from '@/db/queries';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
@@ -152,15 +152,26 @@
 	// Handle drops between containers
 	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
-		console.log({ draggedItem, targetContainer });
-		console.log({ _node });
+		const node_depth = await getNodeDepth(draggedItem.id);
+		console.log({ node_depth, sourceContainer, targetContainer, _node });
 		if (!targetContainer || sourceContainer === targetContainer) {
-			toast.warning('Cannot move load to same previous panel');
+			toast.warning(
+				`Cannot move load ${getNodeName(draggedItem)} to same previous ${targetContainer} panel`
+			);
 			return;
 		}
-		toast.info(
-			`Dragging ${draggedItem?.load_data?.load_description} to ${_node?.panel_data?.name}`
-		);
+		toast.info(`Dragging ${getNodeName(draggedItem)} to ${getNodeName(_node)}`);
+	}
+
+	function getNodeName(_node?: Node) {
+		if (!_node) return 'unknown';
+		return _node.node_type === 'root'
+			? _node?.highest_unit_form?.distribution_unit
+			: _node.node_type === 'panel'
+				? _node?.panel_data?.name
+				: _node.node_type === 'load'
+					? _node?.load_data?.load_description
+					: 'unknown';
 	}
 </script>
 
@@ -175,7 +186,7 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: 'load-panel', dragData: node }}>
+			<div use:draggable={{ container: node?.panel_data?.name ?? 'unknown_panel', dragData: node }}>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -334,7 +345,7 @@
 			]}
 			<div
 				use:droppable={{
-					container: 'load-panel',
+					container: node?.panel_data?.name ?? 'unknown_panel',
 					callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
 				}}
 			>
@@ -366,28 +377,35 @@
 								{@const node_name = (node.highest_unit_form?.distribution_unit ||
 									node.panel_data?.name) as string}
 
-								<AddPanelAndViewTrigger
-									id={node.id}
-									panel_name={node_name}
-									{generic_phase_panel_form}
-									{highest_unit}
-									is_parent_root_node={node.node_type === 'root'}
-									parent_id={node.id}
-									latest_circuit_node={child_nodes
-										? child_nodes[child_nodes.length - 1]
-										: undefined}
+								<div
+									use:draggable={{
+										container: node?.panel_data?.name ?? 'unknown_panel',
+										dragData: node
+									}}
 								>
-									{#if node.node_type === 'root'}
-										<div class="w-4">
-											<DatabaseZap class="size-4" />
-										</div>
-									{:else if node.node_type === 'panel'}
-										<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
-									{/if}
-									<span class="truncate">
-										{node_name}
-									</span>
-								</AddPanelAndViewTrigger>
+									<AddPanelAndViewTrigger
+										id={node.id}
+										panel_name={node_name}
+										{generic_phase_panel_form}
+										{highest_unit}
+										is_parent_root_node={node.node_type === 'root'}
+										parent_id={node.id}
+										latest_circuit_node={child_nodes
+											? child_nodes[child_nodes.length - 1]
+											: undefined}
+									>
+										{#if node.node_type === 'root'}
+											<div class="w-4">
+												<DatabaseZap class="size-4" />
+											</div>
+										{:else if node.node_type === 'panel'}
+											<div class="w-4"><PanelsLeftBottom class="size-4" /></div>
+										{/if}
+										<span class="truncate">
+											{node_name}
+										</span>
+									</AddPanelAndViewTrigger>
+								</div>
 							</ContextMenu.Trigger>
 
 							<ContextMenu.Content class="grid gap-1">
@@ -557,7 +575,7 @@
 				align={sidebar_context.isMobile ? 'end' : 'start'}
 			>
 				<DropdownMenu.Group>
-					{#each tooltip_data as { trigger_callback, variant, icon, hidden, tooltip_content, className }, i}
+					{#each tooltip_data as { trigger_callback, icon, hidden, tooltip_content, className }, i}
 						{#if !hidden}
 							<DropdownMenu.Item onclick={() => trigger_callback()} class={cn('z-auto', className)}>
 								{@render icon(i === tooltip_data.length - 1 ? `text-inherit` : undefined)}
