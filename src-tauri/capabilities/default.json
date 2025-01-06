@@ -9,6 +9,7 @@
     "core:default",
     "log:default",
     "process:default",
+    "core:window:allow-start-dragging",
     "updater:default",
     "dialog:default",
     "dialog:allow-ask",
