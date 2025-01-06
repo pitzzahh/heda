@@ -74,6 +74,7 @@
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { Button } from '@/components/ui/button';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
+	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
 
 	let {
 		node,
@@ -92,7 +93,7 @@
 	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
 	const settings_state = getSettingsState();
-	// const select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	let component_state = $state<ComponentState>({
 		open_copy_dialog: false,
@@ -223,7 +224,14 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}>
+			<button
+				use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}
+				onclick={() => {
+					if (select_nodes_to_delete_state.is_alt_pressed) {
+						select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
+					}
+				}}
+			>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -239,6 +247,9 @@
 									<span class="truncate">
 										{typeof node === 'string' ? node : node.load_data?.load_description}
 									</span>
+									{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
+										<div class="size-2 rounded-full bg-red-700"></div>
+									{/if}
 								</div>
 							</ContextMenu.Trigger>
 							<ContextMenu.Content class="grid gap-1">
@@ -294,7 +305,7 @@
 					]}
 					{@render heirarchy_actions(tooltip_data)}
 				</Sidebar.MenuItem>
-			</div>
+			</button>
 		{/if}
 	{:else}
 		<Sidebar.MenuItem class="w-full">
@@ -386,7 +397,11 @@
 				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
 			>
 				<button
-					onclick={() => goto(`/workspace/load-schedule/${node_name + '_' + node.id}`)}
+					onclick={() => {
+						if (select_nodes_to_delete_state.is_alt_pressed && node.node_type === 'panel') {
+							select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
+						} else goto(`/workspace/load-schedule/${node_name + '_' + node.id}`);
+					}}
 					class="w-full"
 					use:droppable={{
 						container: node.id,
@@ -441,6 +456,9 @@
 										<span class="truncate">
 											{node_name}
 										</span>
+										{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
+											<div class="size-2 rounded-full bg-red-700"></div>
+										{/if}
 									</AddPanelAndViewTrigger>
 								</div>
 							</ContextMenu.Trigger>
@@ -476,6 +494,7 @@
 														action: 'delete_node',
 														children_nodes: removed_node.children_nodes
 													});
+													select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
 												}
 											}
 											invalidate('app:workspace/load-schedule')
@@ -581,6 +600,7 @@
 						children_nodes: removed_node.children_nodes
 					});
 					collapsibles.removeNodeId(node.id);
+					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
 				}
 			}
 			invalidate('app:workspace')
