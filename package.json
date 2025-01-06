@@ -71,6 +71,7 @@
 		"@tauri-apps/plugin-log": "~2",
 		"@tauri-apps/plugin-process": "~2",
 		"@tauri-apps/plugin-updater": "~2",
+		"@thisux/sveltednd": "^0.0.19",
 		"dompurify": "^3.2.3",
 		"exceljs": "^4.4.0",
 		"formsnap": "^2.0.0",
