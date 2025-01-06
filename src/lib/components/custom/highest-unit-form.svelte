@@ -15,7 +15,6 @@
 	import { getChildNodesByParentId } from '@/db/queries';
 	import { getEnv, writeEncryptedFile } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
-	import { databaseInstance } from '@/db';
 
 	interface Props {
 		highest_unit_form: T;
@@ -30,8 +29,6 @@
 		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
-				const db = await databaseInstance();
-				await db.nodes.cleanup(0);
 				const created_proj = (await createProject(form.data)) as {
 					project: Project;
 					root_node_id: string;
