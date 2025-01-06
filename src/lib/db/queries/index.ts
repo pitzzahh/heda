@@ -438,7 +438,7 @@ export async function getComputedVoltageDrops() {
 		const length = node.overrided_length || (node.length as number);
 		const z = node.overrided_z || ALTERNATING_CURRENT_REACTANCE[conductor_size];
 		const actual_z = Number(((length * z) / 305).toFixed(4));
-		const voltage_per_segment = Number((node.current * actual_z).toFixed(4));
+		const voltage_per_segment = Number((node.conductor_qty as number * node.current * actual_z).toFixed(4));
 		const voltage_at_end_circuit =
 			parent_node?.node_type === 'root'
 				? voltage_per_segment
