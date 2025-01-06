@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { readFile, create, BaseDirectory } from "@tauri-apps/plugin-fs";
 import CryptoJS from "crypto-js";
 
@@ -40,5 +41,13 @@ export async function readEncryptedFile<T>(filePath: string, secret_key: string)
   } catch (error) {
     console.error("Error reading file:", error);
     return null;
+  }
+}
+
+export async function getEnv(key: string): Promise<string | undefined> {
+  try {
+    return await invoke("get_env_var", { key })
+  } catch (err) {
+    console.error(err)
   }
 }
