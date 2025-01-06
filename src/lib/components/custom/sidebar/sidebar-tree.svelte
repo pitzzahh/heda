@@ -241,7 +241,10 @@
 			</div>
 		{/if}
 	{:else}
-		<div use:droppable={{ container: 'panel', callbacks: { onDrop: handleDrop } }}>
+		<div
+			use:droppable={{ container: 'panel', callbacks: { onDrop: handleDrop } }}
+			use:draggable={{ container: 'panel', dragData: node }}
+		>
 			<Sidebar.MenuItem class="w-full">
 				<Collapsible.Root
 					open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
