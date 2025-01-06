@@ -12,12 +12,10 @@
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
-	import { BaseDirectory, create } from '@tauri-apps/plugin-fs';
 	import { getChildNodesByParentId } from '@/db/queries';
 	import { getEnv, writeEncryptedFile } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
-
-	const secretKey = 'your-strong-secret-key';
+	import { databaseInstance } from '@/db';
 
 	interface Props {
 		highest_unit_form: T;
@@ -32,6 +30,8 @@
 		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
+				const db = await databaseInstance();
+				await db.nodes.cleanup(0);
 				const created_proj = (await createProject(form.data)) as {
 					project: Project;
 					root_node_id: string;
