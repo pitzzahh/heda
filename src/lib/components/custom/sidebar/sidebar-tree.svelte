@@ -14,6 +14,8 @@
 		multi_copy: {
 			valid: boolean;
 			value: number;
+			processing: boolean;
+			might_take_long: boolean;
 			error?: string;
 		};
 	}
@@ -37,6 +39,7 @@
 		Ellipsis,
 		FileUp,
 		PlugZap,
+		Loader,
 		PanelsLeftBottom,
 		CirclePlus,
 		Copy,
@@ -48,7 +51,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId } from '@/db/queries/index';
+	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
 	import { copyAndAddNodeById, deleteProject, removeNode } from '@/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
@@ -96,7 +99,7 @@
 		is_hovering_on_tree_item: false,
 		button_state: 'stale',
 		node_name: 'Unknown',
-		multi_copy: { valid: true, value: 1 }
+		multi_copy: { valid: true, value: 1, processing: false, might_take_long: false }
 	});
 
 	let undo_redo_state = getUndoRedoState();
@@ -117,11 +120,32 @@
 			.finally(() => invalidate('app:workspace/load-schedule'));
 	}
 
-	async function handleMultiCopy() {
-		const copy_count = (document.getElementById('copy_count') as HTMLInputElement).value;
-		if (!copy_count) return;
-		await copyNodeById(node.id);
+	async function handleMultiCopy(node_id: string) {
+		if (!component_state.multi_copy.valid) {
+			return toast.warning('Invalid copy count, must be greater than 0');
+		}
+		component_state.multi_copy.processing = true;
+		const copy_count = Number(component_state.multi_copy.value);
+		let latest_node = await copyAndAddNodeById(node_id);
+		if (latest_node.node_type === 'panel') {
+			// check if might_take_some_time
+			const child_count = await getNumberOfChildren(node_id);
+			component_state.multi_copy.might_take_long = child_count >= 15;
+		} else if (latest_node.node_type === 'load') {
+			// check if might_take_some_time
+			component_state.multi_copy.might_take_long = copy_count >= 15;
+		}
+		for (let i = 1; i < copy_count; i++) {
+			latest_node = await copyAndAddNodeById(latest_node.id);
+			undo_redo_state.setActionToUndo({
+				action: 'copy_node',
+				data: latest_node as unknown as PhaseLoadSchedule
+			});
+		}
+		component_state.multi_copy.processing = false;
 		component_state.open_copy_dialog = false;
+		await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		return toast.success(`[${copy_count}]: ${component_state.node_name} copied successfully`);
 	}
 </script>
 
@@ -179,7 +203,7 @@
 				{@const tooltip_data = [
 					{
 						trigger_callback: async () => {
-							component_state.open_copy_dialog = settings_state.has_load_copy_count;
+							component_state.open_copy_dialog = settings_state.is_load_multi_copy;
 							await copyNodeById(node.id);
 						},
 						variant: 'ghost',
@@ -338,7 +362,7 @@
 				},
 				{
 					trigger_callback: async () => {
-						component_state.open_copy_dialog = settings_state.has_panel_copy_count;
+						component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
 						await copyNodeById(node.id);
 					},
 					variant: 'ghost',
@@ -528,7 +552,7 @@
 				>Specify the number of {component_state.node_name} to be copied.</Dialog.Description
 			>
 		</Dialog.Header>
-		{#if component_state.multi_copy.valid}
+		{#if !component_state.multi_copy.valid}
 			<Alert.Root variant="warning">
 				<CircleAlert class="size-4" />
 				<Alert.Description
@@ -545,13 +569,19 @@
 				placeholder="Enter the circuit number"
 				bind:value={component_state.multi_copy.value}
 				class={cn('col-span-3', {
-					'border-red-600': !component_state.multi_copy.valid
+					'border-red-600 outline-red-600 ring ring-red-600': !component_state.multi_copy.valid
 				})}
-				oninput={(v) => (component_state.multi_copy.valid = Number(v.currentTarget.value) > 0)}
 			/>
 		</div>
 		<Dialog.Footer>
-			<Button type="submit" onclick={handleMultiCopy}>Save changes</Button>
+			<Button type="submit" onclick={() => handleMultiCopy(node.id)}>
+				<Loader
+					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+						block: component_state.multi_copy.processing
+					})}
+				/>
+				<span>Copy</span>
+			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
