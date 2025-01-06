@@ -6,11 +6,11 @@
 
 	$effect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Shift') select_nodes_to_delete_state.setIsShiftPressed(true);
+			if (e.key === 'Alt') select_nodes_to_delete_state.setIsAltPressed(true);
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.key === 'Shift') select_nodes_to_delete_state.setIsShiftPressed(false);
+			if (e.key === 'Alt') select_nodes_to_delete_state.setIsAltPressed(false);
 		};
 
 		window.addEventListener('keydown', handleKeyDown);
