@@ -150,9 +150,17 @@
 	}
 
 	// Handle drops between containers
-	async function handleDrop(state: DragDropState<{ id: string }>) {
+	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
-		if (!targetContainer || sourceContainer === targetContainer) return;
+		console.log({ draggedItem, targetContainer });
+		console.log({ _node });
+		if (!targetContainer || sourceContainer === targetContainer) {
+			toast.warning('Cannot move load to same previous panel');
+			return;
+		}
+		toast.info(
+			`Dragging ${draggedItem?.load_data?.load_description} to ${_node?.panel_data?.name}`
+		);
 	}
 </script>
 
@@ -167,7 +175,7 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: 'panel', dragData: node }}>
+			<div use:draggable={{ container: 'load-panel', dragData: node }}>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -241,11 +249,95 @@
 			</div>
 		{/if}
 	{:else}
-		<div
-			use:droppable={{ container: 'panel', callbacks: { onDrop: handleDrop } }}
-			use:draggable={{ container: 'panel', dragData: node }}
-		>
-			<Sidebar.MenuItem class="w-full">
+		<Sidebar.MenuItem class="w-full">
+			{@const node_name = (node.highest_unit_form?.distribution_unit ||
+				node.panel_data?.name) as string}
+			{@const tooltip_data = [
+				{
+					trigger_callback: () => (component_state.open_tree_add_panel_dialog = true),
+					variant: 'ghost',
+					icon: Grid2x2Plus,
+					hidden: false,
+					tooltip_content: 'Add Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (component_state.open_tree_add_load_dialog = true),
+					variant: 'ghost',
+					icon: CirclePlus,
+					hidden: false,
+					tooltip_content: 'Add Load',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
+						await copyNodeById(node.id);
+					},
+					variant: 'ghost',
+					icon: Copy,
+					hidden: node.node_type === 'root',
+					tooltip_content: 'Copy Panel',
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => {
+						if (!node.parent_id) {
+							// TODO: Log system error
+							return toast.warning('Failed to identify the panel supplier', {
+								description:
+									'This is a system error and should not be here, the error has been logged.'
+							});
+						}
+						component_state.open_tree_edit_panel_action_dialog = true;
+					},
+					variant: 'ghost',
+					icon: Pencil,
+					hidden: node.node_type === 'root',
+					tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: async () => {
+						const some_name = node.panel_data?.name ?? 'Panel';
+						if (node.node_type !== 'root' && !node.parent_id) {
+							return toast.warning(`Cannot identify ${some_name} supply from.`, {
+								description:
+									'This is a system error and should not be here, the error has been logged.',
+								position: 'bottom-center'
+							});
+						}
+						console.log('Exporting to excel', node);
+						exportToExcel(
+							node.id,
+							highest_unit,
+							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
+						);
+					},
+					variant: 'ghost',
+					icon: FileUp,
+					hidden: false,
+					tooltip_content:
+						node.node_type === 'root'
+							? `Export ${project?.project_name ?? 'Project'}`
+							: `Export ${node.panel_data?.name ?? 'Panel'}`,
+					className: 'text-muted-foreground'
+				},
+				{
+					trigger_callback: () => (component_state.open_tree_delete_dialog = true),
+					variant: 'ghost',
+					icon: Trash2,
+					hidden: false,
+					tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
+					className: '!text-red-600 hover:!bg-red-600/10'
+				}
+			]}
+			<div
+				use:droppable={{
+					container: 'load-panel',
+					callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
+				}}
+			>
 				<Collapsible.Root
 					open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
 					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
@@ -358,89 +450,8 @@
 					</Collapsible.Content>
 				</Collapsible.Root>
 
-				{@const tooltip_data = [
-					{
-						trigger_callback: () => (component_state.open_tree_add_panel_dialog = true),
-						variant: 'ghost',
-						icon: Grid2x2Plus,
-						hidden: false,
-						tooltip_content: 'Add Panel',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => (component_state.open_tree_add_load_dialog = true),
-						variant: 'ghost',
-						icon: CirclePlus,
-						hidden: false,
-						tooltip_content: 'Add Load',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: async () => {
-							component_state.open_copy_dialog = settings_state.is_panel_multi_copy;
-							await copyNodeById(node.id);
-						},
-						variant: 'ghost',
-						icon: Copy,
-						hidden: node.node_type === 'root',
-						tooltip_content: 'Copy Panel',
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => {
-							if (!node.parent_id) {
-								// TODO: Log system error
-								return toast.warning('Failed to identify the panel supplier', {
-									description:
-										'This is a system error and should not be here, the error has been logged.'
-								});
-							}
-							component_state.open_tree_edit_panel_action_dialog = true;
-						},
-						variant: 'ghost',
-						icon: Pencil,
-						hidden: node.node_type === 'root',
-						tooltip_content: `Edit ${node.panel_data?.name || 'Panel'}`,
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: async () => {
-							const some_name = node.panel_data?.name ?? 'Panel';
-							if (node.node_type !== 'root' && !node.parent_id) {
-								return toast.warning(`Cannot identify ${some_name} supply from.`, {
-									description:
-										'This is a system error and should not be here, the error has been logged.',
-									position: 'bottom-center'
-								});
-							}
-							console.log('Exporting to excel', node);
-							exportToExcel(
-								node.id,
-								highest_unit,
-								node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
-							);
-						},
-						variant: 'ghost',
-						icon: FileUp,
-						hidden: false,
-						tooltip_content:
-							node.node_type === 'root'
-								? `Export ${project?.project_name ?? 'Project'}`
-								: `Export ${node.panel_data?.name ?? 'Panel'}`,
-						className: 'text-muted-foreground'
-					},
-					{
-						trigger_callback: () => (component_state.open_tree_delete_dialog = true),
-						variant: 'ghost',
-						icon: Trash2,
-						hidden: false,
-						tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
-						className: '!text-red-600 hover:!bg-red-600/10'
-					}
-				]}
 				{@render heirarchy_actions(tooltip_data)}
-				{@const node_name = (node.highest_unit_form?.distribution_unit ||
-					node.panel_data?.name) as string}
+
 				<AddPanelAndViewTrigger
 					id={node.id}
 					panel_name={node_name}
@@ -459,8 +470,8 @@
 					latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 					panel_id_from_tree={node.id}
 				/>
-			</Sidebar.MenuItem>
-		</div>
+			</div>
+		</Sidebar.MenuItem>
 	{/if}
 {:catch error}
 	<!-- TODO: Enhance error page -->
