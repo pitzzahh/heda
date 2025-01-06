@@ -39,5 +39,10 @@
       ]
     },
     "updater:allow-download-and-install"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
   ]
 }
