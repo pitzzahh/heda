@@ -25,7 +25,7 @@ tauri = { version = "2.0.6", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
-dotenv = "0.15.0"
+dotenvs = "0.1.0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
