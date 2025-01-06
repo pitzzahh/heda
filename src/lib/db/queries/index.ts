@@ -26,6 +26,14 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
 
+export async function getAllProjects(fields?: (keyof Project)[]): Promise<Project[] | undefined> {
+	const db = await databaseInstance();
+
+	return await db.projects.find({
+		selector: {},
+		...(fields?.length ? { fields } : {})
+	}).exec();
+}
 export async function getRootNode(): Promise<Node | undefined> {
 	const db = await databaseInstance();
 	const query = db.nodes.find({
@@ -466,3 +474,4 @@ export async function getComputedVoltageDrops() {
 
 	return nodes_with_additional_fields;
 }
+
