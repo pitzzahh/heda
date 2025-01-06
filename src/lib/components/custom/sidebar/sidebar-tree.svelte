@@ -155,7 +155,7 @@
 		console.log({ draggedItem, sourceContainer, targetContainer, _node });
 		if (!targetContainer || _node.id === draggedItem.parent_id) {
 			toast.warning(
-				`Cannot move load ${getNodeName(draggedItem)} to same previous ${targetContainer} panel`
+				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
 			);
 			return;
 		}
@@ -349,12 +349,11 @@
 
 			<Collapsible.Root
 				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
-				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+				class="group/collapsible [&[data-state=open]>div>button>svg:first-child]:rotate-90"
 			>
 				<div
 					use:droppable={{
 						container: node.id,
-						dragData: node,
 						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
 					}}
 				>
