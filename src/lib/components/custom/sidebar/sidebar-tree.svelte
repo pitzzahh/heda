@@ -208,7 +208,7 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}>
+			<div use:draggable={{ container: node.id, dragData: node }}>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
