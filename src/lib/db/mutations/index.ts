@@ -266,60 +266,65 @@ export async function updateNode({
 
 		const update_query = !!whole_data
 			? query.update({
-					$set: {
-						...{
-							...whole_data,
-							panel_data: whole_data.panel_data
-								? JSON.parse(JSON.stringify(whole_data.panel_data))
-								: undefined,
-							load_data: whole_data.load_data
-								? JSON.parse(JSON.stringify(whole_data.load_data))
-								: undefined
-						}
+				$set: {
+					...{
+						...whole_data,
+						panel_data: whole_data.panel_data
+							? JSON.parse(JSON.stringify(whole_data.panel_data))
+							: undefined,
+						load_data: whole_data.load_data
+							? JSON.parse(JSON.stringify(whole_data.load_data))
+							: undefined
 					}
-				})
+				}
+			})
 			: query.update({
-					$set: {
-						parent_id,
-						panel_data,
-						length: load_data?.length || panel_data?.length,
-						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-						load_data: load_data as Node['load_data']
-					}
-				});
+				$set: {
+					parent_id,
+					panel_data,
+					length: load_data?.length || panel_data?.length,
+					circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+					load_data: load_data as Node['load_data']
+				}
+			});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
 		if (is_changing_parent) {
-			// remove the node from its current parent
-			if (existing_node._data.parent_id) {
-				const current_parent_query = database.nodes.findOne({
-					selector: { id: existing_node._data.parent_id }
-				});
-				const current_parent = await current_parent_query.exec();
 
-				if (current_parent) {
-					await current_parent_query.update({
-						$set: {
-							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
-						}
-					});
-				}
-			}
+			await updateNodeParentById({
+				id,
+				parent_id: existing_node._data.parent_id
+			}, parent_id)
+			// // remove the node from its current parent
+			// if (existing_node._data.parent_id) {
+			// 	const current_parent_query = database.nodes.findOne({
+			// 		selector: { id: existing_node._data.parent_id }
+			// 	});
+			// 	const current_parent = await current_parent_query.exec();
 
-			// addd the node to the new parent
-			const new_parent_query = database.nodes.findOne({
-				selector: { id: parent_id }
-			});
-			const new_parent = await new_parent_query.exec();
+			// 	if (current_parent) {
+			// 		await current_parent_query.update({
+			// 			$set: {
+			// 				child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
+			// 			}
+			// 		});
+			// 	}
+			// }
 
-			if (new_parent) {
-				await new_parent_query.update({
-					$set: {
-						child_ids: [...new_parent._data.child_ids, id]
-					}
-				});
-			}
+			// // addd the node to the new parent
+			// const new_parent_query = database.nodes.findOne({
+			// 	selector: { id: parent_id }
+			// });
+			// const new_parent = await new_parent_query.exec();
+
+			// if (new_parent) {
+			// 	await new_parent_query.update({
+			// 		$set: {
+			// 			child_ids: [...new_parent._data.child_ids, id]
+			// 		}
+			// 	});
+			// }
 		}
 
 		return (await update_query)?._data;
@@ -496,18 +501,18 @@ export async function updateLoadDescription({
 			$set: {
 				...(node_type === 'panel' &&
 					node_data?.panel_data && {
-						panel_data: {
-							...node_data.panel_data,
-							name: load_description
-						}
-					}),
+					panel_data: {
+						...node_data.panel_data,
+						name: load_description
+					}
+				}),
 				...(node_type === 'load' &&
 					node_data?.load_data && {
-						load_data: {
-							...node_data.load_data,
-							load_description
-						}
-					})
+					load_data: {
+						...node_data.load_data,
+						load_description
+					}
+				})
 			}
 		});
 
@@ -593,5 +598,52 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 	} catch (error) {
 		console.error('Error changing data:', error);
 		throw error;
+	}
+}
+
+export async function updateNodeParentById(node_to_update: {
+	id: string;
+	parent_id?: string
+}, new_parent: string) {
+	const database = await databaseInstance();
+
+	const current_parent_query = database.nodes.findOne({
+		selector: { id: node_to_update.parent_id }
+	});
+	const current_parent = await current_parent_query.exec();
+
+	// remove the id of the node to its current parent.
+	if (current_parent) {
+		await current_parent_query.update({
+			$set: {
+				child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== node_to_update.id)
+			}
+		});
+	}
+
+	// find the new parent and add the node_to_update id to its child_ids
+	const new_parent_query = database.nodes.findOne({
+		selector: { id: new_parent }
+	});
+	const new_parent_data = await new_parent_query.exec();
+	if (new_parent_data) {
+		await new_parent_query.update({
+			$set: {
+				child_ids: [...new_parent_data._data.child_ids, node_to_update.id]
+			}
+		});
+	}
+
+	// update the node with the new parent id
+	const node_query = database.nodes.findOne({
+		selector: { id: node_to_update.id }
+	});
+	const updated_node = await node_query.exec();
+	if (updated_node) {
+		return await updated_node.update({
+			$set: {
+				parent_id: new_parent
+			}
+		});
 	}
 }
