@@ -152,15 +152,18 @@
 	// Handle drops between containers
 	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
-		const node_depth = await getNodeDepth(draggedItem.id);
-		console.log({ node_depth, sourceContainer, targetContainer, _node });
-		if (!targetContainer || sourceContainer === targetContainer) {
+		console.log({ draggedItem, sourceContainer, targetContainer, _node });
+		if (!targetContainer || _node.id === draggedItem.parent_id) {
 			toast.warning(
 				`Cannot move load ${getNodeName(draggedItem)} to same previous ${targetContainer} panel`
 			);
 			return;
 		}
-		toast.info(`Dragging ${getNodeName(draggedItem)} to ${getNodeName(_node)}`);
+		if (_node.id === targetContainer) {
+			toast.info(`Dragging ${getNodeName(draggedItem)} to ${getNodeName(_node)}`);
+			return;
+		}
+		return;
 	}
 
 	function getNodeName(_node?: Node) {
@@ -186,7 +189,7 @@
 {:then child_nodes}
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
-			<div use:draggable={{ container: node?.panel_data?.name ?? 'unknown_panel', dragData: node }}>
+			<div use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}>
 				<Sidebar.MenuItem class="w-full">
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -343,15 +346,17 @@
 					className: '!text-red-600 hover:!bg-red-600/10'
 				}
 			]}
-			<div
-				use:droppable={{
-					container: node?.panel_data?.name ?? 'unknown_panel',
-					callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
-				}}
+
+			<Collapsible.Root
+				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
+				class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
 			>
-				<Collapsible.Root
-					open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
-					class="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+				<div
+					use:droppable={{
+						container: node.id,
+						dragData: node,
+						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
+					}}
 				>
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
@@ -453,42 +458,41 @@
 							</ContextMenu.Content>
 						</ContextMenu.Root>
 					</Sidebar.MenuButton>
+				</div>
+				<Collapsible.Content class="w-full">
+					<Sidebar.MenuSub class="w-full">
+						{#each child_nodes as child, index (index)}
+							<SidebarTree
+								node={child}
+								{generic_phase_panel_form}
+								{phase_main_load_form}
+								{highest_unit}
+							/>
+						{/each}
+					</Sidebar.MenuSub>
+				</Collapsible.Content>
+			</Collapsible.Root>
 
-					<Collapsible.Content class="w-full">
-						<Sidebar.MenuSub class="w-full">
-							{#each child_nodes as child, index (index)}
-								<SidebarTree
-									node={child}
-									{generic_phase_panel_form}
-									{phase_main_load_form}
-									{highest_unit}
-								/>
-							{/each}
-						</Sidebar.MenuSub>
-					</Collapsible.Content>
-				</Collapsible.Root>
+			{@render heirarchy_actions(tooltip_data)}
 
-				{@render heirarchy_actions(tooltip_data)}
-
-				<AddPanelAndViewTrigger
-					id={node.id}
-					panel_name={node_name}
-					{generic_phase_panel_form}
-					{highest_unit}
-					is_parent_root_node={node.node_type === 'root'}
-					parent_id={node.id}
-					bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
-					latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-				/>
-				<AddLoadDialog
-					{phase_main_load_form}
-					{highest_unit}
-					remove_trigger={true}
-					bind:open_dialog_state={component_state.open_tree_add_load_dialog}
-					latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
-					panel_id_from_tree={node.id}
-				/>
-			</div>
+			<AddPanelAndViewTrigger
+				id={node.id}
+				panel_name={node_name}
+				{generic_phase_panel_form}
+				{highest_unit}
+				is_parent_root_node={node.node_type === 'root'}
+				parent_id={node.id}
+				bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+			/>
+			<AddLoadDialog
+				{phase_main_load_form}
+				{highest_unit}
+				remove_trigger={true}
+				bind:open_dialog_state={component_state.open_tree_add_load_dialog}
+				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
+				panel_id_from_tree={node.id}
+			/>
 		</Sidebar.MenuItem>
 	{/if}
 {:catch error}
