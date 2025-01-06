@@ -6,15 +6,15 @@
 	import type { DialogState, MiscState } from '@/state/types';
 	import { DIALOG_STATE_CTX, MISC_STATE_CTX } from '@/state/constants';
 	import { setSettingsState } from '@/hooks/settings-state.svelte';
-	import { setProjectState } from '@/hooks/project.svelte';
 	import { setUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { setSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
 
 	let { children } = $props();
 
 	// INIT GLOBAL STATES
 	setSettingsState($mode === 'light' ? 'light' : 'dark');
-	setProjectState();
 	setUndoRedoState();
+	setSelectNodesToDeleteState();
 	setState<DialogState>(
 		{
 			highestUnit: false
