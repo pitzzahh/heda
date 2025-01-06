@@ -418,13 +418,13 @@
 
 {#snippet advanced_settings()}
 	<div class="grid w-full grid-cols-2 gap-1.5">
+		<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
+			<File />
+			Home
+		</Button>
 		<Button onclick={handleNewProject} class="w-full">
 			<File />
 			New Project
-		</Button>
-		<Button onclick={() => resetData()} href="/" class="w-full">
-			<File />
-			Home
 		</Button>
 	</div>
 {/snippet}
