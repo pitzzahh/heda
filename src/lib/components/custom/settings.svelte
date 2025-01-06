@@ -92,7 +92,8 @@
 	}
 
 	async function handleNewProject() {
-		goto('/workspace?new_file=true');
+		component_state.current.settings_open = false;
+		await goto('/workspace?new_file=true');
 	}
 </script>
 
