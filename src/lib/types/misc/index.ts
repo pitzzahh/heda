@@ -5,3 +5,5 @@ export type Temperature = (typeof default_terminal_temperatures)[keyof typeof de
 export type Special = (typeof specials)[number]['value'];
 
 export type UpdateState = 'stale' | 'available' | 'no_updates' | 'processing';
+
+export type ButtonState = 'idle' | 'loading';

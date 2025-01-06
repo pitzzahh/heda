@@ -164,10 +164,10 @@ function getAdjustmentFactor(
 	} else return 1.0;
 }
 
-export function getEgcSize(at: number): number | 'error' {
-	if (at <= 0) return 'error';
+export function getEgcSize(at: number) {
+	if (at <= 0) return -1;
 	const range = AMPERE_TRIP_TO_COPPER.find((r) => at > r.at_threshold);
-	return range?.size ?? 'error';
+	return range?.size ?? -1;
 }
 
 export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
@@ -192,9 +192,5 @@ export function getConduitSize(conductor_size: number, total_num_of_conductors: 
 		}
 	}
 
-	if (column_index === -1) {
-		return 'No valid conduit size found for the given total conductors.';
-	}
-
-	return CONDUIT_TABLE.conduit_columns[column_index];
+	return column_index === -1 ? column_index : CONDUIT_TABLE.conduit_columns[column_index];
 }

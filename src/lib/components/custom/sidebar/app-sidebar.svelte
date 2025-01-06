@@ -2,7 +2,6 @@
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { SidebarHeader, SidebarTree } from '.';
-	import { getProjectState } from '@/hooks/project.svelte';
 	import Button from '@/components/ui/button/button.svelte';
 	import { PlusIcon } from '@/assets/icons';
 	import type { DialogState } from '@/state/types';
@@ -28,18 +27,14 @@
 		root_node: Node;
 	} = $props();
 
-	// let localStorage = new LocalStorage<ProjectProps>('project');
-	let projectState = getProjectState();
-	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-
-	$inspect(projectState.project);
+	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 </script>
 
 <Sidebar.Root bind:ref {...restProps}>
 	<SidebarHeader {project} {root_node} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
-			<Sidebar.GroupLabel>Unit Hierarchy</Sidebar.GroupLabel>
+			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#if root_node?.highest_unit_form}

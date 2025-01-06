@@ -27,7 +27,7 @@
 		load_type_to_quantity_label
 	} from '@/constants';
 	import { generic_phase_main_load_schema, type GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
 	import { invalidate, invalidateAll } from '$app/navigation';
@@ -36,6 +36,9 @@
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
 	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -58,6 +61,9 @@
 		latest_circuit_node,
 		panel_id_from_tree
 	}: Props = $props();
+
+	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -125,18 +131,28 @@
 					} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 					switch (action) {
 						case 'add':
-							await addNode({
+							const added_node = await addNode({
 								load_data,
 								parent_id: panel_id_from_tree || panel_id_from_params || ''
 							});
 							toast.success(`${load_description} added successfully`);
+							undo_redo_state.setActionToUndo({
+								data: added_node as unknown as PhaseLoadSchedule,
+								action: 'create_node'
+							});
+							collapsibles.addNodeId(panel_id_from_tree || panel_id_from_params);
 							break;
 						case 'edit':
 							if (node_to_edit && selected_parent_id) {
-								await updateNode({
+								const updated_node = await updateNode({
 									load_data,
 									id: node_to_edit.id,
 									parent_id: selected_parent_id
+								});
+								undo_redo_state.setActionToUndo({
+									action: 'update_node',
+									data: updated_node as unknown as PhaseLoadSchedule,
+									previous_data: node_to_edit as PhaseLoadSchedule
 								});
 								toast.success('Load updated successfully');
 							}
@@ -150,7 +166,7 @@
 	});
 	const { form: formData, enhance } = form;
 
-	const panel_id_from_params = $page.params.id.split('_').at(-1); //gets the id of the parent node (panel) of the loads
+	const panel_id_from_params = page.params?.id?.split('_')?.at(-1) || ''; //gets the id of the parent node (panel) of the loads
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		$formData.load_type ? load_type_to_varies_label[$formData.load_type] : 'Varies'
@@ -208,6 +224,7 @@
 
 		const {
 			circuit_number,
+			length,
 			load_data: { load_description, terminal_temperature, load_type, quantity, varies, continuous }
 		} = node_to_edit;
 
@@ -218,6 +235,7 @@
 		$formData.quantity = quantity;
 		$formData.varies = varies;
 		$formData.continuous = continuous;
+		$formData.length = length as number;
 	});
 </script>
 
@@ -314,64 +332,84 @@
 			</Form.Field>
 		</div>
 
-		<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
-			<Popover.Root bind:open={open_terminal_temp}>
-				<Form.Control id={terminal_temp_trigger_id}>
-					{#snippet children({ props })}
-						<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'justify-between',
-								!$formData.terminal_temperature && 'text-muted-foreground'
-							)}
-							role="combobox"
-							{...props}
-						>
-							{$formData.terminal_temperature
-								? convertToNormalText(
-										DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-											(f) => f === $formData.terminal_temperature
+		<div>
+			<Form.Field {form} name="terminal_temperature" class="mt-2 flex flex-col">
+				<Popover.Root bind:open={open_terminal_temp}>
+					<Form.Control id={terminal_temp_trigger_id}>
+						{#snippet children({ props })}
+							<Form.Label class="mb-0.5">Terminal Temperature</Form.Label>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'justify-between',
+									!$formData.terminal_temperature && 'text-muted-foreground'
+								)}
+								role="combobox"
+								{...props}
+							>
+								{$formData.terminal_temperature
+									? convertToNormalText(
+											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
+												(f) => f === $formData.terminal_temperature
+											)
 										)
-									)
-								: 'Select a terminal temperature'}
-							<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<input hidden value={$formData.terminal_temperature} name={props.name} />
+									: 'Select a terminal temperature'}
+								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
+							</Popover.Trigger>
+							<input hidden value={$formData.terminal_temperature} name={props.name} />
+						{/snippet}
+					</Form.Control>
+					<Popover.Content class="w-auto p-0">
+						<Command.Root>
+							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
+							<Command.Empty>No terminal temp found.</Command.Empty>
+							<Command.Group>
+								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
+									<Command.Item
+										value={terminal_temp}
+										onSelect={() => {
+											$formData.terminal_temperature = terminal_temp;
+											closeAndFocusTrigger(terminal_temp_trigger_id);
+										}}
+										disabled={terminal_temp !== 'Standard Temperature'}
+									>
+										{convertToNormalText(terminal_temp)}
+										<Check
+											class={cn(
+												'ml-auto size-4',
+												terminal_temp !== $formData.terminal_temperature && 'text-transparent'
+											)}
+										/>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Root>
+				<Form.Description>
+					This is the terminal temp that will determine the terminal temp of the wire to the main.
+				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+
+			<Form.Field {form} name="length">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Length</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							min={1}
+							bind:value={$formData.length}
+							placeholder="Enter the length"
+						/>
 					{/snippet}
 				</Form.Control>
-				<Popover.Content class="w-auto p-0">
-					<Command.Root>
-						<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-						<Command.Empty>No terminal temp found.</Command.Empty>
-						<Command.Group>
-							{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
-								<Command.Item
-									value={terminal_temp}
-									onSelect={() => {
-										$formData.terminal_temperature = terminal_temp;
-										closeAndFocusTrigger(terminal_temp_trigger_id);
-									}}
-									disabled={terminal_temp !== 'Standard Temperature'}
-								>
-									{convertToNormalText(terminal_temp)}
-									<Check
-										class={cn(
-											'ml-auto size-4',
-											terminal_temp !== $formData.terminal_temperature && 'text-transparent'
-										)}
-									/>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.Root>
-				</Popover.Content>
-			</Popover.Root>
-			<Form.Description>
-				This is the terminal temp that will determine the terminal temp of the wire to the main.
-			</Form.Description>
-			<Form.FieldErrors />
-		</Form.Field>
+				<Form.Description>This is the length of the load</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+		</div>
 	</div>
 
 	{#if !load_type}

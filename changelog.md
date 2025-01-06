@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.30] - 2025-01-05
+
+### Add
+
+- New Settings dialog for clean and easy access to app settings.
+- Multi copy preference for copying multiple panels or loads in settings.
+- Multi copy of panels or loads.
+- Voltage drop.
+- Undo & Redo functionality.
+
+## [0.4.29] - 2025-01-04
+
+### Add
+
+- Dropdown menu for selecting heirarchy actions
+- Ability to export specific panelboard schedule.
+- Add preference to show or hide loads in Unit Heirarchy.
+
+### Fix
+
+- Fix extra shifted load data row, add one more row spacing.
+- Unit Heirarchy tree re-rendering behavior when modifying load schedule, now updates only affected nodes.
+
+## [0.3.28] - 2025-01-01
+
+### Fix
+
+- Changelog history markdown rendering.
+- Overlapping panelboard schedule excel export when heirarchy is too complex.
+
 ## [0.3.27] - 2024-12-30
 
 ### Add

@@ -1,11 +1,21 @@
 {
 	"name": "heda",
-	"version": "0.3.27",
+	"version": "0.4.30",
 	"type": "module",
 	"private": true,
 	"author": {
 		"name": "Peter John Arao"
 	},
+	"contributors": [
+		{
+			"name": "Alessandro Benig",
+			"url": "https://github.com/isipisii"
+		},
+		{
+			"name": "Peter John Arao",
+			"url": "https://github.com/pitzzahh"
+		}
+	],
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -25,7 +35,7 @@
 		"@sveltejs/kit": "^2.15.1",
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
 		"@tailwindcss/typography": "^0.5.15",
-		"@tauri-apps/cli": "^2.1.0",
+		"@tauri-apps/cli": "^2.2.0",
 		"@types/eslint": "^9.6.1",
 		"autoprefixer": "^10.4.20",
 		"bits-ui": "^1.0.0-next.74",
@@ -39,7 +49,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.2",
 		"prettier-plugin-tailwindcss": "^0.6.9",
-		"svelte": "^5.16.0",
+		"svelte": "^5.16.1",
 		"svelte-check": "^4.1.1",
 		"svelte-radix": "^2.0.1",
 		"svelte-sonner": "^0.3.28",
@@ -48,23 +58,23 @@
 		"tailwindcss": "^3.4.17",
 		"tailwindcss-animate": "^1.0.7",
 		"typescript": "^5.7.2",
-		"typescript-eslint": "^8.18.2",
+		"typescript-eslint": "^8.19.0",
 		"vaul-svelte": "^1.0.0-next.3",
-		"vite": "^6.0.6"
+		"vite": "^6.0.7"
 	},
 	"dependencies": {
 		"@paralleldrive/cuid2": "^2.2.2",
 		"@tanstack/table-core": "^8.20.5",
-		"@tauri-apps/api": "^2.1.1",
+		"@tauri-apps/api": "^2.2.0",
 		"@tauri-apps/plugin-dialog": "^2.2.0",
 		"@tauri-apps/plugin-fs": "^2.2.0",
 		"@tauri-apps/plugin-log": "~2",
 		"@tauri-apps/plugin-process": "~2",
 		"@tauri-apps/plugin-updater": "~2",
+		"@thisux/sveltednd": "^0.0.19",
 		"dompurify": "^3.2.3",
 		"exceljs": "^4.4.0",
 		"formsnap": "^2.0.0",
-		"marked": "^15.0.4",
 		"mode-watcher": "^0.5.0",
 		"runed": "^0.22.0",
 		"rxdb": "^15.39.0",

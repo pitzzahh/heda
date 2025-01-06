@@ -22,10 +22,13 @@
 	import { convertToNormalText } from '@/utils/text';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import type { Node } from '@/db/schema';
 	import type { TerminalTemperature } from '@/types/load';
 	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -48,6 +51,9 @@
 		latest_circuit_node,
 		selected_parent_id
 	}: Props = $props();
+
+	let undo_redo_state = getUndoRedoState();
+	let collapsibles = new Collapsibles();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -76,16 +82,27 @@
 
 				switch (action) {
 					case 'add':
-						await addNode({ parent_id, panel_data: form.data });
+						const added_node = await addNode({ parent_id, panel_data: form.data });
+						toast.success(`${form.data.name} added successfully`);
+						undo_redo_state.setActionToUndo({
+							data: added_node as unknown as PhaseLoadSchedule,
+							action: 'create_node'
+						});
+						collapsibles.addNodeId(parent_id);
 						break;
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
-							await updateNode({
+							const updated_node = await updateNode({
 								panel_data: form.data,
 								id: node_to_edit.id,
 								parent_id: selected_parent_id
 							});
 							toast.success('Panel updated successfully');
+							undo_redo_state.setActionToUndo({
+								data: updated_node as unknown as PhaseLoadSchedule,
+								previous_data: node_to_edit as PhaseLoadSchedule,
+								action: 'update_node'
+							});
 						}
 						break;
 				}
@@ -139,6 +156,7 @@
 		}
 		const {
 			circuit_number,
+			length,
 			panel_data: { terminal_temperature, phase, name, ambient_temperature }
 		} = node_to_edit;
 
@@ -147,6 +165,7 @@
 		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
 		$formData.phase = phase as Phase;
 		$formData.ambient_temperature = ambient_temperature;
+		$formData.length = length as number;
 	});
 </script>
 
@@ -313,6 +332,24 @@
 					This is the ambient temp that will determine the ambient temp of the panel wire to the
 					main.
 				</Form.Description>
+				<Form.FieldErrors />
+			</Form.Field>
+
+			<Form.Field {form} name="length"  class="mt-[.19rem] flex flex-col">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Length</Form.Label>
+						<Input
+							{...props}
+							type="number"
+							inputmode="numeric"
+							min={1}
+							bind:value={$formData.length}
+							placeholder="Enter the length"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.Description>This is the length of the load</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>

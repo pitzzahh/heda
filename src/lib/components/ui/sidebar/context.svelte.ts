@@ -7,8 +7,7 @@ import {
 	SIDEBAR_DEFAULT_WIDTH,
 	SIDEBAR_MIN_WIDTH
 } from './constants.js';
-import { LocalStorage } from '@/hooks/storage.svelte.js';
-
+import { PersistedState } from 'runed';
 type Getter<T> = () => T;
 
 export type SidebarStateProps = {
@@ -29,7 +28,7 @@ export type SidebarStateProps = {
 
 class SidebarState {
 	readonly props: SidebarStateProps;
-	localStorage: LocalStorage<{ sidebar_width: number }>;
+	localStorage: PersistedState<{ sidebar_width: number }>;
 	open = $derived.by(() => this.props.open());
 	openMobile = $state(false);
 	setOpen: SidebarStateProps['setOpen'];
@@ -39,7 +38,7 @@ class SidebarState {
 	isResizing = $state(false);
 
 	constructor(props: SidebarStateProps) {
-		const localStorage = new LocalStorage<{ sidebar_width: number }>('sidebar');
+		const localStorage = new PersistedState<{ sidebar_width: number }>('sidebar', { sidebar_width: SIDEBAR_DEFAULT_WIDTH });
 
 		this.setOpen = props.setOpen;
 		this.#isMobile = new IsMobile();
@@ -72,7 +71,6 @@ class SidebarState {
 		const onMouseMove = (e: any) => {
 			if (this.isResizing) {
 				const newWidth = startWidth + (e.clientX - startX);
-				// close the sidebar if it hits the 180px
 				if (newWidth <= SIDEBAR_MIN_WIDTH) {
 					this.setOpen(false);
 					onMouseUp();

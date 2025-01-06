@@ -45,6 +45,8 @@ const node_literal = {
 		conduit_type: { type: 'string', default: 'PVC' },
 		pole: { type: 'string', default: '2' },
 		kaic: { type: 'string', default: '5' },
+		length: { type: 'number' },
+		is_at_used_as_currents_value: { type: 'boolean', default: false },
 		panel_data: {
 			type: 'object',
 			properties: {

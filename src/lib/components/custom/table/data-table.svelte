@@ -7,10 +7,10 @@
 	type DataTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
 		data: TData[];
-		is_root_node: boolean;
+		is_footer_shown: boolean;
 	};
 
-	let { data, columns, is_root_node }: DataTableProps<TData, TValue> = $props();
+	let { data, columns, is_footer_shown }: DataTableProps<TData, TValue> = $props();
 
 	const table = createSvelteTable({
 		get data() {
@@ -55,7 +55,7 @@
 								'border-r': index + 1 !== row.getVisibleCells().length,
 								'text-center': cellIdx === 0 || cell.column.id === 'load_description',
 								'min-w-[250px]': cell.column.columnDef.header === 'LOAD DESCRIPTION',
-								'p-0': cell.column.id === 'conductor_sets',
+								// 'p-0': cell.column.id === 'conductor_sets',
 							})}
 						>
 							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
@@ -69,7 +69,7 @@
 			{/each}
 		</Table.Body>
 
-		{#if data.length > 0 && !is_root_node}
+		{#if data.length > 0 && is_footer_shown}
 			<Table.Footer class="border-t bg-muted/10">
 				{#each table.getFooterGroups() as footerGroup, i (i)}
 					{#if i === 0}
