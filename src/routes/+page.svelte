@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import * as Dialog from '@/components/ui/dialog/index.js';
-	import HedaLogoForDark from '@/assets/heda_logo_for_dark.png';
-	import HedaLogoForWhite from '@/assets/heda_logo_for_light.png';
+	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -13,12 +12,12 @@
 
 		<div class="flex items-center justify-center gap-8">
 			<img
-				src={HedaLogoForDark}
+				src={heda_logo_for_dark}
 				alt="Heda Logo"
 				class="hidden w-[280px] dark:block lg:w-[350px] xl:w-[450px]"
 			/>
 			<img
-				src={HedaLogoForWhite}
+				src={heda_logo_for_light}
 				alt="Heda Logo"
 				class="block w-[280px] dark:hidden lg:w-[350px] xl:w-[450px]"
 			/>
