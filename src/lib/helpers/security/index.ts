@@ -4,33 +4,37 @@ import CryptoJS from "crypto-js";
 
 // Custom encoding map (Base64 to gibberish Unicode)
 const customCharMap: { [key: string]: string } = {
-  "a": "♜", "A": "♜", // Rook
-  "b": "♞", "B": "♞", // Knight
-  "c": "♝", "C": "♝", // Bishop
-  "d": "♛", "D": "♛", // Queen
-  "e": "♚", "E": "♚", // King
-  "f": "♟", "F": "♟", // Pawn
-  "g": "♖", "G": "♖", // Rook
-  "h": "♘", "H": "♘", // Knight
-  "i": "♗", "I": "♗", // Bishop
-  "j": "♕", "J": "♕", // Queen
-  "k": "♔", "K": "♔", // King
-  "l": "♙", "L": "♙", // Pawn
-  "m": "♠", "M": "♠", // Spade
-  "n": "♣", "N": "♣", // Club
-  "o": "♥", "O": "♥", // Heart
-  "p": "♦", "P": "♦", // Diamond
-  "q": "♪", "Q": "♪", // Music Note
-  "r": "♫", "R": "♫", // Music Note
-  "s": "☼", "S": "☼", // Sun
-  "t": "☾", "T": "☾", // Moon
-  "u": "☁", "U": "☁", // Cloud
-  "v": "☂", "V": "☂", // Umbrella
-  "w": "☃", "W": "☃", // Snowman
-  "x": "✘", "X": "✘", // Cross
-  "y": "✔", "Y": "✔", // Checkmark
-  "z": "✦", "Z": "✦", // Star
-  "0": "⓪", "1": "①", "2": "②", "3": "③", "4": "④", "5": "⑤", "6": "⑥", "7": "⑦", "8": "⑧", "9": "⑨",
+  "a": "♜", // Rook
+  "B": "♞", // Knight
+  "c": "♝", // Bishop
+  "D": "♛", // Queen
+  "e": "♚", // King
+  "F": "♟", // Pawn
+  "g": "♖", // Rook
+  "H": "♘", // Knight
+  "i": "♗", // Bishop
+  "J": "♕", // Queen
+  "k": "♔", // King
+  "L": "♙", // Pawn
+  "m": "♠", // Spade
+  "N": "♣", // Club
+  "o": "♥", // Heart
+  "P": "♦", // Diamond
+  "q": "♪", // Music Note
+  "R": "♫", // Music Note
+  "s": "☼", // Sun
+  "T": "☾", // Moon
+  "u": "☁", // Cloud
+  "V": "☂", // Umbrella
+  "w": "☃", // Snowman
+  "X": "✘", // Cross
+  "y": "✔", // Checkmark
+  "Z": "✦", // Star
+  "0": "⓪",
+  "2": "②",
+  "4": "④",
+  "6": "⑥",
+  "8": "⑧",
 };
 
 // Function to encode Base64 using custom gibberish map
