@@ -57,6 +57,11 @@
 				children_nodes?: PhaseLoadSchedule[];
 			}[];
 
+			batch_data = [
+				...batch_data,
+				{ data: latest_node as unknown as PhaseLoadSchedule, children_nodes: [] }
+			];
+
 			for (let i = 1; i < copy_count; i++) {
 				latest_node = await copyAndAddNodeById(latest_node.id);
 
