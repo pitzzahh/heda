@@ -7,7 +7,7 @@
 	import { invalidate } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
 	import type { Node } from '@/db/schema';
-	import { ConfirmationDialog } from '@/components/custom';
+	import { ConfirmationDialog, MultiCopyDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { getNodeById } from '@/db/queries';
@@ -21,6 +21,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { VoltageDrop } from '@/types/voltage-drop';
 	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
 	let {
 		node,
@@ -41,9 +42,12 @@
 	let open_dropdown_menu = $state(false);
 	let is_confirmation_open = $state(false);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
-	let undo_redo_state = getUndoRedoState();
+	let node_name = $state('Unknown');
+	let open_copy_dialog = $state(false);
 
-	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	let undo_redo_state = getUndoRedoState();
+	let settings_state = getSettingsState();
+	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	$effect(() => {
 		if (node.parent_id) {
@@ -68,11 +72,25 @@
 
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
-		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
+		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 	}
 
 	function isVoltageDrop(data: any): data is VoltageDrop {
 		return typeof data.z !== undefined;
+	}
+
+	async function copyNodeById(node_id: string) {
+		node_name = node.panel_data?.name || node.load_data?.load_description || 'Unknown';
+		if (open_copy_dialog) return;
+		await copyAndAddNodeById(node_id)
+			.then((copied_node) => {
+				undo_redo_state.setActionToUndo({
+					action: 'copy_node',
+					data: copied_node as unknown as PhaseLoadSchedule
+				});
+				invalidate('app:workspace');
+			})
+			.finally(() => invalidate('app:workspace/load-schedule'));
 	}
 </script>
 
@@ -95,12 +113,8 @@
 					</DropdownMenu.Item>
 					<DropdownMenu.Item
 						onclick={async () => {
-							const copied_node = await copyAndAddNodeById(node.id);
-							undo_redo_state.setActionToUndo({
-								action: 'copy_node',
-								data: copied_node as unknown as PhaseLoadSchedule
-							});
-							invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+							open_copy_dialog = settings_state.is_load_multi_copy;
+							await copyNodeById(node.id);
 						}}
 					>
 						<Copy class="ml-2 size-4" />
@@ -210,3 +224,5 @@
 		/>
 	</Dialog.Content>
 </Dialog.Root>
+
+<MultiCopyDialog open_dialog={open_copy_dialog} {node_name} node_id={node.id} />
