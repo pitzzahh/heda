@@ -11,35 +11,22 @@
 		is_hovering_on_tree_item: boolean;
 		button_state: 'stale' | 'processing';
 		node_name: string;
-		multi_copy: {
-			valid: boolean;
-			value: number;
-			processing: boolean;
-			might_take_long: boolean;
-			error?: string;
-		};
 	}
 </script>
 
 <script lang="ts">
 	import * as Collapsible from '@/components/ui/collapsible/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import * as Alert from '@/components/ui/alert/index.js';
-	import { Input } from '@/components/ui/input/index.js';
-	import { Label } from '@/components/ui/label/index.js';
 	import { cn } from '@/utils';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import * as ContextMenu from '@/components/ui/context-menu/index.js';
 	import {
 		ChevronRight,
-		CircleAlert,
 		DatabaseZap,
 		Ellipsis,
 		FileUp,
 		PlugZap,
-		Loader,
 		PanelsLeftBottom,
 		CirclePlus,
 		Copy,
@@ -51,7 +38,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import { SidebarTree, AddPanelAndViewTrigger } from '.';
-	import { getChildNodesByParentId, getNumberOfChildren } from '@/db/queries';
+	import { getChildNodesByParentId } from '@/db/queries';
 	import {
 		copyAndAddNodeById,
 		deleteProject,
@@ -72,9 +59,9 @@
 	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '@/helpers/export';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import { Button } from '@/components/ui/button';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
+	import { MultiCopyDialog } from '@/components/custom';
 
 	let {
 		node,
@@ -107,7 +94,6 @@
 		is_hovering_on_tree_item: false,
 		button_state: 'stale',
 		node_name: 'Unknown',
-		multi_copy: { valid: true, value: 1, processing: false, might_take_long: false }
 	});
 
 	let undo_redo_state = getUndoRedoState();
@@ -126,48 +112,6 @@
 				invalidate('app:workspace');
 			})
 			.finally(() => invalidate('app:workspace/load-schedule'));
-	}
-
-	async function handleMultiCopy(node_id: string) {
-		if (!component_state.multi_copy.valid) {
-			return toast.warning('Invalid copy count, must be greater than 0');
-		}
-		component_state.multi_copy.processing = true;
-		const copy_count = Number(component_state.multi_copy.value);
-		let latest_node = await copyAndAddNodeById(node_id);
-
-		if (latest_node) {
-			if (latest_node.node_type === 'panel') {
-				// check if might_take_some_time
-				const child_count = await getNumberOfChildren(node_id);
-				component_state.multi_copy.might_take_long = child_count >= 15;
-			} else if (latest_node.node_type === 'load') {
-				// check if might_take_some_time
-				component_state.multi_copy.might_take_long = copy_count >= 15;
-			}
-
-			for (let i = 1; i < copy_count; i++) {
-				latest_node = await copyAndAddNodeById(latest_node.id);
-
-				if (!latest_node) {
-					component_state.multi_copy.processing = false;
-					return toast.error('An error occurred while copying nodes.');
-				}
-
-				undo_redo_state.setActionToUndo({
-					action: 'copy_node',
-					data: latest_node as unknown as PhaseLoadSchedule
-				});
-			}
-
-			component_state.multi_copy.processing = false;
-			component_state.open_copy_dialog = false;
-			await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-			return toast.success(`[${copy_count}]: ${component_state.node_name} copied successfully`);
-		} else {
-			component_state.multi_copy.processing = false;
-			return toast.error('Failed to copy the initial node.');
-		}
 	}
 
 	// Handle drops between containers
@@ -494,7 +438,7 @@
 														action: 'delete_node',
 														children_nodes: removed_node.children_nodes
 													});
-													select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
+													select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 												}
 											}
 											invalidate('app:workspace/load-schedule')
@@ -600,7 +544,7 @@
 						children_nodes: removed_node.children_nodes
 					});
 					collapsibles.removeNodeId(node.id);
-					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected 
+					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 				}
 			}
 			invalidate('app:workspace')
@@ -651,44 +595,8 @@
 	</DropdownMenu.Root>
 {/snippet}
 
-<Dialog.Root bind:open={component_state.open_copy_dialog}>
-	<Dialog.Content class="sm:max-w-[425px]">
-		<Dialog.Header>
-			<Dialog.Title>Copy {component_state.node_name}</Dialog.Title>
-			<Dialog.Description
-				>Specify the number of {component_state.node_name} to be copied.</Dialog.Description
-			>
-		</Dialog.Header>
-		{#if !component_state.multi_copy.valid}
-			<Alert.Root variant="warning">
-				<CircleAlert class="size-4" />
-				<Alert.Description
-					>{component_state.multi_copy.error ??
-						'Invalid copy count, must be greater than 0'}.</Alert.Description
-				>
-			</Alert.Root>
-		{/if}
-		<div class="grid grid-cols-4 items-center gap-4">
-			<Label for="copy_count" class="text-right">Copy count</Label>
-			<Input
-				id="copy_count"
-				type="number"
-				placeholder="Enter the circuit number"
-				bind:value={component_state.multi_copy.value}
-				class={cn('col-span-3', {
-					'border-red-600 outline-red-600 ring ring-red-600': !component_state.multi_copy.valid
-				})}
-			/>
-		</div>
-		<Dialog.Footer>
-			<Button type="submit" onclick={() => handleMultiCopy(node.id)}>
-				<Loader
-					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-						block: component_state.multi_copy.processing
-					})}
-				/>
-				<span>Copy</span>
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<MultiCopyDialog
+	open_dialog={component_state.open_copy_dialog}
+	node_name={component_state.node_name}
+	node_id={node.id}
+/>
