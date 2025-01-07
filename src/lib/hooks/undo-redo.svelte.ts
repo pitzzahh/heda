@@ -101,14 +101,16 @@ export class UndoRedoState {
 		if (last_action) {
 			switch (last_action.action) {
 				case 'create_node':
-					const removed_node = await removeNode(last_action.data.id);
-					this.redo_stack = [
-						...this.redo_stack,
-						{
-							...last_action,
-							children_nodes: removed_node.children_nodes
-						}
-					];
+					const result_in_create_node = await removeNode(last_action.data.id);
+					if (result_in_create_node) {
+						this.redo_stack = [
+							...this.redo_stack,
+							{
+								...last_action,
+								children_nodes: result_in_create_node.children_nodes
+							}
+						];
+					}
 
 					break;
 
@@ -144,17 +146,21 @@ export class UndoRedoState {
 							data: added_node as unknown as PhaseLoadSchedule
 						}
 					];
+					
 					break;
 
 				case 'copy_node':
-					const removed_copied_node = await removeNode(last_action.data.id);
-					this.redo_stack = [
-						...this.redo_stack,
-						{
-							...last_action,
-							children_nodes: removed_copied_node.children_nodes
-						}
-					];
+					const result_in_copy_node = await removeNode(last_action.data.id);
+					if (result_in_copy_node) {
+						this.redo_stack = [
+							...this.redo_stack,
+							{
+								...last_action,
+								children_nodes: result_in_copy_node.children_nodes
+							}
+						];
+					}
+
 					break;
 
 				case 'override_at':
@@ -258,11 +264,13 @@ export class UndoRedoState {
 					break;
 
 				case 'delete_node':
-					const removed_node = await removeNode(last_action.data.id);
-					this.undo_stack = [
-						...this.undo_stack,
-						{ ...last_action, children_nodes: removed_node.children_nodes }
-					];
+					const result = await removeNode(last_action.data.id);
+					if (result) {
+						this.undo_stack = [
+							...this.undo_stack,
+							{ ...last_action, children_nodes: result.children_nodes }
+						];
+					}
 					break;
 
 				case 'copy_node':
