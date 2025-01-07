@@ -4,28 +4,31 @@ import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import { addNode, overrideField, removeNode, updateNode, type FieldType } from '@/db/mutations';
 import { invalidate } from '$app/navigation';
 
+type BatchData = {
+	data: PhaseLoadSchedule;
+	children_nodes?: PhaseLoadSchedule[];
+};
+
 type Action<T extends PhaseLoadSchedule> = {
 	previous_data?: T;
 	data?: T;
-	batch_data?: { data: T; children_nodes?: T[] }[];
+	batch_data?: BatchData[];
 	action:
 		| 'create_node'
 		| 'update_node'
 		| 'delete_node'
 		| 'copy_node'
+		| 'batch_delete'
+		| 'batch_copy_node'
 		| 'override_at'
 		| 'override_af'
 		| 'override_conduit_size'
 		| 'override_conductor_size'
 		| 'override_egc_size'
 		| 'override_z'
-		| 'override_length'
-		| 'batch_delete'
-		| 'batch_copy_node';
-
+		| 'override_length';
 	children_nodes?: T[];
 };
-
 export class UndoRedoState {
 	private undo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 	private redo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
@@ -70,6 +73,42 @@ export class UndoRedoState {
 		}
 
 		return added_node;
+	}
+
+	private async handleBatchOperation(
+		last_action: Action<PhaseLoadSchedule>,
+		operation: 'add' | 'remove'
+	): Promise<BatchData[]> {
+		if (!last_action.batch_data?.length) return [];
+
+		let batch_data = [] as {
+			data: PhaseLoadSchedule;
+			children_nodes?: PhaseLoadSchedule[];
+		}[];
+
+		if (operation === 'add') {
+			for (const data of last_action.batch_data) {
+				const added_node = (await this.addNewNode(
+					data.data,
+					data.children_nodes
+				)) as unknown as PhaseLoadSchedule;
+
+				batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
+			}
+		} else {
+			for (const data of last_action.batch_data) {
+				const result = await removeNode(data.data.id);
+
+				if (result) {
+					batch_data = [
+						...batch_data,
+						{ data: result.removed_node, children_nodes: result.children_nodes }
+					];
+				}
+			}
+		}
+
+		return batch_data;
 	}
 
 	private async handleFieldOverride({
@@ -158,19 +197,7 @@ export class UndoRedoState {
 
 				case 'batch_delete':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						let batch_data = [] as {
-							data: PhaseLoadSchedule;
-							children_nodes?: PhaseLoadSchedule[];
-						}[];
-
-						for (const data of last_action.batch_data) {
-							const added_node = (await this.addNewNode(
-								data.data,
-								data.children_nodes
-							)) as unknown as PhaseLoadSchedule;
-
-							batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
-						}
+						const batch_data = await this.handleBatchOperation(last_action, 'add');
 
 						this.redo_stack = [
 							...this.redo_stack,
@@ -181,6 +208,20 @@ export class UndoRedoState {
 						];
 					}
 
+					break;
+
+				case 'batch_copy_node':
+					if (last_action.batch_data && last_action.batch_data.length > 0) {
+						const batch_data = await this.handleBatchOperation(last_action, 'remove');
+
+						this.redo_stack = [
+							...this.redo_stack,
+							{
+								...last_action,
+								batch_data
+							}
+						];
+					}
 					break;
 
 				case 'copy_node':
@@ -198,33 +239,7 @@ export class UndoRedoState {
 					}
 
 					break;
-				case 'batch_copy_node':
-					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						let batch_data = [] as {
-							data: PhaseLoadSchedule;
-							children_nodes?: PhaseLoadSchedule[];
-						}[];
 
-						for (const data of last_action.batch_data) {
-							const result = await removeNode(data.data.id);
-
-							if (result) {
-								batch_data = [
-									...batch_data,
-									{ data: result.removed_node, children_nodes: result.children_nodes }
-								];
-							}
-						}
-
-						this.redo_stack = [
-							...this.redo_stack,
-							{
-								...last_action,
-								batch_data
-							}
-						];
-					}
-					break;
 				case 'override_at':
 					if (!last_action.data) return;
 
@@ -356,21 +371,7 @@ export class UndoRedoState {
 
 				case 'batch_delete':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						let batch_data = [] as {
-							data: PhaseLoadSchedule;
-							children_nodes?: PhaseLoadSchedule[];
-						}[];
-
-						for (const data of last_action.batch_data) {
-							const result = await removeNode(data.data.id);
-
-							if (result) {
-								batch_data = [
-									...batch_data,
-									{ data: result.removed_node, children_nodes: result.children_nodes }
-								];
-							}
-						}
+						const batch_data = await this.handleBatchOperation(last_action, 'remove');
 
 						this.undo_stack = [
 							...this.undo_stack,
@@ -397,19 +398,7 @@ export class UndoRedoState {
 
 				case 'batch_copy_node':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						let batch_data = [] as {
-							data: PhaseLoadSchedule;
-							children_nodes?: PhaseLoadSchedule[];
-						}[];
-
-						for (const data of last_action.batch_data) {
-							const added_node = (await this.addNewNode(
-								data.data,
-								data.children_nodes
-							)) as unknown as PhaseLoadSchedule;
-
-							batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
-						}
+						const batch_data = await this.handleBatchOperation(last_action, 'add');
 
 						this.undo_stack = [
 							...this.undo_stack,
