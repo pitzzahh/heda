@@ -27,6 +27,10 @@ export class SelectNodesToDelete {
 		this.selected_nodes_id = this.selected_nodes_id.filter((node_id) => node_id !== id);
 	}
 
+	getSelectedNodeIdsCount() {
+		return this.selected_nodes_id.length
+	}
+
 	removeAllNodeIds() {
 		this.selected_nodes_id = [];
 	}
