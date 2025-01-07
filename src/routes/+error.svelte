@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { Button } from '@/components/ui/button';
-	import { heda_logo_for_dark } from '@/assets/index';
+	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { cn } from '@/utils';
 
 	export let title: string = `${page.status}: ${page.error?.message}`;
@@ -27,6 +27,16 @@
 		<h1 class="text-depedred mb-4 font-bold {title_size}">{title}</h1>
 		<p class="{description_size} text-gray-700">{description}</p>
 		<img src={heda_logo_for_dark} alt="App Logo" />
+		<img
+		src={heda_logo_for_dark}
+		alt="Heda Logo"
+		class="hidden dark:block"
+	/>
+	<img
+		src={heda_logo_for_light}
+		alt="Heda Logo"
+		class="dark:hidden"
+	/>
 	</div>
 	{#if with_return_button}
 		<Button href={return_to}>Go Back</Button>

@@ -19,13 +19,32 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	const query = db.projects.find({
 		selector: project_id
 			? {
-					id: project_id
-				}
+				id: project_id
+			}
 			: undefined
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
 
+export async function getAllProjects(fields?: (keyof Project)[]): Promise<Project[] | undefined> {
+	const db = await databaseInstance();
+	const projects = await db.projects.find().exec();
+
+	if (fields?.length) {
+		return projects.map((project) => {
+			const data = project._data as Project;
+			const filteredData = {} as Project;
+			fields.forEach((field) => {
+				if (data[field] !== undefined) {
+					(filteredData as any)[field] = data[field];
+				}
+			});
+			return filteredData;
+		});
+	}
+
+	return projects.map((project) => project._data as Project);
+}
 export async function getRootNode(): Promise<Node | undefined> {
 	const db = await databaseInstance();
 	const query = db.nodes.find({

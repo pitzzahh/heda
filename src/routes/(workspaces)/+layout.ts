@@ -8,7 +8,6 @@ import { generic_phase_main_load_schema } from '@/schema/load';
 export const load = async ({ depends, url: { searchParams } }) => {
 	depends('app:workspace');
 	const project = (await getCurrentProject());
-	// const nodes = project ? await getChildNodesByParentId(project.id) : [];
 	const root_node = (await getRootNode());
 	return {
 		is_new_file: searchParams.get('new_file') === 'true',

@@ -9,11 +9,41 @@
     "core:default",
     "log:default",
     "process:default",
+    "core:window:allow-start-dragging",
     "updater:default",
     "dialog:default",
     "dialog:allow-ask",
     "dialog:allow-message",
     "updater:allow-check",
+    {
+      "identifier": "fs:write-files",
+      "allow": [
+        {
+          "path": "$DOCUMENT/**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:read-files",
+      "allow": [
+        {
+          "path": "$DOCUMENT/**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [
+        {
+          "path": "$DOCUMENT/**/*"
+        }
+      ]
+    },
     "updater:allow-download-and-install"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
   ]
 }

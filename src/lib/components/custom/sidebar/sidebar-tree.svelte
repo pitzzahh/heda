@@ -225,7 +225,7 @@
 	{#if node.node_type === 'load'}
 		{#if settings_state.show_loads_on_unit_hierarchy}
 			<button
-				use:draggable={{ container: node.id ?? 'unknown_panel', dragData: node }}
+				use:draggable={{ container: node.id, dragData: node }}
 				onclick={() => {
 					if (select_nodes_to_delete_state.is_alt_pressed) {
 						select_nodes_to_delete_state.addOrRemoveNodeId(node.id);

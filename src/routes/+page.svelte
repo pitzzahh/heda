@@ -1,7 +1,13 @@
-<script>
-	import { Button } from '@/components/ui/button';
-	import HedaLogoForDark from '$lib/assets/heda_logo_for_dark.png';
-	import HedaLogoForWhite from '$lib/assets/heda_logo_for_light.png';
+<script lang="ts">
+	import { Button, buttonVariants } from '@/components/ui/button';
+	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
+	import { Separator } from '@/components/ui/separator/index.js';
+	import { Skeleton } from '@/components/ui/skeleton/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
+	import * as Dialog from '@/components/ui/dialog/index.js';
+	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
+	import { MonitorCog, SearchX } from '@/assets/icons';
+	import { getAllProjects } from '@/db/queries';
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -12,12 +18,12 @@
 
 		<div class="flex items-center justify-center gap-8">
 			<img
-				src={HedaLogoForDark}
+				src={heda_logo_for_dark}
 				alt="Heda Logo"
 				class="hidden w-[280px] dark:block lg:w-[350px] xl:w-[450px]"
 			/>
 			<img
-				src={HedaLogoForWhite}
+				src={heda_logo_for_light}
 				alt="Heda Logo"
 				class="block w-[280px] dark:hidden lg:w-[350px] xl:w-[450px]"
 			/>
@@ -57,11 +63,51 @@
 							/>
 						</Dialog.Content>
 					</Dialog.Root> -->
-					<Button
-						size="2xl"
-						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
-						>Load File</Button
-					>
+					<Dialog.Root>
+						<Dialog.Trigger
+							type="button"
+							class={buttonVariants({
+								size: '2xl',
+								className:
+									'w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]'
+							})}>Load File</Dialog.Trigger
+						>
+						<Dialog.Content>
+							<Dialog.Header>
+								<Dialog.Title>Load recent projects</Dialog.Title>
+								<Dialog.Description>
+									Choose from the list of recent projects to load.
+								</Dialog.Description>
+							</Dialog.Header>
+							<ScrollArea class="grid h-72 place-content-between gap-1">
+								{#await getAllProjects(['id', 'project_name'])}
+									{#each { length: 5 }}
+										<Skeleton class={buttonVariants({ variant: 'ghost', className: 'w-full' })} />
+									{/each}
+								{:then _projects}
+									{#if !_projects}
+										<Alert.Root variant="default">
+											<SearchX class="size-4" />
+											<Alert.Description>No recent projects found.</Alert.Description>
+										</Alert.Root>
+										<Button>
+											<MonitorCog />
+											New File
+										</Button>
+									{:else}
+										{#each _projects as project (project.id)}
+											<Button variant="outline" class="w-full">
+												<MonitorCog />
+												{project?.project_name ?? 'unknown'}
+											</Button>
+										{/each}
+									{/if}
+								{:catch err}
+									{err}
+								{/await}
+							</ScrollArea>
+						</Dialog.Content>
+					</Dialog.Root>
 				</div>
 			</div>
 		</div>
