@@ -52,6 +52,11 @@
 				multi_copy.might_take_long = copy_count >= 15;
 			}
 
+			let batch_data = [] as {
+				data: PhaseLoadSchedule;
+				children_nodes?: PhaseLoadSchedule[];
+			}[];
+
 			for (let i = 1; i < copy_count; i++) {
 				latest_node = await copyAndAddNodeById(latest_node.id);
 
@@ -60,11 +65,16 @@
 					return toast.error('An error occurred while copying nodes.');
 				}
 
-				undo_redo_state.setActionToUndo({
-					action: 'copy_node',
-					data: latest_node as unknown as PhaseLoadSchedule
-				});
+				batch_data = [
+					...batch_data,
+					{ data: latest_node as unknown as PhaseLoadSchedule, children_nodes: [] }
+				];
 			}
+
+			undo_redo_state.setActionToUndo({
+				action: 'batch_copy_node',
+				batch_data
+			});
 
 			multi_copy.processing = false;
 			open_dialog = false;
