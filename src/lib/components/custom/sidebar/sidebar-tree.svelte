@@ -393,7 +393,7 @@
 			]}
 
 			<Collapsible.Root
-				open={node.node_type === 'root' ? true : collapsibles.checkIsIdExisting(node.id)}
+				open={collapsibles.checkIsIdExisting(node.id)}
 				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
 			>
 				<button

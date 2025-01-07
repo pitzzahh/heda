@@ -36,7 +36,7 @@
 	} = $props();
 
 	let is_confirmation_dialog_open = $state(false);
-	
+
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 	const undo_redo_state = getUndoRedoState();
@@ -62,23 +62,24 @@
 </script>
 
 {#if select_nodes_to_delete_state.selected_nodes_id.length > 0}
+	{@const count = select_nodes_to_delete_state.getSelectedNodeIdsCount()}
 	<div
-		out:fly={{ y: -50, duration: 300 }}
-		in:fly={{ y: -50, duration: 300 }}
-		class="fixed right-6 top-6 z-[30] rounded-[0.5rem] border bg-sidebar p-4"
+		out:fly={{ y: 50, duration: 300 }}
+		in:fly={{ y: 50, duration: 300 }}
+		class="fixed bottom-6 right-6 z-[30] rounded-[0.5rem] border bg-sidebar p-4"
 	>
 		<div class="flex items-center gap-2">
 			<Button
 				size="default"
 				onclick={() => select_nodes_to_delete_state.removeAllNodeIds()}
-				variant="outline"><XCircle />Unselect All Items</Button
+				variant="outline"><XCircle />Unselect All {count} Items</Button
 			>
 			<Button
 				size="default"
 				variant="destructive"
 				onclick={() => (is_confirmation_dialog_open = true)}
 			>
-				<Trash />Remove Selected Items
+				<Trash />Remove Selected {count} Items
 			</Button>
 		</div>
 	</div>
