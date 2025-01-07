@@ -20,7 +20,8 @@ type Action<T extends PhaseLoadSchedule> = {
 		| 'override_egc_size'
 		| 'override_z'
 		| 'override_length'
-		| 'batch_delete';
+		| 'batch_delete'
+		| 'batch_copy_node';
 
 	children_nodes?: T[];
 };
@@ -197,7 +198,33 @@ export class UndoRedoState {
 					}
 
 					break;
+				case 'batch_copy_node':
+					if (last_action.batch_data && last_action.batch_data.length > 0) {
+						let batch_data = [] as {
+							data: PhaseLoadSchedule;
+							children_nodes?: PhaseLoadSchedule[];
+						}[];
 
+						for (const data of last_action.batch_data) {
+							const result = await removeNode(data.data.id);
+
+							if (result) {
+								batch_data = [
+									...batch_data,
+									{ data: result.removed_node, children_nodes: result.children_nodes }
+								];
+							}
+						}
+
+						this.redo_stack = [
+							...this.redo_stack,
+							{
+								...last_action,
+								batch_data
+							}
+						];
+					}
+					break;
 				case 'override_at':
 					if (!last_action.data) return;
 
@@ -366,6 +393,32 @@ export class UndoRedoState {
 						...this.undo_stack,
 						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
 					];
+					break;
+
+				case 'batch_copy_node':
+					if (last_action.batch_data && last_action.batch_data.length > 0) {
+						let batch_data = [] as {
+							data: PhaseLoadSchedule;
+							children_nodes?: PhaseLoadSchedule[];
+						}[];
+
+						for (const data of last_action.batch_data) {
+							const added_node = (await this.addNewNode(
+								data.data,
+								data.children_nodes
+							)) as unknown as PhaseLoadSchedule;
+
+							batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
+						}
+
+						this.undo_stack = [
+							...this.undo_stack,
+							{
+								...last_action,
+								batch_data
+							}
+						];
+					}
 					break;
 				case 'override_at':
 					if (!last_action.data) return;
