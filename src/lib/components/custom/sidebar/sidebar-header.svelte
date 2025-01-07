@@ -5,7 +5,7 @@
 	import { Settings } from '..';
 	import { toast } from 'svelte-sonner';
 	import type { Project, Node } from '@/db/schema';
-	import UndoRedoButtons from './(components)/undo-redo-buttons.svelte';
+	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
 	import { getEnv, writeEncryptedFile } from '@/helpers/security';
