@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.31] - 2025-01-08
+
+### Add
+
+- Drag and drop changing panels/loads.
+- Multi copy of panels/loads.
+- Multi delete of panels/loads.
+- Save to file and load from file.
+
+
+### Fix
+
+- Fix issue of undoing a batch copy/remoal of panels/loads.(undoing a batch copy/removal of panels/loads will also undo as a batch).
+
 ## [0.4.30] - 2025-01-05
 
 ### Add
