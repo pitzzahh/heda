@@ -79,13 +79,15 @@
 									Choose from the list of recent projects to load.
 								</Dialog.Description>
 							</Dialog.Header>
+							<!-- Option to just choose a .heda file to load -->
+
 							<ScrollArea class="grid h-72 place-content-between gap-1">
 								{#await getAllProjects(['id', 'project_name'])}
 									{#each { length: 5 }}
 										<Skeleton class={buttonVariants({ variant: 'ghost', className: 'w-full' })} />
 									{/each}
 								{:then _projects}
-									{#if !_projects}
+									{#if !_projects || (_projects && _projects.length === 0)}
 										<Alert.Root variant="default">
 											<SearchX class="size-4" />
 											<Alert.Description>No recent projects found.</Alert.Description>
@@ -103,7 +105,7 @@
 										{/each}
 									{/if}
 								{:catch err}
-									{err}
+									Something went wrong: {err}
 								{/await}
 							</ScrollArea>
 						</Dialog.Content>
