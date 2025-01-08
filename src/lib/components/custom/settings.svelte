@@ -169,8 +169,6 @@
 						{@render preferences_settings()}
 					{:else if component_state.current.active_setting === 'Updates'}
 						{@render updates_settings()}
-					{:else if component_state.current.active_setting === 'Advanced'}
-						{@render advanced_settings()}
 					{/if}
 				</div>
 			</main>
@@ -181,6 +179,16 @@
 {#snippet project_settings()}
 	<div class="flex flex-col gap-2">
 		<p class="font-semibold">Project</p>
+		<div class="grid w-full grid-cols-2 gap-1.5">
+			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
+				<File />
+				Home
+			</Button>
+			<Button onclick={handleNewProject} class="w-full">
+				<File />
+				New Project
+			</Button>
+		</div>
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
@@ -412,18 +420,5 @@
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>
-	</div>
-{/snippet}
-
-{#snippet advanced_settings()}
-	<div class="grid w-full grid-cols-2 gap-1.5">
-		<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
-			<File />
-			Home
-		</Button>
-		<Button onclick={handleNewProject} class="w-full">
-			<File />
-			New Project
-		</Button>
 	</div>
 {/snippet}
