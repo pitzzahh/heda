@@ -12,6 +12,7 @@
 	import type { Project } from '@/db/schema';
 	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
+	import { SelectedNodesActions } from './(components)';
 
 	let {
 		ref = $bindable(null),
@@ -28,8 +29,10 @@
 	} = $props();
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+
 </script>
 
+<SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
 	<SidebarHeader {project} {root_node} />
 	<Sidebar.Content class="overflow-y-auto">

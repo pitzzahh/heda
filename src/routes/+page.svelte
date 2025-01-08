@@ -13,7 +13,7 @@
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
 	<div class="flex min-h-screen w-[90%] flex-col justify-between">
 		<div
-			class="h-[140px] w-full border-b-4 border-l-4 border-r-4 bg-primary dark:border-white"
+			class="h-[140px] w-full border-b-4 border-l-4 border-r-4 border-black bg-primary dark:border-white"
 		></div>
 
 		<div class="flex items-center justify-center gap-8">

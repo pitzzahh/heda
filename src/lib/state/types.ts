@@ -1,5 +1,7 @@
 import { SettingsState } from '@/hooks/settings-state.svelte';
 import { UndoRedoState } from '@/hooks/undo-redo.svelte';
+import { SelectNodesToDelete } from '@/hooks/select-nodes-to-delete.svelte';
+
 export type State =
 	| MainState
 	| RouteState
@@ -7,7 +9,8 @@ export type State =
 	| CountState
 	| MiscState
 	| SettingsState
-	| UndoRedoState;
+	| UndoRedoState
+	| SelectNodesToDelete;
 
 export type MainState = {
 	isArchiving: boolean;

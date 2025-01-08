@@ -5,12 +5,22 @@
 	import { useAtAsCurrentsValue } from '@/db/mutations';
 	import type { VoltageDrop } from '@/types/voltage-drop';
 	import { invalidate } from '$app/navigation';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	let { current, is_at_used, node }: { current: number; is_at_used: boolean; node: VoltageDrop } =
 		$props();
+	let undo_redo_state = getUndoRedoState();
 
 	async function handleChangeCurrentsValue() {
-		await useAtAsCurrentsValue(node.id, is_at_used ? false : true);
+		const updated_data = (await useAtAsCurrentsValue(
+			node.id,
+			is_at_used ? false : true
+		)) as unknown as VoltageDrop;
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			previous_data: node,
+			data: updated_data
+		});
 		await invalidate('app:workspace/load-schedule');
 	}
 </script>

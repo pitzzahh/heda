@@ -16,7 +16,8 @@
 	import { updateProjectTitle } from '@/db/mutations/index.js';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import UndoRedoProvider from '@/components/custom/undo-redo-provider.svelte';
+	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
+	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 
 	let { data, children } = $props();
 
@@ -53,14 +54,17 @@
 </script>
 
 <PageProgress />
-<UndoRedoProvider>
+<UndoRedoWrapper>
 	<Sidebar.Provider>
-		<AppSidebar
-			project={data.project}
-			root_node={data.root_node as Node}
-			{generic_phase_panel_form}
-			{phase_main_load_form}
-		/>
+		<PressAltWrapper>
+			<AppSidebar
+				project={data.project}
+				root_node={data.root_node as Node}
+				{generic_phase_panel_form}
+				{phase_main_load_form}
+			/>
+		</PressAltWrapper>
+
 		<Sidebar.Inset>
 			<header
 				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
@@ -123,4 +127,4 @@
 			/>
 		</Dialog.Content>
 	</Dialog.Root>
-</UndoRedoProvider>
+</UndoRedoWrapper>

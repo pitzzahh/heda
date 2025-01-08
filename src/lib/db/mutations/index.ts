@@ -32,7 +32,6 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		};
 	} catch (error) {
 		console.error('Error creating a project:', error);
-		throw error;
 	}
 }
 
@@ -56,7 +55,6 @@ export async function updateProjectSettings(
 		});
 	} catch (error) {
 		console.error('Error in updating project settings:', error);
-		throw error;
 	}
 }
 
@@ -78,7 +76,6 @@ export async function updateProjectTitle(id: string, project_name: string) {
 		});
 	} catch (error) {
 		console.error('Error updating project title:', error);
-		throw error;
 	}
 }
 
@@ -126,7 +123,6 @@ export async function addNode({
 		return created_node._data;
 	} catch (error) {
 		console.error('Error adding a node:', error);
-		throw error;
 	}
 }
 
@@ -177,7 +173,9 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			overrided_ampere_frames,
 			pole,
 			kaic,
-			is_at_used_as_currents_value
+			is_at_used_as_currents_value,
+			overrided_length,
+			overrided_z
 		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
@@ -197,6 +195,8 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			egc_insulation,
 			conduit_type,
 			overrided_ampere_frames,
+			overrided_length,
+			overrided_z,
 			pole,
 			kaic,
 			is_at_used_as_currents_value,
@@ -234,7 +234,6 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 		return created_node._data;
 	} catch (error) {
 		console.error('Error copying and adding a node:', error);
-		throw error;
 	}
 }
 
@@ -330,14 +329,13 @@ export async function updateNode({
 		return (await update_query)?._data;
 	} catch (error) {
 		console.error('Error updating node:', error);
-		throw error;
 	}
 }
 
 export async function removeNode(
 	id: string,
 	visited: Set<string> = new Set()
-): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }> {
+): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined> {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
 	}
@@ -350,13 +348,11 @@ export async function removeNode(
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			const { removed_node, children_nodes: grand_children } = await removeNode(
-				child._data.id,
-				visited
-			);
-
-			// [...children_nodes, removed_node, ...grand_children]
-			children_nodes.push(removed_node, ...grand_children);
+			const result = await removeNode(child._data.id, visited);
+			if (result) {
+				const { removed_node, children_nodes: grand_children } = result;
+				children_nodes.push(removed_node, ...grand_children);
+			}
 		}
 
 		const query = database.nodes.findOne({ selector: { id } });
@@ -380,7 +376,6 @@ export async function removeNode(
 		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
-		throw error;
 	}
 }
 
@@ -404,18 +399,26 @@ export async function deleteProject(project_id: string) {
 		await database.projects.find().remove(); // remove the other projects
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
-		throw error;
 	}
 }
 
-export type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+export type FieldType =
+	| 'egc_size'
+	| 'conductor_size'
+	| 'at'
+	| 'conduit_size'
+	| 'ampere_frames'
+	| 'length'
+	| 'z';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
 	conductor_size: 'overrided_conductor_size',
 	at: 'overrided_at',
 	conduit_size: 'overrided_conduit_size',
-	ampere_frames: 'overrided_ampere_frames'
+	ampere_frames: 'overrided_ampere_frames',
+	length: 'overrided_length',
+	z: 'overrided_z'
 };
 
 export async function overrideField({
@@ -450,7 +453,6 @@ export async function overrideField({
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error overriding data:', error);
-		throw error;
 	}
 }
 
@@ -473,7 +475,6 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor sets:', error);
-		throw error;
 	}
 }
 
@@ -519,7 +520,6 @@ export async function updateLoadDescription({
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error updating conductor load_description:', error);
-		throw error;
 	}
 }
 
@@ -551,7 +551,6 @@ export async function changeInsulation({
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing insulation:', error);
-		throw error;
 	}
 }
 
@@ -574,7 +573,6 @@ export async function changePole(node_id: string, pole: string) {
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing pole:', error);
-		throw error;
 	}
 }
 
@@ -597,7 +595,6 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 		return updated_node?._data;
 	} catch (error) {
 		console.error('Error changing data:', error);
-		throw error;
 	}
 }
 
