@@ -114,7 +114,16 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
     const encryptedData: string = encryptData<T>(data, secret_key);
     const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
 
-    const file = await create(`${file_name}.heda`, {
+    let finalFileName = `${file_name}.heda`;
+    let count = 1;
+
+    // Check if file exists and append count if necessary
+    while (await fileExists(finalFileName)) {
+      finalFileName = `${file_name}(${count}).heda`;
+      count++;
+    }
+
+    const file = await create(finalFileName, {
       baseDir: BaseDirectory.Document,
     });
 
@@ -125,6 +134,15 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
   } catch (error) {
     console.error("Error writing file:", error);
     throw error;
+  }
+}
+
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await readFile(filePath);
+    return true;
+  } catch (error) {
+    return false;
   }
 }
 
