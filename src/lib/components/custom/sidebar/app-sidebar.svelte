@@ -35,9 +35,11 @@
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
+	let disable_create_project = $state(false);
+
 	$effect(() => {
 		if (!can_create_project) {
-			can_create_project = false;
+			disable_create_project = true;
 			dialogs_state.highestUnit = false;
 			toast.warning('Failed to get the APP_PASS_PHRASE', {
 				description: 'This is a system error and should not be here, the error has been logged.'
@@ -81,7 +83,7 @@
 								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
 								<Button
 									size="sm"
-									disabled={!can_create_project}
+									disabled={disable_create_project}
 									onclick={() => (dialogs_state.highestUnit = true)}
 									href="/workspace?new_file=true"
 								>

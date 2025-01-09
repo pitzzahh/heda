@@ -12,6 +12,8 @@ export const load = async ({ depends, url: { searchParams } }) => {
 	const root_node = (await getRootNode());
 	const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 
+	console.log('app_pass_phrase', app_pass_phrase);
+
 	return {
 		is_new_file: searchParams.get('new_file') === 'true',
 		is_load_file: searchParams.get('load_file') === 'true',
