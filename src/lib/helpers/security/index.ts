@@ -131,7 +131,7 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
     await file.close();
 
     console.log("File written successfully!");
-    return finalFileName;
+    return finalFileName.split(".")[0];
   } catch (error) {
     console.error("Error writing file:", error);
     throw error;
