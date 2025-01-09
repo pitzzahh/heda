@@ -4,6 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { generic_phase_panel_schema } from '@/schema/panel';
 import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 import { generic_phase_main_load_schema } from '@/schema/load';
+import { getEnv } from '@/helpers/security/index.js';
 
 export const load = async ({ depends, url: { searchParams } }) => {
 	depends('app:workspace');
@@ -15,6 +16,7 @@ export const load = async ({ depends, url: { searchParams } }) => {
 		highest_unit_form: await superValidate(zod(highest_unit_schema)),
 		generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
+		can_create_project: (await getEnv('APP_PASS_PHRASE')) !== null,
 		project,
 		root_node
 	};
