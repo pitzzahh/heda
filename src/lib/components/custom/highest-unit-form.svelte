@@ -12,9 +12,14 @@
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject, updateProjectTitle } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
-	import { getAllChildNodes, getChildNodesByParentId } from '@/db/queries';
-	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import type { FileExport } from '@/types/main';
+	import { getAllChildNodes } from '@/db/queries';
+	import {
+		generateKey,
+		keyToString,
+		generateUniqueFileName,
+		writeEncryptedFile,
+		BASE_DIR
+	} from '@/helpers/security';
 
 	interface Props {
 		highest_unit_form: T;
@@ -44,24 +49,25 @@
 					};
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					const appended_name = await writeEncryptedFile(
+					const file_name = await generateUniqueFileName(project_name, BASE_DIR);
+
+					await writeEncryptedFile(
 						project_name,
 						{
 							project: created_proj.project,
 							nodes: await getAllChildNodes(created_proj.root_node_id, true)
 						},
-						keyToString(generateKey(app_pass_phrase, project_name))
+						keyToString(generateKey(app_pass_phrase, file_name))
 					);
 					// if appended_name is not same, we update the project title
-					if (appended_name !== project_name) {
-						await updateProjectTitle(created_proj.project.id, appended_name);
+					if (file_name !== project_name) {
+						await updateProjectTitle(created_proj.project.id, file_name);
 					}
 					await invalidate('app:workspace');
+					closeDialog();
 					goto(
 						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-					);
-					closeDialog();
-					toast.success('Project created successfully');
+					).finally(() => toast.success('Project created successfully'));
 				} catch (err) {
 					console.error(err);
 				}
