@@ -18,6 +18,7 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
+	import { fileExists, BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
 
 	let { data, children } = $props();
 
@@ -44,8 +45,14 @@
 
 	async function saveProjectTitle() {
 		if (!data?.project || !project_title) return;
-		await updateProjectTitle(data.project.id, project_title);
-		invalidate('app:workspace').then(() => toggleEdit()).finally(() => toast.success('Project name updated successfully'))
+		const file_exists = await fileExists(`${project_title}.heda`, BASE_DIR);
+		await updateProjectTitle(
+			data.project.id,
+			file_exists ? await generateUniqueFileName(project_title, BASE_DIR) : project_title
+		);
+		invalidate('app:workspace')
+			.then(() => toggleEdit())
+			.finally(() => toast.success('Project title updated successfully'));
 	}
 
 	onMount(() => {
