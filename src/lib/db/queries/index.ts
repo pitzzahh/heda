@@ -485,3 +485,20 @@ export async function getComputedVoltageDrops() {
 	return nodes_with_additional_fields;
 }
 
+export async function getAllChildNodes(root_node_id: string): Promise<Node[]> {
+	const db = await databaseInstance();
+	let allNodes: Node[] = [];
+
+	async function fetchChildNodes(parentId: string) {
+			const childNodes = await db.nodes.find({ selector: { parent_id: parentId } }).exec();
+			const childNodeData = childNodes.map((doc) => doc._data) as Node[];
+			allNodes = [...allNodes, ...childNodeData];
+
+			for (const childNode of childNodeData) {
+					await fetchChildNodes(childNode.id);
+			}
+	}
+
+	await fetchChildNodes(root_node_id);
+	return allNodes;
+}
