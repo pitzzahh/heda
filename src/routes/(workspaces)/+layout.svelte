@@ -21,7 +21,13 @@
 
 	let { data, children } = $props();
 
-	const { is_new_file, is_load_file, generic_phase_panel_form, phase_main_load_form } = data;
+	const {
+		is_new_file,
+		is_load_file,
+		generic_phase_panel_form,
+		phase_main_load_form,
+		can_create_project
+	} = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let is_editing = $state(false);
@@ -62,6 +68,7 @@
 				root_node={data.root_node as Node}
 				{generic_phase_panel_form}
 				{phase_main_load_form}
+				{can_create_project}
 			/>
 		</PressAltWrapper>
 
