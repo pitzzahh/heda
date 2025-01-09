@@ -52,7 +52,7 @@
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode } from 'mode-watcher';
+	import { mode, systemPrefersMode, userPrefersMode } from 'mode-watcher';
 	import { setModeAndColor } from '@/helpers/theme';
 	import type { Settings } from '@/types/settings';
 	import { DIALOG_STATE_CTX } from '@/state/constants';
@@ -68,6 +68,7 @@
 	] as const;
 
 	const settingsState = getSettingsState();
+	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
@@ -90,8 +91,15 @@
 	}
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
-		if ($mode) {
-			settingsState.setThemeColor(themeColor, $mode);
+		if (settingsState.themeMode) {
+			settingsState.setThemeColor(
+				themeColor,
+				settingsState.themeMode === 'system'
+					? $userPrefersMode === 'dark'
+						? 'dark'
+						: 'light'
+					: settingsState.themeMode
+			);
 		}
 	}
 
@@ -100,6 +108,10 @@
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}
+
+	$effect(() => {
+		console.log(selectedThemeMode);
+	});
 </script>
 
 <Dialog.Root bind:open={component_state.current.settings_open}>
@@ -212,7 +224,66 @@
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme</Label>
-			<RadioGroup.Root value={$mode} class="grid grid-cols-3">
+			<RadioGroup.Root value="" class="grid grid-cols-3">
+				<Label
+					for="light"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'light'
+						}
+					)}
+				>
+					<RadioGroup.Item
+						value="light"
+						id="light"
+						class="sr-only"
+						aria-label="Light Theme"
+						onclick={() => settingsState.setThemeMode('light')}
+					/>
+					<Sun class="h-4 w-4" />
+				</Label>
+				<Label
+					for="dark"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'dark'
+						}
+					)}
+				>
+					<RadioGroup.Item
+						value="dark"
+						id="dark"
+						class="sr-only"
+						aria-label="Dark Theme"
+						onclick={() => settingsState.setThemeMode('dark')}
+					/>
+					<Moon class="h-4 w-4" />
+				</Label>
+				<Label
+					for="system"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'system'
+						}
+					)}
+				>
+					<RadioGroup.Item
+						value="system"
+						id="system"
+						class="sr-only"
+						aria-label="System default theme"
+						onclick={() => settingsState.setThemeMode('system')}
+					/>
+					<SunMoon class="h-4 w-4" />
+				</Label>
+			</RadioGroup.Root>
+		</div>
+		<!-- <div class="flex w-full flex-col items-center justify-center gap-2">
+			<Label for="colors">Theme</Label>
+			<RadioGroup.Root value={selectedThemeMode} class="grid grid-cols-3">
 				<Label
 					for="light"
 					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
@@ -222,7 +293,7 @@
 						id="light"
 						class="sr-only"
 						aria-label="Light Theme"
-						onclick={() => setModeAndColor(settingsState, 'light')}
+						onclick={() => settingsState.setThemeMode('light')}
 					/>
 					<Sun class="h-4 w-4" />
 				</Label>
@@ -235,7 +306,7 @@
 						id="dark"
 						class="sr-only"
 						aria-label="Dark Theme"
-						onclick={() => setModeAndColor(settingsState, 'dark')}
+						onclick={() => settingsState.setThemeMode('dark')}
 					/>
 					<Moon class="h-4 w-4" />
 				</Label>
@@ -248,12 +319,12 @@
 						id="system"
 						class="sr-only"
 						aria-label="System default theme"
-						onclick={() => setModeAndColor(settingsState, 'system')}
+						onclick={() => settingsState.setThemeMode('system')}
 					/>
 					<SunMoon class="h-4 w-4" />
 				</Label>
 			</RadioGroup.Root>
-		</div>
+		</div> -->
 
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme Color</Label>
