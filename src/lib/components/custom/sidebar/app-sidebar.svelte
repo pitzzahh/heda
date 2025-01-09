@@ -13,6 +13,8 @@
 	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
+	import { getEnv } from '@/helpers/security';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		ref = $bindable(null),
@@ -30,6 +32,20 @@
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
+	let can_create_project = $state(true);
+
+	$effect(() => {
+		getEnv('APP_PASS_PHRASE').then((app_pass_phrase) => {
+			if (!app_pass_phrase) {
+				can_create_project = false;
+
+				toast.warning('Failed to get the app_pass_phrase', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+				return;
+			}
+		});
+	});
 </script>
 
 <SelectedNodesActions />
@@ -66,6 +82,7 @@
 								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
 								<Button
 									size="sm"
+									disabled={!can_create_project}
 									onclick={() => (dialogs_state.highestUnit = true)}
 									href="/workspace?new_file=true"
 								>

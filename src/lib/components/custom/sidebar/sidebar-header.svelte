@@ -8,14 +8,15 @@
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
-	import { getEnv, writeEncryptedFile } from '@/helpers/security';
+	import { generateKey, getEnv, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getChildNodesByParentId } from '@/db/queries';
 	import type { FileExport } from '@/types/main';
 
 	let { project, root_node }: { project?: Project; root_node: Node } = $props();
 
 	let component_state = $state({
-		export_to_excel: 'idle' as ButtonState
+		export_to_excel: 'idle' as ButtonState,
+		can_save: true
 	});
 
 	async function handleSave() {
@@ -27,14 +28,18 @@
 			}
 			const nodes = await getChildNodesByParentId(root_node.id);
 			const backup: FileExport = { project, nodes };
-			const secret_key = await getEnv('APP_SECRET_KEY');
-			if (!secret_key) {
+			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+			if (!app_pass_phrase) {
+				component_state.can_save = false;
 				return toast.warning('Failed to create new file', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
+			const project_name = project?.project_name ?? 'Untitled';
+			const sk = keyToString(generateKey(app_pass_phrase, project_name));
 
-			await writeEncryptedFile(project?.project_name ?? 'Untitled', backup, secret_key);
+			console.log('SECRET_KEY:', sk);
+			await writeEncryptedFile(project_name, backup, sk);
 		} catch (err) {
 			console.error(err);
 		}
@@ -47,7 +52,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger
-					disabled={project === undefined}
+					disabled={project === undefined || !component_state.can_save}
 					class={buttonVariants({ variant: 'default', size: 'sm' })}
 					onclick={handleSave}
 				>

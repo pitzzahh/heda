@@ -12,7 +12,7 @@
 	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
-	import type { Project, Node } from '@/db/schema';
+	import type { Node } from '@/db/schema';
 	import { updateProjectTitle } from '@/db/mutations/index.js';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';

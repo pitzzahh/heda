@@ -9,14 +9,42 @@
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { MonitorCog, SearchX } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
+	import { toast } from 'svelte-sonner';
+	import { readEncryptedFile, getEnv, keyToString, generateKey } from '@/helpers/security';
+	import type { FileExport } from '@/types/main';
 
 	async function handleLoadFile() {
-		// Open a dialog
-		const file = await open({
-			multiple: false,
-			directory: false
-		});
-		console.log(file);
+		try {
+			const file = await open({
+				multiple: false,
+				directory: false
+			});
+
+			if (!file) {
+				return toast.warning('No file selected', {
+					description: 'Cannot proceed, no file is selected.'
+				});
+			}
+			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+			if (!app_pass_phrase) {
+				return toast.warning('Failed to create new file', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+			const extractFilename = (path: string) => {
+				const pathArray = path.split('/');
+				const lastIndex = pathArray.length - 1;
+				return pathArray[lastIndex];
+			};
+			const loaded_data = await readEncryptedFile<FileExport>(
+				file,
+				app_pass_phrase,
+				extractFilename(file)
+			);
+			console.log(loaded_data);
+		} catch (err) {
+			console.error(err);
+		}
 	}
 </script>
 

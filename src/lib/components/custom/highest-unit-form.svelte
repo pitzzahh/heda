@@ -13,7 +13,7 @@
 	import { createProject } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
 	import { getChildNodesByParentId } from '@/db/queries';
-	import { getEnv, writeEncryptedFile } from '@/helpers/security';
+	import { generateKey, getEnv, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
 
 	interface Props {
@@ -29,33 +29,36 @@
 		onUpdate: async ({ form }) => {
 			// toast the values
 			if (form.valid) {
-				const created_proj = (await createProject(form.data)) as {
-					project: Project;
-					root_node_id: string;
-				};
-				await invalidate('app:workspace');
-
-				toast.success('Project created successfully');
-				const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
-				goto(redirect_url);
-				closeDialog();
-				const nodes = await getChildNodesByParentId(created_proj.root_node_id);
-				const backup: FileExport = { project: created_proj.project, nodes };
-
 				try {
-					const secret_key = await getEnv('APP_SECRET_KEY');
-					if (!secret_key) {
+					const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+					if (!app_pass_phrase) {
 						return toast.warning('Failed to create new file', {
 							description:
 								'This is a system error and should not be here, the error has been logged.'
 						});
 					}
 
-					await writeEncryptedFile(
-						created_proj.project?.project_name ?? 'Untitled',
-						backup,
-						secret_key
-					);
+					const created_proj = (await createProject(form.data)) as {
+						project: Project;
+						root_node_id: string;
+					};
+					await invalidate('app:workspace');
+
+					toast.success('Project created successfully');
+
+					const project_name = created_proj.project?.project_name ?? 'Untitled';
+					const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
+
+					goto(redirect_url);
+
+					closeDialog();
+					const nodes = await getChildNodesByParentId(created_proj.root_node_id);
+					const backup: FileExport = { project: created_proj.project, nodes };
+
+					const sk = keyToString(generateKey(app_pass_phrase, project_name));
+
+					console.log('SECRET_KEY:', sk);
+					await writeEncryptedFile(project_name, backup, sk);
 				} catch (err) {
 					console.error(err);
 				}
