@@ -10,7 +10,7 @@
 	import type { ButtonState } from '@/types/misc';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
-	
+
 	let {
 		project,
 		root_node,
@@ -38,14 +38,15 @@
 			const project_name = project?.project_name ?? 'Untitled';
 			const sk = keyToString(generateKey(app_pass_phrase, project_name));
 
-			console.log('SECRET_KEY:', sk);
 			await writeEncryptedFile(
 				project_name,
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
 				sk
 			);
 		} catch (err) {
-			console.error(err);
+			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
+				description: 'An error occurred while loading the file.'
+			});
 		}
 		return toast.success('Saved successfully');
 	}

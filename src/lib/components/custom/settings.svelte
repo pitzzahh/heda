@@ -108,10 +108,6 @@
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}
-
-	$effect(() => {
-		console.log(selectedThemeMode);
-	});
 </script>
 
 <Dialog.Root bind:open={component_state.current.settings_open}>
@@ -448,7 +444,6 @@
 					component_state.current.update_state = 'processing';
 					try {
 						component_state.current.app_update = await checkForUpdates();
-						console.log('component_state.current.app_update', component_state.current.app_update);
 						component_state.current.update_state = component_state.current.app_update
 							? 'available'
 							: 'no_updates';
