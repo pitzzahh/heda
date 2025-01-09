@@ -3,15 +3,17 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
-	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
-	import { MonitorCog, SearchX } from '@/assets/icons';
+	import { MonitorCog } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
 	import { toast } from 'svelte-sonner';
 	import { readEncryptedFile, getEnv, keyToString, generateKey } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
 	import { getFileName } from '@/helpers/file';
+	import { loadCurrentProject } from '@/db/mutations';
+	import { goto } from '$app/navigation';
+	import { Separator } from '@/components/ui/separator';
 
 	async function handleLoadFile() {
 		try {
@@ -40,11 +42,20 @@
 				});
 			}
 
-			console.log('file_name:', file_name);
 			const sk = keyToString(generateKey(app_pass_phrase, file_name));
-			console.log('SECRET_KEY:', sk);
 			const loaded_data = await readEncryptedFile<FileExport>(file, sk);
+
 			console.log(loaded_data);
+			if (!loaded_data) {
+				return toast.error('Failed to load file', {
+					description: 'An error occurred while loading the file.'
+				});
+			}
+			await loadCurrentProject(loaded_data);
+			toast.success('Project loaded successfully', {
+				description: 'The file has been loaded successfully.'
+			});
+			goto('/workspace');
 		} catch (err) {
 			console.error(err);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
@@ -120,27 +131,21 @@
 							<Dialog.Header>
 								<Dialog.Title>Load recent projects</Dialog.Title>
 								<Dialog.Description>
-									Choose from the list of recent projects to load.
+									Choose from the list of recent projects to load or load a file from your computer.
 								</Dialog.Description>
 							</Dialog.Header>
-							<!-- Option to just choose a .heda file to load -->
-
-							<ScrollArea class="grid h-72 place-content-between gap-1">
+							<Button onclick={handleLoadFile}>
+								<MonitorCog />
+								Load File
+							</Button>
+							<Separator class="h-1" />
+							<ScrollArea class="flex h-72 w-full flex-col gap-1">
 								{#await getAllProjects(['id', 'project_name'])}
 									{#each { length: 5 }}
 										<Skeleton class={buttonVariants({ variant: 'ghost', className: 'w-full' })} />
 									{/each}
 								{:then _projects}
-									{#if !_projects || (_projects && _projects.length === 0)}
-										<Alert.Root variant="default">
-											<SearchX class="size-4" />
-											<Alert.Description>No recent projects found.</Alert.Description>
-										</Alert.Root>
-										<Button onclick={handleLoadFile}>
-											<MonitorCog />
-											Load File
-										</Button>
-									{:else}
+									{#if _projects}
 										{#each _projects as project (project.id)}
 											<Button variant="outline" class="w-full">
 												<MonitorCog />
