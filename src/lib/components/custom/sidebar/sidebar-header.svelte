@@ -30,8 +30,6 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			const nodes = await getAllChildNodes(root_node.id);
-			const backup: FileExport = { project, nodes };
 			if (!app_pass_phrase) {
 				component_state.can_save = false;
 				return toast.warning('Failed to get the APP_PASS_PHRASE', {
@@ -42,7 +40,11 @@
 			const sk = keyToString(generateKey(app_pass_phrase, project_name));
 
 			console.log('SECRET_KEY:', sk);
-			await writeEncryptedFile(project_name, backup, sk);
+			await writeEncryptedFile(
+				project_name,
+				{ project, nodes: await getAllChildNodes(project.root_node_id) },
+				sk
+			);
 		} catch (err) {
 			console.error(err);
 		}

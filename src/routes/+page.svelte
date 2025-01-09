@@ -55,7 +55,7 @@
 			toast.success('Project loaded successfully', {
 				description: 'The file has been loaded successfully.'
 			});
-			goto('/workspace');
+			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
 			console.error(err);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
