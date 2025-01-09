@@ -11,7 +11,7 @@ fn get_env_var(key: String) -> String {
 #[tauri::command]
 fn get_file_name(path: String) -> String {
     let path = Path::new(path.as_str());
-    let filename = path.file_name().unwrap_or_default();
+    let filename = path.file_stem().unwrap_or_default();
     filename.to_str().unwrap().to_string()
 }
 
