@@ -1,3 +1,5 @@
+import { COLLAPSIBLES_STATE_CTX } from '@/state/constants';
+import { getState, setState } from '@/state/index.svelte';
 import { PersistedState } from 'runed';
 export class Collapsibles {
 	persisted_state: PersistedState<string[]>;
@@ -26,10 +28,20 @@ export class Collapsibles {
 	}
 
 	addNodeId(node_id: string) {
+		if (this.checkIsIdExisting(node_id)) return;
 		this.persisted_state.current = [...this.persisted_state.current, node_id];
 	}
 
 	removeAllNodeId() {
 		this.persisted_state.current = [];
 	}
+}
+
+
+export function setCollapsiblesState() {
+	return setState(new Collapsibles(), COLLAPSIBLES_STATE_CTX);
+}
+
+export function getCollapsiblesState() {
+	return getState<ReturnType<typeof setCollapsiblesState>>(COLLAPSIBLES_STATE_CTX);
 }

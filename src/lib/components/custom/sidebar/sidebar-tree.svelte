@@ -56,7 +56,7 @@
 	import { useSidebar } from '@/components/ui/sidebar/context.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
+	import { getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '@/helpers/export';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
@@ -93,11 +93,12 @@
 		open_tree_delete_dialog: false,
 		is_hovering_on_tree_item: false,
 		button_state: 'stale',
-		node_name: 'Unknown',
+		node_name: 'Unknown'
 	});
 
 	let undo_redo_state = getUndoRedoState();
-	let collapsibles = new Collapsibles();
+	let collapsibles = getCollapsiblesState()
+	let is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
 
 	async function copyNodeById(node_id: string) {
 		component_state.node_name =
@@ -337,7 +338,7 @@
 			]}
 
 			<Collapsible.Root
-				open={collapsibles.checkIsIdExisting(node.id)}
+				open={is_collapsible_open}
 				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
 			>
 				<button
@@ -353,8 +354,6 @@
 					}}
 				>
 					<Sidebar.MenuButton
-						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
-						onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
 						class={cn(
 							'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 							{
@@ -384,7 +383,6 @@
 										panel_name={node_name}
 										{generic_phase_panel_form}
 										{highest_unit}
-										is_parent_root_node={node.node_type === 'root'}
 										parent_id={node.id}
 										latest_circuit_node={child_nodes
 											? child_nodes[child_nodes.length - 1]
@@ -478,7 +476,6 @@
 				panel_name={node_name}
 				{generic_phase_panel_form}
 				{highest_unit}
-				is_parent_root_node={node.node_type === 'root'}
 				parent_id={node.id}
 				bind:open_dialog_state={component_state.open_tree_add_panel_dialog}
 				latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
