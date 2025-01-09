@@ -52,7 +52,7 @@
 					goto(redirect_url);
 
 					closeDialog();
-					const nodes = await getAllChildNodes(created_proj.root_node_id);
+					const nodes = await getAllChildNodes(created_proj.root_node_id, true);
 					const backup: FileExport = { project: created_proj.project, nodes };
 
 					const sk = keyToString(generateKey(app_pass_phrase, project_name));

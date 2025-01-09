@@ -10,8 +10,7 @@
 	import type { ButtonState } from '@/types/misc';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
-	import type { FileExport } from '@/types/main';
-
+	
 	let {
 		project,
 		root_node,
@@ -42,7 +41,7 @@
 			console.log('SECRET_KEY:', sk);
 			await writeEncryptedFile(
 				project_name,
-				{ project, nodes: await getAllChildNodes(project.root_node_id) },
+				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
 				sk
 			);
 		} catch (err) {
