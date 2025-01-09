@@ -109,7 +109,7 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
   return JSON.parse(decryptedData) as T;
 }
 
-export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<void> {
+export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<string> {
   try {
     const encryptedData: string = encryptData<T>(data, secret_key);
     const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
@@ -118,8 +118,8 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
     let count = 1;
 
     // Check if file exists and append count if necessary
-    while (await fileExists(finalFileName)) {
-      finalFileName = `${file_name}(${count}).heda`;
+    while (await fileExists(finalFileName, BaseDirectory.Document)) {
+      finalFileName = `${file_name} (${count}).heda`;
       count++;
     }
 
@@ -131,15 +131,16 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
     await file.close();
 
     console.log("File written successfully!");
+    return finalFileName;
   } catch (error) {
     console.error("Error writing file:", error);
     throw error;
   }
 }
 
-export async function fileExists(filePath: string): Promise<boolean> {
+export async function fileExists(filePath: string, baseDir: BaseDirectory): Promise<boolean> {
   try {
-    await readFile(filePath);
+    await readFile(filePath, { baseDir });
     return true;
   } catch (error) {
     return false;

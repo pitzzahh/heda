@@ -10,7 +10,7 @@
 	import { buttonVariants } from '@/components/ui/button';
 	import { highest_unit_schema } from '@/schema';
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
-	import { createProject } from '@/db/mutations/index';
+	import { createProject, updateProjectTitle } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes, getChildNodesByParentId } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
@@ -42,23 +42,26 @@
 						project: Project;
 						root_node_id: string;
 					};
-					await invalidate('app:workspace');
-
-					toast.success('Project created successfully');
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					const redirect_url = `/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`;
-
-					goto(redirect_url);
-
+					const appended_name = await writeEncryptedFile(
+						project_name,
+						{
+							project: created_proj.project,
+							nodes: await getAllChildNodes(created_proj.root_node_id, true)
+						},
+						keyToString(generateKey(app_pass_phrase, project_name))
+					);
+					// if appended_name is not same, we update the project title
+					if (appended_name !== project_name) {
+						await updateProjectTitle(created_proj.project.id, appended_name);
+					}
+					await invalidate('app:workspace');
+					goto(
+						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
+					);
 					closeDialog();
-					const nodes = await getAllChildNodes(created_proj.root_node_id, true);
-					const backup: FileExport = { project: created_proj.project, nodes };
-
-					const sk = keyToString(generateKey(app_pass_phrase, project_name));
-
-					console.log('SECRET_KEY:', sk);
-					await writeEncryptedFile(project_name, backup, sk);
+					toast.success('Project created successfully');
 				} catch (err) {
 					console.error(err);
 				}
