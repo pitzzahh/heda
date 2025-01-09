@@ -2,7 +2,6 @@
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
-	import { Separator } from '@/components/ui/separator/index.js';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
@@ -10,8 +9,9 @@
 	import { MonitorCog, SearchX } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
 	import { toast } from 'svelte-sonner';
-	import { readEncryptedFile, getEnv, keyToString, generateKey } from '@/helpers/security';
+	import { readEncryptedFile, getEnv } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
+	import { getFileName } from '@/helpers/file';
 
 	async function handleLoadFile() {
 		try {
@@ -26,21 +26,23 @@
 				});
 			}
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+			const file_name = await getFileName(file);
+
 			if (!app_pass_phrase) {
-				return toast.warning('Failed to create new file', {
+				return toast.warning('Failed to get the APP_PASS_PHRASE', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			const extractFilename = (path: string) => {
-				const pathArray = path.split('/');
-				const lastIndex = pathArray.length - 1;
-				return pathArray[lastIndex];
-			};
-			const loaded_data = await readEncryptedFile<FileExport>(
-				file,
-				app_pass_phrase,
-				extractFilename(file)
-			);
+
+			if (!file_name) {
+				return toast.warning('Failed to get the loaded file name', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
+			console.log('file_name:', file_name);
+
+			const loaded_data = await readEncryptedFile<FileExport>(file, app_pass_phrase, file_name);
 			console.log(loaded_data);
 		} catch (err) {
 			console.error(err);
