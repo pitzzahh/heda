@@ -3,22 +3,24 @@ import type { Settings } from '@/types/settings';
 import setGlobalColorTheme from '@/theme-colors/theme-colors';
 import { setState, getState } from '@/state/index.svelte';
 import { THEME_COLOR_STATE_CTX } from '@/state/constants';
+import { setMode } from 'mode-watcher';
 
 export type Font = 'isocpeur' | 'verdana' | 'default';
 type ThemeColor = 'autocad' | 'excel';
-type ThemeMode = 'dark' | 'light' | 'system';
+export type ThemeMode = 'dark' | 'light' | 'system';
 
 export class SettingsState {
 	persisted_state: PersistedState<Settings>;
 
 	themeColor = $state<ThemeColor>('excel');
+	themeMode = $state<ThemeMode>('light');
 	font = $state<Font>('default');
 	show_loads_on_unit_hierarchy = $state(false);
 	is_adjustment_factor_dynamic = $state(false);
 	is_panel_multi_copy = $state(false);
 	is_load_multi_copy = $state(false);
 
-	constructor(mode: ThemeMode) {
+	constructor() {
 		const _persisted_state = new PersistedState<Settings>('settings', {
 			color: 'excel',
 			font: 'default',
@@ -26,15 +28,24 @@ export class SettingsState {
 			is_adjustment_factor_dynamic: false,
 			is_panel_multi_copy: false,
 			is_load_multi_copy: false,
+			theme_mode: 'light'
 		});
 
 		// must be set before calling setters
 		this.persisted_state = _persisted_state;
 
-		this.setThemeColor(_persisted_state?.current?.color || 'excel', mode);
+		this.setThemeColor(
+			_persisted_state?.current?.color || 'excel',
+			_persisted_state.current.theme_mode || 'light'
+		);
+		this.setThemeMode(_persisted_state.current.theme_mode || 'light');
 		this.setGlobalFont(_persisted_state?.current?.font ?? 'default');
-		this.setShowLoadsOnUnitHeirarchy(_persisted_state?.current?.show_loads_on_unit_hierarchy || false);
-		this.setIsAdjustmentFactorDynamic(_persisted_state?.current?.is_adjustment_factor_dynamic || false);
+		this.setShowLoadsOnUnitHeirarchy(
+			_persisted_state?.current?.show_loads_on_unit_hierarchy || false
+		);
+		this.setIsAdjustmentFactorDynamic(
+			_persisted_state?.current?.is_adjustment_factor_dynamic || false
+		);
 		this.setIsPanelMultiCopy(_persisted_state?.current?.is_panel_multi_copy || false);
 		this.setIsLoadMultiCopy(_persisted_state?.current?.is_load_multi_copy || false);
 	}
@@ -42,6 +53,17 @@ export class SettingsState {
 	private setGlobalFont(font: Font) {
 		if (typeof document !== 'undefined') {
 			document.body.className = font;
+		}
+	}
+
+	private setGlobalThemeMode(mode: ThemeMode) {
+		const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		if (mode === 'system') {
+			setGlobalColorTheme(systemPrefersDark ? 'dark' : 'light', this.themeColor);
+			setMode(systemPrefersDark ? 'dark' : 'light');
+		} else {
+			setGlobalColorTheme(mode, this.themeColor);
+			setMode(mode);
 		}
 	}
 
@@ -60,6 +82,15 @@ export class SettingsState {
 		this.persisted_state.current = {
 			...this.persisted_state.current,
 			font
+		};
+	}
+
+	setThemeMode(mode: ThemeMode) {
+		this.themeMode = mode;
+		this.setGlobalThemeMode(mode);
+		this.persisted_state.current = {
+			...this.persisted_state.current,
+			theme_mode: mode
 		};
 	}
 
@@ -96,7 +127,7 @@ export class SettingsState {
 	}
 }
 export function setSettingsState(mode: ThemeMode) {
-	return setState(new SettingsState(mode), THEME_COLOR_STATE_CTX);
+	return setState(new SettingsState(), THEME_COLOR_STATE_CTX);
 }
 
 export function getSettingsState() {
