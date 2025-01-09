@@ -126,7 +126,7 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
     await file.close();
 
     console.log("File written successfully!");
-    return finalFileName.split(".")[0];
+    return finalFileName;
   } catch (error) {
     console.error("Error writing file:", error);
     throw error;
@@ -143,7 +143,7 @@ export async function generateUniqueFileName(file_name: string, baseDir: BaseDir
     count++;
   }
 
-  return finalFileName;
+  return finalFileName.split(".")[0];
 }
 
 export async function fileExists(filePath: string, baseDir: BaseDirectory): Promise<boolean> {
