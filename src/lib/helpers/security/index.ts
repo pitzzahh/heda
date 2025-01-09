@@ -111,13 +111,11 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
   return JSON.parse(decryptedData) as T;
 }
 
-export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<string> {
+export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<void> {
   const encryptedData: string = encryptData<T>(data, secret_key);
   const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
 
-  const finalFileName = await generateUniqueFileName(file_name, BASE_DIR);
-
-  const file = await create(finalFileName, {
+  const file = await create(file_name, {
     baseDir: BASE_DIR,
   });
 
@@ -125,7 +123,6 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
   await file.close();
 
   console.log("File written successfully!");
-  return finalFileName.split(".")[0];
 }
 
 export async function generateUniqueFileName(file_name: string, baseDir: BaseDirectory): Promise<string> {
@@ -134,8 +131,14 @@ export async function generateUniqueFileName(file_name: string, baseDir: BaseDir
 
   // Check if file exists and append count if necessary
   while (await fileExists(finalFileName, baseDir)) {
-    finalFileName = `${file_name} (${count}).heda`;
-    count++;
+    const match = finalFileName.match(/^(.*?)(?: \((\d+)\))?\.heda$/);
+    if (match) {
+      const baseName = match[1];
+      count = match[2] ? parseInt(match[2]) + 1 : 1;
+      finalFileName = `${baseName} (${count}).heda`;
+    } else {
+      finalFileName = `${file_name} (${count}).heda`;
+    }
   }
 
   return finalFileName;
