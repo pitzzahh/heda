@@ -112,25 +112,20 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
 }
 
 export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<string> {
-  try {
-    const encryptedData: string = encryptData<T>(data, secret_key);
-    const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
+  const encryptedData: string = encryptData<T>(data, secret_key);
+  const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
 
-    const finalFileName = await generateUniqueFileName(file_name, BASE_DIR);
+  const finalFileName = await generateUniqueFileName(file_name, BASE_DIR);
 
-    const file = await create(finalFileName, {
-      baseDir: BASE_DIR,
-    });
+  const file = await create(finalFileName, {
+    baseDir: BASE_DIR,
+  });
 
-    await file.write(fileBuffer);
-    await file.close();
+  await file.write(fileBuffer);
+  await file.close();
 
-    console.log("File written successfully!");
-    return finalFileName;
-  } catch (error) {
-    console.error("Error writing file:", error);
-    throw error;
-  }
+  console.log("File written successfully!");
+  return finalFileName.split(".")[0];
 }
 
 export async function generateUniqueFileName(file_name: string, baseDir: BaseDirectory): Promise<string> {
@@ -143,7 +138,7 @@ export async function generateUniqueFileName(file_name: string, baseDir: BaseDir
     count++;
   }
 
-  return finalFileName.split(".")[0];
+  return finalFileName;
 }
 
 export async function fileExists(filePath: string, baseDir: BaseDirectory): Promise<boolean> {
@@ -156,18 +151,13 @@ export async function fileExists(filePath: string, baseDir: BaseDirectory): Prom
 }
 
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
-  try {
-    const fileBuffer: Uint8Array = await readFile(filePath);
-    const encryptedData: string = new TextDecoder().decode(fileBuffer); // Convert binary to string
+  const fileBuffer: Uint8Array = await readFile(filePath);
+  const encryptedData: string = new TextDecoder().decode(fileBuffer); // Convert binary to string
 
-    const decryptedData: T = decryptData<T>(encryptedData, secret_key);
+  const decryptedData: T = decryptData<T>(encryptedData, secret_key);
 
-    console.log("File read successfully!");
-    return decryptedData;
-  } catch (error) {
-    console.error("Error reading file:", error);
-    return null;
-  }
+  console.log("File read successfully!");
+  return decryptedData;
 }
 
 export async function getEnv(key: string): Promise<string | null> {
