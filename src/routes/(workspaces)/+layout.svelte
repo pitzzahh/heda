@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
 	import { AppSidebar } from '@/components/custom/sidebar';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
@@ -32,35 +32,37 @@
 	} = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-	let is_editing = $state(false);
 
-	let project_title = $state(data?.project?.project_name || 'Untitled');
+	let component_state = $state({
+		is_editing: false,
+		project_title: data?.project?.project_name || 'Untitled'
+	});
 
 	function toggleEdit() {
-		is_editing = !is_editing;
+		component_state.is_editing = !component_state.is_editing;
 		tick().then(() => {
 			document.getElementById('project-title-input')?.focus();
 		});
 	}
 
 	async function saveProjectTitle() {
-		if (!data?.project || !project_title) return;
-		const file_exists = await fileExists(`${project_title}.heda`, BASE_DIR);
-		await updateProjectTitle(
-			data.project.id,
-			file_exists ? await generateUniqueFileName(project_title, BASE_DIR) : project_title
+		if (!data?.project || !component_state.project_title) return;
+		const file_exists = await fileExists(`${component_state.project_title}.heda`, BASE_DIR);
+		component_state.project_title = await generateUniqueFileName(
+			component_state.project_title,
+			BASE_DIR
 		);
+		await updateProjectTitle(data.project.id, component_state.project_title);
 		invalidate('app:workspace')
 			.then(() => toggleEdit())
 			.finally(() => toast.success('Project title updated successfully'));
 	}
 
-	onMount(() => {
+	$effect(() => {
 		if (is_load_file && !data.root_node) {
 			toast.warning('Failed to identify project data', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
-			return;
 		}
 		dialogs_state.highestUnit = is_new_file;
 	});
@@ -88,11 +90,15 @@
 
 				<Separator orientation="vertical" class="mr-2 h-4" />
 				<div class="flex items-center gap-2">
-					{#if is_editing}
-						<Input bind:value={project_title} type="text" id="project-title-input" />
+					{#if component_state.is_editing}
+						<Input
+							bind:value={component_state.project_title}
+							type="text"
+							id="project-title-input"
+						/>
 					{:else}
 						<p>
-							{data.project?.project_name || 'Untitled'}
+							{component_state.project_title || 'Untitled'}
 						</p>
 					{/if}
 
@@ -102,16 +108,16 @@
 								<Button
 									size="icon"
 									variant="outline"
-									onclick={!is_editing ? toggleEdit : saveProjectTitle}
+									onclick={!component_state.is_editing ? toggleEdit : saveProjectTitle}
 								>
-									{#if is_editing}
+									{#if component_state.is_editing}
 										<Save class="h-4 w-4" />
 									{:else}
 										<PenLine class="h-4 w-4" />
 									{/if}
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
+							<TooltipContent>{component_state.is_editing ? 'Save' : 'Edit'}</TooltipContent>
 						</Tooltip>
 					{/if}
 				</div>
