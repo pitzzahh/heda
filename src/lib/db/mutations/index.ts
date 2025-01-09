@@ -4,6 +4,7 @@ import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { Project, Node } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+import type { FileExport } from '@/types/main';
 
 export async function createProject(highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
@@ -651,4 +652,17 @@ export async function resetData(minimumDeletedTime: number = 0) {
 	await db.nodes.find().remove();
 	await db.projects.cleanup(minimumDeletedTime);
 	await db.nodes.cleanup(minimumDeletedTime);
+}
+
+export async function loadCurrentProject(file_export: FileExport) {
+	const db = await databaseInstance();
+	const { project, nodes } = file_export;
+
+	// Insert the project
+	await db.projects.insert(project);
+
+	// Insert the nodes
+	for (const node of nodes) {
+		await db.nodes.insert(node);
+	}
 }
