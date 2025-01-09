@@ -8,7 +8,13 @@
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
-	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
+	import {
+		BASE_DIR,
+		generateKey,
+		generateUniqueFileName,
+		keyToString,
+		writeEncryptedFile
+	} from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
 
 	let {
@@ -35,13 +41,11 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			const project_name = project?.project_name ?? 'Untitled';
-			const sk = keyToString(generateKey(app_pass_phrase, project_name));
-
+			const file_name = await generateUniqueFileName(project?.project_name ?? 'Untitled', BASE_DIR);
 			await writeEncryptedFile(
-				project_name,
+				file_name,
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
-				sk
+				keyToString(generateKey(app_pass_phrase, file_name))
 			);
 		} catch (err) {
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
