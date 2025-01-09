@@ -9,7 +9,7 @@
 	import { MonitorCog, SearchX } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
 	import { toast } from 'svelte-sonner';
-	import { readEncryptedFile, getEnv } from '@/helpers/security';
+	import { readEncryptedFile, getEnv, keyToString, generateKey } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
 	import { getFileName } from '@/helpers/file';
 
@@ -41,11 +41,15 @@
 			}
 
 			console.log('file_name:', file_name);
-
-			const loaded_data = await readEncryptedFile<FileExport>(file, app_pass_phrase, file_name);
+			const sk = keyToString(generateKey(app_pass_phrase, file_name));
+			console.log('SECRET_KEY:', sk);
+			const loaded_data = await readEncryptedFile<FileExport>(file, sk);
 			console.log(loaded_data);
 		} catch (err) {
 			console.error(err);
+			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
+				description: 'An error occurred while loading the file.'
+			});
 		}
 	}
 </script>
