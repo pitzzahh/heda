@@ -28,8 +28,7 @@ fn main() {
         )
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![get_env_var])
-        .invoke_handler(tauri::generate_handler![get_file_name])
+        .invoke_handler(tauri::generate_handler![get_env_var, get_file_name])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
