@@ -47,11 +47,9 @@
 
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
-		const file_exists = await fileExists(`${component_state.project_title}.heda`, BASE_DIR);
-		component_state.project_title = await generateUniqueFileName(
-			component_state.project_title,
-			BASE_DIR
-		);
+		component_state.project_title = (
+			await generateUniqueFileName(component_state.project_title, BASE_DIR)
+		).split('.')[0];
 		await updateProjectTitle(data.project.id, component_state.project_title);
 		invalidate('app:workspace')
 			.then(() => toggleEdit())

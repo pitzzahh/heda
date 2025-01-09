@@ -19,7 +19,8 @@
 		try {
 			const file = await open({
 				multiple: false,
-				directory: false
+				directory: false,
+				filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
 			});
 
 			if (!file) {
