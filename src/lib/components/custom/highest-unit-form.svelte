@@ -52,7 +52,7 @@
 					const file_name = await generateUniqueFileName(project_name, BASE_DIR);
 
 					await writeEncryptedFile(
-						project_name,
+						file_name,
 						{
 							project: created_proj.project,
 							nodes: await getAllChildNodes(created_proj.root_node_id, true)
