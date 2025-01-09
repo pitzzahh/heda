@@ -8,6 +8,7 @@
 	import { setSettingsState } from '@/hooks/settings-state.svelte';
 	import { setUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { setSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
+	import { setCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 
 	let { children } = $props();
 
@@ -15,6 +16,7 @@
 	setSettingsState($mode === 'light' ? 'light' : 'dark');
 	setUndoRedoState();
 	setSelectNodesToDeleteState();
+	setCollapsiblesState();
 	setState<DialogState>(
 		{
 			highestUnit: false
