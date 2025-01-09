@@ -15,6 +15,7 @@
     "dialog:allow-ask",
     "dialog:allow-message",
     "updater:allow-check",
+    "updater:allow-download-and-install",
     {
       "identifier": "fs:write-files",
       "allow": [
@@ -38,8 +39,7 @@
           "path": "$DOCUMENT/**/*"
         }
       ]
-    },
-    "updater:allow-download-and-install"
+    }
   ],
   "platforms": [
     "macOS",
