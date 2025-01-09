@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '@/components/ui/button';
+	import { open } from '@tauri-apps/plugin-dialog';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import { Skeleton } from '@/components/ui/skeleton/index.js';
@@ -8,6 +9,15 @@
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { MonitorCog, SearchX } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
+
+	async function handleLoadFile() {
+		// Open a dialog
+		const file = await open({
+			multiple: false,
+			directory: false
+		});
+		console.log(file);
+	}
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -92,9 +102,9 @@
 											<SearchX class="size-4" />
 											<Alert.Description>No recent projects found.</Alert.Description>
 										</Alert.Root>
-										<Button>
+										<Button onclick={handleLoadFile}>
 											<MonitorCog />
-											New File
+											Load File
 										</Button>
 									{:else}
 										{#each _projects as project (project.id)}
