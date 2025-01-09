@@ -26,6 +26,7 @@
 		is_load_file,
 		generic_phase_panel_form,
 		phase_main_load_form,
+		app_pass_phrase,
 		can_create_project
 	} = data;
 
@@ -69,6 +70,7 @@
 				{generic_phase_panel_form}
 				{phase_main_load_form}
 				{can_create_project}
+				{app_pass_phrase}
 			/>
 		</PressAltWrapper>
 
@@ -130,6 +132,7 @@
 			</Dialog.Header>
 			<HighestUnitForm
 				highest_unit_form={data.highest_unit_form}
+				{app_pass_phrase}
 				closeDialog={() => (dialogs_state.highestUnit = false)}
 			/>
 		</Dialog.Content>

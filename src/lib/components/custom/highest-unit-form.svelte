@@ -13,15 +13,16 @@
 	import { createProject } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
 	import { getChildNodesByParentId } from '@/db/queries';
-	import { generateKey, getEnv, keyToString, writeEncryptedFile } from '@/helpers/security';
+	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
 
 	interface Props {
 		highest_unit_form: T;
+		app_pass_phrase: string | null;
 		closeDialog: () => void;
 	}
 
-	let { highest_unit_form, closeDialog }: Props = $props();
+	let { highest_unit_form, app_pass_phrase, closeDialog }: Props = $props();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -30,9 +31,8 @@
 			// toast the values
 			if (form.valid) {
 				try {
-					const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 					if (!app_pass_phrase) {
-						return toast.warning('Failed to create new file', {
+						return toast.warning('Failed to get the APP_PASS_PHRASE', {
 							description:
 								'This is a system error and should not be here, the error has been logged.'
 						});

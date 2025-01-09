@@ -12,7 +12,11 @@
 	import { getChildNodesByParentId } from '@/db/queries';
 	import type { FileExport } from '@/types/main';
 
-	let { project, root_node }: { project?: Project; root_node: Node } = $props();
+	let {
+		project,
+		root_node,
+		app_pass_phrase
+	}: { project?: Project; root_node: Node; app_pass_phrase: string | null } = $props();
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
@@ -28,10 +32,9 @@
 			}
 			const nodes = await getChildNodesByParentId(root_node.id);
 			const backup: FileExport = { project, nodes };
-			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			if (!app_pass_phrase) {
 				component_state.can_save = false;
-				return toast.warning('Failed to create new file', {
+				return toast.warning('Failed to get the APP_PASS_PHRASE', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}

@@ -13,7 +13,6 @@
 	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
-	import { getEnv } from '@/helpers/security';
 	import { toast } from 'svelte-sonner';
 
 	let {
@@ -22,35 +21,35 @@
 		phase_main_load_form,
 		project,
 		root_node,
+		app_pass_phrase,
+		can_create_project,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 		project?: Project;
 		root_node: Node;
+		app_pass_phrase: string | null;
+		can_create_project: boolean;
 	} = $props();
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
-	let can_create_project = $state(true);
-
 	$effect(() => {
-		getEnv('APP_PASS_PHRASE').then((app_pass_phrase) => {
-			if (!app_pass_phrase) {
-				can_create_project = false;
-
-				toast.warning('Failed to get the app_pass_phrase', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-				return;
-			}
-		});
+		if (!can_create_project) {
+			can_create_project = false;
+			dialogs_state.highestUnit = false;
+			toast.warning('Failed to get the APP_PASS_PHRASE', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+			return;
+		}
 	});
 </script>
 
 <SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
-	<SidebarHeader {project} {root_node} />
+	<SidebarHeader {project} {root_node} {app_pass_phrase} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
