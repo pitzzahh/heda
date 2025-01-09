@@ -14,7 +14,7 @@
 	import type { DialogState } from '@/state/types.js';
 	import type { Node } from '@/db/schema';
 	import { updateProjectTitle } from '@/db/mutations/index.js';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
@@ -45,8 +45,7 @@
 	async function saveProjectTitle() {
 		if (!data?.project || !project_title) return;
 		await updateProjectTitle(data.project.id, project_title);
-		await invalidateAll();
-		toggleEdit();
+		invalidate('app:workspace').then(() => toggleEdit()).finally(() => toast.success('Project name updated successfully'))
 	}
 
 	onMount(() => {
