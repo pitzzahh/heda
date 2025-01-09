@@ -9,7 +9,7 @@
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { getChildNodesByParentId } from '@/db/queries';
+	import { getAllChildNodes } from '@/db/queries';
 	import type { FileExport } from '@/types/main';
 
 	let {
@@ -30,7 +30,7 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			const nodes = await getChildNodesByParentId(root_node.id);
+			const nodes = await getAllChildNodes(root_node.id);
 			const backup: FileExport = { project, nodes };
 			if (!app_pass_phrase) {
 				component_state.can_save = false;

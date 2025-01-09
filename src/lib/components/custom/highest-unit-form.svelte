@@ -12,7 +12,7 @@
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject } from '@/db/mutations/index';
 	import type { Project, Node } from '@/db/schema';
-	import { getChildNodesByParentId } from '@/db/queries';
+	import { getAllChildNodes, getChildNodesByParentId } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
 
@@ -52,7 +52,7 @@
 					goto(redirect_url);
 
 					closeDialog();
-					const nodes = await getChildNodesByParentId(created_proj.root_node_id);
+					const nodes = await getAllChildNodes(created_proj.root_node_id);
 					const backup: FileExport = { project: created_proj.project, nodes };
 
 					const sk = keyToString(generateKey(app_pass_phrase, project_name));
