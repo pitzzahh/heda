@@ -29,6 +29,8 @@ export function decryptData<T>(encryptedData: string, passphrase: string, salt: 
   // Generate the key
   const key = generateKey(passphrase, salt);
 
+  console.log('Key:', keyToString(key));
+
   // Verify the HMAC
   const computedHmac = CryptoJS.HmacSHA256(ivBase64 + encryptedBase64, key);
   if (CryptoJS.enc.Hex.stringify(hmac) !== CryptoJS.enc.Hex.stringify(computedHmac)) {
@@ -85,12 +87,12 @@ export async function readEncryptedFile<T>(filePath: string, pass_phrase: string
   }
 }
 
-export async function getEnv(key: string): Promise<string | undefined> {
+export async function getEnv(key: string): Promise<string | null> {
   try {
     return await invoke("get_env_var", { key });
   } catch (err) {
     console.error("Error fetching environment variable:", err);
-    return undefined;
+    return null;
   }
 }
 
