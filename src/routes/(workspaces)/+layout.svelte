@@ -18,7 +18,7 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
-	import { fileExists, BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
+	import { BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
 
 	let { data, children } = $props();
 
@@ -27,6 +27,7 @@
 		is_load_file,
 		generic_phase_panel_form,
 		phase_main_load_form,
+		project_title,
 		app_pass_phrase,
 		can_create_project
 	} = data;
@@ -35,7 +36,7 @@
 
 	let component_state = $state({
 		is_editing: false,
-		project_title: data?.project?.project_name || 'Untitled'
+		project_title
 	});
 
 	function toggleEdit() {
@@ -47,9 +48,6 @@
 
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
-		component_state.project_title = (
-			await generateUniqueFileName(component_state.project_title, BASE_DIR)
-		).split('.')[0];
 		await updateProjectTitle(data.project.id, component_state.project_title);
 		invalidate('app:workspace')
 			.then(() => toggleEdit())
