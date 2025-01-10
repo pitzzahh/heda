@@ -18,8 +18,8 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
-	import { BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
-	import { renameFile } from '@/helpers/file/index.js';
+	import { BASE_DIR } from '@/helpers/security/index.js';
+	import { rename } from '@tauri-apps/plugin-fs';
 
 	let { data, children } = $props();
 
@@ -49,19 +49,20 @@
 
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
-		const valid = await renameFile(
-			`${BASE_DIR}/${data.project.project_name}.heda`,
-			`${BASE_DIR}/${component_state.project_title}.heda`
-		);
-		if (!valid) {
+		try {
+			await rename(`${data.project.project_name}.heda`, `${component_state.project_title}.heda`, {
+				oldPathBaseDir: BASE_DIR,
+				newPathBaseDir: BASE_DIR
+			});
+			await updateProjectTitle(data.project.id, component_state.project_title);
+			invalidate('app:workspace')
+				.then(() => toggleEdit())
+				.finally(() => toast.success('Project title updated successfully'));
+		} catch (error) {
 			return toast.error('Failed to update project title', {
 				description: 'An error occurred while updating the project title, please try again.'
 			});
 		}
-		await updateProjectTitle(data.project.id, component_state.project_title);
-		invalidate('app:workspace')
-			.then(() => toggleEdit())
-			.finally(() => toast.success('Project title updated successfully'));
 	}
 
 	$effect(() => {
