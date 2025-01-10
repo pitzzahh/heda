@@ -1,7 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BaseDirectory, exists, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { join } from "@tauri-apps/api/path";
+import { BaseDirectory, exists, readDir, readFile, type DirEntry, type ExistsOptions } from '@tauri-apps/plugin-fs';
 
 export const BASE_DIR = BaseDirectory.Document;
+
+export interface ParsedFileName {
+  baseName: string;
+  number: number | null;
+  extension: string;
+}
 
 export async function getFileName(path: string): Promise<string | undefined> {
   try {
@@ -21,30 +28,104 @@ export async function doesFileExists(path: string | URL, options?: ExistsOptions
   }
 }
 
-export async function generateUniqueFileName(file_name: string, baseDir: BaseDirectory): Promise<string> {
-  let finalFileName = `${file_name}.heda`;
-  let count = 1;
+/**
+ * Parses a filename into its components: base name, number (if any), and extension
+ * @example
+ * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
+ * parseFileName("Untitled (1).heda") -> { baseName: "Untitled", number: 1, extension: ".heda" }
+ */
+function parseFileName(fileName: string): ParsedFileName {
+  const regex = /^(.*?)(?: \((\d+)\))?(\.[^.]+)?$/;
+  const match = fileName.match(regex);
 
-  // Check if file exists and append count if necessary
-  while (await fileExists(finalFileName, baseDir)) {
-    const match = finalFileName.match(/^(.*?)(?: \((\d+)\))?\.heda$/);
-    if (match) {
-      const baseName = match[1];
-      count = match[2] ? parseInt(match[2]) + 1 : count + 1;
-      finalFileName = `${baseName} (${count}).heda`;
-    } else {
-      finalFileName = `${file_name} (${count}).heda`;
-    }
+  if (!match) {
+    return {
+      baseName: fileName,
+      number: null,
+      extension: ''
+    };
   }
 
-  return finalFileName;
+  return {
+    baseName: match[1],
+    number: match[2] ? parseInt(match[2], 10) : null,
+    extension: match[3] || ''
+  };
 }
 
-export async function fileExists(filePath: string, baseDir: BaseDirectory): Promise<boolean> {
+function constructFileName(parts: ParsedFileName): string {
+  const numberSuffix = parts.number !== null ? ` (${parts.number})` : '';
+  return `${parts.baseName}${numberSuffix}${parts.extension}`;
+}
+
+/**
+ * Gets all existing files that match the base pattern in the specified directory
+ */
+async function getExistingFiles(
+  basePattern: string,
+  extension: string,
+  path: string,
+  baseDir: BaseDirectory
+): Promise<ParsedFileName[]> {
   try {
-    await readFile(filePath, { baseDir });
-    return true;
+    const entries = await readDir(path, { baseDir });
+
+    return entries
+      .filter(entry => !entry.isDirectory && entry.name?.endsWith(extension))
+      .map(entry => parseFileName(entry.name))
+      .filter(parsed => parsed.baseName === basePattern);
   } catch (error) {
+    console.error('Error reading directory:', error);
+    return [];
+  }
+}
+
+/**
+ * Generates a unique filename by appending a number if necessary
+ */
+export async function generateUniqueFileName(
+  fileName: string,
+  path: string,
+  baseDir: BaseDirectory
+): Promise<string> {
+  const extension = '.heda';
+  const parsed = parseFileName(fileName);
+  const basePattern = parsed.baseName;
+
+  const existingFiles = await getExistingFiles(basePattern, extension, path, baseDir);
+
+  if (existingFiles.length === 0) {
+    return constructFileName({
+      baseName: basePattern,
+      number: null,
+      extension
+    });
+  }
+
+  const highestNumber = Math.max(
+    0,
+    ...existingFiles.map(file => file.number || 0)
+  );
+
+  return constructFileName({
+    baseName: basePattern,
+    number: highestNumber + 1,
+    extension
+  });
+}
+
+/**
+ * Checks if a file exists in the specified directory
+ */
+async function fileExists(
+  fileName: string,
+  path: string,
+  baseDir: BaseDirectory
+): Promise<boolean> {
+  try {
+    const entries = await readDir(path, { baseDir });
+    return entries.some(entry => !entry.isDirectory && entry.name === fileName);
+  } catch {
     return false;
   }
 }
