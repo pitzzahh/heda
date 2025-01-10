@@ -22,6 +22,7 @@
 		project,
 		root_node,
 		app_pass_phrase,
+		file_encryption_salt,
 		can_create_project,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
@@ -30,6 +31,7 @@
 		project?: Project;
 		root_node: Node;
 		app_pass_phrase: string | null;
+		file_encryption_salt: string | null;
 		can_create_project: boolean;
 	} = $props();
 
@@ -51,7 +53,7 @@
 
 <SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
-	<SidebarHeader {project} {root_node} {app_pass_phrase} />
+	<SidebarHeader {project} {root_node} {app_pass_phrase} {file_encryption_salt} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>

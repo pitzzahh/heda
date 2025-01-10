@@ -95,6 +95,7 @@
 				{phase_main_load_form}
 				{can_create_project}
 				{app_pass_phrase}
+				{file_encryption_salt}
 			/>
 		</PressAltWrapper>
 

@@ -44,8 +44,8 @@
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
 		} catch (err) {
-			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while loading the file.'
+			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
+				description: 'An error occurred while saving the file.'
 			});
 		}
 		return toast.success('Saved successfully');
