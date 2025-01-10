@@ -44,7 +44,7 @@
 					};
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					const file_name = await generateUniqueFileName(project_name, BASE_DIR);
+					const file_name = await generateUniqueFileName(project_name, '.', BASE_DIR);
 
 					await writeEncryptedFile(
 						file_name,
