@@ -15,11 +15,6 @@ fn get_file_name(path: String) -> String {
     filename.to_str().unwrap().to_string()
 }
 
-#[tauri::command]
-fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    std::fs::rename(old_path, new_path).map_err(|e| e.to_string())
-}
-
 fn main() {
     dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap().load();
     tauri::Builder::default()
@@ -33,7 +28,7 @@ fn main() {
         )
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![get_env_var, get_file_name, rename_file])
+        .invoke_handler(tauri::generate_handler![get_env_var, get_file_name])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
