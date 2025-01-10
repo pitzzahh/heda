@@ -134,7 +134,7 @@ export async function generateUniqueFileName(file_name: string, baseDir: BaseDir
     const match = finalFileName.match(/^(.*?)(?: \((\d+)\))?\.heda$/);
     if (match) {
       const baseName = match[1];
-      count = match[2] ? parseInt(match[2]) + 1 : 1;
+      count = match[2] ? parseInt(match[2]) + 1 : count + 1;
       finalFileName = `${baseName} (${count}).heda`;
     } else {
       finalFileName = `${file_name} (${count}).heda`;
