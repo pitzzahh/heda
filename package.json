@@ -83,6 +83,7 @@
 		"rxjs": "^7.8.1",
 		"svelte-exmarkdown": "^4.0.2",
 		"sveltekit-superforms": "^2.22.1",
+		"tauri-plugin-fs-extra-api": "https://github.com/tauri-apps/tauri-plugin-fs-extra#v1",
 		"zod": "v3.24.1"
 	}
 }
