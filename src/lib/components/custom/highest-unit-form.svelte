@@ -15,14 +15,16 @@
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { generateUniqueFileName, doesFileExists, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
+	import { validateEnv } from '@/utils/validation';
 
 	interface Props {
 		highest_unit_form: T;
 		app_pass_phrase: string | null;
+		file_encryption_salt: string | null;
 		closeDialog: () => void;
 	}
 
-	let { highest_unit_form, app_pass_phrase, closeDialog }: Props = $props();
+	let { highest_unit_form, app_pass_phrase, file_encryption_salt, closeDialog }: Props = $props();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -31,12 +33,7 @@
 			// toast the values
 			if (form.valid) {
 				try {
-					if (!app_pass_phrase) {
-						return toast.warning('Failed to get the APP_PASS_PHRASE', {
-							description:
-								'This is a system error and should not be here, the error has been logged.'
-						});
-					}
+					validateEnv(app_pass_phrase, file_encryption_salt);
 
 					const created_proj = (await createProject(form.data)) as {
 						project: Project;
@@ -44,7 +41,7 @@
 					};
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					let file_name = project_name;
+					let file_name = `${project_name}.heda`;
 
 					// if appended_name is not same, we update the project title
 					if (await doesFileExists(file_name, { baseDir: BASE_DIR })) {
@@ -62,7 +59,7 @@
 							project: created_proj.project,
 							nodes: await getAllChildNodes(created_proj.root_node_id, true)
 						},
-						keyToString(generateKey(app_pass_phrase, file_name))
+						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 					);
 					await invalidate('app:workspace');
 					closeDialog();
