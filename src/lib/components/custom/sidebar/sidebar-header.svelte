@@ -10,12 +10,19 @@
 	import type { ButtonState } from '@/types/misc';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
+	import { validateEnv } from '@/utils/validation';
 
 	let {
 		project,
 		root_node,
-		app_pass_phrase
-	}: { project?: Project; root_node: Node; app_pass_phrase: string | null } = $props();
+		app_pass_phrase,
+		file_encryption_salt
+	}: {
+		project?: Project;
+		root_node: Node;
+		app_pass_phrase: string | null;
+		file_encryption_salt: string | null;
+	} = $props();
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
@@ -24,22 +31,18 @@
 
 	async function handleSave() {
 		try {
+			validateEnv(app_pass_phrase, file_encryption_salt);
+
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			if (!app_pass_phrase) {
-				component_state.can_save = false;
-				return toast.warning('Failed to get the APP_PASS_PHRASE', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-			const file_name = `${project?.project_name ?? 'Untitled'}.heda`;
+
 			await writeEncryptedFile(
-				file_name,
+				`${project?.project_name ?? 'Untitled'}`,
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
-				keyToString(generateKey(app_pass_phrase, file_name))
+				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
 		} catch (err) {
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {

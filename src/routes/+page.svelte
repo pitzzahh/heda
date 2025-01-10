@@ -13,11 +13,15 @@
 	import { loadCurrentProject } from '@/db/mutations';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
+	import { validateEnv } from '@/utils/validation';
 
-	let { app_pass_phrase, file_encryption_salt } = $props();
+	let { data } = $props();
+
+	const { app_pass_phrase, file_encryption_salt } = $derived(data);
 
 	async function handleLoadFile() {
 		try {
+			validateEnv(app_pass_phrase, file_encryption_salt);
 			const file = await open({
 				multiple: false,
 				directory: false,
@@ -30,8 +34,10 @@
 				});
 			}
 
-			const sk = keyToString(generateKey(app_pass_phrase, file_encryption_salt));
-			const loaded_data = await readEncryptedFile<FileExport>(file, sk);
+			const loaded_data = await readEncryptedFile<FileExport>(
+				file,
+				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
+			);
 
 			console.log(loaded_data);
 			if (!loaded_data) {
