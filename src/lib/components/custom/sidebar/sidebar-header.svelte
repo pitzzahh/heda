@@ -8,13 +8,7 @@
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
-	import {
-		BASE_DIR,
-		generateKey,
-		generateUniqueFileName,
-		keyToString,
-		writeEncryptedFile
-	} from '@/helpers/security';
+	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
 
 	let {
