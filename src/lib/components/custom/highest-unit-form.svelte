@@ -14,7 +14,7 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
+	import { generateUniqueFileName, doesFileExists, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
 
 	interface Props {
 		highest_unit_form: T;
@@ -44,8 +44,18 @@
 					};
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					const file_name = await generateUniqueFileName(project_name, BASE_DIR_PATH, BASE_DIR);
+					let file_name = project_name;
 
+					// if appended_name is not same, we update the project title
+					if (await doesFileExists(file_name, { baseDir: BASE_DIR })) {
+						file_name = await generateUniqueFileName(project_name, BASE_DIR_PATH, BASE_DIR);
+						await updateProjectTitle(created_proj.project.id, file_name);
+						toast.info('Project title already exists, we will rename it for you.', {
+							description: 'The project title is appended with a number to avoid conflicts.'
+						});
+					}
+
+					console.log({ file_name });
 					await writeEncryptedFile(
 						file_name,
 						{
@@ -54,13 +64,6 @@
 						},
 						keyToString(generateKey(app_pass_phrase, file_name))
 					);
-					// if appended_name is not same, we update the project title
-					if (file_name !== project_name) {
-						await updateProjectTitle(created_proj.project.id, file_name);
-						toast.info('Project title already exists, we will rename it for you.', {
-							description: 'The project title is appended with a number to avoid conflicts.'
-						});
-					}
 					await invalidate('app:workspace');
 					closeDialog();
 					goto(
