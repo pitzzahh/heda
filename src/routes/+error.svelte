@@ -26,17 +26,8 @@
 	<div class="text-center">
 		<h1 class="text-depedred mb-4 font-bold {title_size}">{title}</h1>
 		<p class="{description_size} text-gray-700">{description}</p>
-		<img src={heda_logo_for_dark} alt="App Logo" />
-		<img
-		src={heda_logo_for_dark}
-		alt="Heda Logo"
-		class="hidden dark:block"
-	/>
-	<img
-		src={heda_logo_for_light}
-		alt="Heda Logo"
-		class="dark:hidden"
-	/>
+		<img src={heda_logo_for_dark} alt="Heda Logo" class="hidden dark:block" />
+		<img src={heda_logo_for_light} alt="Heda Logo" class="block dark:hidden" />
 	</div>
 	{#if with_return_button}
 		<Button href={return_to}>Go Back</Button>
