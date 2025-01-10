@@ -30,6 +30,7 @@
 		phase_main_load_form,
 		project_title,
 		app_pass_phrase,
+		file_encryption_salt,
 		can_create_project
 	} = data;
 
@@ -160,6 +161,7 @@
 			<HighestUnitForm
 				highest_unit_form={data.highest_unit_form}
 				{app_pass_phrase}
+				{file_encryption_salt}
 				closeDialog={() => (dialogs_state.highestUnit = false)}
 			/>
 		</Dialog.Content>

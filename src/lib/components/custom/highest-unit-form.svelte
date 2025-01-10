@@ -33,7 +33,7 @@
 			// toast the values
 			if (form.valid) {
 				try {
-					validateEnv(app_pass_phrase, file_encryption_salt);
+					if(!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
 					const created_proj = (await createProject(form.data)) as {
 						project: Project;

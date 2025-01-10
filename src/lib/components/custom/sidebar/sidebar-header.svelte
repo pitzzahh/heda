@@ -31,8 +31,7 @@
 
 	async function handleSave() {
 		try {
-			validateEnv(app_pass_phrase, file_encryption_salt);
-
+			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
 					description: 'This is a system error and should not be here, the error has been logged.'

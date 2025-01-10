@@ -21,7 +21,7 @@
 
 	async function handleLoadFile() {
 		try {
-			validateEnv(app_pass_phrase, file_encryption_salt);
+			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 			const file = await open({
 				multiple: false,
 				directory: false,
