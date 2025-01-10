@@ -14,7 +14,7 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, BASE_DIR } from '@/helpers/file';
+	import { generateUniqueFileName, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
 
 	interface Props {
 		highest_unit_form: T;
@@ -44,7 +44,7 @@
 					};
 
 					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					const file_name = await generateUniqueFileName(project_name, '.', BASE_DIR);
+					const file_name = await generateUniqueFileName(project_name, BASE_DIR_PATH, BASE_DIR);
 
 					await writeEncryptedFile(
 						file_name,

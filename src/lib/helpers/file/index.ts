@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { join } from "@tauri-apps/api/path";
-import { BaseDirectory, exists, readDir, readFile, type DirEntry, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { BaseDirectory, exists, readDir, type ExistsOptions } from '@tauri-apps/plugin-fs';
 
 export const BASE_DIR = BaseDirectory.Document;
+export const BASE_DIR_PATH = 'heda';
 
 export interface ParsedFileName {
   baseName: string;
