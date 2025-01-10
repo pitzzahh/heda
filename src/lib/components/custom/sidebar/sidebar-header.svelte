@@ -41,7 +41,7 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			const file_name = await generateUniqueFileName(project?.project_name ?? 'Untitled', BASE_DIR);
+			const file_name = `${project?.project_name ?? 'Untitled'}.heda`;
 			await writeEncryptedFile(
 				file_name,
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
