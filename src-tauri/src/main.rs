@@ -16,7 +16,8 @@ fn get_file_name(path: String) -> String {
 }
 
 fn main() {
-    dotenv::load().ok();
+    let result = dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap();
+    result.load();
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
