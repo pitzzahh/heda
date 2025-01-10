@@ -74,9 +74,9 @@
 	}
 
 	$effect(() => {
-		if (is_load_file && !data.root_node) {
-			toast.warning('Failed to identify project data', {
-				description: 'This is a system error and should not be here, the error has been logged.'
+		if (is_load_file) {
+			toast.loading('Loading project data', {
+				description: 'Please wait while we load your project data.'
 			});
 		}
 		dialogs_state.highestUnit = is_new_file;
