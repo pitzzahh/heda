@@ -53,10 +53,10 @@
 			const old_file = `${data.project.project_name}.heda`;
 			const new_file = `${component_state.project_title}.heda`;
 			if (await doesFileExists(new_file, {})) {
+				component_state.project_title = await generateUniqueFileName(new_file, '.', BASE_DIR);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
-				component_state.project_title = await generateUniqueFileName(new_file, BASE_DIR);
 			}
 			await rename(old_file, new_file, {
 				oldPathBaseDir: BASE_DIR,
