@@ -8,12 +8,13 @@
 	import { MonitorCog } from '@/assets/icons';
 	import { getAllProjects } from '@/db/queries';
 	import { toast } from 'svelte-sonner';
-	import { readEncryptedFile, getEnv, keyToString, generateKey } from '@/helpers/security';
+	import { readEncryptedFile, keyToString, generateKey } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
-	import { getFileName } from '@/helpers/file';
 	import { loadCurrentProject } from '@/db/mutations';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
+
+	let { app_pass_phrase, file_encryption_salt } = $props();
 
 	async function handleLoadFile() {
 		try {
@@ -28,22 +29,8 @@
 					description: 'Cannot proceed, no file is selected.'
 				});
 			}
-			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
-			const file_name = await getFileName(file);
 
-			if (!app_pass_phrase) {
-				return toast.warning('Failed to get the APP_PASS_PHRASE', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-
-			if (!file_name) {
-				return toast.warning('Failed to get the loaded file name', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-
-			const sk = keyToString(generateKey(app_pass_phrase, file_name));
+			const sk = keyToString(generateKey(app_pass_phrase, file_encryption_salt));
 			const loaded_data = await readEncryptedFile<FileExport>(file, sk);
 
 			console.log(loaded_data);

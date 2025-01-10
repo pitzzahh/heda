@@ -131,9 +131,9 @@ async function fileExists(
   }
 }
 
-async function getFileAttributes(filePath: string) {
+export async function getFileMetaData(path: string) {
   try {
-    return await metadata(filePath);
+    return await invoke('get_file_metadata', { path });
   } catch (error) {
     console.error('Error reading file attributes:', error);
   }
