@@ -33,6 +33,14 @@
       ]
     },
     {
+      "identifier": "fs:read-dirs",
+      "allow": [
+        {
+          "path": "$DOCUMENT/**/*"
+        }
+      ]
+    },
+    {
       "identifier": "fs:allow-rename",
       "allow": [
         {
