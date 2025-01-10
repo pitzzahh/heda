@@ -19,6 +19,7 @@
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 	import { BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
+	import { renameFile } from '@/helpers/file/index.js';
 
 	let { data, children } = $props();
 
@@ -48,6 +49,15 @@
 
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
+		const valid = await renameFile(
+			`${BASE_DIR}/${data.project.project_name}`,
+			component_state.project_title
+		);
+		if (!valid) {
+			return toast.error('Failed to update project title', {
+				description: 'An error occurred while updating the project title, please try again.'
+			});
+		}
 		await updateProjectTitle(data.project.id, component_state.project_title);
 		invalidate('app:workspace')
 			.then(() => toggleEdit())
