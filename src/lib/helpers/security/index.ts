@@ -1,8 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { readFile, create, BaseDirectory } from "@tauri-apps/plugin-fs";
+import { readFile, create } from "@tauri-apps/plugin-fs";
 import CryptoJS from "crypto-js";
-
-export const BASE_DIR = BaseDirectory.Document;
+import { BASE_DIR } from "@/helpers/file";
 
 // Custom encoding map (Base64 to gibberish Unicode)
 const customCharMap: { [key: string]: string } = {
@@ -125,33 +124,6 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
   console.log("File written successfully!");
 }
 
-export async function generateUniqueFileName(file_name: string, baseDir: BaseDirectory): Promise<string> {
-  let finalFileName = `${file_name}.heda`;
-  let count = 1;
-
-  // Check if file exists and append count if necessary
-  while (await fileExists(finalFileName, baseDir)) {
-    const match = finalFileName.match(/^(.*?)(?: \((\d+)\))?\.heda$/);
-    if (match) {
-      const baseName = match[1];
-      count = match[2] ? parseInt(match[2]) + 1 : count + 1;
-      finalFileName = `${baseName} (${count}).heda`;
-    } else {
-      finalFileName = `${file_name} (${count}).heda`;
-    }
-  }
-
-  return finalFileName;
-}
-
-export async function fileExists(filePath: string, baseDir: BaseDirectory): Promise<boolean> {
-  try {
-    await readFile(filePath, { baseDir });
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
 
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
   const fileBuffer: Uint8Array = await readFile(filePath);

@@ -18,8 +18,8 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
-	import { BASE_DIR } from '@/helpers/security/index.js';
 	import { rename } from '@tauri-apps/plugin-fs';
+	import { doesFileExists, generateUniqueFileName, BASE_DIR } from '@/helpers/file/index.js';
 
 	let { data, children } = $props();
 
@@ -50,7 +50,15 @@
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
 		try {
-			await rename(`${data.project.project_name}.heda`, `${component_state.project_title}.heda`, {
+			const old_file = `${data.project.project_name}.heda`;
+			const new_file = `${component_state.project_title}.heda`;
+			if (await doesFileExists(new_file, {})) {
+				toast.info('Project title already exists, we will rename it for you.', {
+					description: 'The project title is appended with a number to avoid conflicts.'
+				});
+				component_state.project_title = await generateUniqueFileName(new_file, BASE_DIR);
+			}
+			await rename(old_file, new_file, {
 				oldPathBaseDir: BASE_DIR,
 				newPathBaseDir: BASE_DIR
 			});

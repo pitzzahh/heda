@@ -4,7 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { generic_phase_panel_schema } from '@/schema/panel';
 import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 import { generic_phase_main_load_schema } from '@/schema/load';
-import { BASE_DIR, generateUniqueFileName } from '@/helpers/security/index.js';
+import { BASE_DIR, generateUniqueFileName } from '@/helpers/file';
 
 export const load = async ({ parent, depends, url: { searchParams } }) => {
 	depends('app:workspace');
