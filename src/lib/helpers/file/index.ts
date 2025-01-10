@@ -14,7 +14,7 @@ export async function renameFile(old_path: string, new_path: string): Promise<bo
     await invoke("rename_file", { old_path, new_path });
     return true;
   } catch (err) {
-    console.error("Error fetching environment variable:", err);
+    console.error("Error renaming file:", err);
     return false;
   }
 }

@@ -20,10 +20,8 @@ fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
     std::fs::rename(old_path, new_path).map_err(|e| e.to_string())
 }
 
-
 fn main() {
-    let result = dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap();
-    result.load();
+    dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap().load();
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(

@@ -50,8 +50,8 @@
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
 		const valid = await renameFile(
-			`${BASE_DIR}/${data.project.project_name}`,
-			component_state.project_title
+			`${BASE_DIR}/${data.project.project_name}.heda`,
+			`${BASE_DIR}/${component_state.project_title}.heda`
 		);
 		if (!valid) {
 			return toast.error('Failed to update project title', {
