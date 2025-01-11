@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.36] - 2025-01-10
+## [1.5.37] - 2025-01-10
 
 ### Fix
 
 - Fix issue where the app cannot be used because of system error.
 - Project file names are now appended if the file already exists.
+- Fix missing plugin updater.
 
 ## [1.4.35] - 2025-01-10
 
