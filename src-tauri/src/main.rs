@@ -37,6 +37,7 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![get_env_var, get_file_name, get_file_metadata])
         .run(tauri::generate_context!())
