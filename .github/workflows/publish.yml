@@ -82,7 +82,7 @@ jobs:
       - name: Create env file
         run: |
           touch .env
-          echo APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE } >> .env
+          echo APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE }} >> .env
           echo FILE_ENCRYPTION_SALT=${{ secrets.FILE_ENCRYPTION_SALT }} >> .env
           cat .env
       - name: Build Tauri app
