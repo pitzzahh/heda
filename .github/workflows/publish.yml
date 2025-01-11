@@ -62,6 +62,7 @@ jobs:
 
       - name: Install frontend
         run: |
+          echo "${{ secrets.PROD_FULL_ENV_FILE }}" > .env
           bun install
 
       - name: CI Upload Windows
@@ -79,8 +80,6 @@ jobs:
           validation_level: warn
           version: ${{ github.ref_name }}
           path: ./changelog.md
-      - name: Create env file
-        run: echo "${{ secrets.PROD_FULL_ENV_FILE }}" > .env
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         if: ${{ github.ref_type == 'tag' }}
