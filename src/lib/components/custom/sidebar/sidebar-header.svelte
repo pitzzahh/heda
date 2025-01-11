@@ -39,7 +39,7 @@
 			}
 
 			await writeEncryptedFile(
-				`${project?.project_name ?? 'Untitled'}`,
+				`${project?.project_name ?? 'Untitled'}.heda`,
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
