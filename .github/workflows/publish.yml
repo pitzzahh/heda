@@ -80,9 +80,7 @@ jobs:
           version: ${{ github.ref_name }}
           path: ./changelog.md
       - name: Create env file
-        run: |
-          echo APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE }} >> .env
-          echo FILE_ENCRYPTION_SALT=${{ secrets.FILE_ENCRYPTION_SALT }} >> .env
+        run: echo "${{ secrets.PROD_FULL_ENV_FILE }}" > .env
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         if: ${{ github.ref_type == 'tag' }}
