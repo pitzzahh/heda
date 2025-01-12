@@ -62,10 +62,16 @@ jobs:
 
       - name: Install frontend
         run: bun install
-        
-      - name: Create env
+
+      - name: Create env on Mac or Linux
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
         run: |
           echo "${{ secrets.PROD_FULL_ENV_FILE }}" > $GITHUB_WORKSPACE/.env
+
+      - name: Create env on Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          echo "${{ secrets.PROD_FULL_ENV_FILE }}" | Out-File -FilePath $env:GITHUB_WORKSPACE\.env
 
       - name: Log the $GITHUB_WORKSPACE on Mac or linux
         if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
