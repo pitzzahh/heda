@@ -19,6 +19,7 @@ export class SettingsState {
 	is_adjustment_factor_dynamic = $state(false);
 	is_panel_multi_copy = $state(false);
 	is_load_multi_copy = $state(false);
+	is_auto_save_enabled = $state(false);
 
 	constructor() {
 		const _persisted_state = new PersistedState<Settings>('settings', {
@@ -28,12 +29,13 @@ export class SettingsState {
 			is_adjustment_factor_dynamic: false,
 			is_panel_multi_copy: false,
 			is_load_multi_copy: false,
-			theme_mode: 'light'
+			theme_mode: 'light',
+			is_auto_save_enabled: false
 		});
 
 		// must be set before calling setters
 		this.persisted_state = _persisted_state;
-
+		this.setAutoSave(_persisted_state?.current?.is_auto_save_enabled || false);
 		this.setThemeColor(
 			_persisted_state?.current?.color || 'excel',
 			_persisted_state.current.theme_mode || 'light'
@@ -74,6 +76,14 @@ export class SettingsState {
 			color
 		};
 		setGlobalColorTheme(mode, color);
+	}
+
+	setAutoSave(value: boolean) {
+		this.is_auto_save_enabled = value;
+		this.persisted_state.current = {
+			...this.persisted_state.current,
+			is_auto_save_enabled: value
+		};
 	}
 
 	setFont(font: Font) {
