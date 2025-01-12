@@ -72,7 +72,6 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: |
           echo "${{ secrets.PROD_FULL_ENV }}" | Out-File -FilePath $env:GITHUB_WORKSPACE\.env
-          cat .env
 
       - name: Log the $GITHUB_WORKSPACE on Mac or linux
         if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
