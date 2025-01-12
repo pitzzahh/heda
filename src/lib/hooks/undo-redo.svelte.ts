@@ -33,10 +33,21 @@ export class UndoRedoState {
 	private undo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 	private redo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 
+	has_unsaved_actions = $state(false);
+
 	constructor() {}
+
+	resetUnsavedActions() {
+		this.has_unsaved_actions = false;
+	}
+
+	setHasUnsavedActions() {
+		this.has_unsaved_actions = true;
+	}
 
 	setActionToUndo(action: Action<PhaseLoadSchedule>) {
 		this.undo_stack = [...(this.undo_stack ? this.undo_stack : []), action];
+		this.setHasUnsavedActions();
 	}
 
 	hasRedoActions() {
@@ -139,6 +150,7 @@ export class UndoRedoState {
 	async undo() {
 		console.log('UNDO STACK ', this.undo_stack);
 		const last_action = this.undo_stack.pop();
+		this.setHasUnsavedActions();
 
 		if (last_action) {
 			switch (last_action.action) {
@@ -322,6 +334,7 @@ export class UndoRedoState {
 
 	async redo() {
 		const last_action = this.redo_stack.pop();
+		this.setHasUnsavedActions();
 
 		if (last_action) {
 			switch (last_action.action) {
