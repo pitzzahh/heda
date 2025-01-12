@@ -35,50 +35,6 @@ function parseFileName(fileName: string): ParsedFileName {
   };
 }
 
-function constructFileName(parts: ParsedFileName): string {
-  const numberSuffix = parts.number !== null ? ` (${parts.number})` : '';
-  return `${parts.baseName}${numberSuffix}${parts.extension}`;
-}
-
-/**
- * Gets all existing files that match the base pattern in the specified directory
- */
-async function getExistingFiles(
-  basePattern: string,
-  extension: string,
-  path: string,
-  baseDir: BaseDirectory
-): Promise<ParsedFileName[]> {
-  try {
-    const entries = await readDir(path, { baseDir });
-
-    return entries
-      .filter(entry => !entry.isDirectory && entry.name?.endsWith(extension))
-      .map(entry => parseFileName(entry.name))
-      .filter(parsed => parsed.baseName === basePattern);
-  } catch (error) {
-    console.error('Error reading directory:', error);
-    return [];
-  }
-}
-
-
-/**
- * Checks if a file exists in the specified directory
- */
-async function fileExists(
-  fileName: string,
-  path: string,
-  baseDir: BaseDirectory
-): Promise<boolean> {
-  try {
-    const entries = await readDir(path, { baseDir });
-    return entries.some(entry => !entry.isDirectory && entry.name === fileName);
-  } catch {
-    return false;
-  }
-}
-
 export async function getFileMetaData(path: string) {
   try {
     return await invoke('get_file_metadata', { path });
