@@ -51,10 +51,12 @@
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
 		try {
-			const old_file = `${data.project.project_name}.heda`;
-			const new_file = `${component_state.project_title}.heda`;
-			if (await doesFileExists(new_file, {})) {
-				component_state.project_title = await generateUniqueFileName(new_file, '.', BASE_DIR);
+			const project_name = data.project.project_name;
+			const new_project_name = component_state.project_title;
+			const old_file = `${project_name}.heda`;
+			const new_file = `${new_project_name}.heda`;
+			if (await doesFileExists(new_file, { baseDir: BASE_DIR })) {
+				component_state.project_title = await generateUniqueFileName(new_project_name, BASE_DIR);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
@@ -63,14 +65,17 @@
 				oldPathBaseDir: BASE_DIR,
 				newPathBaseDir: BASE_DIR
 			});
-			await updateProjectTitle(data.project.id, component_state.project_title);
+			await updateProjectTitle(data.project.id, new_project_name);
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
-		} catch (error) {
-			return toast.error('Failed to update project title', {
-				description: 'An error occurred while updating the project title, please try again.'
-			});
+		} catch (err) {
+			return toast.error(
+				`Failed to update project title: ${(err as any)?.message ?? 'something went wrong'}`,
+				{
+					description: 'This is a system error and should not be here, the error has been logged.'
+				}
+			);
 		}
 	}
 
