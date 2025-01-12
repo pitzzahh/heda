@@ -71,7 +71,10 @@
 				description: 'An error occurred while saving the file.'
 			});
 		}
-		return toast.success('Saved successfully');
+
+		if (!settings_state.is_auto_save_enabled) {
+			toast.success('Saved successfully');
+		}
 	}
 </script>
 
