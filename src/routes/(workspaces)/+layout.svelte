@@ -52,20 +52,20 @@
 		if (!data?.project || !component_state.project_title) return;
 		try {
 			const project_name = data.project.project_name;
-			const new_project_name = component_state.project_title;
 			const old_file = `${project_name}.heda`;
-			const new_file = `${new_project_name}.heda`;
+			const new_file = `${component_state.project_title}.heda`;
 			if (await doesFileExists(new_file, { baseDir: BASE_DIR })) {
-				component_state.project_title = await generateUniqueFileName(new_project_name, BASE_DIR);
+				component_state.project_title = await generateUniqueFileName(component_state.project_title, BASE_DIR);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
+				await rename(old_file, component_state.project_title, {
+					oldPathBaseDir: BASE_DIR,
+					newPathBaseDir: BASE_DIR
+				});
 			}
-			await rename(old_file, new_file, {
-				oldPathBaseDir: BASE_DIR,
-				newPathBaseDir: BASE_DIR
-			});
-			await updateProjectTitle(data.project.id, new_project_name);
+
+			await updateProjectTitle(data.project.id, component_state.project_title);
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
