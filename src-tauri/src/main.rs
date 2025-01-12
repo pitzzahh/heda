@@ -46,7 +46,7 @@ fn main() {
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Folder {
                         path: get_exe_path(),
-                        file_name: Some("heda-app.log".to_string()),
+                        file_name: Some("heda-app".to_string()),
                     },
                 ))
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
