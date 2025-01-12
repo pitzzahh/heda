@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import { BaseDirectory, exists, readDir, type ExistsOptions } from '@tauri-apps/plugin-fs';
-import { metadata } from "tauri-plugin-fs-extra-api";
 
 export const BASE_DIR = BaseDirectory.Document;
 export const BASE_DIR_PATH = 'heda';
