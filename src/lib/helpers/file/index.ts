@@ -3,6 +3,7 @@ import { BaseDirectory, exists, readDir, type ExistsOptions } from '@tauri-apps/
 
 export const BASE_DIR = BaseDirectory.Document;
 export const BASE_DIR_PATH = 'heda';
+export const EXTENSION = 'heda'
 
 export interface ParsedFileName {
   baseName: string;
@@ -10,26 +11,7 @@ export interface ParsedFileName {
   extension: string;
 }
 
-export async function getFileName(path: string): Promise<string | undefined> {
-  try {
-    return await invoke("get_file_name", { path });
-  } catch (err) {
-    console.error("Error fetching environment variable:", err);
-    return undefined;
-  }
-}
-
-
-export async function doesFileExists(path: string | URL, options?: ExistsOptions): Promise<boolean> {
-  try {
-    return await exists(path, options);
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
- * Parses a filename into its components: base name, number (if any), and extension
+/* Parses a filename into its components: base name, number(if any), and extension
  * @example
  * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
  * parseFileName("Untitled (1).heda") -> { baseName: "Untitled", number: 1, extension: ".heda" }
@@ -80,39 +62,6 @@ async function getExistingFiles(
   }
 }
 
-/**
- * Generates a unique filename by appending a number if necessary
- */
-export async function generateUniqueFileName(
-  fileName: string,
-  path: string,
-  baseDir: BaseDirectory
-): Promise<string> {
-  const extension = '.heda';
-  const parsed = parseFileName(fileName);
-  const basePattern = parsed.baseName;
-
-  const existingFiles = await getExistingFiles(basePattern, extension, path, baseDir);
-
-  if (existingFiles.length === 0) {
-    return constructFileName({
-      baseName: basePattern,
-      number: null,
-      extension
-    });
-  }
-
-  const highestNumber = Math.max(
-    0,
-    ...existingFiles.map(file => file.number || 0)
-  );
-
-  return constructFileName({
-    baseName: basePattern,
-    number: highestNumber + 1,
-    extension
-  });
-}
 
 /**
  * Checks if a file exists in the specified directory
@@ -136,4 +85,37 @@ export async function getFileMetaData(path: string) {
   } catch (error) {
     console.error('Error reading file attributes:', error);
   }
+}
+
+export async function getFileName(path: string): Promise<string | undefined> {
+  try {
+    return await invoke("get_file_name", { path });
+  } catch (err) {
+    console.error("Error fetching environment variable:", err);
+    return undefined;
+  }
+}
+
+export async function doesFileExists(path: string | URL, options?: ExistsOptions): Promise<boolean> {
+  try {
+    return await exists(path, options);
+  } catch (err) {
+    console.error("Error checking if file exists:", err);
+    return false;
+  }
+}
+
+export async function generateUniqueFileName(baseName: string, baseDir: BaseDirectory): Promise<string> {
+  let fileName = `${baseName}.${EXTENSION}`;
+  let counter = 1;
+
+  while (await doesFileExists(fileName, { baseDir })) {
+    fileName = `${baseName}-(${counter}).${EXTENSION}`;
+    console.log(`${counter}||File: ${fileName} exists, renaming into: ${fileName}`)
+    counter++;
+  }
+
+  console.log('generateUniqueFileName', fileName)
+
+  return fileName;
 }
