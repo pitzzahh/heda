@@ -38,7 +38,7 @@
 	<div class="grid grid-cols-2">
 		<div>
 			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal">{node?.panel_data?.name ?? 'NOT FOUND'}</span>
+				Distribution Unit: <span class="font-normal">{node?.panel_data?.name ?? node?.highest_unit_form?.distribution_unit ?? 'NOT FOUND'}</span>
 			</p>
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
