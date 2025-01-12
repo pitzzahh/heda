@@ -49,6 +49,14 @@ fn main() {
                         file_name: Some("heda-app".to_string()),
                     },
                 ))
+                .format(|out, message, record| {
+                    out.finish(format_args!(
+                        "[{} {}] {}",
+                        record.level(),
+                        record.target(),
+                        message
+                    ))
+                })
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
         )
