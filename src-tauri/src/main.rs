@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 #[tauri::command]
@@ -26,17 +26,28 @@ fn get_file_metadata(path: String) -> Result<(u64, SystemTime), String> {
     }
 }
 
+#[tauri::command]
+fn get_exe_path() -> PathBuf {
+    std::env::current_exe()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf()
+}
+
 fn main() {
-    dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap().load();
+    dotenv::from_read(include_str!("../../.env").as_bytes())
+        .unwrap()
+        .load();
 
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Folder {
-                        path: app_dir().unwrap_or_else(|| PathBuf::from(".")),
-                        file_name: "heda-app.log",
-                    }
+                        path: get_exe_path(),
+                        file_name: Some("heda-app.log".to_string()),
+                    },
                 ))
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
@@ -44,8 +55,12 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![get_env_var, get_file_name, get_file_metadata])
+        .invoke_handler(tauri::generate_handler![
+            get_env_var,
+            get_file_name,
+            get_file_metadata,
+            get_exe_path
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
