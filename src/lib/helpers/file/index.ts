@@ -16,24 +16,6 @@ export interface ParsedFileName {
  * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
  * parseFileName("Untitled (1).heda") -> { baseName: "Untitled", number: 1, extension: ".heda" }
  */
-function parseFileName(fileName: string): ParsedFileName {
-  const regex = /^(.*?)(?: \((\d+)\))?(\.[^.]+)?$/;
-  const match = fileName.match(regex);
-
-  if (!match) {
-    return {
-      baseName: fileName,
-      number: null,
-      extension: ''
-    };
-  }
-
-  return {
-    baseName: match[1],
-    number: match[2] ? parseInt(match[2], 10) : null,
-    extension: match[3] || ''
-  };
-}
 
 export async function getFileMetaData(path: string) {
   try {
@@ -64,14 +46,9 @@ export async function doesFileExists(path: string | URL, options?: ExistsOptions
 export async function generateUniqueFileName(baseName: string, baseDir: BaseDirectory): Promise<string> {
   let fileName = `${baseName}.${EXTENSION}`;
   let counter = 1;
-
   while (await doesFileExists(fileName, { baseDir })) {
     fileName = `${baseName}-(${counter}).${EXTENSION}`;
-    console.log(`${counter}||File: ${fileName} exists, renaming into: ${fileName}`)
     counter++;
   }
-
-  console.log('generateUniqueFileName', fileName)
-
   return fileName;
 }
