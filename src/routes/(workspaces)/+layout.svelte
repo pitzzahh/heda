@@ -19,7 +19,13 @@
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 	import { rename } from '@tauri-apps/plugin-fs';
-	import { doesFileExists, generateUniqueFileName, BASE_DIR } from '@/helpers/file/index.js';
+	import {
+		doesFileExists,
+		EXTENSION,
+		getFileNameWithoutExtension,
+		generateUniqueFileName,
+		BASE_DIR
+	} from '@/helpers/file/index.js';
 
 	let { data, children } = $props();
 
@@ -28,17 +34,16 @@
 		is_load_file,
 		generic_phase_panel_form,
 		phase_main_load_form,
-		project_title,
 		app_pass_phrase,
 		file_encryption_salt,
 		can_create_project
-	} = data;
+	} = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 
 	let component_state = $state({
 		is_editing: false,
-		project_title
+		project_title: ''
 	});
 
 	function toggleEdit() {
@@ -53,8 +58,8 @@
 		try {
 			const project_name = data.project_title;
 			let new_project_name = component_state.project_title;
-			const old_file = `${project_name}.heda`; // Untitled (2)
-			const new_file = `${new_project_name}.heda`;
+			const old_file = `${project_name}.${EXTENSION}`; // Untitled (2)
+			const new_file = `${new_project_name}.${EXTENSION}`;
 			if (
 				project_name !== new_project_name &&
 				(await doesFileExists(new_file, { baseDir: BASE_DIR }))
@@ -64,12 +69,17 @@
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
 				console.log({ old_file, _new_file: new_project_name });
-				component_state.project_title = new_project_name.split('.')[0];
+				component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			}
-			await rename(old_file, `${component_state.project_title}.heda`, {
-				oldPathBaseDir: BASE_DIR,
-				newPathBaseDir: BASE_DIR
-			});
+			console.log({ project_name, old_file, _new_file: component_state.project_title });
+			await rename(
+				`${project_name}.${EXTENSION}`,
+				`${component_state.project_title}.${EXTENSION}`,
+				{
+					oldPathBaseDir: BASE_DIR,
+					newPathBaseDir: BASE_DIR
+				}
+			);
 			await updateProjectTitle(data.project.id, component_state.project_title);
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
@@ -84,6 +94,11 @@
 			);
 		}
 	}
+
+	$effect(() => {
+		toast.info(`RELOADING app:workspace: ${data.project_title}`);
+		component_state.project_title = getFileNameWithoutExtension(data.project_title);
+	});
 
 	$effect(() => {
 		if (is_load_file) {
