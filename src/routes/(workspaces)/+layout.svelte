@@ -35,7 +35,6 @@
 	} = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-
 	let component_state = $state({
 		is_editing: false,
 		project_title
