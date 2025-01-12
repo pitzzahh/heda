@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.45] - 2025-01-13
+
+### Test
+
+- New github actions build.
+
+### Fix
+
+- Fix issue where changing project title overrides the existing projects.
+
 ## [1.5.41] - 2025-01-11
 
 ### Test
