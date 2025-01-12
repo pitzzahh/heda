@@ -11,6 +11,18 @@ export interface ParsedFileName {
   extension: string;
 }
 
+/**
+ * Gets the file name without the extension
+ * @param path - The full path of the file
+ * @param extension - The extension to remove
+ * @returns The file name without the extension
+ */
+export function getFileNameWithoutExtension(path: string, extension: string = EXTENSION): string {
+  const fileName = path.split('/').pop() || '';
+  const lastDotIndex = fileName.lastIndexOf(`.${extension}`);
+  return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
+}
+
 /* Parses a filename into its components: base name, number(if any), and extension
  * @example
  * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
@@ -52,3 +64,4 @@ export async function generateUniqueFileName(baseName: string, baseDir: BaseDire
   }
   return fileName;
 }
+
