@@ -63,6 +63,7 @@ jobs:
       - name: Install frontend
         run: |
           echo "${{ secrets.PROD_FULL_ENV_FILE }}" > $GITHUB_WORKSPACE/.env
+          if [ $RUNNER_OS == 'Windows' ]; then dir $GITHUB_WORKSPACE; else ls $GITHUB_WORKSPACE; fi
           bun install
 
       - name: CI Upload Windows
