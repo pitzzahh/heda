@@ -61,10 +61,19 @@ jobs:
           workspaces: "./src-tauri -> target"
 
       - name: Install frontend
+        run: bun install
+        
+      - name: Create env
         run: |
           echo "${{ secrets.PROD_FULL_ENV_FILE }}" > $GITHUB_WORKSPACE/.env
-          if [ $RUNNER_OS == 'Windows' ]; then dir $GITHUB_WORKSPACE; else ls $GITHUB_WORKSPACE; fi
-          bun install
+
+      - name: Log the $GITHUB_WORKSPACE on Mac or linux
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
+        run: ls -la $GITHUB_WORKSPACE
+
+      - name: Log the $GITHUB_WORKSPACE on Windows
+        if: matrix.platform == 'windows-latest'
+        run: dir $GITHUB_WORKSPACE
 
       - name: CI Upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
