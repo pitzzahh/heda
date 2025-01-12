@@ -96,7 +96,6 @@
 	}
 
 	$effect(() => {
-		toast.info(`RELOADING app:workspace: ${data.project_title}`);
 		component_state.project_title = getFileNameWithoutExtension(data.project_title);
 	});
 
