@@ -58,8 +58,8 @@
 		try {
 			const project_name = data.project_title;
 			let new_project_name = component_state.project_title;
-			const old_file = `${project_name}.${EXTENSION}`; // Untitled (2)
-			const new_file = `${new_project_name}.${EXTENSION}`;
+			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`; // Untitled (2)
+			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
 			if (
 				project_name !== new_project_name &&
 				(await doesFileExists(new_file, { baseDir: BASE_DIR }))
@@ -69,17 +69,12 @@
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
 				console.log({ old_file, _new_file: new_project_name });
-				component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			}
-			console.log({ project_name, old_file, _new_file: component_state.project_title });
-			await rename(
-				`${project_name}.${EXTENSION}`,
-				`${component_state.project_title}.${EXTENSION}`,
-				{
-					oldPathBaseDir: BASE_DIR,
-					newPathBaseDir: BASE_DIR
-				}
-			);
+			component_state.project_title = getFileNameWithoutExtension(new_project_name);
+			await rename(old_file, `${component_state.project_title}.${EXTENSION}`, {
+				oldPathBaseDir: BASE_DIR,
+				newPathBaseDir: BASE_DIR
+			});
 			await updateProjectTitle(data.project.id, component_state.project_title);
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
