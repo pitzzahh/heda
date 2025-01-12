@@ -28,12 +28,17 @@ fn get_file_metadata(path: String) -> Result<(u64, SystemTime), String> {
 
 fn main() {
     dotenv::from_read(include_str!("../../.env").as_bytes()).unwrap().load();
+
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::Stdout,
+                    tauri_plugin_log::TargetKind::Folder {
+                        path: app_dir().unwrap_or_else(|| PathBuf::from(".")),
+                        file_name: "heda-app.log",
+                    }
                 ))
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
         )
         .plugin(tauri_plugin_fs::init())
