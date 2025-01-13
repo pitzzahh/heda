@@ -55,6 +55,16 @@
 			toast.success('Project loaded successfully', {
 				description: 'The file has been loaded successfully.'
 			});
+			const { id, project_name } = loaded_data.project;
+			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
+			if(!projectExists) {
+				project_state.addRecentProject({
+						id,
+						project_name,
+						project_path: path,
+						exists: true
+					});
+			}
 			project_state.setCurrentProject({
 				id: loaded_data.project.id,
 				project_name: loaded_data.project.project_name,
