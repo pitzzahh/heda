@@ -26,10 +26,11 @@ export class ProjectState {
     });
     this.persisted_state = _persisted_state;
     this.validateRecentProjects();
-    recent_project && this.addRecentProject(recent_project?.project_name, recent_project?.project_path);
+    recent_project && this.addRecentProject(recent_project);
   }
 
-  addRecentProject(project_name: string, project_path: string) {
+  addRecentProject(recent_project: RecentProject) {
+    const { project_name, project_path } = recent_project;
     this.persisted_state.current.recent_projects?.push({ project_name, project_path });
     this.recent_projects = this.persisted_state.current.recent_projects;
     this.current_project_name = project_name;
