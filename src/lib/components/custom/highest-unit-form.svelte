@@ -16,6 +16,7 @@
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { generateUniqueFileName, doesFileExists, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	interface Props {
 		highest_unit_form: T;
@@ -25,6 +26,8 @@
 	}
 
 	let { highest_unit_form, app_pass_phrase, file_encryption_salt, closeDialog }: Props = $props();
+
+	const project_state = getProjectState();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -54,7 +57,7 @@
 					}
 
 					console.log({ file_name });
-					await writeEncryptedFile(
+					const created_file = await writeEncryptedFile(
 						file_name,
 						{
 							project: created_proj.project,
@@ -64,6 +67,14 @@
 					);
 					await invalidate('app:workspace');
 					closeDialog();
+
+					const recent_project = {
+						project_name: created_proj.project.project_name,
+						project_path: '',
+						exists: true
+					};
+
+					project_state.addRecentProject(recent_project);
 					goto(
 						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
 					).finally(() => toast.success('Project created successfully'));
