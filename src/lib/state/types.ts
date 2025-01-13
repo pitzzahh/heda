@@ -2,6 +2,7 @@ import { SettingsState } from '@/hooks/settings-state.svelte';
 import { UndoRedoState } from '@/hooks/undo-redo.svelte';
 import { SelectNodesToDelete } from '@/hooks/select-nodes-to-delete.svelte';
 import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
+import type { ProjectState } from '@/hooks/project-state.svelte';
 
 export type State =
 	| MainState
@@ -11,7 +12,8 @@ export type State =
 	| MiscState
 	| SettingsState
 	| UndoRedoState
-	| SelectNodesToDelete 
+	| SelectNodesToDelete
+	| ProjectState
 	| Collapsibles;
 
 export type MainState = {
