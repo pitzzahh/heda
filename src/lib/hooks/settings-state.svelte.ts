@@ -10,7 +10,7 @@ type ThemeColor = 'autocad' | 'excel';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 export class SettingsState {
-	persisted_state: PersistedState<Settings>;
+	private persisted_state: PersistedState<Settings>;
 
 	themeColor = $state<ThemeColor>('excel');
 	themeMode = $state<ThemeMode>('light');
