@@ -13,6 +13,7 @@
 	import { validateEnv } from '@/utils/validation';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		project,
@@ -30,8 +31,36 @@
 		export_to_excel: 'idle' as ButtonState,
 		can_save: true
 	});
-	let undo_redo_state = getUndoRedoState();
-	let settings_state = getSettingsState();
+
+	const undo_redo_state = getUndoRedoState();
+	const settings_state = getSettingsState();
+	const project_state = getProjectState();
+
+	async function handleSave() {
+		try {
+			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
+			if (!project) {
+				return toast.warning('Failed to save, no project found', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
+			await writeEncryptedFile(
+				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
+				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
+				project_state
+			);
+			undo_redo_state.resetUnsavedActions();
+		} catch (err) {
+			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
+				description: 'An error occurred while saving the file.'
+			});
+		}
+
+		if (!settings_state.is_auto_save_enabled) {
+			toast.success('Saved successfully');
+		}
+	}
 
 	$effect(() => {
 		// auto saver
@@ -50,32 +79,6 @@
 			window.removeEventListener('keydown', handleKeyDown);
 		};
 	});
-
-	async function handleSave() {
-		try {
-			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
-			if (!project) {
-				return toast.warning('Failed to save, no project found', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-
-			await writeEncryptedFile(
-				`${project?.project_name ?? 'Untitled'}.heda`,
-				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
-				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
-			);
-			undo_redo_state.resetUnsavedActions();
-		} catch (err) {
-			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while saving the file.'
-			});
-		}
-
-		if (!settings_state.is_auto_save_enabled) {
-			toast.success('Saved successfully');
-		}
-	}
 </script>
 
 <div class="flex w-full items-center justify-between p-2">
