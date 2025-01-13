@@ -154,7 +154,7 @@
 								{#if project_state.recent_projects}
 									{#each project_state.recent_projects as project (project.project_name)}
 										<Button
-											variant="outline"
+											variant={project.exists ? 'outline' : 'warning'}
 											class="flex w-full items-center justify-start px-4 py-6"
 											disabled={!project.exists}
 											size="lg"
