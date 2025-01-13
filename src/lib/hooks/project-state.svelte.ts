@@ -29,17 +29,24 @@ export class ProjectState {
     recent_project && this.addRecentProject(recent_project);
   }
 
-  addRecentProject(recent_project: RecentProject) {
+  addRecentProject(recent_project: RecentProject, set_as_current: boolean = true) {
     const { project_name, project_path } = recent_project;
     this.persisted_state.current.recent_projects?.push({ project_name, project_path });
     this.recent_projects = this.persisted_state.current.recent_projects;
-    this.current_project_name = project_name;
-    this.current_project_path = project_path;
+    if (set_as_current) {
+      this.current_project_name = project_name;
+      this.current_project_path = project_path;
+    }
   }
 
   removeRecentProject(project_name: string) {
     this.persisted_state.current.recent_projects = this.persisted_state.current.recent_projects?.filter(project => project.project_name !== project_name);
     this.recent_projects = this.persisted_state.current.recent_projects;
+  }
+
+  setCurrentProject(current_project: RecentProject) {
+    this.current_project_name = current_project.project_name;
+    this.current_project_path = current_project.project_path;
   }
 
   private async validateRecentProjects() {
