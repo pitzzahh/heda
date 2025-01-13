@@ -14,10 +14,12 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, getFilePath, doesFileExists, BASE_DIR } from '@/helpers/file';
+	import { generateUniqueFileName, EXTENSION, doesFileExists, BASE_DIR } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
+	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+	import { join } from '@tauri-apps/api/path';
 
 	interface Props {
 		highest_unit_form: T;
@@ -38,6 +40,21 @@
 			if (form.valid) {
 				try {
 					if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
+
+					const file_path = await saveDialog({
+						filters: [
+							{
+								name: 'Project Save Path',
+								extensions: [EXTENSION]
+							}
+						]
+					});
+
+					if (!file_path) {
+						return toast.warning('No folder selected', {
+							description: 'Cannot proceed, no folder is selected.'
+						});
+					}
 
 					const created_proj = (await createProject(form.data)) as {
 						project: Project;
@@ -73,13 +90,14 @@
 						project_state
 					);
 					closeDialog();
-					// TODO: Set the project path
-					const file_path = await getFilePath(file_name, BASE_DIR);
-					console.log(`File: ${file_path}`);
+
+					const file_full_path = await join(file_path, file_name);
+
+					console.log(`File: ${file_full_path}`);
 					project_state.addRecentProject({
 						project_name: created_proj.project.project_name,
-						project_path: file_path,
-						exists: false
+						project_path: file_full_path,
+						exists: true
 					});
 					await invalidate('app:workspace')
 						.then(() =>
@@ -87,7 +105,9 @@
 								`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
 							)
 						)
-						.finally(() => toast.success('Project created successfully'));
+						.finally(() =>
+							toast.success(`${project_state.current_project_name} created successfully`)
+						);
 				} catch (err) {
 					return toast.error(
 						`Failed to create project: ${(err as any)?.message ?? 'something went wrong'}`,
