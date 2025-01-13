@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { readFile, create } from "@tauri-apps/plugin-fs";
+import { readFile } from "@tauri-apps/plugin-fs";
 import CryptoJS from "crypto-js";
-import { BASE_DIR } from "@/helpers/file";
+import type { ProjectState } from "@/hooks/project-state.svelte";
 
 // Custom encoding map (Base64 to gibberish Unicode)
 const customCharMap: { [key: string]: string } = {
@@ -110,19 +110,15 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
   return JSON.parse(decryptedData) as T;
 }
 
-export async function writeEncryptedFile<T>(file_name: string, data: T, secret_key: string): Promise<void> {
-  const encryptedData: string = encryptData<T>(data, secret_key);
-  const fileBuffer: Uint8Array = new TextEncoder().encode(encryptedData);
-
-  const file = await create(file_name, {
-    baseDir: BASE_DIR,
-  });
-
-  await file.write(fileBuffer);
-  console.log("File written successfully!", file);
-  await file.close();
+export async function writeEncryptedFile<T>(data: T, secret_key: string, project_state: ProjectState): Promise<void> {
+  if (!project_state.current_file) {
+    throw new Error("No file to write to");
+  }
+  console.log(`Writing to file: ${project_state.current_file}`);
+  await project_state.current_file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
+  const file_stat = await project_state.current_file.stat()
+  console.log(`File written successfully!: ${file_stat}`);
 }
-
 
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
   const fileBuffer: Uint8Array = await readFile(filePath);
