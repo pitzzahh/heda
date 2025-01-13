@@ -119,9 +119,8 @@ export async function writeEncryptedFile<T>(file_name: string, data: T, secret_k
   });
 
   await file.write(fileBuffer);
-  await file.close();
-
   console.log("File written successfully!", file);
+  await file.close();
 }
 
 
