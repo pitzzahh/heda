@@ -21,7 +21,8 @@
 	setProjectState();
 	setState<DialogState>(
 		{
-			highestUnit: false
+			highestUnit: false,
+			has_unsaved_changes: false
 		},
 		DIALOG_STATE_CTX
 	);
