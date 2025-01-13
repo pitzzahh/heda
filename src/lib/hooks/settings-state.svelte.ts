@@ -21,7 +21,7 @@ export class SettingsState {
 	is_load_multi_copy = $state(false);
 	is_auto_save_enabled = $state(false);
 
-	constructor() {
+	constructor(mode: ThemeMode) {
 		const _persisted_state = new PersistedState<Settings>('settings', {
 			color: 'excel',
 			font: 'default',
@@ -29,7 +29,7 @@ export class SettingsState {
 			is_adjustment_factor_dynamic: false,
 			is_panel_multi_copy: false,
 			is_load_multi_copy: false,
-			theme_mode: 'light',
+			theme_mode: mode,
 			is_auto_save_enabled: false
 		});
 
@@ -137,7 +137,7 @@ export class SettingsState {
 	}
 }
 export function setSettingsState(mode: ThemeMode) {
-	return setState(new SettingsState(), THEME_COLOR_STATE_CTX);
+	return setState(new SettingsState(mode), THEME_COLOR_STATE_CTX);
 }
 
 export function getSettingsState() {
