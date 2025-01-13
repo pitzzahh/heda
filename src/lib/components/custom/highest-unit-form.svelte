@@ -14,12 +14,17 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, EXTENSION, doesFileExists, BASE_DIR } from '@/helpers/file';
+	import {
+		generateUniqueFileName,
+		getFileName,
+		EXTENSION,
+		doesFileExists,
+		BASE_DIR
+	} from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-	import { join } from '@tauri-apps/api/path';
 
 	interface Props {
 		highest_unit_form: T;
@@ -44,7 +49,7 @@
 					const file_path = await saveDialog({
 						filters: [
 							{
-								name: 'Project Save Path',
+								name: 'Heda file',
 								extensions: [EXTENSION]
 							}
 						]
@@ -56,17 +61,24 @@
 						});
 					}
 
-					const created_proj = (await createProject(form.data)) as {
+					const project_name = await getFileName(file_path);
+
+					if (!project_name) {
+						toast.warning('Project title not fetched from file name.', {
+							description: 'The project title is appended with a number to avoid conflicts.'
+						});
+					}
+
+					const created_proj = (await createProject(project_name ?? 'Untitled', form.data)) as {
 						project: Project;
 						root_node_id: string;
 					};
 
-					const project_name = created_proj.project?.project_name ?? 'Untitled';
-					let file_name = `${project_name}.heda`;
+					let file_name = `${project_name}.${EXTENSION}`;
 
 					// if appended_name is not same, we update the project title
-					if (await doesFileExists(file_name, { baseDir: BASE_DIR })) {
-						file_name = await generateUniqueFileName(project_name, BASE_DIR);
+					if (await doesFileExists(file_name)) {
+						file_name = await generateUniqueFileName(project_name ?? 'Untitled', BASE_DIR);
 						await updateProjectTitle(created_proj.project.id, file_name);
 						toast.info('Project title already exists, we will rename it for you.', {
 							description: 'The project title is appended with a number to avoid conflicts.'
@@ -91,12 +103,10 @@
 					);
 					closeDialog();
 
-					const file_full_path = await join(file_path, file_name);
-
-					console.log(`File: ${file_full_path}`);
+					console.log(`File: ${file_path}`);
 					project_state.addRecentProject({
-						project_name: created_proj.project.project_name,
-						project_path: file_full_path,
+						project_name,
+						project_path: file_path,
 						exists: true
 					});
 					await invalidate('app:workspace')
