@@ -6,7 +6,7 @@ import type { Project, Node } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { FileExport } from '@/types/main';
 
-export async function createProject(highest_unit_form: Node['highest_unit_form']) {
+export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
 
 	try {
@@ -21,7 +21,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		const project = await database.projects.insert({
 			id: createId(),
 			root_node_id: created_root_node._data.id,
-			project_name: 'Untitled',
+			project_name,
 			settings: {
 				is_adjustment_factor_dynamic: false
 			}
