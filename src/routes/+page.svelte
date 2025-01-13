@@ -53,7 +53,7 @@
 			});
 			project_state.addRecentProject({
 				project_name: loaded_data.project.project_name,
-				project_path: 
+				project_path: file
 			});
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
