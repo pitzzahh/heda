@@ -150,12 +150,12 @@
 								Load File
 							</Button>
 							<Separator class="h-1" />
-							<ScrollArea class="flex h-72 w-full flex-col gap-1">
+							<ScrollArea class="flex h-72 w-full flex-col">
 								{#if project_state.recent_projects}
 									{#each project_state.recent_projects as project (project.project_name)}
 										<Button
 											variant={project.exists ? 'outline' : 'warning'}
-											class="flex w-full items-center justify-start px-4 py-6"
+											class="mb-2 flex w-full items-center justify-start px-4 py-6"
 											disabled={!project.exists}
 											size="lg"
 											onclick={() => handleLoadFile(project.project_path)}
