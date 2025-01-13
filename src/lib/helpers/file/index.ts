@@ -64,13 +64,3 @@ export async function generateUniqueFileName(baseName: string, baseDir: BaseDire
   }
   return fileName;
 }
-
-
-export async function getFilePath(filename: string, baseDir: BaseDirectory): Promise<string> {
-  const path = await invoke('get_path', {
-    filename,
-    baseDir
-  });
-  console.log('Absolute path:', path);
-  return path as string;
-};
