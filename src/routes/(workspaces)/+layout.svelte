@@ -3,8 +3,9 @@
 	import { AppSidebar } from '@/components/custom/sidebar';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
-	import { Button } from '@/components/ui/button/index.js';
+	import { buttonVariants, Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { HighestUnitForm, PageProgress } from '@/components/custom';
 	import { Input } from '@/components/ui/input';
 	import { PenLine, Save } from '@/assets/icons';
@@ -27,6 +28,7 @@
 		BASE_DIR
 	} from '@/helpers/file/index.js';
 	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
+	import { getSettingsState } from '@/hooks/settings-state.svelte.js';
 
 	let { data, children } = $props();
 
@@ -40,7 +42,9 @@
 		can_create_project
 	} = $derived(data);
 
-	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+	const settings_state = getSettingsState();
+
 	let component_state = $state({
 		is_editing: false,
 		project_title: ''
@@ -213,3 +217,21 @@
 		</Dialog.Content>
 	</Dialog.Root>
 </UndoRedoWrapper>
+
+<AlertDialog.Root bind:open={dialogs_state.has_unsaved_changes}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Unsaved changes found!</AlertDialog.Title>
+			<AlertDialog.Description>
+				Would you like to save your current changes before performing any actions?
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel class={buttonVariants({ variant: 'ghost' })}>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action class={buttonVariants({ variant: 'destructive' })}
+				>Continue without saving changes</AlertDialog.Action
+			>
+			<AlertDialog.Action class={buttonVariants()}>Save and continue</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
