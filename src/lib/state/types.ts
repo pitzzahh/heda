@@ -27,6 +27,7 @@ export type RouteState = {
 
 export type DialogState = {
 	highestUnit: boolean;
+	has_unsaved_changes: boolean;
 };
 
 export type CountState = {
