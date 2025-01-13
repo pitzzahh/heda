@@ -77,7 +77,7 @@
 					let file_name = `${project_name}.${EXTENSION}`;
 
 					// if appended_name is not same, we update the project title
-					if (await doesFileExists(file_name)) {
+					if (await doesFileExists(file_path)) {
 						file_name = await generateUniqueFileName(project_name ?? 'Untitled', BASE_DIR);
 						await updateProjectTitle(created_proj.project.id, file_name);
 						toast.info('Project title already exists, we will rename it for you.', {
