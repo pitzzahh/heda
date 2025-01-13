@@ -9,7 +9,6 @@ export type State =
 	| RouteState
 	| DialogState
 	| CountState
-	| MiscState
 	| SettingsState
 	| UndoRedoState
 	| SelectNodesToDelete
@@ -42,11 +41,4 @@ export type CountState = {
 	resignedEmployeesCount: number;
 	transferredEmployeesCount: number;
 	temporaryEmployeesCount: number;
-};
-
-export type MiscState = {
-	form_data?: {
-		data?: unknown;
-		label?: string;
-	};
 };
