@@ -197,6 +197,8 @@
 				New Project
 			</Button>
 		</div>
+
+		<Separator class="my-1 w-full" />
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
@@ -211,6 +213,20 @@
 				id="adjustment_factor"
 				bind:checked={settingsState.is_adjustment_factor_dynamic}
 				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
+			/>
+		</div>
+
+		<Separator class="my-1 w-full" />
+		<div class="flex flex-row items-center justify-between gap-3">
+			<div class="space-y-0.5">
+				<Label for="adjustment_factor">Auto Save</Label>
+				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
+			</div>
+			<Switch
+				disabled={project === undefined}
+				id="adjustment_factor"
+				checked={settingsState.is_auto_save_enabled}
+				onCheckedChange={(value) => settingsState.setAutoSave(value)}
 			/>
 		</div>
 	</div>
@@ -277,50 +293,6 @@
 				</Label>
 			</RadioGroup.Root>
 		</div>
-		<!-- <div class="flex w-full flex-col items-center justify-center gap-2">
-			<Label for="colors">Theme</Label>
-			<RadioGroup.Root value={selectedThemeMode} class="grid grid-cols-3">
-				<Label
-					for="light"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-				>
-					<RadioGroup.Item
-						value="light"
-						id="light"
-						class="sr-only"
-						aria-label="Light Theme"
-						onclick={() => settingsState.setThemeMode('light')}
-					/>
-					<Sun class="h-4 w-4" />
-				</Label>
-				<Label
-					for="dark"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-				>
-					<RadioGroup.Item
-						value="dark"
-						id="dark"
-						class="sr-only"
-						aria-label="Dark Theme"
-						onclick={() => settingsState.setThemeMode('dark')}
-					/>
-					<Moon class="h-4 w-4" />
-				</Label>
-				<Label
-					for="system"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-				>
-					<RadioGroup.Item
-						value="system"
-						id="system"
-						class="sr-only"
-						aria-label="System default theme"
-						onclick={() => settingsState.setThemeMode('system')}
-					/>
-					<SunMoon class="h-4 w-4" />
-				</Label>
-			</RadioGroup.Root>
-		</div> -->
 
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme Color</Label>

@@ -41,7 +41,6 @@
 	} = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-
 	let component_state = $state({
 		is_editing: false,
 		project_title: ''
@@ -55,7 +54,15 @@
 	}
 
 	async function saveProjectTitle() {
-		if (!data?.project || !component_state.project_title) return;
+		if (!data?.project) return;
+
+		if (!component_state.project_title) {
+			component_state.is_editing = false;
+			component_state.project_title = getFileNameWithoutExtension(data.project_title);
+
+			return;
+		}
+
 		try {
 			const project_name = data.project_title;
 			let new_project_name = component_state.project_title;

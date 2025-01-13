@@ -11,6 +11,8 @@
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
 	import { getAllChildNodes } from '@/db/queries';
 	import { validateEnv } from '@/utils/validation';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
 	let {
 		project,
@@ -28,6 +30,26 @@
 		export_to_excel: 'idle' as ButtonState,
 		can_save: true
 	});
+	let undo_redo_state = getUndoRedoState();
+	let settings_state = getSettingsState();
+
+	$effect(() => {
+		// auto saver
+		if (undo_redo_state.has_unsaved_actions && settings_state.is_auto_save_enabled) {
+			handleSave();
+		}
+
+		function handleKeyDown(e: KeyboardEvent) {
+			if (e.ctrlKey && e.key.toLocaleLowerCase() === 's' && !settings_state.is_auto_save_enabled) {
+				handleSave();
+			}
+		}
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	});
 
 	async function handleSave() {
 		try {
@@ -43,30 +65,39 @@
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
+			undo_redo_state.resetUnsavedActions();
 		} catch (err) {
 			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
 				description: 'An error occurred while saving the file.'
 			});
 		}
-		return toast.success('Saved successfully');
+
+		if (!settings_state.is_auto_save_enabled) {
+			toast.success('Saved successfully');
+		}
 	}
 </script>
 
 <div class="flex w-full items-center justify-between p-2">
 	<div class="flex w-full items-center gap-2">
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger
-					disabled={project === undefined || !component_state.can_save}
-					class={buttonVariants({ variant: 'default', size: 'sm' })}
-					onclick={handleSave}
-				>
-					<Save class="h-4 w-4" />
-					Save
-				</Tooltip.Trigger>
-				<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+		{#if !settings_state.is_auto_save_enabled}
+			<Tooltip.Provider>
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						disabled={project === undefined ||
+							!component_state.can_save ||
+							!undo_redo_state.has_unsaved_actions}
+						class={buttonVariants({ variant: 'default', size: 'sm' })}
+						onclick={handleSave}
+					>
+						<Save class="h-4 w-4" />
+						Save
+					</Tooltip.Trigger>
+					<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
+		{/if}
+
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger>
