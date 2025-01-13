@@ -58,13 +58,14 @@
 					}
 
 					console.log('Setting current file');
-					const opened_file = await openFile(file_name, {
-						read: true,
-						write: true,
-						createNew: true,
-						baseDir: BASE_DIR
-					});
-					await project_state.setCurrentFile(opened_file);
+					await project_state.setCurrentFile(
+						await openFile(file_name, {
+							read: true,
+							write: true,
+							createNew: true,
+							baseDir: BASE_DIR
+						})
+					);
 					console.log('Writing encrypted file');
 					await writeEncryptedFile(
 						{
@@ -77,13 +78,11 @@
 					await invalidate('app:workspace');
 					closeDialog();
 
-					const recent_project = {
+					project_state.addRecentProject({
 						project_name: created_proj.project.project_name,
 						project_path: '',
 						exists: true
-					};
-
-					project_state.addRecentProject(recent_project);
+					});
 					goto(
 						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
 					).finally(() => toast.success('Project created successfully'));
