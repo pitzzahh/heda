@@ -56,6 +56,7 @@
 				description: 'The file has been loaded successfully.'
 			});
 			project_state.setCurrentProject({
+				id: loaded_data.project.id,
 				project_name: loaded_data.project.project_name,
 				project_path: path,
 				exists: true

@@ -65,7 +65,10 @@
 
 					console.log(`Project name: ${project_name}`);
 
-					const created_proj = (await createProject(project_name ?? 'Untitled', form.data)) as {
+					const { project, root_node_id } = (await createProject(
+						project_name ?? 'Untitled',
+						form.data
+					)) as {
 						project: Project;
 						root_node_id: string;
 					};
@@ -74,7 +77,7 @@
 						toast.warning('Project title not fetched from file name.', {
 							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
-						await updateProjectTitle(created_proj.project.id, 'Untitled');
+						await updateProjectTitle(project.id, 'Untitled');
 					}
 
 					await project_state.setCurrentFile(
@@ -87,8 +90,8 @@
 					);
 					await writeEncryptedFile(
 						{
-							project: created_proj.project,
-							nodes: await getAllChildNodes(created_proj.root_node_id, true)
+							project: project,
+							nodes: await getAllChildNodes(root_node_id, true)
 						},
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 						project_state
@@ -97,15 +100,14 @@
 
 					console.log(`File: ${file_path}`);
 					project_state.addRecentProject({
+						id: project.id,
 						project_name,
 						project_path: file_path,
 						exists: true
 					});
 					await invalidate('app:workspace')
 						.then(() =>
-							goto(
-								`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-							)
+							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
 						)
 						.finally(() =>
 							toast.success(`${project_state.current_project_name} created successfully`)
