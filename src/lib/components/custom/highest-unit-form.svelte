@@ -14,7 +14,7 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, doesFileExists, BASE_DIR } from '@/helpers/file';
+	import { generateUniqueFileName, getFilePath, doesFileExists, BASE_DIR } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
@@ -74,9 +74,11 @@
 					);
 					closeDialog();
 					// TODO: Set the project path
+					const file_path = await getFilePath(file_name, BASE_DIR);
+					console.log(`File: ${file_path}`);
 					project_state.addRecentProject({
 						project_name: created_proj.project.project_name,
-						project_path: '',
+						project_path: file_path,
 						exists: false
 					});
 					await invalidate('app:workspace')
