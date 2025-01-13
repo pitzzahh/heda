@@ -148,12 +148,18 @@
 									{#each project_state.recent_projects as project (project.project_name)}
 										<Button
 											variant="outline"
-											class="w-full"
+											class="flex w-full items-center justify-start px-4 py-6"
 											disabled={!project.exists}
+											size="lg"
 											onclick={() => handleLoadFile(project.project_path)}
 										>
-											<MonitorCog />
-											{project?.project_name ?? 'unknown'}
+											<MonitorCog class="mr-2" />
+											<div class="flex flex-col items-start">
+												{project?.project_name ?? 'unknown'}
+												<span class="text-sm text-muted-foreground"
+													>Saved Path: {project.project_path ?? 'unknown path'}</span
+												>
+											</div>
 										</Button>
 									{/each}
 								{:else}
