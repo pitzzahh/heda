@@ -51,10 +51,6 @@
 			toast.success('Project loaded successfully', {
 				description: 'The file has been loaded successfully.'
 			});
-			project_state.addRecentProject({
-				project_name: loaded_data.project.project_name,
-				project_path: file
-			});
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
 			console.error(err);
