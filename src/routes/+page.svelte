@@ -2,11 +2,10 @@
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
-	import { Skeleton } from '@/components/ui/skeleton/index.js';
+	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
-	import { MonitorCog } from '@/assets/icons';
-	import { getAllProjects } from '@/db/queries';
+	import { MonitorCog, CircleAlert } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
 	import { readEncryptedFile, keyToString, generateKey } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
@@ -14,10 +13,13 @@
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
+	import { getProjectState } from '@/hooks/project-state.svelte.js';
 
 	let { data } = $props();
 
 	const { app_pass_phrase, file_encryption_salt } = $derived(data);
+
+	const project_state = getProjectState();
 
 	async function handleLoadFile() {
 		try {
@@ -48,6 +50,10 @@
 			await loadCurrentProject(loaded_data);
 			toast.success('Project loaded successfully', {
 				description: 'The file has been loaded successfully.'
+			});
+			project_state.addRecentProject({
+				project_name: loaded_data.project.project_name,
+				project_path: 
 			});
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
@@ -134,22 +140,19 @@
 							</Button>
 							<Separator class="h-1" />
 							<ScrollArea class="flex h-72 w-full flex-col gap-1">
-								{#await getAllProjects(['id', 'project_name'])}
-									{#each { length: 5 }}
-										<Skeleton class={buttonVariants({ variant: 'ghost', className: 'w-full' })} />
+								{#if project_state.recent_projects}
+									{#each project_state.recent_projects as project (project.project_name)}
+										<Button variant="outline" class="w-full">
+											<MonitorCog />
+											{project?.project_name ?? 'unknown'}
+										</Button>
 									{/each}
-								{:then _projects}
-									{#if _projects}
-										{#each _projects as project (project.id)}
-											<Button variant="outline" class="w-full">
-												<MonitorCog />
-												{project?.project_name ?? 'unknown'}
-											</Button>
-										{/each}
-									{/if}
-								{:catch err}
-									Something went wrong: {err}
-								{/await}
+								{:else}
+									<Alert.Root variant="default" class="flex w-full items-center">
+										<CircleAlert class="transorm size-4 -translate-y-[0.1rem]" />
+										<Alert.Description>No recent projects found</Alert.Description>
+									</Alert.Root>
+								{/if}
 							</ScrollArea>
 						</Dialog.Content>
 					</Dialog.Root>
