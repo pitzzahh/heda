@@ -21,23 +21,26 @@
 
 	const project_state = getProjectState();
 
-	async function handleLoadFile() {
+	async function handleLoadFile(path?: string | null) {
 		try {
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
-			const file = await open({
-				multiple: false,
-				directory: false,
-				filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
-			});
 
-			if (!file) {
-				return toast.warning('No file selected', {
-					description: 'Cannot proceed, no file is selected.'
+			if (!path) {
+				path = await open({
+					multiple: false,
+					directory: false,
+					filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
 				});
+
+				if (!path) {
+					return toast.warning('No file selected', {
+						description: 'Cannot proceed, no file is selected.'
+					});
+				}
 			}
 
 			const loaded_data = await readEncryptedFile<FileExport>(
-				file,
+				path,
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
 
@@ -53,7 +56,7 @@
 			});
 			project_state.setCurrentProject({
 				project_name: loaded_data.project.project_name,
-				project_path: file,
+				project_path: path,
 				exists: true
 			});
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
@@ -135,7 +138,7 @@
 									Choose from the list of recent projects to load or load a file from your computer.
 								</Dialog.Description>
 							</Dialog.Header>
-							<Button onclick={handleLoadFile}>
+							<Button onclick={() => handleLoadFile()}>
 								<MonitorCog />
 								Load File
 							</Button>
@@ -143,7 +146,12 @@
 							<ScrollArea class="flex h-72 w-full flex-col gap-1">
 								{#if project_state.recent_projects}
 									{#each project_state.recent_projects as project (project.project_name)}
-										<Button variant="outline" class="w-full">
+										<Button
+											variant="outline"
+											class="w-full"
+											disabled={!project.exists}
+											onclick={() => handleLoadFile(project.project_path)}
+										>
 											<MonitorCog />
 											{project?.project_name ?? 'unknown'}
 										</Button>
