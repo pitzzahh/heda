@@ -51,8 +51,8 @@ export class ProjectState {
   }
 
 }
-export function setProjectState() {
-  return setState(new ProjectState(), PROJECT_STATE_CTX);
+export function setProjectState(recent_project?: RecentProject) {
+  return setState(new ProjectState(recent_project), PROJECT_STATE_CTX);
 }
 
 export function getProjectState() {
