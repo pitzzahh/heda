@@ -6,7 +6,7 @@ import { exists, FileHandle } from '@tauri-apps/plugin-fs';
 type RecentProject = {
   project_name?: string;
   project_path: string;
-  exists?: boolean;
+  exists: boolean;
 }
 
 type ProjectStateType = {
@@ -20,6 +20,7 @@ export class ProjectState {
   current_file = $state<FileHandle>();
   current_project_name = $state<string | undefined>(undefined);
   current_project_path = $state('');
+  exists = $state(false)
 
   constructor(recent_project?: RecentProject) {
     const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
@@ -31,12 +32,13 @@ export class ProjectState {
   }
 
   addRecentProject(recent_project: RecentProject, set_as_current: boolean = true) {
-    const { project_name, project_path } = recent_project;
-    this.persisted_state.current.recent_projects?.push({ project_name, project_path });
+    const { project_name, project_path, exists } = recent_project;
+    this.persisted_state.current.recent_projects?.push(recent_project);
     this.recent_projects = this.persisted_state.current.recent_projects;
     if (set_as_current) {
       this.current_project_name = project_name;
       this.current_project_path = project_path;
+      this.exists = exists;
     }
   }
 
