@@ -27,7 +27,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
   // Use the existing getNodeDepth2 function to calculate the depth
   const actualDepth = await getNodeDepth(node_id);
-  const panel_name = current_node.panel_data?.name ?? 'Unknown Panel';
+  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
   const panel_level = getOrdinalSuffix(actualDepth);
 
   const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;

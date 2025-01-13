@@ -12,10 +12,6 @@ export async function checkForUpdates() {
 }
 
 export async function installUpdate(update: Update, _relaunch: boolean, _progress: (progress: number) => void) {
-  console.log(
-    `found update ${update.version} from ${update.date} with notes ${update.body}`
-  );
-  toast.info(`found update ${update.version} from ${update.date} with notes ${update.body}`);
   let downloaded = 0;
   let contentLength = 0;
   // alternatively we could also call update.download() and update.install() separately
@@ -23,7 +19,6 @@ export async function installUpdate(update: Update, _relaunch: boolean, _progres
     switch (event.event) {
       case 'Started':
         contentLength = event.data.contentLength ?? 0;
-        toast.info(`started downloading ${contentLength} bytes`);
         break;
       case 'Progress':
         downloaded += event.data.chunkLength;
@@ -33,8 +28,10 @@ export async function installUpdate(update: Update, _relaunch: boolean, _progres
         break;
     }
   });
-  toast.info('Update installed successfully', {
-    description: 'The application will now restart to apply the changes.',
-  });
-  _relaunch && await relaunch();
+  if (_relaunch) {
+    toast.info('Update installed successfully', {
+      description: 'The application will now restart to apply the changes.',
+    });
+    await relaunch();
+  }
 }

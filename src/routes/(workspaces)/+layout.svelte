@@ -19,7 +19,14 @@
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 	import { rename } from '@tauri-apps/plugin-fs';
-	import { doesFileExists, generateUniqueFileName, BASE_DIR } from '@/helpers/file/index.js';
+	import {
+		doesFileExists,
+		EXTENSION,
+		getFileNameWithoutExtension,
+		generateUniqueFileName,
+		BASE_DIR
+	} from '@/helpers/file/index.js';
+	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
 
 	let { data, children } = $props();
 
@@ -28,16 +35,15 @@
 		is_load_file,
 		generic_phase_panel_form,
 		phase_main_load_form,
-		project_title,
 		app_pass_phrase,
 		file_encryption_salt,
 		can_create_project
-	} = data;
+	} = $derived(data);
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let component_state = $state({
 		is_editing: false,
-		project_title
+		project_title: ''
 	});
 
 	function toggleEdit() {
@@ -50,15 +56,22 @@
 	async function saveProjectTitle() {
 		if (!data?.project || !component_state.project_title) return;
 		try {
-			const old_file = `${data.project.project_name}.heda`;
-			const new_file = `${component_state.project_title}.heda`;
-			if (await doesFileExists(new_file, {})) {
-				component_state.project_title = await generateUniqueFileName(new_file, '.', BASE_DIR);
+			const project_name = data.project_title;
+			let new_project_name = component_state.project_title;
+			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`; // Untitled (2)
+			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
+			if (
+				project_name !== new_project_name &&
+				(await doesFileExists(new_file, { baseDir: BASE_DIR }))
+			) {
+				new_project_name = await generateUniqueFileName(new_project_name, BASE_DIR);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
+				console.log({ old_file, _new_file: new_project_name });
 			}
-			await rename(old_file, new_file, {
+			component_state.project_title = getFileNameWithoutExtension(new_project_name);
+			await rename(old_file, `${component_state.project_title}.${EXTENSION}`, {
 				oldPathBaseDir: BASE_DIR,
 				newPathBaseDir: BASE_DIR
 			});
@@ -66,12 +79,37 @@
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
-		} catch (error) {
-			return toast.error('Failed to update project title', {
-				description: 'An error occurred while updating the project title, please try again.'
-			});
+		} catch (err) {
+			console.error(err);
+			return toast.error(
+				`Failed to update project title: ${(err as any)?.message ?? 'something went wrong'}`,
+				{
+					description: 'This is a system error and should not be here, the error has been logged.'
+				}
+			);
 		}
 	}
+
+	function forwardConsole(
+		fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',
+		logger: (message: string) => Promise<void>
+	) {
+		const original = console[fnName];
+		console[fnName] = (message) => {
+			original(message);
+			logger(message);
+		};
+	}
+
+	forwardConsole('log', trace);
+	forwardConsole('debug', debug);
+	forwardConsole('info', info);
+	forwardConsole('warn', warn);
+	forwardConsole('error', error);
+
+	$effect(() => {
+		component_state.project_title = getFileNameWithoutExtension(data.project_title);
+	});
 
 	$effect(() => {
 		if (is_load_file) {

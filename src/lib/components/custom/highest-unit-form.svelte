@@ -33,7 +33,7 @@
 			// toast the values
 			if (form.valid) {
 				try {
-					if(!validateEnv(app_pass_phrase, file_encryption_salt)) return;
+					if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
 					const created_proj = (await createProject(form.data)) as {
 						project: Project;
@@ -45,7 +45,8 @@
 
 					// if appended_name is not same, we update the project title
 					if (await doesFileExists(file_name, { baseDir: BASE_DIR })) {
-						file_name = await generateUniqueFileName(project_name, BASE_DIR_PATH, BASE_DIR);
+						file_name = await generateUniqueFileName(project_name, BASE_DIR);
+						console.log('new_file_name', file_name);
 						await updateProjectTitle(created_proj.project.id, file_name);
 						toast.info('Project title already exists, we will rename it for you.', {
 							description: 'The project title is appended with a number to avoid conflicts.'
@@ -67,7 +68,13 @@
 						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
 					).finally(() => toast.success('Project created successfully'));
 				} catch (err) {
-					console.error(err);
+					return toast.error(
+						`Failed to create project: ${(err as any)?.message ?? 'something went wrong'}`,
+						{
+							description:
+								'This is a system error and should not be here, the error has been logged.'
+						}
+					);
 				}
 			} else {
 				toast.error('Form is invalid');
