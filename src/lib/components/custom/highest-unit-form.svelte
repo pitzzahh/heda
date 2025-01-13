@@ -50,14 +50,12 @@
 					// if appended_name is not same, we update the project title
 					if (await doesFileExists(file_name, { baseDir: BASE_DIR })) {
 						file_name = await generateUniqueFileName(project_name, BASE_DIR);
-						console.log('new_file_name', file_name);
 						await updateProjectTitle(created_proj.project.id, file_name);
 						toast.info('Project title already exists, we will rename it for you.', {
 							description: 'The project title is appended with a number to avoid conflicts.'
 						});
 					}
 
-					console.log('Setting current file');
 					await project_state.setCurrentFile(
 						await openFile(file_name, {
 							read: true,
@@ -66,7 +64,6 @@
 							baseDir: BASE_DIR
 						})
 					);
-					console.log('Writing encrypted file');
 					await writeEncryptedFile(
 						{
 							project: created_proj.project,
@@ -75,17 +72,20 @@
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 						project_state
 					);
-					await invalidate('app:workspace');
 					closeDialog();
-
+					// TODO: Set the project path
 					project_state.addRecentProject({
 						project_name: created_proj.project.project_name,
 						project_path: '',
-						exists: true
+						exists: false
 					});
-					goto(
-						`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
-					).finally(() => toast.success('Project created successfully'));
+					await invalidate('app:workspace')
+						.then(() =>
+							goto(
+								`/workspace/load-schedule/${form.data.distribution_unit}_${created_proj.root_node_id}`
+							)
+						)
+						.finally(() => toast.success('Project created successfully'));
 				} catch (err) {
 					return toast.error(
 						`Failed to create project: ${(err as any)?.message ?? 'something went wrong'}`,
