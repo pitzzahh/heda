@@ -63,30 +63,22 @@
 
 					const project_name = await getFileName(file_path);
 
-					if (!project_name) {
-						toast.warning('Project title not fetched from file name.', {
-							description: 'The project title is appended with a number to avoid conflicts.'
-						});
-					}
+					console.log(`Project name: ${project_name}`);
 
 					const created_proj = (await createProject(project_name ?? 'Untitled', form.data)) as {
 						project: Project;
 						root_node_id: string;
 					};
 
-					let file_name = `${project_name}.${EXTENSION}`;
-
-					// if appended_name is not same, we update the project title
-					if (await doesFileExists(file_path)) {
-						file_name = await generateUniqueFileName(project_name ?? 'Untitled', BASE_DIR);
-						await updateProjectTitle(created_proj.project.id, file_name);
-						toast.info('Project title already exists, we will rename it for you.', {
-							description: 'The project title is appended with a number to avoid conflicts.'
+					if (!project_name) {
+						toast.warning('Project title not fetched from file name.', {
+							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
+						await updateProjectTitle(created_proj.project.id, 'Untitled');
 					}
 
 					await project_state.setCurrentFile(
-						await openFile(file_name, {
+						await openFile(`${project_name}.${EXTENSION}`, {
 							read: true,
 							write: true,
 							createNew: true,
