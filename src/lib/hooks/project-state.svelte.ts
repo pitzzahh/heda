@@ -1,14 +1,14 @@
 import { PersistedState } from 'runed';
 import { setState, getState } from '@/state/index.svelte';
 import { PROJECT_STATE_CTX } from '@/state/constants';
-import { exists, BaseDirectory } from '@tauri-apps/plugin-fs';
-
+import { exists } from '@tauri-apps/plugin-fs';
 
 type RecentProject = {
-  project_name: string;
+  project_name?: string;
   project_path: string;
   exists?: boolean;
 }
+
 type ProjectStateType = {
   recent_projects?: RecentProject[]
 }
@@ -17,7 +17,7 @@ export class ProjectState {
   private persisted_state: PersistedState<ProjectStateType>;
 
   recent_projects = $state<RecentProject[]>()
-  current_project_name = $state('Untitled');
+  current_project_name = $state<string | undefined>(undefined);
   current_project_path = $state('');
 
   constructor(recent_project?: RecentProject) {
