@@ -20,7 +20,7 @@
       "identifier": "fs:write-files",
       "allow": [
         {
-          "path": "$DOCUMENT/**/*"
+          "path": "$HOME/**/*"
         }
       ]
     },
@@ -28,7 +28,7 @@
       "identifier": "fs:read-files",
       "allow": [
         {
-          "path": "$DOCUMENT/**/*"
+          "path": "$HOME/**/*"
         }
       ]
     },
@@ -36,7 +36,7 @@
       "identifier": "fs:read-dirs",
       "allow": [
         {
-          "path": "$DOCUMENT/**/*"
+          "path": "$HOME/**/*"
         }
       ]
     },
@@ -44,7 +44,7 @@
       "identifier": "fs:allow-rename",
       "allow": [
         {
-          "path": "$DOCUMENT/**/*"
+          "path": "$HOME/**/*"
         }
       ]
     }
