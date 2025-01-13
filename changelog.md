@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.51] - 2025-01-13
+
+### Add
+
+- Recent projects list.
+- Load project from recent projects list.
+- Save location selector on project creation.
+
+
+### Fix
+
+- Save button only enables when there are changes in the project. 
+- Fix github actions build.
+
 ## [1.5.50] - 2025-01-13
 
 ### Test
