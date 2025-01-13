@@ -63,13 +63,11 @@ jobs:
       - name: Install frontend
         run: bun install
 
-      - name: Build frontend
+      - name: Create env
         uses: SpicyPizza/create-envfile@v2.0
         with:
           envkey_APP_PASS_PHRASE: ${{ secrets.APP_PASS_PHRASE }}
           envkey_FILE_ENCRYPTION_SALT: ${{ secrets.FILE_ENCRYPTION_SALT }}
-          directory: $GITHUB_WORKSPACE
-          fail_on_empty: true
 
       - name: Read created env file
         run: cat $GITHUB_WORKSPACE/.env
