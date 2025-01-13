@@ -14,9 +14,10 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { generateUniqueFileName, doesFileExists, BASE_DIR_PATH, BASE_DIR } from '@/helpers/file';
+	import { generateUniqueFileName, doesFileExists, BASE_DIR } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
+	import { open as openFile } from '@tauri-apps/plugin-fs';
 
 	interface Props {
 		highest_unit_form: T;
@@ -56,14 +57,22 @@
 						});
 					}
 
-					console.log({ file_name });
-					const created_file = await writeEncryptedFile(
-						file_name,
+					console.log('Setting current file');
+					const opened_file = await openFile(file_name, {
+						read: true,
+						write: true,
+						createNew: true,
+						baseDir: BASE_DIR
+					});
+					await project_state.setCurrentFile(opened_file);
+					console.log('Writing encrypted file');
+					await writeEncryptedFile(
 						{
 							project: created_proj.project,
 							nodes: await getAllChildNodes(created_proj.root_node_id, true)
 						},
-						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
+						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
+						project_state
 					);
 					await invalidate('app:workspace');
 					closeDialog();
