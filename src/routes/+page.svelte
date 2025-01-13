@@ -14,6 +14,7 @@
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { open as openFile } from '@tauri-apps/plugin-fs';
 
 	let { data } = $props();
 
@@ -59,6 +60,12 @@
 				project_path: path,
 				exists: true
 			});
+			await project_state.setCurrentFile(
+				await openFile(path, {
+					read: true,
+					write: true
+				})
+			);
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
 			console.error(err);
