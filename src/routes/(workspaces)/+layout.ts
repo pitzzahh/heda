@@ -4,7 +4,6 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { generic_phase_panel_schema } from '@/schema/panel';
 import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 import { generic_phase_main_load_schema } from '@/schema/load';
-import { BASE_DIR, generateUniqueFileName, getFileNameWithoutExtension } from '@/helpers/file';
 import { getEnv } from '@/helpers/security/index.js';
 
 export const load = async ({ depends, url: { searchParams } }) => {
@@ -21,7 +20,7 @@ export const load = async ({ depends, url: { searchParams } }) => {
 		file_encryption_salt,
 		generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
-		project_title: project?.project_name ?? getFileNameWithoutExtension(await generateUniqueFileName(project?.project_name ?? "Untitled", BASE_DIR)),
+		project_title: project?.project_name,
 		can_create_project: app_pass_phrase !== null,
 		project,
 		root_node
