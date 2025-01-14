@@ -53,6 +53,7 @@ export class ProjectState {
   setCurrentProject(current_project: RecentProject) {
     this.current_project_name = current_project.project_name;
     this.current_project_path = current_project.project_path;
+    this.exists = current_project.exists;
   }
 
   updateProject(project_id: string, new_project: Partial<RecentProject>) {
