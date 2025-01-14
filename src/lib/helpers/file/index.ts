@@ -55,10 +55,10 @@ export async function doesFileExists(path: string | URL, options?: ExistsOptions
   }
 }
 
-export async function generateUniqueFileName(baseName: string, baseDir: BaseDirectory): Promise<string> {
+export async function generateUniqueFileName(baseName: string, options?: ExistsOptions): Promise<string> {
   let fileName = `${baseName}.${EXTENSION}`;
   let counter = 1;
-  while (await doesFileExists(fileName, { baseDir })) {
+  while (await doesFileExists(fileName, options)) {
     fileName = `${baseName}-(${counter}).${EXTENSION}`;
     counter++;
   }
