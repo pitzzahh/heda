@@ -63,13 +63,11 @@
 
 		if (!component_state.project_title) {
 			component_state.is_editing = false;
-			component_state.project_title = getFileNameWithoutExtension(data.project_title);
-
 			return;
 		}
 
 		try {
-			const project_name = data.project_title;
+			const project_name = data.project_title ?? 'Untitled';
 			let new_project_name = component_state.project_title;
 			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`; // Untitled (2)
 			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
@@ -121,7 +119,7 @@
 	forwardConsole('error', error);
 
 	$effect(() => {
-		component_state.project_title = getFileNameWithoutExtension(data.project_title);
+		component_state.project_title = data.project_title ?? '';
 	});
 
 	$effect(() => {
