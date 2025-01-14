@@ -100,7 +100,7 @@
 			project_state.updateProject(data.project.id, {
 				project_name: component_state.project_title,
 				project_path: new_file_path
-			});
+			}, true);
 			await updateProjectTitle(data.project.id, component_state.project_title);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
