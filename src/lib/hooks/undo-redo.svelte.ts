@@ -14,19 +14,19 @@ type Action<T extends PhaseLoadSchedule> = {
 	data?: T;
 	batch_data?: BatchData[];
 	action:
-		| 'create_node'
-		| 'update_node'
-		| 'delete_node'
-		| 'copy_node'
-		| 'batch_delete'
-		| 'batch_copy_node'
-		| 'override_at'
-		| 'override_af'
-		| 'override_conduit_size'
-		| 'override_conductor_size'
-		| 'override_egc_size'
-		| 'override_z'
-		| 'override_length';
+	| 'create_node'
+	| 'update_node'
+	| 'delete_node'
+	| 'copy_node'
+	| 'batch_delete'
+	| 'batch_copy_node'
+	| 'override_at'
+	| 'override_af'
+	| 'override_conduit_size'
+	| 'override_conductor_size'
+	| 'override_egc_size'
+	| 'override_z'
+	| 'override_length';
 	children_nodes?: T[];
 };
 export class UndoRedoState {
@@ -35,7 +35,7 @@ export class UndoRedoState {
 
 	has_unsaved_actions = $state(false);
 
-	constructor() {}
+	constructor() { }
 
 	resetUnsavedActions() {
 		this.has_unsaved_actions = false;
@@ -148,7 +148,6 @@ export class UndoRedoState {
 	}
 
 	async undo() {
-		console.log('UNDO STACK ', this.undo_stack);
 		const last_action = this.undo_stack.pop();
 		this.setHasUnsavedActions();
 

@@ -20,20 +20,13 @@ export const load = async ({ depends, params }) => {
 	const node_id = params.id.split('_').at(-1) as string;
 	const project = await getCurrentProject();
 	const root_node = await getRootNode();
-
 	if (!project || !node_id || !root_node) {
 		goto('/workspace');
 	}
-
 	const current_node = await getNodeById(node_id);
 	if (!current_node) goto('/workspace');
-
 	const nodes = await getComputedLoads(node_id);
-	console.log(nodes);
-
-	const voltage_drops = await getComputedVoltageDrops() 
-
-	console.log('curr node ', current_node);
+	const voltage_drops = await getComputedVoltageDrops()
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		project,

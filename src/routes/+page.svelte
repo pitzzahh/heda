@@ -45,7 +45,6 @@
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
 
-			console.log(loaded_data);
 			if (!loaded_data) {
 				return toast.error('Failed to load file', {
 					description: 'An error occurred while loading the file.'
@@ -79,7 +78,7 @@
 			);
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
 		} catch (err) {
-			console.error(err);
+			console.error(`Failed to load file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
 				description: 'An error occurred while loading the file.'
 			});

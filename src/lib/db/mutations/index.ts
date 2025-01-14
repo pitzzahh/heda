@@ -32,7 +32,6 @@ export async function createProject(project_name: string, highest_unit_form: Nod
 			root_node_id: created_root_node._data.id as string
 		};
 	} catch (error) {
-		console.error('Error creating a project:', error);
 	}
 }
 
@@ -55,7 +54,7 @@ export async function updateProjectSettings(
 			}
 		});
 	} catch (error) {
-		console.error('Error in updating project settings:', error);
+		console.error(`Error in updating project settings: ${JSON.stringify(error)}`);
 	}
 }
 
@@ -75,8 +74,8 @@ export async function updateProjectTitle(id: string, project_name: string) {
 				project_name
 			}
 		});
-	} catch (error) {
-		console.error('Error updating project title:', error);
+	} catch (err) {
+		console.error(`Error updating project title: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -122,8 +121,8 @@ export async function addNode({
 		});
 
 		return created_node._data;
-	} catch (error) {
-		console.error('Error adding a node:', error);
+	} catch (err) {
+		console.error(`Error updating project title: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -233,8 +232,8 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 		}
 
 		return created_node._data;
-	} catch (error) {
-		console.error('Error copying and adding a node:', error);
+	} catch (err) {
+		console.error(`Error copying and adding a node: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -328,8 +327,8 @@ export async function updateNode({
 		}
 
 		return (await update_query)?._data;
-	} catch (error) {
-		console.error('Error updating node:', error);
+	} catch (err) {
+		console.error(`Error updating node: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -364,12 +363,6 @@ export async function removeNode(
 		}
 
 		await query.remove();
-
-		console.log(`Node ${id} removed successfully`);
-		console.log({
-			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
-			children_nodes
-		});
 
 		return {
 			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
@@ -452,8 +445,8 @@ export async function overrideField({
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error overriding data:', error);
+	} catch (err) {
+		console.error(`Error overriding data: ${JSON.stringify(err)}`);
 	}
 }
 

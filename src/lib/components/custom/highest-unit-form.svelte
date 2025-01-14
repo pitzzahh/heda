@@ -63,8 +63,6 @@
 
 					const project_name = await getFileName(file_path);
 
-					console.log(`Project name: ${project_name}`);
-
 					const { project, root_node_id } = (await createProject(
 						project_name ?? 'Untitled',
 						form.data
@@ -98,7 +96,6 @@
 					);
 					closeDialog();
 
-					console.log(`File: ${file_path}`);
 					project_state.addRecentProject({
 						id: project.id,
 						project_name,

@@ -118,7 +118,6 @@
 	// Handle drops between containers
 	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, sourceContainer, targetContainer } = state;
-		console.log({ draggedItem, sourceContainer, targetContainer, _node });
 		if (!targetContainer || _node.id === draggedItem.parent_id) {
 			toast.warning(
 				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
@@ -311,7 +310,6 @@
 								position: 'bottom-center'
 							});
 						}
-						console.log('Exporting to excel', node);
 						exportToExcel(
 							node.id,
 							highest_unit,

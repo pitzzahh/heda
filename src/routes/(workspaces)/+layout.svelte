@@ -80,7 +80,6 @@
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
-				console.log({ old_file, _new_file: new_project_name });
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file, `${component_state.project_title}.${EXTENSION}`, {
@@ -92,7 +91,7 @@
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
 		} catch (err) {
-			console.error(err);
+			console.error(`Failed to update project title: ${JSON.stringify(err)}`);
 			return toast.error(
 				`Failed to update project title: ${(err as any)?.message ?? 'something went wrong'}`,
 				{

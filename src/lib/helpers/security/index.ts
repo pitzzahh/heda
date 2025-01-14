@@ -114,10 +114,8 @@ export async function writeEncryptedFile<T>(data: T, secret_key: string, project
   if (!project_state.current_file) {
     throw new Error("No file to write to");
   }
-  console.log(`Writing to file: ${project_state.current_file}`);
   await project_state.current_file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
   const file_stat = await project_state.current_file.stat()
-  console.log(`File written successfully!: ${file_stat}`);
 }
 
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
