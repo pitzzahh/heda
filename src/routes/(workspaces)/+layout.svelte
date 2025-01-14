@@ -24,6 +24,7 @@
 		doesFileExists,
 		EXTENSION,
 		getFileNameWithoutExtension,
+		getFilePath,
 		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
@@ -72,6 +73,9 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
+
+			const current_file_path = getFilePath(current_project.project_path);
+			console.log(`current_file_path: ${current_file_path}`);
 
 			const project_name = data.project_title ?? 'Untitled';
 			let new_project_name = component_state.project_title;
