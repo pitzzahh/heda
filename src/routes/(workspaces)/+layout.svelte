@@ -28,6 +28,7 @@
 		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { join } from '@tauri-apps/api/path';
 
 	let { data, children } = $props();
 
@@ -74,14 +75,19 @@
 				});
 			}
 
-			const current_file_path = getFilePath(current_project.project_path);
-			console.log(`current_file_path: ${current_file_path}`);
-
 			const project_name = data.project_title ?? 'Untitled';
 			let new_project_name = component_state.project_title;
-			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`; // Untitled (2)
+
+			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`;
 			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
-			if (project_name !== new_project_name && (await doesFileExists(new_file))) {
+
+			const current_file_path = current_project.project_path.replace(old_file, '');
+			console.log(`current_file_path: ${current_file_path}`);
+
+			const old_file_path = `${await join(current_file_path, old_file)}`;
+			const new_file_path = `${await join(current_file_path, new_file)}`;
+
+			if (project_name !== new_project_name && (await doesFileExists(new_file_path))) {
 				new_project_name = await generateUniqueFileName(new_project_name);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
