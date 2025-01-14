@@ -15,7 +15,7 @@
 	import * as Form from '@/components/ui/form/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn, getKeyByValue } from '@/utils';
+	import { cn } from '@/utils';
 	import { ChevronsUpDown, CircleAlert, Check } from '@/assets/icons';
 	import {
 		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
@@ -30,7 +30,7 @@
 	import { page } from '$app/state';
 	import { addNode, updateNode } from '@/db/mutations';
 	import { checkNodeExists } from '@/db/queries';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
@@ -38,7 +38,7 @@
 	import { formatFraction } from '@/utils/format';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { Collapsibles, getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
+	import { getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
