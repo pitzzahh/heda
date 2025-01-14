@@ -63,7 +63,7 @@ export class ProjectState {
     await this.current_file?.close();
   }
 
-  private async validateRecentProjects() {
+  async validateRecentProjects() {
     this.persisted_state.current.recent_projects = await Promise.all(
       this.persisted_state.current.recent_projects?.map(async (project) => {
         project.exists = await exists(project.project_path);
