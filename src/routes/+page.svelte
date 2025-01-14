@@ -56,20 +56,18 @@
 			});
 			const { id, project_name } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
-			if (!projectExists) {
-				project_state.addRecentProject({
-					id,
-					project_name,
-					project_path: path,
-					exists: true
-				});
-			}
-			project_state.setCurrentProject({
-				id: loaded_data.project.id,
-				project_name: loaded_data.project.project_name,
+
+			const recent_project_data = {
+				id,
+				project_name,
 				project_path: path,
 				exists: true
-			});
+			};
+
+			if (!projectExists) {
+				project_state.addRecentProject(recent_project_data);
+			}
+			project_state.setCurrentProject(recent_project_data);
 			await project_state.setCurrentFile(
 				await openFile(path, {
 					read: true,
