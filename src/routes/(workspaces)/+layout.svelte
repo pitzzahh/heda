@@ -24,8 +24,7 @@
 		doesFileExists,
 		EXTENSION,
 		getFileNameWithoutExtension,
-		generateUniqueFileName,
-		BASE_DIR
+		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 
@@ -65,24 +64,27 @@
 		}
 
 		try {
+			const current_project = project_state.geCurrentProject();
+
+			if (!current_project) {
+				console.error(`No project found: ${current_project}`);
+				return toast.warning('No project found from project state', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
 			const project_name = data.project_title ?? 'Untitled';
 			let new_project_name = component_state.project_title;
 			const old_file = `${getFileNameWithoutExtension(project_name)}.${EXTENSION}`; // Untitled (2)
 			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
-			if (
-				project_name !== new_project_name &&
-				(await doesFileExists(new_file, { baseDir: BASE_DIR }))
-			) {
-				new_project_name = await generateUniqueFileName(new_project_name, BASE_DIR);
+			if (project_name !== new_project_name && (await doesFileExists(new_file))) {
+				new_project_name = await generateUniqueFileName(new_project_name);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
-			await rename(old_file, `${component_state.project_title}.${EXTENSION}`, {
-				oldPathBaseDir: BASE_DIR,
-				newPathBaseDir: BASE_DIR
-			});
+			await rename(old_file, `${component_state.project_title}.${EXTENSION}`);
 			project_state.updateProject(data.project.id, {
 				project_name: component_state.project_title
 			});
