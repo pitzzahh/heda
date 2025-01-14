@@ -23,6 +23,15 @@ export function getFileNameWithoutExtension(path: string, extension: string = EX
   return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
 }
 
+/**
+ * A helper function to get the path of a file.
+ * @param path the absolute file path.
+ * @returns the path of the file.
+ */
+export function getFilePath(path: string): string {
+  return path.split('/').slice(0, -1).join('/');
+}
+
 /* Parses a filename into its components: base name, number(if any), and extension
  * @example
  * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
