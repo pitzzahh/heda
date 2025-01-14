@@ -27,8 +27,6 @@
 		generateUniqueFileName,
 		BASE_DIR
 	} from '@/helpers/file/index.js';
-	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
-	import { getSettingsState } from '@/hooks/settings-state.svelte.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 
 	let { data, children } = $props();
@@ -101,25 +99,8 @@
 		}
 	}
 
-	function forwardConsole(
-		fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',
-		logger: (message: string) => Promise<void>
-	) {
-		const original = console[fnName];
-		console[fnName] = (message) => {
-			original(message);
-			logger(message);
-		};
-	}
-
-	forwardConsole('log', trace);
-	forwardConsole('debug', debug);
-	forwardConsole('info', info);
-	forwardConsole('warn', warn);
-	forwardConsole('error', error);
-
 	$effect(() => {
-		component_state.project_title = data.project_title ?? '';
+		component_state.project_title = data.project_title ?? 'Untitled';
 	});
 
 	$effect(() => {
