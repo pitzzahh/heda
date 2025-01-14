@@ -100,11 +100,8 @@
 	}
 
 	$effect(() => {
-		component_state.project_title = data.project_title ?? 'Untitled';
-	});
-
-	$effect(() => {
 		if (is_load_file) {
+			component_state.project_title = data.project_title ?? 'Untitled';
 			toast.loading('Loading project data', {
 				description: 'Please wait while we load your project data.'
 			});

@@ -57,13 +57,15 @@
 
 					const project_name = await getFileName(file_path);
 
-					const { project, root_node_id } = (await createProject(
-						project_name ?? 'Untitled',
-						form.data
-					)) as {
-						project: Project;
-						root_node_id: string;
-					};
+					const created_project = await createProject(project_name ?? 'Untitled', form.data);
+
+					if (!created_project) {
+						return toast.warning('Failed to create project', {
+							description: 'The project was not created, please try again.'
+						});
+					}
+
+					const { project, root_node_id } = created_project;
 
 					if (!project_name) {
 						toast.warning('Project title not fetched from file name.', {
@@ -105,7 +107,7 @@
 						);
 				} catch (err) {
 					return toast.error(
-						`Failed to create project: ${(err as any)?.message ?? 'something went wrong'}`,
+						`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 						{
 							description:
 								'This is a system error and should not be here, the error has been logged.'

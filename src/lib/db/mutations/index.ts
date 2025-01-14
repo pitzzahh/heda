@@ -31,7 +31,8 @@ export async function createProject(project_name: string, highest_unit_form: Nod
 			project: project as Project,
 			root_node_id: created_root_node._data.id as string
 		};
-	} catch (error) {
+	} catch (err) {
+		console.error(`Error in creating project: ${JSON.stringify(err)}`);
 	}
 }
 
