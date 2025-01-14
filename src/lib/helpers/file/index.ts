@@ -25,11 +25,13 @@ export function getFileNameWithoutExtension(path: string, extension: string = EX
 
 /**
  * A helper function to get the path of a file.
- * @param path the absolute file path.
+ * @param filePath the absolute file path.
  * @returns the path of the file.
  */
-export function getFilePath(path: string): string {
-  return path.split('/').slice(0, -1).join('/');
+export function getFilePath(filePath: string): string {
+  const parts = filePath.split('/');
+  parts.pop();
+  return parts.join('/');
 }
 
 /* Parses a filename into its components: base name, number(if any), and extension
