@@ -10,13 +10,8 @@
     "log:default",
     "process:default",
     "core:window:allow-start-dragging",
-    "core:window:allow-set-fullscreen",
     "updater:default",
     "dialog:default",
-    "dialog:allow-ask",
-    "dialog:allow-message",
-    "updater:allow-check",
-    "updater:allow-download-and-install",
     {
       "identifier": "fs:write-files",
       "allow": [
