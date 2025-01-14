@@ -321,10 +321,6 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
-				<Form.Description>
-					This is the ambient temp that will determine the ambient temp of the panel wire to the
-					main.
-				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 
