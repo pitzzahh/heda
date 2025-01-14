@@ -57,6 +57,7 @@ export class ProjectState {
 
   async setCurrentFile(file: FileHandle) {
     this.current_file = file;
+    return this.current_file;
   }
 
   async closeCurrentFile() {
