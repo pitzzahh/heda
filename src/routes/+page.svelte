@@ -57,13 +57,13 @@
 			});
 			const { id, project_name } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
-			if(!projectExists) {
+			if (!projectExists) {
 				project_state.addRecentProject({
-						id,
-						project_name,
-						project_path: path,
-						exists: true
-					});
+					id,
+					project_name,
+					project_path: path,
+					exists: true
+				});
 			}
 			project_state.setCurrentProject({
 				id: loaded_data.project.id,
@@ -85,6 +85,10 @@
 			});
 		}
 	}
+
+	$effect(() => {
+		project_state.validateRecentProjects();
+	});
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -174,7 +178,7 @@
 											<MonitorCog class="mr-2" />
 											<div class="flex flex-col items-start">
 												{project?.project_name ?? 'unknown'}
-												<span class="text-sm text-muted-foreground"
+												<span class="text-xs text-muted-foreground"
 													>Saved Path: {project.project_path ?? 'unknown path'}</span
 												>
 											</div>
