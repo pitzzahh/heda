@@ -58,8 +58,14 @@ export class ProjectState {
     this.exists = current_project.exists;
   }
 
-  updateProject(project_id: string, new_project: Partial<RecentProject>) {
+  updateProject(project_id: string, new_project: Partial<RecentProject>, update_current: boolean = false) {
     const project = this.persisted_state.current.recent_projects?.find(project => project.id === project_id);
+    if (update_current) {
+      this.setCurrentProject({
+        id: project_id,
+        ...new_project
+      } as RecentProject);
+    }
     if (project) {
       this.current_project_name = new_project.project_name;
       if (new_project.project_path) this.current_project_path = new_project.project_path;
