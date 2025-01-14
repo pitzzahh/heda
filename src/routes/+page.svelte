@@ -15,15 +15,15 @@
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
-
-	let { data } = $props();
-
-	const { app_pass_phrase, file_encryption_salt } = $derived(data);
+	import { getEnv } from '@/helpers/security/index.js';
 
 	const project_state = getProjectState();
 
 	async function handleLoadFile(path?: string | null) {
 		try {
+			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
+
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
 			if (!path) {
