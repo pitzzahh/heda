@@ -69,8 +69,13 @@ jobs:
           envkey_APP_PASS_PHRASE: ${{ secrets.APP_PASS_PHRASE }}
           envkey_FILE_ENCRYPTION_SALT: ${{ secrets.FILE_ENCRYPTION_SALT }}
 
-      - name: Read created env file
+      - name: Read created env file (Linux/Mac)
+        if: matrix.platform != 'windows-latest'
         run: cat $GITHUB_WORKSPACE/.env
+
+      - name: Read created env file (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: type $env:GITHUB_WORKSPACE\.env
 
       # - name: Create env on Mac or Linux
       #   if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
