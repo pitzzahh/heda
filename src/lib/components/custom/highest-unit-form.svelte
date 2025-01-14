@@ -92,12 +92,15 @@
 					);
 					closeDialog();
 
-					project_state.addRecentProject({
-						id: project.id,
-						project_name,
-						project_path: file_path,
-						exists: true
-					});
+					project_state.addRecentProject(
+						{
+							id: project.id,
+							project_name,
+							project_path: file_path,
+							exists: true
+						},
+						true
+					);
 					await invalidate('app:workspace')
 						.then(() =>
 							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
