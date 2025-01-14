@@ -55,6 +55,40 @@ export class ProjectState {
     this.current_project_path = current_project.project_path;
   }
 
+  updateProject(project_id: string, new_project: Partial<RecentProject>) {
+    const project = this.persisted_state.current.recent_projects?.find(project => project.id === project_id);
+    if (project) {
+      this.current_project_name = new_project.project_name;
+      if (new_project.project_path) this.current_project_path = new_project.project_path;
+      this.exists = project.exists;
+      this.persisted_state.current = {
+        ...this.persisted_state.current,
+        recent_projects: this.persisted_state.current.recent_projects?.map(project => {
+          if (project.id === project_id) {
+            return {
+              ...project,
+              ...new_project
+            }
+          }
+          return project;
+        })
+      }
+    }
+  }
+
+  geCurrentProject(project_id?: string): RecentProject | undefined {
+    // if project id, get from the recent_projects, else get the current fields
+    if (project_id) {
+      return this.persisted_state.current.recent_projects?.find(project => project.id === project_id);
+    }
+    return {
+      id: this.id,
+      project_name: this.current_project_name,
+      project_path: this.current_project_path,
+      exists: this.exists
+    }
+  }
+
   async setCurrentFile(file: FileHandle) {
     this.current_file = file;
     return this.current_file;

@@ -83,6 +83,9 @@
 				oldPathBaseDir: BASE_DIR,
 				newPathBaseDir: BASE_DIR
 			});
+			project_state.updateProject(data.project.id, {
+				project_name: component_state.project_title
+			});
 			await updateProjectTitle(data.project.id, component_state.project_title);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
@@ -98,6 +101,10 @@
 			);
 		}
 	}
+
+	$effect(() => {
+		component_state.project_title = data.project_title ?? 'Untitled';
+	});
 
 	$effect(() => {
 		if (is_load_file) {
