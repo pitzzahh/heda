@@ -29,6 +29,7 @@
 	} from '@/helpers/file/index.js';
 	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
 	import { getSettingsState } from '@/hooks/settings-state.svelte.js';
+	import { getProjectState } from '@/hooks/project-state.svelte.js';
 
 	let { data, children } = $props();
 
@@ -43,7 +44,7 @@
 	} = $derived(data);
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-	const settings_state = getSettingsState();
+	const project_state = getProjectState();
 
 	let component_state = $state({
 		is_editing: false,
@@ -87,6 +88,7 @@
 				newPathBaseDir: BASE_DIR
 			});
 			await updateProjectTitle(data.project.id, component_state.project_title);
+			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
