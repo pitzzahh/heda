@@ -57,6 +57,8 @@
 
 					const project_name = await getFileName(file_path);
 
+					console.log({ project_name });
+
 					const created_project = await createProject(project_name ?? 'Untitled', form.data);
 
 					if (!created_project) {
