@@ -72,7 +72,7 @@
 						await updateProjectTitle(project.id, 'Untitled');
 					}
 
-					await project_state.setCurrentFile(
+					const file = await project_state.setCurrentFile(
 						await openFile(`${project_name}.${EXTENSION}`, {
 							read: true,
 							write: true,
@@ -86,7 +86,7 @@
 							nodes: await getAllChildNodes(root_node_id, true)
 						},
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-						project_state
+						file
 					);
 					closeDialog();
 
