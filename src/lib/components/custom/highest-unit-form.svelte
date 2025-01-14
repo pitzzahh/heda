@@ -14,13 +14,7 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import {
-		generateUniqueFileName,
-		getFileName,
-		EXTENSION,
-		doesFileExists,
-		BASE_DIR
-	} from '@/helpers/file';
+	import { getFileName, EXTENSION, BASE_DIR } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
