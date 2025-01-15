@@ -204,6 +204,9 @@
 						/>
 					{/snippet}
 				</Form.Control>
+				<Form.Description>
+					This is the circuit number that will determine the circuit number of the wire to the main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 			<Form.Field {form} name="terminal_temperature" class="mt-2.5 flex flex-col">
@@ -259,6 +262,10 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
+				<Form.Description>
+					This is the terminal temp that will determine the terminal temp of the panel wire to the
+					main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
@@ -321,6 +328,10 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
+				<Form.Description>
+					This is the ambient temp that will determine the ambient temp of the panel wire to the
+					main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 
