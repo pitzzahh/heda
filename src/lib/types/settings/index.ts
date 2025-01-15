@@ -7,5 +7,6 @@ export type Settings = {
 	is_adjustment_factor_dynamic: boolean;
 	is_panel_multi_copy: boolean;
 	is_load_multi_copy: boolean;
-	is_auto_save_enabled: boolean
+	auto_save_enabled: boolean;
+	backup_project_file_if_exists: boolean;
 };
