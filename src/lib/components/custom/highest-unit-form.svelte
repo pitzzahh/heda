@@ -77,11 +77,10 @@
 					}
 
 					const file = await project_state.setCurrentFile(
-						await openFile(`${project_name}.${EXTENSION}`, {
+						await openFile(file_path, {
 							read: true,
 							write: true,
-							createNew: true,
-							baseDir: BASE_DIR
+							createNew: true
 						})
 					);
 					await writeEncryptedFile(
@@ -111,6 +110,7 @@
 							toast.success(`${project_state.current_project_name} created successfully`)
 						);
 				} catch (err) {
+					console.error(`Error: failed to create project: ${JSON.stringify(err)}`);
 					return toast.error(
 						`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 						{
