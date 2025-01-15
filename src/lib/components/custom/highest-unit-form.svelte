@@ -14,10 +14,11 @@
 	import type { Project, Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { getFileName, EXTENSION, BASE_DIR } from '@/helpers/file';
+	import { getFileName, EXTENSION, BASE_DIR, doesFileExists } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
-	import { open as openFile } from '@tauri-apps/plugin-fs';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { copyFile, open as openFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 
 	interface Props {
@@ -30,6 +31,7 @@
 	let { highest_unit_form, app_pass_phrase, file_encryption_salt, closeDialog }: Props = $props();
 
 	const project_state = getProjectState();
+	const settings_state = getSettingsState();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -74,6 +76,15 @@
 							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
 						await updateProjectTitle(project.id, 'Untitled');
+					}
+
+					if (await doesFileExists(file_path)) {
+						if (settings_state.backup_project_file_if_exists) {
+							await copyFile(file_path, file_path.replace(EXTENSION, '.heda.bak'));
+						} else {
+							await remove(file_path);
+							console.log(`Current project exists, removing first`)
+						}
 					}
 
 					const file = await project_state.setCurrentFile(
