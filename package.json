@@ -30,9 +30,9 @@
 		"site:td": "bun run build && bun run preview"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.3.1",
+		"@sveltejs/adapter-auto": "^4.0.0",
 		"@sveltejs/adapter-static": "^3.0.8",
-		"@sveltejs/kit": "^2.15.2",
+		"@sveltejs/kit": "^2.15.3",
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
 		"@tailwindcss/typography": "^0.5.16",
 		"@tauri-apps/cli": "^2.2.4",
@@ -50,7 +50,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.9",
-		"svelte": "^5.17.4",
+		"svelte": "^5.18.0",
 		"svelte-check": "^4.1.4",
 		"svelte-radix": "^2.0.1",
 		"svelte-sonner": "^0.3.28",
