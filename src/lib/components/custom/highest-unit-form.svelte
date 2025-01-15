@@ -11,14 +11,14 @@
 	import { highest_unit_schema } from '@/schema';
 	import { DEFAULT_PHASES_OPTIONS } from '@/constants';
 	import { createProject, updateProjectTitle } from '@/db/mutations/index';
-	import type { Project, Node } from '@/db/schema';
+	import type { Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { getFileName, EXTENSION, BASE_DIR, doesFileExists } from '@/helpers/file';
+	import { getFileName, EXTENSION, doesFileExists } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import { copyFile, open as openFile } from '@tauri-apps/plugin-fs';
+	import { remove, copyFile, open as openFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 
 	interface Props {
@@ -83,7 +83,7 @@
 							await copyFile(file_path, file_path.replace(EXTENSION, '.heda.bak'));
 						} else {
 							await remove(file_path);
-							console.log(`Current project exists, removing first`)
+							console.log(`Current project exists, removing first: ${file_path}`);
 						}
 					}
 
