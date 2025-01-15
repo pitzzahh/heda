@@ -46,11 +46,15 @@
 	forwardConsole('error', error);
 
 	async function handleKeyDown(event: KeyboardEvent) {
-		// check if f11
+		// check if f11 is pressed
 		console.log(event);
-		if (event.key === 'F11') {
-			const win = getCurrentWindow();
-			await win.setFullscreen(!win.isFullscreen);
+		try {
+			if (event.key === 'F11') {
+				const win = getCurrentWindow();
+				await win.setFullscreen(!win.isFullscreen);
+			}
+		} catch (err) {
+			console.error(`Error toggling fullscreen: ${JSON.stringify(err)}`);
 		}
 	}
 </script>
