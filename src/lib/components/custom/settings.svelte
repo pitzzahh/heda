@@ -219,14 +219,30 @@
 		<Separator class="my-1 w-full" />
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
-				<Label for="adjustment_factor">Auto Save</Label>
+				<Label for="auto_save">Auto Save</Label>
 				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
 			</div>
 			<Switch
 				disabled={project === undefined}
-				id="adjustment_factor"
-				checked={settingsState.is_auto_save_enabled}
+				id="auto_save"
+				checked={settingsState.auto_save_enabled}
 				onCheckedChange={(value) => settingsState.setAutoSave(value)}
+			/>
+		</div>
+		<Separator class="my-1 w-full" />
+		<div class="flex flex-row items-center justify-between gap-3">
+			<div class="space-y-0.5">
+				<Label for="backup_project_file">Backup old project file</Label>
+				<p class="text-xs text-muted-foreground">
+					Automatically backup old project file when creating new project and performing replacing
+					it upon project creation.
+				</p>
+			</div>
+			<Switch
+				disabled={project === undefined}
+				id="backup_project_file"
+				checked={settingsState.backup_project_file_if_exists}
+				onCheckedChange={(value) => settingsState.setBackupProjectFileIfExists(value)}
 			/>
 		</div>
 	</div>
