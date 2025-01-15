@@ -48,7 +48,7 @@
 			await writeEncryptedFile(
 				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-				project_state
+				project_state.current_file
 			);
 			undo_redo_state.resetUnsavedActions();
 		} catch (err) {
@@ -57,19 +57,19 @@
 			});
 		}
 
-		if (!settings_state.is_auto_save_enabled) {
+		if (!settings_state.auto_save_enabled) {
 			toast.success('Saved successfully');
 		}
 	}
 
 	$effect(() => {
 		// auto saver
-		if (undo_redo_state.has_unsaved_actions && settings_state.is_auto_save_enabled) {
+		if (undo_redo_state.has_unsaved_actions && settings_state.auto_save_enabled) {
 			handleSave();
 		}
 
 		function handleKeyDown(e: KeyboardEvent) {
-			if (e.ctrlKey && e.key.toLocaleLowerCase() === 's' && !settings_state.is_auto_save_enabled) {
+			if (e.ctrlKey && e.key.toLocaleLowerCase() === 's' && !settings_state.auto_save_enabled) {
 				handleSave();
 			}
 		}
@@ -83,7 +83,7 @@
 
 <div class="flex w-full items-center justify-between p-2">
 	<div class="flex w-full items-center gap-2">
-		{#if !settings_state.is_auto_save_enabled}
+		{#if !settings_state.auto_save_enabled}
 			<Tooltip.Provider>
 				<Tooltip.Root>
 					<Tooltip.Trigger
