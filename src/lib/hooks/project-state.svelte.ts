@@ -46,9 +46,16 @@ export class ProjectState {
     }
   }
 
-  removeRecentProject(project_name: string) {
-    this.persisted_state.current.recent_projects = this.persisted_state.current.recent_projects?.filter(project => project.project_name !== project_name);
+  removeRecentProject(project_id: string, remove_current: boolean = false) {
+    this.persisted_state.current.recent_projects = this.persisted_state.current.recent_projects?.filter(project => project.id !== project_id);
     this.recent_projects = this.persisted_state.current.recent_projects;
+    if (remove_current) {
+      this.id = '';
+      this.current_project_name = '';
+      this.current_project_path = '';
+      this.exists = false;
+      this.recent_projects = this.persisted_state.current.recent_projects;
+    }
   }
 
   setCurrentProject(current_project: RecentProject) {
