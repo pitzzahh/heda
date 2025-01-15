@@ -12,8 +12,6 @@
 		"moduleResolution": "bundler"
 	},
 	"exclude": [
-		"./node_modules/**",
-		"./.svelte-kit/**",
 		"./build/**",
 	],
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
