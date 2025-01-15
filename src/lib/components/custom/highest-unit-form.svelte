@@ -90,6 +90,7 @@
 								description:
 									'The old project file has been backed up, you can find it in the same folder.'
 							});
+							project_state.removeRecentProject(project.id, true);
 						}
 						console.log(`Current project exists, removing first: ${file_path}`);
 						await remove(file_path);
