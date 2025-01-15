@@ -7,5 +7,8 @@ export default defineConfig({
 		fs: {
 			allow: ['package.json'],
 		},
+		hmr: {
+			host: 'localhost',
+		},
 	},
 });
