@@ -80,11 +80,19 @@
 
 					if (await doesFileExists(file_path)) {
 						if (settings_state.backup_project_file_if_exists) {
+							console.log(`Current project exists, backing up first: ${file_path}`);
+							toast.loading('Backing up project file', {
+								description:
+									'The project file is being backed up. You enabled this feature, to disable it go to settings.'
+							});
 							await copyFile(file_path, file_path.replace(EXTENSION, '.heda.bak'));
-						} else {
-							await remove(file_path);
-							console.log(`Current project exists, removing first: ${file_path}`);
+							toast.info('Project file backed up', {
+								description:
+									'The old project file has been backed up, you can find it in the same folder.'
+							});
 						}
+						console.log(`Current project exists, removing first: ${file_path}`);
+						await remove(file_path);
 					}
 
 					const file = await project_state.setCurrentFile(
