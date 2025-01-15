@@ -85,7 +85,7 @@
 								description:
 									'The project file is being backed up. You enabled this feature, to disable it go to settings.'
 							});
-							await copyFile(file_path, file_path.replace(EXTENSION, '.heda.bak'));
+							await copyFile(file_path, file_path.replace(EXTENSION, 'heda.bak'));
 							toast.info('Project file backed up', {
 								description:
 									'The old project file has been backed up, you can find it in the same folder.'
