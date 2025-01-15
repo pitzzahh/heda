@@ -12,39 +12,18 @@
     "core:window:allow-start-dragging",
     "core:window:allow-set-fullscreen",
     "updater:default",
-    "dialog:default",
-    {
-      "identifier": "fs:write-files",
-      "allow": [
-        {
-          "path": "$HOME/**/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:read-files",
-      "allow": [
-        {
-          "path": "$HOME/**/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:read-dirs",
-      "allow": [
-        {
-          "path": "$HOME/**/*"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-rename",
-      "allow": [
-        {
-          "path": "$HOME/**/*"
-        }
-      ]
-    }
+    "fs:scope-home",
+    "fs:allow-home-read",
+    "fs:allow-home-write",
+    "fs:scope-home-index",
+    "fs:allow-home-read-recursive",
+    "fs:allow-home-write-recursive",
+    "fs:scope-home-recursive",
+    "fs:allow-rename",
+    "fs:allow-remove",
+    "fs:write-files",
+    "fs:read-files",
+    "dialog:default"
   ],
   "platforms": [
     "macOS",
