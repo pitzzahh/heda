@@ -269,6 +269,9 @@
 						/>
 					{/snippet}
 				</Form.Control>
+				<Form.Description>
+					This is the circuit number that will determine the circuit number of the wire to the main.
+				</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
