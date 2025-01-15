@@ -29,7 +29,6 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 export async function getAllProjects(fields?: (keyof Project)[]): Promise<Project[] | undefined> {
 	const db = await databaseInstance();
 	const projects = await db.projects.find().exec();
-	console.log('Getting all projects');
 	if (fields?.length) {
 		return projects.map((project) => {
 			const data = project._data as Project;
@@ -81,8 +80,8 @@ export async function checkNodeExists({
 		}
 
 		return node ? true : false;
-	} catch (error) {
-		console.log(error);
+	} catch (err) {
+		console.error(`Error checking node existence: ${err}`);
 		return false;
 	}
 }

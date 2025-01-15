@@ -50,7 +50,7 @@
 					description: 'An error occurred while loading the file.'
 				});
 			}
-			console.log({ loaded_data });
+			console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
 			await loadCurrentProject(loaded_data);
 			const { id, project_name } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;

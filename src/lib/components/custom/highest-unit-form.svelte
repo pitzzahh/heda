@@ -59,8 +59,6 @@
 
 					const project_name = await getFileName(file_path);
 
-					console.log({ project_name });
-
 					const created_project = await createProject(project_name ?? 'Untitled', form.data);
 
 					if (!created_project) {
@@ -80,7 +78,7 @@
 
 					if (await doesFileExists(file_path)) {
 						if (settings_state.backup_project_file_if_exists) {
-							console.log(`Current project exists, backing up first: ${file_path}`);
+							console.info(`Current project exists, backing up first: ${file_path}`);
 							toast.loading('Backing up project file', {
 								description:
 									'The project file is being backed up. You enabled this feature, to disable it go to settings.'
@@ -92,7 +90,7 @@
 							});
 							project_state.removeRecentProject(project.id, true);
 						}
-						console.log(`Current project exists, removing first: ${file_path}`);
+						console.info(`Current project exists, removing first: ${file_path}`);
 						await remove(file_path);
 					}
 
