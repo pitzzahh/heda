@@ -109,12 +109,11 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
   return JSON.parse(decryptedData) as T;
 }
 
-export async function writeEncryptedFile<T>(data: T, secret_key: string, file: FileHandle): Promise<void> {
+export async function writeEncryptedFile<T>(data: T, secret_key: string, file: FileHandle | undefined): Promise<void> {
   if (!file) {
     throw new Error("No file to write to");
   }
   await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
-  const file_stat = await file.stat()
 }
 
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
