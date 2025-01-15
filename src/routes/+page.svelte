@@ -50,10 +50,8 @@
 					description: 'An error occurred while loading the file.'
 				});
 			}
+			console.log({ loaded_data });
 			await loadCurrentProject(loaded_data);
-			toast.success('Project loaded successfully', {
-				description: 'The file has been loaded successfully.'
-			});
 			const { id, project_name } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
 
@@ -74,7 +72,11 @@
 					write: true
 				})
 			);
-			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`);
+			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`).finally(() =>
+				toast.success('Project loaded successfully', {
+					description: 'The file has been loaded successfully.'
+				})
+			);
 		} catch (err) {
 			console.error(`Failed to load file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
