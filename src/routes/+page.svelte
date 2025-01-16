@@ -46,7 +46,8 @@
 			);
 
 			if (!loaded_data) {
-				return toast.error('Failed to load file', {
+				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
+				return toast.warning('Failed to load file', {
 					description: 'An error occurred while loading the file.'
 				});
 			}
