@@ -106,11 +106,12 @@
 					);
 
 					const file_data: FileExport = {
-				project,
-				nodes: await getAllChildNodes(project.root_node_id, true)
-			};
+						project,
+						nodes: await getAllChildNodes(project.root_node_id, true)
+					};
 
-					await writeEncryptedFile(file_data,
+					await writeEncryptedFile(
+						file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 						file
 					);
