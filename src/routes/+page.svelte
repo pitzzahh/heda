@@ -21,6 +21,7 @@
 
 	async function handleLoadFile(path?: string | null) {
 		try {
+			project_state.validateRecentProjects();
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
 
@@ -84,10 +85,6 @@
 			});
 		}
 	}
-
-	$effect(() => {
-		project_state.validateRecentProjects();
-	});
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
