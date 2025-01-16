@@ -155,14 +155,14 @@
 										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
 											<Button
 												variant={project.exists ? 'outline' : 'warning'}
-												class="flex flex-1 items-center justify-start"
+												class="flex flex-1 items-center justify-start px-1.5 py-3"
 												disabled={!project.exists}
-												size="lg"
+												size="xl"
 												onclick={() => handleLoadFile(project.project_path)}
 											>
 												<MonitorCog class="mr-2" />
 												<div class="flex flex-col items-start">
-													<span class="text-lg">{project?.project_name ?? 'unknown'}</span>
+													{project?.project_name ?? 'unknown'}
 													<span class="truncate text-xs text-muted-foreground"
 														>Saved Path: {project.project_path ?? 'unknown path'}</span
 													>
