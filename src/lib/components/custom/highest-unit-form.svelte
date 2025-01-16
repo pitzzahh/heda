@@ -128,7 +128,6 @@
 					await invalidate('app:workspace')
 						.then(() => {
 							undo_redo_state.resetUnsavedActions();
-							undo_redo_state.resetData();
 						})
 						.then(() =>
 							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
