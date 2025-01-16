@@ -84,8 +84,8 @@
 			const current_file_path = current_project.project_path.replace(old_file, '');
 			console.log(`current_file_path: ${current_file_path}`);
 
-			const old_file_path = `${await join(current_file_path, old_file)}`;
-			const new_file_path = `${await join(current_file_path, new_file)}`;
+			const old_file_path = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), old_file)}`;
+			const new_file_path = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), new_file)}`;
 
 			console.log(`old_file_path: ${old_file_path}`);
 			console.log(`new_file_path: ${new_file_path}`);

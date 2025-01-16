@@ -5,7 +5,7 @@
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
-	import { MonitorCog, CircleAlert } from '@/assets/icons';
+	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
 	import { readEncryptedFile, keyToString, generateKey } from '@/helpers/security';
 	import type { FileExport } from '@/types/main';
@@ -63,21 +63,24 @@
 				exists: true
 			};
 
-			if (!projectExists) {
-				project_state.addRecentProject(recent_project_data);
-			}
-			project_state.setCurrentProject(recent_project_data);
 			await project_state.setCurrentFile(
 				await openFile(path, {
 					read: true,
 					write: true
 				})
 			);
-			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`).finally(() =>
-				toast.success('Project loaded successfully', {
-					description: 'The file has been loaded successfully.'
+			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
+				.then(() => {
+					if (!projectExists) {
+						project_state.addRecentProject(recent_project_data);
+					}
+					project_state.setCurrentProject(recent_project_data);
 				})
-			);
+				.finally(() =>
+					toast.success('Project loaded successfully', {
+						description: 'The file has been loaded successfully.'
+					})
+				);
 		} catch (err) {
 			console.error(`Failed to load file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
@@ -166,18 +169,33 @@
 									{#each project_state.recent_projects as project (project.id)}
 										<Button
 											variant={project.exists ? 'outline' : 'warning'}
-											class="mb-2 flex w-full items-center justify-start px-4 py-6"
+											class="mb-2 w-full items-center  justify-between px-4 py-6"
 											disabled={!project.exists}
 											size="lg"
 											onclick={() => handleLoadFile(project.project_path)}
 										>
-											<MonitorCog class="mr-2" />
-											<div class="flex flex-col items-start">
-												{project?.project_name ?? 'unknown'}
-												<span class="text-xs text-muted-foreground"
-													>Saved Path: {project.project_path ?? 'unknown path'}</span
-												>
+											<div class="flex items-center justify-center">
+												<MonitorCog class="mr-2" />
+												<div class="flex flex-col items-start">
+													{project?.project_name ?? 'unknown'}
+													<span class="text-xs text-muted-foreground"
+														>Saved Path: {project.project_path ?? 'unknown path'}</span
+													>
+												</div>
 											</div>
+											<Button
+												variant="outline"
+												disabled={!project.exists}
+												class="isolate hover:bg-destructive"
+												size="icon"
+												onclick={(e) => {
+													e.stopPropagation();
+													project_state.removeRecentProject(project.id);
+													toast.info(`${project.project_name ?? 'Project'} removed successfully`);
+												}}
+											>
+												<Trash2 class="h-2 w-2" />
+											</Button>
 										</Button>
 									{/each}
 								{:else}
