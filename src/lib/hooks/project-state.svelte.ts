@@ -66,30 +66,21 @@ export class ProjectState {
   }
 
   updateProject(project_id: string, new_project: Partial<RecentProject>, update_current: boolean = false) {
-    const project = this.persisted_state.current.recent_projects?.find(project => project.id === project_id);
-    if (project) {
-      this.current_project_name = new_project.project_name;
-      if (new_project.project_path) this.current_project_path = new_project.project_path;
-      this.exists = project.exists;
-      this.persisted_state.current = {
-        ...this.persisted_state.current,
-        recent_projects: this.persisted_state.current.recent_projects?.map(project => {
-          if (project.id === project_id) {
-            return {
-              ...project,
-              ...new_project
-            }
-          }
-          return project;
-        })
-      }
-    }
-    if (update_current) {
-      this.setCurrentProject({
-        id: project_id,
+    const projectIndex = this.persisted_state.current.recent_projects?.findIndex(project => project.id === project_id);
+    if (projectIndex !== -1 && projectIndex !== undefined && this.persisted_state.current.recent_projects) {
+      const updatedProject = {
+        ...this.persisted_state.current.recent_projects[projectIndex],
         ...new_project
-      } as RecentProject);
+      };
+      this.persisted_state.current.recent_projects[projectIndex] = updatedProject;
       this.recent_projects = this.persisted_state.current.recent_projects;
+
+      if (update_current) {
+        this.setCurrentProject(updatedProject);
+      }
+      console.log(`Project updated: ${JSON.stringify(updatedProject)}`);
+      console.log(`Recent projects: ${JSON.stringify(this.recent_projects)}`);
+      console.log(`Persisted state: ${JSON.stringify(this.persisted_state.current)}`);
     }
   }
 
