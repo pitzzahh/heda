@@ -21,6 +21,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { remove, copyFile, open as openFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+	import type { FileExport } from '@/types/main';
 
 	interface Props {
 		highest_unit_form: T;
@@ -103,11 +104,13 @@
 							createNew: true
 						})
 					);
-					await writeEncryptedFile(
-						{
-							project: project,
-							nodes: await getAllChildNodes(root_node_id, true)
-						},
+
+					const file_data: FileExport = {
+				project,
+				nodes: await getAllChildNodes(project.root_node_id, true)
+			};
+
+					await writeEncryptedFile(file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 						file
 					);

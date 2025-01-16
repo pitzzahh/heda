@@ -27,6 +27,7 @@
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { join } from '@tauri-apps/api/path';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte.js';
 
 	let { data, children } = $props();
 
@@ -43,6 +44,7 @@
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
+	const undo_redo_state = getUndoRedoState();
 
 	let component_state = $state({
 		is_editing: false,
@@ -108,6 +110,7 @@
 			await updateProjectTitle(project.id, component_state.project_title);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
+				.then(() => undo_redo_state.setHasUnsavedActions())
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
 		} catch (err) {

@@ -21,7 +21,6 @@
 
 	async function handleLoadFile(path?: string | null) {
 		try {
-			project_state.validateRecentProjects();
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
 
@@ -47,7 +46,8 @@
 			);
 
 			if (!loaded_data) {
-				return toast.error('Failed to load file', {
+				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
+				return toast.warning('Failed to load file', {
 					description: 'An error occurred while loading the file.'
 				});
 			}
@@ -130,6 +130,7 @@
 					<Dialog.Root>
 						<Dialog.Trigger
 							type="button"
+							onclick={() => project_state.validateRecentProjects()}
 							class={buttonVariants({
 								size: '2xl',
 								className:
@@ -151,36 +152,34 @@
 							<ScrollArea class="flex h-72 w-full flex-col pr-2.5">
 								{#if project_state.recent_projects}
 									{#each project_state.recent_projects as project (project.id)}
-										<Button
-											variant={project.exists ? 'outline' : 'warning'}
-											class="mb-2 w-full items-center  justify-between px-4 py-6"
-											disabled={!project.exists}
-											size="lg"
-											onclick={() => handleLoadFile(project.project_path)}
-										>
-											<div class="flex items-center justify-center">
+										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
+											<Button
+												variant={project.exists ? 'outline' : 'warning'}
+												class="flex flex-1 items-center justify-start px-1.5 py-3"
+												disabled={!project.exists}
+												size="xl"
+												onclick={() => handleLoadFile(project.project_path)}
+											>
 												<MonitorCog class="mr-2" />
 												<div class="flex flex-col items-start">
 													{project?.project_name ?? 'unknown'}
-													<span class="text-xs text-muted-foreground"
+													<span class="truncate text-xs text-muted-foreground"
 														>Saved Path: {project.project_path ?? 'unknown path'}</span
 													>
 												</div>
-											</div>
+											</Button>
 											<Button
 												variant="outline"
-												disabled={!project.exists}
-												class="isolate hover:bg-destructive"
+												class="hover:bg-destructive"
 												size="icon"
-												onclick={(e) => {
-													e.stopPropagation();
+												onclick={() => {
 													project_state.removeRecentProject(project.id);
 													toast.info(`${project.project_name ?? 'Project'} removed successfully`);
 												}}
 											>
 												<Trash2 class="h-2 w-2" />
 											</Button>
-										</Button>
+										</div>
 									{/each}
 								{:else}
 									<Alert.Root variant="default" class="flex w-full items-center">
