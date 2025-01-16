@@ -10,7 +10,7 @@
 	import type { ButtonState } from '@/types/misc';
 	import { generateKey, keyToString } from '@/helpers/security';
 	import { writeEncryptedFile } from '@/helpers/file';
-	import { getAllChildNodes } from '@/db/queries';
+	import { getAllChildNodes, getCurrentProject } from '@/db/queries';
 	import { validateEnv } from '@/utils/validation';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -47,7 +47,10 @@
 			}
 
 			await writeEncryptedFile(
-				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
+				{
+					project: await getCurrentProject(project.id),
+					nodes: await getAllChildNodes(project.root_node_id, true)
+				},
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 				project_state.current_file
 			);
