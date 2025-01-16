@@ -23,11 +23,14 @@
 	import {
 		doesFileExists,
 		EXTENSION,
+		writeEncryptedFile,
 		getFileNameWithoutExtension,
 		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { join } from '@tauri-apps/api/path';
+	import { getAllChildNodes } from '@/db/queries/index.js';
+	import { keyToString, generateKey } from '@/helpers/security/index.js';
 
 	let { data, children } = $props();
 
@@ -36,6 +39,7 @@
 		is_load_file,
 		generic_phase_panel_form,
 		phase_main_load_form,
+		project,
 		app_pass_phrase,
 		file_encryption_salt,
 		can_create_project
@@ -57,7 +61,7 @@
 	}
 
 	async function saveProjectTitle() {
-		if (!data?.project) return;
+		if (!project) return;
 
 		if (!component_state.project_title) {
 			component_state.is_editing = false;
@@ -98,14 +102,21 @@
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file_path, new_file_path);
 			project_state.updateProject(
-				data.project.id,
+				project.id,
 				{
 					project_name: component_state.project_title,
 					project_path: new_file_path
 				},
 				true
 			);
-			await updateProjectTitle(data.project.id, component_state.project_title);
+			await updateProjectTitle(project.id, component_state.project_title);
+			console.log(`app_pass_phrase: ${app_pass_phrase}`);
+			console.log(`file_encryption_salt: ${file_encryption_salt}`);
+			await writeEncryptedFile(
+				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
+				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
+				project_state.current_file
+			);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
