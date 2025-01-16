@@ -18,6 +18,7 @@
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { remove, copyFile, open as openFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 
@@ -32,6 +33,7 @@
 
 	const project_state = getProjectState();
 	const settings_state = getSettingsState();
+	const undo_redo_state = getUndoRedoState();
 
 	const form = superForm(highest_unit_form, {
 		SPA: true,
@@ -121,6 +123,10 @@
 						true
 					);
 					await invalidate('app:workspace')
+						.then(() => {
+							undo_redo_state.resetUnsavedActions();
+							undo_redo_state.resetData();
+						})
 						.then(() =>
 							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
 						)
