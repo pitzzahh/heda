@@ -13,8 +13,8 @@
 	import { createProject, updateProjectTitle } from '@/db/mutations/index';
 	import type { Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
-	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
-	import { getFileName, EXTENSION, doesFileExists } from '@/helpers/file';
+	import { generateKey, keyToString } from '@/helpers/security';
+	import { getFileName, writeEncryptedFile, EXTENSION, doesFileExists } from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';

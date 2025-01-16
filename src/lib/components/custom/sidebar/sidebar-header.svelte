@@ -8,7 +8,8 @@
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
-	import { generateKey, keyToString, writeEncryptedFile } from '@/helpers/security';
+	import { generateKey, keyToString } from '@/helpers/security';
+	import { writeEncryptedFile } from '@/helpers/file';
 	import { getAllChildNodes } from '@/db/queries';
 	import { validateEnv } from '@/utils/validation';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';

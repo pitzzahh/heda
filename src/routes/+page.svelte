@@ -7,7 +7,8 @@
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
-	import { readEncryptedFile, keyToString, generateKey } from '@/helpers/security';
+	import { keyToString, getEnv, generateKey } from '@/helpers/security';
+	import { readEncryptedFile } from '@/helpers/file';
 	import type { FileExport } from '@/types/main';
 	import { loadCurrentProject } from '@/db/mutations';
 	import { goto } from '$app/navigation';
@@ -15,7 +16,6 @@
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { open as openFile } from '@tauri-apps/plugin-fs';
-	import { getEnv } from '@/helpers/security/index.js';
 
 	const project_state = getProjectState();
 

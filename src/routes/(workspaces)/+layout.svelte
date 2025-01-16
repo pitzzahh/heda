@@ -24,7 +24,6 @@
 		doesFileExists,
 		EXTENSION,
 		getFileNameWithoutExtension,
-		getFilePath,
 		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
