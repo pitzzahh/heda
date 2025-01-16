@@ -28,6 +28,7 @@
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { join } from '@tauri-apps/api/path';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte.js';
 
 	let { data, children } = $props();
 
@@ -44,7 +45,8 @@
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
-
+	const undo_redo_state = getUndoRedoState();
+	
 	let component_state = $state({
 		is_editing: false,
 		project_title: ''
