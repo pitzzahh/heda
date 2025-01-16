@@ -46,16 +46,20 @@
 				});
 			}
 
-			await writeEncryptedFile(
-				{
-					project: await getCurrentProject(project.id),
-					nodes: await getAllChildNodes(project.root_node_id, true)
-				},
+			const file_data = {
+				project: await getCurrentProject(project.id),
+				nodes: await getAllChildNodes(project.root_node_id, true)
+			}
+
+			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
+
+			await writeEncryptedFile(file_data,
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 				project_state.current_file
 			);
 			undo_redo_state.resetUnsavedActions();
 		} catch (err) {
+			console.error(`Failed to save file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
 				description: 'An error occurred while saving the file.'
 			});
