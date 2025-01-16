@@ -18,7 +18,6 @@
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import PressAltWrapper from '@/components/custom/press-alt-wrapper.svelte';
 	import { rename } from '@tauri-apps/plugin-fs';
 	import {
 		doesFileExists,
@@ -140,18 +139,15 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
-		<PressAltWrapper>
-			<AppSidebar
-				project={data.project}
-				root_node={data.root_node as Node}
-				{generic_phase_panel_form}
-				{phase_main_load_form}
-				{can_create_project}
-				{app_pass_phrase}
-				{file_encryption_salt}
-			/>
-		</PressAltWrapper>
-
+		<AppSidebar
+			project={data.project}
+			root_node={data.root_node as Node}
+			{generic_phase_panel_form}
+			{phase_main_load_form}
+			{can_create_project}
+			{app_pass_phrase}
+			{file_encryption_salt}
+		/>
 		<Sidebar.Inset>
 			<header
 				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"

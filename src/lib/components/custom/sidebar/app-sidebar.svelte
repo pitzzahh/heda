@@ -14,7 +14,7 @@
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
 	import { toast } from 'svelte-sonner';
-
+	
 	let {
 		ref = $bindable(null),
 		generic_phase_panel_form,
