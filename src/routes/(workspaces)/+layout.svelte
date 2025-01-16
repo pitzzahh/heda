@@ -23,14 +23,11 @@
 	import {
 		doesFileExists,
 		EXTENSION,
-		writeEncryptedFile,
 		getFileNameWithoutExtension,
 		generateUniqueFileName
 	} from '@/helpers/file/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { join } from '@tauri-apps/api/path';
-	import { getAllChildNodes } from '@/db/queries/index.js';
-	import { keyToString, generateKey } from '@/helpers/security/index.js';
 
 	let { data, children } = $props();
 
@@ -110,13 +107,6 @@
 				true
 			);
 			await updateProjectTitle(project.id, component_state.project_title);
-			console.log(`app_pass_phrase: ${app_pass_phrase}`);
-			console.log(`file_encryption_salt: ${file_encryption_salt}`);
-			await writeEncryptedFile(
-				{ project, nodes: await getAllChildNodes(project.root_node_id, true) },
-				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-				project_state.current_file
-			);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
 				.then(() => toggleEdit())
