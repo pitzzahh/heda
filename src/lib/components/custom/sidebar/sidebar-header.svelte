@@ -8,6 +8,7 @@
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
+	import type { FileExport } from '@/types/main';
 	import { generateKey, keyToString } from '@/helpers/security';
 	import { writeEncryptedFile } from '@/helpers/file';
 	import { getAllChildNodes, getCurrentProject } from '@/db/queries';
@@ -46,8 +47,8 @@
 				});
 			}
 
-			const file_data = {
-				project: await getCurrentProject(project.id),
+			const file_data: FileExport = {
+				project,
 				nodes: await getAllChildNodes(project.root_node_id, true)
 			};
 
