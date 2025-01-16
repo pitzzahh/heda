@@ -46,7 +46,7 @@
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	
+
 	let component_state = $state({
 		is_editing: false,
 		project_title: ''
@@ -111,6 +111,7 @@
 			await updateProjectTitle(project.id, component_state.project_title);
 			project_state.current_project_name = component_state.project_title;
 			invalidate('app:workspace')
+				.then(() => undo_redo_state.setHasUnsavedActions())
 				.then(() => toggleEdit())
 				.finally(() => toast.success('Project title updated successfully'));
 		} catch (err) {
