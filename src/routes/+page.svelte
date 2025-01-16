@@ -127,22 +127,6 @@
 						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
 						href="/workspace?new_file=true">New File</Button
 					>
-					<!-- What if digdi na lang su Highest Unit Form? -->
-					<!-- <Dialog.Root>
-						<Dialog.Trigger class={buttonVariants({ size: '2xl' })}>New File</Dialog.Trigger>
-						<Dialog.Content>
-							<Dialog.Header>
-								<Dialog.Title>New file options</Dialog.Title>
-								<Dialog.Description>
-									Choose the file name and other options for the new file.
-								</Dialog.Description>
-							</Dialog.Header>
-							<NewFileForm
-								new_file_form={data.new_file_form}
-								recent_files={['peter-file', 'alessandro-file', 'misha-file', 'jason-file']}
-							/>
-						</Dialog.Content>
-					</Dialog.Root> -->
 					<Dialog.Root>
 						<Dialog.Trigger
 							type="button"
@@ -164,7 +148,7 @@
 								Load File
 							</Button>
 							<Separator class="h-1" />
-							<ScrollArea class="flex h-72 w-full flex-col">
+							<ScrollArea class="flex h-72 w-full flex-col pr-2.5">
 								{#if project_state.recent_projects}
 									{#each project_state.recent_projects as project (project.id)}
 										<Button
