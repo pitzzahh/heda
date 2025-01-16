@@ -83,13 +83,8 @@ export async function writeEncryptedFile<T>(data: T, secret_key: string, file: F
   }
   await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
 }
-
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
-  const fileBuffer: Uint8Array = await readFile(filePath);
-  const encryptedData: string = new TextDecoder().decode(fileBuffer); // Convert binary to string
-
-  const decryptedData: T = decryptData<T>(encryptedData, secret_key);
-
+  const decryptedData: T = decryptData<T>(new TextDecoder().decode(await readFile(filePath)), secret_key);
   console.log("File read successfully!");
   return decryptedData;
 }
