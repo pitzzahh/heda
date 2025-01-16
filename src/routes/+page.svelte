@@ -21,7 +21,6 @@
 
 	async function handleLoadFile(path?: string | null) {
 		try {
-			project_state.validateRecentProjects();
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
 
@@ -130,6 +129,7 @@
 					<Dialog.Root>
 						<Dialog.Trigger
 							type="button"
+							onclick={() => project_state.validateRecentProjects()}
 							class={buttonVariants({
 								size: '2xl',
 								className:
