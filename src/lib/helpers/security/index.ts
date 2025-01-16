@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { FileHandle, readFile } from "@tauri-apps/plugin-fs";
 import CryptoJS from "crypto-js";
 
 // Custom encoding map (Base64 to gibberish Unicode)
@@ -107,23 +106,6 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
   }
 
   return JSON.parse(decryptedData) as T;
-}
-
-export async function writeEncryptedFile<T>(data: T, secret_key: string, file: FileHandle | undefined): Promise<void> {
-  if (!file) {
-    throw new Error("No file to write to");
-  }
-  await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
-}
-
-export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
-  const fileBuffer: Uint8Array = await readFile(filePath);
-  const encryptedData: string = new TextDecoder().decode(fileBuffer); // Convert binary to string
-
-  const decryptedData: T = decryptData<T>(encryptedData, secret_key);
-
-  console.log("File read successfully!");
-  return decryptedData;
 }
 
 export async function getEnv(key: string): Promise<string | null> {

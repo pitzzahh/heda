@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BaseDirectory, exists, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { BaseDirectory, exists, FileHandle, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { encryptData, decryptData } from "@/helpers/security";
 
 export const BASE_DIR = BaseDirectory.Document;
 export const BASE_DIR_PATH = 'heda';
@@ -74,4 +75,21 @@ export async function generateUniqueFileName(baseName: string, options?: ExistsO
     counter++;
   }
   return fileName;
+}
+
+export async function writeEncryptedFile<T>(data: T, secret_key: string, file: FileHandle | undefined): Promise<void> {
+  if (!file) {
+    throw new Error("No file to write to");
+  }
+  await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
+}
+
+export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
+  const fileBuffer: Uint8Array = await readFile(filePath);
+  const encryptedData: string = new TextDecoder().decode(fileBuffer); // Convert binary to string
+
+  const decryptedData: T = decryptData<T>(encryptedData, secret_key);
+
+  console.log("File read successfully!");
+  return decryptedData;
 }
