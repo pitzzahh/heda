@@ -49,11 +49,12 @@
 			const file_data = {
 				project: await getCurrentProject(project.id),
 				nodes: await getAllChildNodes(project.root_node_id, true)
-			}
+			};
 
 			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
 
-			await writeEncryptedFile(file_data,
+			await writeEncryptedFile(
+				file_data,
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
 				project_state.current_file
 			);
@@ -75,19 +76,16 @@
 		if (undo_redo_state.has_unsaved_actions && settings_state.auto_save_enabled) {
 			handleSave();
 		}
-
-		function handleKeyDown(e: KeyboardEvent) {
-			if (e.ctrlKey && e.key.toLocaleLowerCase() === 's' && !settings_state.auto_save_enabled) {
-				handleSave();
-			}
-		}
-
-		window.addEventListener('keydown', handleKeyDown);
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-		};
 	});
 </script>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.ctrlKey && e.key.toLocaleLowerCase() === 's' && !settings_state.auto_save_enabled) {
+			handleSave();
+		}
+	}}
+/>
 
 <div class="flex w-full items-center justify-between p-2">
 	<div class="flex w-full items-center gap-2">
