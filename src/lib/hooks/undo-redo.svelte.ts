@@ -45,6 +45,11 @@ export class UndoRedoState {
 		this.has_unsaved_actions = true;
 	}
 
+	resetData() {
+		this.undo_stack = [];
+		this.redo_stack = [];
+	}
+
 	setActionToUndo(action: Action<PhaseLoadSchedule>) {
 		this.undo_stack = [...(this.undo_stack ? this.undo_stack : []), action];
 		this.setHasUnsavedActions();
