@@ -44,7 +44,7 @@ fn main() {
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::Folder {
-                        path: get_exe_path(),
+                        path: dirs::home_dir().unwrap().join("heda-app-logs"),
                         file_name: Some("heda-app".to_string()),
                     },
                 ))
