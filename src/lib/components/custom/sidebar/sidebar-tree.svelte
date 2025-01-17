@@ -11,6 +11,7 @@
 		is_hovering_on_tree_item: boolean;
 		button_state: 'stale' | 'processing';
 		node_name: string;
+		is_alt_pressed: boolean;
 	}
 </script>
 
@@ -93,11 +94,12 @@
 		open_tree_delete_dialog: false,
 		is_hovering_on_tree_item: false,
 		button_state: 'stale',
-		node_name: 'Unknown'
+		node_name: 'Unknown',
+		is_alt_pressed: false
 	});
 
 	let undo_redo_state = getUndoRedoState();
-	let collapsibles = getCollapsiblesState()
+	let collapsibles = getCollapsiblesState();
 	let is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
 
 	async function copyNodeById(node_id: string) {
@@ -155,6 +157,33 @@
 					? _node?.load_data?.load_description
 					: 'unknown';
 	}
+
+	$effect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Alt') component_state.is_alt_pressed = true;
+			console.log(e.key === 'Alt')
+		};
+
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.key === 'Alt') component_state.is_alt_pressed = false;
+		};
+
+		const handleWindowFocus = () => {
+			component_state.is_alt_pressed = false;
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('keyup', handleKeyUp);
+		window.addEventListener('focus', handleWindowFocus);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('keyup', handleKeyUp);
+			window.removeEventListener('focus', handleWindowFocus);
+		};
+	});
+
+
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -171,7 +200,7 @@
 			<button
 				use:draggable={{ container: node.id, dragData: node }}
 				onclick={() => {
-					if (select_nodes_to_delete_state.is_alt_pressed) {
+					if (component_state.is_alt_pressed) {
 						select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 					}
 				}}
@@ -341,7 +370,7 @@
 			>
 				<button
 					onclick={() => {
-						if (select_nodes_to_delete_state.is_alt_pressed && node.node_type === 'panel') {
+						if (component_state.is_alt_pressed && node.node_type === 'panel') {
 							select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 						} else goto(`/workspace/load-schedule/${node_name + '_' + node.id}`);
 					}}
