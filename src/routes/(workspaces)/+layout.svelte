@@ -116,7 +116,6 @@
 					project_state.removeRecentProject(project.id, true);
 				}
 				console.info(`Current project exists, removing first: ${new_file_path}`);
-				await remove(new_file_path);
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file_path, new_file_path);
