@@ -19,7 +19,7 @@
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import { remove, copyFile, open as openFile } from '@tauri-apps/plugin-fs';
+	import { remove, copyFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 	import type { FileExport } from '@/types/main';
 
