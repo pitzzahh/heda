@@ -653,6 +653,10 @@ export async function loadCurrentProject(file_export: FileExport) {
 	const db = await databaseInstance();
 	const { project, nodes } = file_export;
 
+	// Remove all existing projects and nodes
+	await db.projects.find().remove();
+	await db.nodes.find().remove();
+
 	// Insert the project
 	await db.projects.insert(project);
 

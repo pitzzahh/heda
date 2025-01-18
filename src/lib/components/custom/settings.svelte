@@ -47,17 +47,16 @@
 	import { Switch } from '@/components/ui/switch/index.js';
 	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
-	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode, systemPrefersMode, userPrefersMode } from 'mode-watcher';
-	import { setModeAndColor } from '@/helpers/theme';
+	import { userPrefersMode } from 'mode-watcher';
 	import type { Settings } from '@/types/settings';
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import { getState } from '@/state/index.svelte';
 	import type { DialogState } from '@/state/types';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { resetData } from '@/db/mutations';
 
 	let { project }: { project?: Project } = $props();
@@ -68,6 +67,7 @@
 	] as const;
 
 	const settingsState = getSettingsState();
+	const undo_redo_state = getUndoRedoState();
 	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
@@ -86,6 +86,7 @@
 		await updateProjectSettings(project.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
+		.then(() => undo_redo_state.setHasUnsavedActions())
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
 	}

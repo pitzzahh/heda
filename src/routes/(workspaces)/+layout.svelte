@@ -50,7 +50,7 @@
 
 	let component_state = $state({
 		is_editing: false,
-		project_title: ''
+		project_title: data.project_title ?? 'Untitled'
 	});
 
 	function toggleEdit() {
@@ -108,7 +108,10 @@
 						description:
 							'The project file is being backed up. You enabled this feature, to disable it go to settings.'
 					});
-					await copyFile(new_file_path_with_file, new_file_path_with_file.replace(EXTENSION, 'heda.bak'));
+					await copyFile(
+						new_file_path_with_file,
+						new_file_path_with_file.replace(EXTENSION, 'heda.bak')
+					);
 					toast.info('Project file backed up', {
 						description:
 							'The old project file has been backed up, you can find it in the same folder.'
@@ -120,7 +123,8 @@
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file_path, new_file_path_with_file);
 			project_state.current_project_name = new_project_name;
-			invalidate('app:workspace')
+			await updateProjectTitle(project.id, new_project_name)
+				.then(() => invalidate('app:workspace'))
 				.then(() =>
 					project_state.updateProject(
 						project.id,
@@ -131,7 +135,6 @@
 						true
 					)
 				)
-				.then(async () => await updateProjectTitle(project.id, new_project_name))
 				.then(() => undo_redo_state.setHasUnsavedActions())
 				.then(() => toggleEdit())
 				.then(() => toast.success('Project title updated successfully'))
@@ -154,11 +157,9 @@
 			);
 		}
 	}
-
 	$effect(() => {
 		component_state.project_title = data.project_title ?? 'Untitled';
 	});
-
 	$effect(() => {
 		if (is_load_file) {
 			component_state.project_title = data.project_title ?? 'Untitled';
