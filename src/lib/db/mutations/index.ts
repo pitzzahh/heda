@@ -5,6 +5,7 @@ import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { Project, Node } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { FileExport } from '@/types/main';
+import { getCurrentProject } from '../queries';
 
 export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();

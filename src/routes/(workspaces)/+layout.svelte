@@ -83,12 +83,12 @@
 			const new_file = `${getFileNameWithoutExtension(new_project_name)}.${EXTENSION}`;
 
 			const current_file_path = current_project.project_path.replace(old_file, '');
-			console.log(`current_file_path: ${current_file_path}`);
 
-			const old_file_path = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), old_file)}`;
 			const new_file_path = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), new_file)}`;
 
-			console.log(`old_file_path: ${old_file_path}`);
+			console.log(`project_name: ${project_name}`);
+			console.log(`new_project_name: ${new_project_name}`);
+			console.log(`current_file_path: ${current_file_path}`);
 			console.log(`new_file_path: ${new_file_path}`);
 
 			if (project_name !== new_project_name && (await doesFileExists(new_file_path))) {
@@ -98,11 +98,11 @@
 				});
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
-			await rename(old_file_path, new_file_path);
+			await rename(current_file_path, new_file_path);
 			project_state.updateProject(
 				project.id,
 				{
-					project_name: component_state.project_title,
+					project_name: new_project_name,
 					project_path: new_file_path
 				},
 				true

@@ -23,6 +23,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 			}
 			: undefined
 	});
+
+	console.log(`CURR_PROJEC: ${JSON.stringify(await query.exec())}`)
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
 

@@ -9,6 +9,7 @@ import { getEnv } from '@/helpers/security/index.js';
 export const load = async ({ depends, url: { searchParams } }) => {
 	depends('app:workspace');
 	const project = (await getCurrentProject(searchParams.get('project_id') ?? undefined));
+	console.log(`PROJECT: ${JSON.stringify(project)}`);
 	const root_node = (await getRootNode());
 	const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 	const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');

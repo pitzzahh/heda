@@ -45,6 +45,7 @@
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
 
+
 			if (!loaded_data) {
 				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
 				return toast.warning('Failed to load file', {
