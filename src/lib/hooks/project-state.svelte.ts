@@ -33,15 +33,10 @@ export class ProjectState {
   }
 
   addRecentProject(recent_project: RecentProject, set_as_current: boolean = false) {
-    const { id, project_name, project_path, exists } = recent_project;
     this.persisted_state.current.recent_projects?.push(recent_project);
     this.recent_projects = this.persisted_state.current.recent_projects;
     if (set_as_current) {
-      console.log(`Recent project added: ${JSON.stringify(recent_project)}`);
-      this.id = id;
-      this.current_project_name = project_name;
-      this.current_project_path = project_path;
-      this.exists = exists;
+      this.setCurrentProject(recent_project);
     }
   }
 

@@ -45,7 +45,7 @@
 				try {
 					if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
-					const file_path = await saveDialog({
+					const file_path_with_file = await saveDialog({
 						filters: [
 							{
 								name: 'Heda file',
@@ -54,13 +54,13 @@
 						]
 					});
 
-					if (!file_path) {
+					if (!file_path_with_file) {
 						return toast.warning('No folder selected', {
 							description: 'Cannot proceed, no folder is selected.'
 						});
 					}
 
-					const project_name = await getFileName(file_path);
+					const project_name = await getFileName(file_path_with_file);
 
 					const created_project = await createProject(project_name ?? 'Untitled', form.data);
 
@@ -79,31 +79,26 @@
 						await updateProjectTitle(project.id, 'Untitled');
 					}
 
-					if (await doesFileExists(file_path)) {
+					if (await doesFileExists(file_path_with_file)) {
 						if (settings_state.backup_project_file_if_exists) {
-							console.info(`Current project exists, backing up first: ${file_path}`);
+							console.info(`Current project exists, backing up first: ${file_path_with_file}`);
 							toast.loading('Backing up project file', {
 								description:
 									'The project file is being backed up. You enabled this feature, to disable it go to settings.'
 							});
-							await copyFile(file_path, file_path.replace(EXTENSION, 'heda.bak'));
+							await copyFile(
+								file_path_with_file,
+								file_path_with_file.replace(EXTENSION, 'heda.bak')
+							);
 							toast.info('Project file backed up', {
 								description:
 									'The old project file has been backed up, you can find it in the same folder.'
 							});
 							project_state.removeRecentProject(project.id, true);
 						}
-						console.info(`Current project exists, removing first: ${file_path}`);
-						await remove(file_path);
+						console.info(`Current project exists, removing first: ${file_path_with_file}`);
+						await remove(file_path_with_file);
 					}
-
-					const file = await project_state.setCurrentFile(
-						await openFile(file_path, {
-							read: true,
-							write: true,
-							createNew: true
-						})
-					);
 
 					const file_data: FileExport = {
 						project,
@@ -113,20 +108,22 @@
 					await writeEncryptedFile(
 						file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-						file
+						file_path_with_file
 					);
 					closeDialog();
 
-					project_state.addRecentProject(
-						{
-							id: project.id,
-							project_name,
-							project_path: file_path,
-							exists: true
-						},
-						true
-					);
 					await invalidate('app:workspace')
+						.then(() =>
+							project_state.addRecentProject(
+								{
+									id: project.id,
+									project_name,
+									project_path: file_path_with_file,
+									exists: true
+								},
+								true
+							)
+						)
 						.then(() => {
 							undo_redo_state.resetUnsavedActions();
 						})
