@@ -304,6 +304,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 					ambient_temp: data.load_data?.ambient_temperature || 30,
 					is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
 				});
+
 			const adjusted_current = computeAdjustedCurrent({
 				set: conductor_set,
 				qty: conductor_qty,
@@ -330,7 +331,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 				);
 				const main_at = data.overrided_at || computeAmpereTrip(total_loads.current);
 				const main_current = parseFloat(total_loads.current.toFixed(2));
-				const conductor_size = computeConductorSize({
+				const conductor_size = data.overrided_conductor_size || computeConductorSize({
 					set: conductor_set,
 					qty: conductor_qty,
 					current: main_current,
@@ -433,6 +434,12 @@ export async function getComputedVoltageDrops() {
 		.exec();
 
 	if (root_node) {
+		// const computed_root_node_load = await getNodeById(root_node._data.id) as PhaseLoadSchedule
+
+		// if (computed_root_node_load) {
+		// 	nodes = [...nodes, computed_root_node_load];
+		// }
+
 		async function fetchChildNodes(parentId: string) {
 			const child_nodes = await getComputedLoads(parentId);
 			nodes = [...nodes, ...child_nodes];
