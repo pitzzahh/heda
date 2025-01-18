@@ -73,10 +73,10 @@
 					const { project, root_node_id } = created_project;
 
 					if (!project_name) {
+						await updateProjectTitle(project.id, 'Untitled');
 						toast.warning('Project title not fetched from file name.', {
 							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
-						await updateProjectTitle(project.id, 'Untitled');
 					}
 
 					if (await doesFileExists(file_path_with_file)) {
@@ -132,6 +132,15 @@
 						)
 						.finally(() =>
 							toast.success(`${project_state.current_project_name} created successfully`)
+						)
+						.catch((err) =>
+							toast.error(
+								`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
+								{
+									description:
+										'This is a system error and should not be here, the error has been logged.'
+								}
+							)
 						);
 				} catch (err) {
 					console.error(`Error: failed to create project: ${JSON.stringify(err)}`);
