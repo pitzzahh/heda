@@ -18,7 +18,7 @@
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import { rename, open as openFile } from '@tauri-apps/plugin-fs';
+	import { rename, open as openFile, copyFile, remove } from '@tauri-apps/plugin-fs';
 	import {
 		doesFileExists,
 		EXTENSION,
@@ -28,6 +28,7 @@
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { join } from '@tauri-apps/api/path';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte.js';
+	import { getSettingsState } from '@/hooks/settings-state.svelte';
 
 	let { data, children } = $props();
 
@@ -45,6 +46,7 @@
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
+	const settings_state = getSettingsState();
 
 	let component_state = $state({
 		is_editing: false,
@@ -100,6 +102,21 @@
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
+				if (settings_state.backup_project_file_if_exists) {
+					console.info(`Current project exists, backing up first: ${new_file_path}`);
+					toast.loading('Backing up project file', {
+						description:
+							'The project file is being backed up. You enabled this feature, to disable it go to settings.'
+					});
+					await copyFile(new_file_path, new_file_path.replace(EXTENSION, 'heda.bak'));
+					toast.info('Project file backed up', {
+						description:
+							'The old project file has been backed up, you can find it in the same folder.'
+					});
+					project_state.removeRecentProject(project.id, true);
+				}
+				console.info(`Current project exists, removing first: ${new_file_path}`);
+				await remove(new_file_path);
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file_path, new_file_path);
