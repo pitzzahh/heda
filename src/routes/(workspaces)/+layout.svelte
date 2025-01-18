@@ -87,7 +87,7 @@
 			const current_file_path = current_project.project_path.replace(old_file, '');
 
 			const old_file_path = await join(current_file_path, old_file);
-			const new_file_path = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), new_file)}`;
+			const new_file_path_with_file = `${await join(current_file_path.replace(`${old_file}.${EXTENSION}`, ''), new_file)}`;
 
 			console.log(`old_file: ${old_file}`);
 			console.log(`new_file: ${new_file}`);
@@ -95,30 +95,30 @@
 			console.log(`new_project_name: ${new_project_name}`);
 			console.log(`current_file_path: ${current_file_path}`);
 			console.log(`old_file_path: ${old_file_path}`);
-			console.log(`new_file_path: ${new_file_path}`);
+			console.log(`new_file_path: ${new_file_path_with_file}`);
 
-			if (project_name !== new_project_name && (await doesFileExists(new_file_path))) {
+			if (project_name !== new_project_name && (await doesFileExists(new_file_path_with_file))) {
 				new_project_name = await generateUniqueFileName(new_project_name);
 				toast.info('Project title already exists, we will rename it for you.', {
 					description: 'The project title is appended with a number to avoid conflicts.'
 				});
 				if (settings_state.backup_project_file_if_exists) {
-					console.info(`Current project exists, backing up first: ${new_file_path}`);
+					console.info(`Current project exists, backing up first: ${new_file_path_with_file}`);
 					toast.loading('Backing up project file', {
 						description:
 							'The project file is being backed up. You enabled this feature, to disable it go to settings.'
 					});
-					await copyFile(new_file_path, new_file_path.replace(EXTENSION, 'heda.bak'));
+					await copyFile(new_file_path_with_file, new_file_path_with_file.replace(EXTENSION, 'heda.bak'));
 					toast.info('Project file backed up', {
 						description:
 							'The old project file has been backed up, you can find it in the same folder.'
 					});
 					project_state.removeRecentProject(project.id, true);
 				}
-				console.info(`Current project exists, removing first: ${new_file_path}`);
+				console.info(`Current project exists, removing first: ${new_file_path_with_file}`);
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
-			await rename(old_file_path, new_file_path);
+			await rename(old_file_path, new_file_path_with_file);
 			project_state.current_project_name = new_project_name;
 			invalidate('app:workspace')
 				.then(() =>
@@ -126,7 +126,7 @@
 						project.id,
 						{
 							project_name: new_project_name,
-							project_path: new_file_path
+							project_path: new_file_path_with_file
 						},
 						true
 					)
