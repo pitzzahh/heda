@@ -57,7 +57,7 @@
 			await writeEncryptedFile(
 				file_data,
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-				project_state.current_file
+				project_state.current_project_path
 			);
 			undo_redo_state.resetUnsavedActions();
 		} catch (err) {

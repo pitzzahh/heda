@@ -18,7 +18,6 @@ export class ProjectState {
   private persisted_state: PersistedState<ProjectStateType>;
 
   recent_projects = $state<RecentProject[]>();
-  current_file = $state<FileHandle>();
   id = $state('')
   current_project_name = $state<string | undefined>(undefined);
   current_project_path = $state('');
@@ -95,15 +94,6 @@ export class ProjectState {
       project_path: this.current_project_path,
       exists: this.exists
     }
-  }
-
-  async setCurrentFile(file: FileHandle) {
-    this.current_file = file;
-    return this.current_file;
-  }
-
-  async closeCurrentFile() {
-    await this.current_file?.close();
   }
 
   async validateRecentProjects() {

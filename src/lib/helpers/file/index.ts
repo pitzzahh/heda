@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BaseDirectory, exists, FileHandle, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { BaseDirectory, exists, open as openFile, FileHandle, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
 import { encryptData, decryptData } from "@/helpers/security";
 
 export const BASE_DIR = BaseDirectory.Document;
@@ -78,11 +78,13 @@ export async function generateUniqueFileName(baseName: string, options?: ExistsO
   return fileName;
 }
 
-export async function writeEncryptedFile<T>(data: T, secret_key: string, file: FileHandle | undefined): Promise<void> {
-  if (!file) {
+export async function writeEncryptedFile<T>(data: T, secret_key: string, file_path: string, new_file: boolean = false): Promise<void> {
+  if (!file_path) {
     throw new Error("No file to write to");
   }
+  const file = await openFile(file_path, { write: true, create: true, createNew: new_file });
   await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
+  await file.close();
 }
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
   const decryptedData: T = decryptData<T>(new TextDecoder().decode(await readFile(filePath)), secret_key);
