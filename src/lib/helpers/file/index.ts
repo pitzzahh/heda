@@ -44,8 +44,8 @@ export function getFilePath(filePath: string): string {
 export async function getFileMetaData(path: string) {
   try {
     return await invoke('get_file_metadata', { path });
-  } catch (error) {
-    console.error('Error reading file attributes:', error);
+  } catch (err) {
+    console.error(`Error reading file attributes: ${JSON.stringify(err)}`);
   }
 }
 
@@ -53,7 +53,8 @@ export async function getFileName(path: string): Promise<string | undefined> {
   try {
     return await invoke("get_file_name", { path });
   } catch (err) {
-    console.error("Error fetching environment variable:", err);
+    console.error(`Error fetching environment variable: ${JSON.stringify(err)}`);
+
     return undefined;
   }
 }
@@ -62,7 +63,7 @@ export async function doesFileExists(path: string | URL, options?: ExistsOptions
   try {
     return await exists(path, options);
   } catch (err) {
-    console.error("Error checking if file exists:", err);
+    console.error(`Error checking if file exists: ${JSON.stringify(err)}`);
     return false;
   }
 }

@@ -468,8 +468,8 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error updating conductor sets:', error);
+	} catch (err) {
+		console.error(`Error updating conductor sets: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -513,8 +513,8 @@ export async function updateLoadDescription({
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error updating conductor load_description:', error);
+	} catch (err) {
+		console.error(`Error updating conductor load_description: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -544,8 +544,8 @@ export async function changeInsulation({
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing insulation:', error);
+	} catch (err) {
+		console.error(`Error changing insulation: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -566,8 +566,8 @@ export async function changePole(node_id: string, pole: string) {
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing pole:', error);
+	} catch (err) {
+		console.error(`Error changing pole: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -588,8 +588,8 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing data:', error);
+	} catch (err) {
+		console.error(`Error changing data: ${JSON.stringify(err)}`);
 	}
 }
 

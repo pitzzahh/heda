@@ -81,7 +81,7 @@ export async function checkNodeExists({
 
 		return node ? true : false;
 	} catch (err) {
-		console.error(`Error checking node existence: ${err}`);
+		console.error(`Error checking node existence: ${JSON.stringify(err)}`);
 		return false;
 	}
 }

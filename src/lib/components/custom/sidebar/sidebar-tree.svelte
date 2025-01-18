@@ -161,7 +161,7 @@
 	$effect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(e.key === 'Alt')
+			console.log(`${e.key === 'Alt'}`)
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
