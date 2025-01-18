@@ -15,25 +15,24 @@
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
-	import { open as openFile } from '@tauri-apps/plugin-fs';
 
 	const project_state = getProjectState();
 
-	async function handleLoadFile(path?: string | null) {
+	async function handleLoadFile(complete_file_path?: string | null) {
 		try {
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
 
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
-			if (!path) {
-				path = await open({
+			if (!complete_file_path) {
+				complete_file_path = await open({
 					multiple: false,
 					directory: false,
 					filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
 				});
 
-				if (!path) {
+				if (!complete_file_path) {
 					return toast.warning('No file selected', {
 						description: 'Cannot proceed, no file is selected.'
 					});
@@ -41,10 +40,9 @@
 			}
 
 			const loaded_data = await readEncryptedFile<FileExport>(
-				path,
+				complete_file_path,
 				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
 			);
-
 
 			if (!loaded_data) {
 				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
@@ -60,20 +58,13 @@
 			const recent_project_data = {
 				id,
 				project_name,
-				project_path: path,
+				project_path: complete_file_path,
 				exists: true
 			};
-
-			await project_state.setCurrentFile(
-				await openFile(path, {
-					read: true,
-					write: true
-				})
-			);
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
 				.then(() => {
 					if (!projectExists) {
-						project_state.addRecentProject(recent_project_data);
+						project_state.addRecentProject(recent_project_data, true);
 					}
 					project_state.setCurrentProject(recent_project_data);
 				})

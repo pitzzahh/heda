@@ -103,20 +103,31 @@
 			}
 			component_state.project_title = getFileNameWithoutExtension(new_project_name);
 			await rename(old_file_path, new_file_path);
-			project_state.updateProject(
-				project.id,
-				{
-					project_name: new_project_name,
-					project_path: new_file_path
-				},
-				true
-			);
-			await updateProjectTitle(project.id, component_state.project_title);
-			project_state.current_project_name = component_state.project_title;
+			project_state.current_project_name = new_project_name;
 			invalidate('app:workspace')
+				.then(() =>
+					project_state.updateProject(
+						project.id,
+						{
+							project_name: new_project_name,
+							project_path: new_file_path
+						},
+						true
+					)
+				)
+				.then(async () => await updateProjectTitle(project.id, new_project_name))
 				.then(() => undo_redo_state.setHasUnsavedActions())
 				.then(() => toggleEdit())
-				.finally(() => toast.success('Project title updated successfully'));
+				.then(() => toast.success('Project title updated successfully'))
+				.catch((err) =>
+					toast.error(
+						`Failed to update project title: ${(err as any)?.message ?? 'something went wrong'}`,
+						{
+							description:
+								'This is a system error and should not be here, the error has been logged.'
+						}
+					)
+				);
 		} catch (err) {
 			console.error(`Failed to update project title: ${JSON.stringify(err)}`);
 			return toast.error(
