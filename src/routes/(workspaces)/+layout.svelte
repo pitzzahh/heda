@@ -18,7 +18,7 @@
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import { rename } from '@tauri-apps/plugin-fs';
+	import { rename, open as openFile } from '@tauri-apps/plugin-fs';
 	import {
 		doesFileExists,
 		EXTENSION,
@@ -106,6 +106,12 @@
 					project_path: new_file_path
 				},
 				true
+			);
+			await project_state.setCurrentFile(
+				await openFile(new_file_path, {
+					read: true,
+					write: true
+				})
 			);
 			await updateProjectTitle(project.id, component_state.project_title);
 			project_state.current_project_name = component_state.project_title;
