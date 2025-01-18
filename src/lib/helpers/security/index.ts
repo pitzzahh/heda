@@ -1,60 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import CryptoJS from "crypto-js";
 
-// Custom encoding map (Base64 to gibberish Unicode)
-const customCharMap: { [key: string]: string } = {
-  "a": "♜", // Rook
-  "B": "♞", // Knight
-  "c": "♝", // Bishop
-  "D": "♛", // Queen
-  "e": "♚", // King
-  "F": "♟", // Pawn
-  "g": "♖", // Rook
-  "H": "♘", // Knight
-  "i": "♗", // Bishop
-  "J": "♕", // Queen
-  "k": "♔", // King
-  "L": "♙", // Pawn
-  "m": "♠", // Spade
-  "N": "♣", // Club
-  "o": "♥", // Heart
-  "P": "♦", // Diamond
-  "q": "♪", // Music Note
-  "R": "♫", // Music Note
-  "s": "☼", // Sun
-  "T": "☾", // Moon
-  "u": "☁", // Cloud
-  "V": "☂", // Umbrella
-  "w": "☃", // Snowman
-  "X": "✘", // Cross
-  "y": "✔", // Checkmark
-  "Z": "✦", // Star
-  "0": "⓪",
-  "2": "②",
-  "4": "④",
-  "6": "⑥",
-  "8": "⑧",
-};
-
-// Function to encode Base64 using custom gibberish map
-function encodeToCustomGibberish(base64String: string): string {
-  return base64String
-    .split("")
-    .map((char) => customCharMap[char] || char)
-    .join("");
-}
-
-// Function to decode gibberish back to Base64
-function decodeFromCustomGibberish(gibberishString: string): string {
-  const reverseMap = Object.fromEntries(
-    Object.entries(customCharMap).map(([k, v]) => [v, k])
-  );
-  return gibberishString
-    .split("")
-    .map((char) => reverseMap[char] || char)
-    .join("");
-}
-
 // Encrypt data
 export function encryptData<T>(data: T, secret_key: string): string {
   // Generate a random IV
@@ -67,9 +13,9 @@ export function encryptData<T>(data: T, secret_key: string): string {
   const hmac = CryptoJS.HmacSHA256(iv.toString(CryptoJS.enc.Base64) + encrypted, secret_key);
 
   // Encode IV, HMAC, and encrypted data with custom gibberish encoding
-  const ivEncoded = encodeToCustomGibberish(iv.toString(CryptoJS.enc.Base64));
-  const hmacEncoded = encodeToCustomGibberish(hmac.toString(CryptoJS.enc.Base64));
-  const encryptedEncoded = encodeToCustomGibberish(encrypted);
+  const ivEncoded = iv.toString(CryptoJS.enc.Base64);
+  const hmacEncoded = hmac.toString(CryptoJS.enc.Base64);
+  const encryptedEncoded = encrypted;
 
   return `${ivEncoded}:${hmacEncoded}:${encryptedEncoded}`;
 }
@@ -82,23 +28,18 @@ export function decryptData<T>(encryptedData: string, secret_key: string): T {
     throw new Error("Invalid encrypted data format");
   }
 
-  // Decode gibberish back to Base64
-  const ivBase64 = decodeFromCustomGibberish(ivGibberish);
-  const hmacBase64 = decodeFromCustomGibberish(hmacGibberish);
-  const encryptedBase64 = decodeFromCustomGibberish(encryptedGibberish);
-
   // Parse the IV and HMAC
-  const iv = CryptoJS.enc.Base64.parse(ivBase64);
-  const hmac = CryptoJS.enc.Base64.parse(hmacBase64);
+  const iv = CryptoJS.enc.Base64.parse(ivGibberish);
+  const hmac = CryptoJS.enc.Base64.parse(hmacGibberish);
 
   // Verify the HMAC
-  const computedHmac = CryptoJS.HmacSHA256(ivBase64 + encryptedBase64, secret_key);
+  const computedHmac = CryptoJS.HmacSHA256(ivGibberish + encryptedGibberish, secret_key);
   if (CryptoJS.enc.Hex.stringify(hmac) !== CryptoJS.enc.Hex.stringify(computedHmac)) {
     throw new Error("Data integrity check failed");
   }
 
   // Decrypt the data
-  const decryptedBytes = CryptoJS.AES.decrypt(encryptedBase64, CryptoJS.enc.Utf8.parse(secret_key), { iv });
+  const decryptedBytes = CryptoJS.AES.decrypt(encryptedGibberish, CryptoJS.enc.Utf8.parse(secret_key), { iv });
   const decryptedData = decryptedBytes.toString(CryptoJS.enc.Utf8);
 
   if (!decryptedData) {
