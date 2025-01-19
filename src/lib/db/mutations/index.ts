@@ -657,11 +657,17 @@ export async function loadCurrentProject(file_export: FileExport, file_name: str
 	await db.projects.find().remove();
 	await db.nodes.find().remove();
 
-	// Insert the project
-	await db.projects.insert({
+	const reconstructed_project = {
 		...project,
-		project_name: file_name
-	});
+		project_name: file_name || project.project_name
+	}
+
+	console.log(`Reconstructed project: ${JSON.stringify(reconstructed_project)}`);
+
+	// Insert the project
+	const inserted_loaded_project = await db.projects.insert(reconstructed_project);
+
+	console.log(`Loaded project: ${JSON.stringify(inserted_loaded_project)}`);
 
 	// Insert the nodes
 	for (const node of nodes) {
