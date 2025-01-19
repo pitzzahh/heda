@@ -8,7 +8,7 @@
 	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
 	import { keyToString, getEnv, generateKey } from '@/helpers/security';
-	import { getFileName, getFileNameWithoutExtension, readEncryptedFile } from '@/helpers/file';
+	import { getFileName, readEncryptedFile } from '@/helpers/file';
 	import type { FileExport } from '@/types/main';
 	import { loadCurrentProject, updateProjectTitle } from '@/db/mutations';
 	import { goto } from '$app/navigation';
@@ -53,19 +53,16 @@
 				});
 			}
 
-			const file_name_with_extension = await getFileName(complete_file_path);
+			const file_name = await getFileName(complete_file_path);
 
-			if (!file_name_with_extension) {
-				console.error(`Failed to get file name: ${file_name_with_extension}`);
+			if (!file_name) {
+				console.error(`Failed to get file name of: ${complete_file_path}`);
 				return toast.warning(`Failed to get file name of: ${complete_file_path}`, {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
 
-			const file_name = getFileNameWithoutExtension(file_name_with_extension);
-
 			console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
-			console.log(`File name with extension: ${file_name_with_extension}`);
 			console.log(`Complete file path: ${complete_file_path}`);
 			console.log(`File name: ${file_name}`);
 
