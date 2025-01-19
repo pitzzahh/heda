@@ -28,7 +28,7 @@
 	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
+	import { Collapsibles, getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -53,7 +53,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
-	let collapsibles = new Collapsibles();
+	let collapsibles = getCollapsiblesState();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -84,11 +84,11 @@
 					case 'add':
 						const added_node = await addNode({ parent_id, panel_data: form.data });
 						toast.success(`${form.data.name} added successfully`);
+						collapsibles.addNodeId(parent_id);
 						undo_redo_state.setActionToUndo({
 							data: added_node as unknown as PhaseLoadSchedule,
 							action: 'create_node'
 						});
-						collapsibles.addNodeId(parent_id);
 						break;
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
@@ -335,7 +335,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 
-			<Form.Field {form} name="length"  class="mt-[.19rem] flex flex-col">
+			<Form.Field {form} name="length" class="mt-[.19rem] flex flex-col">
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Length</Form.Label>
@@ -349,7 +349,7 @@
 						/>
 					{/snippet}
 				</Form.Control>
-				<Form.Description>This is the length of the load</Form.Description>
+				<Form.Description>This is the length of the panel</Form.Description>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>

@@ -16,12 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
           - platform: "windows-latest"
             args: ""
 
@@ -61,8 +61,39 @@ jobs:
           workspaces: "./src-tauri -> target"
 
       - name: Install frontend
-        run: |
-          bun install
+        run: bun install
+
+      - name: Create env
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_APP_PASS_PHRASE: ${{ secrets.APP_PASS_PHRASE }}
+          envkey_FILE_ENCRYPTION_SALT: ${{ secrets.FILE_ENCRYPTION_SALT }}
+
+      - name: Read created env file (Linux/Mac)
+        if: matrix.platform != 'windows-latest'
+        run: cat $GITHUB_WORKSPACE/.env
+
+      - name: Read created env file (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: type $env:GITHUB_WORKSPACE\.env
+
+      # - name: Create env on Mac or Linux
+      #   if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
+      #   run: |
+      #     echo "${{ secrets.PROD_FULL_ENV }}" > $GITHUB_WORKSPACE/.env
+
+      # - name: Create env on Windows
+      #   if: matrix.platform == 'windows-latest'
+      #   run: |
+      #     echo "${{ secrets.PROD_FULL_ENV }}" | Out-File -FilePath $env:GITHUB_WORKSPACE\.env
+
+      # - name: Log the $GITHUB_WORKSPACE on Mac or linux
+      #   if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
+      #   run: ls -la $GITHUB_WORKSPACE
+
+      # - name: Log the $GITHUB_WORKSPACE on Windows
+      #   if: matrix.platform == 'windows-latest'
+      #   run: dir $GITHUB_WORKSPACE
 
       - name: CI Upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
@@ -91,6 +122,6 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "${{ env.APP_NAME }} v__VERSION__"
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

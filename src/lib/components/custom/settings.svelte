@@ -35,11 +35,10 @@
 	import * as Sidebar from '@/components/ui/sidebar/index.js';
 	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import * as Tooltip from '@/components/ui/tooltip';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck, SunMoon, Moon, Sun } from '@/assets/icons';
+	import { Cog, Loader, PackageCheck, File, SunMoon, Moon, Sun } from '@/assets/icons';
 	import { Label } from '@/components/ui/label/index.js';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
@@ -48,14 +47,17 @@
 	import { Switch } from '@/components/ui/switch/index.js';
 	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates, installUpdate } from '@/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
-	import { mode, setMode, systemPrefersMode } from 'mode-watcher';
-	import { setModeAndColor } from '@/helpers/theme';
+	import { userPrefersMode } from 'mode-watcher';
 	import type { Settings } from '@/types/settings';
+	import { DIALOG_STATE_CTX } from '@/state/constants';
+	import { getState } from '@/state/index.svelte';
+	import type { DialogState } from '@/state/types';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { resetData } from '@/db/mutations';
 
 	let { project }: { project?: Project } = $props();
 
@@ -65,8 +67,10 @@
 	] as const;
 
 	const settingsState = getSettingsState();
+	const undo_redo_state = getUndoRedoState();
+	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
-
+	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
@@ -82,14 +86,28 @@
 		await updateProjectSettings(project.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
+		.then(() => undo_redo_state.setHasUnsavedActions())
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
 	}
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
-		if ($mode) {
-			settingsState.setThemeColor(themeColor, $mode);
+		if (settingsState.themeMode) {
+			settingsState.setThemeColor(
+				themeColor,
+				settingsState.themeMode === 'system'
+					? $userPrefersMode === 'dark'
+						? 'dark'
+						: 'light'
+					: settingsState.themeMode
+			);
 		}
+	}
+
+	async function handleNewProject() {
+		await resetData();
+		dialogs_state.highestUnit = true;
+		component_state.current.settings_open = false;
 	}
 </script>
 
@@ -170,6 +188,18 @@
 {#snippet project_settings()}
 	<div class="flex flex-col gap-2">
 		<p class="font-semibold">Project</p>
+		<div class="grid w-full grid-cols-2 gap-1.5">
+			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
+				<File />
+				Home
+			</Button>
+			<Button onclick={handleNewProject} class="w-full">
+				<File />
+				New Project
+			</Button>
+		</div>
+
+		<Separator class="my-1 w-full" />
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
@@ -186,6 +216,36 @@
 				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
 			/>
 		</div>
+
+		<Separator class="my-1 w-full" />
+		<div class="flex flex-row items-center justify-between gap-3">
+			<div class="space-y-0.5">
+				<Label for="auto_save">Auto Save</Label>
+				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
+			</div>
+			<Switch
+				disabled={project === undefined}
+				id="auto_save"
+				checked={settingsState.auto_save_enabled}
+				onCheckedChange={(value) => settingsState.setAutoSave(value)}
+			/>
+		</div>
+		<Separator class="my-1 w-full" />
+		<div class="flex flex-row items-center justify-between gap-3">
+			<div class="space-y-0.5">
+				<Label for="backup_project_file">Backup old project file</Label>
+				<p class="text-xs text-muted-foreground">
+					Automatically backup old project file when creating new project and performing replacing
+					it upon project creation.
+				</p>
+			</div>
+			<Switch
+				disabled={project === undefined}
+				id="backup_project_file"
+				checked={settingsState.backup_project_file_if_exists}
+				onCheckedChange={(value) => settingsState.setBackupProjectFileIfExists(value)}
+			/>
+		</div>
 	</div>
 {/snippet}
 
@@ -193,43 +253,58 @@
 	<div class="flex items-center justify-between gap-2">
 		<div class="flex w-full flex-col items-center justify-center gap-2">
 			<Label for="colors">Theme</Label>
-			<RadioGroup.Root value={$mode} class="grid grid-cols-3">
+			<RadioGroup.Root value="" class="grid grid-cols-3">
 				<Label
 					for="light"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'light'
+						}
+					)}
 				>
 					<RadioGroup.Item
 						value="light"
 						id="light"
 						class="sr-only"
 						aria-label="Light Theme"
-						onclick={() => setModeAndColor(settingsState, 'light')}
+						onclick={() => settingsState.setThemeMode('light')}
 					/>
 					<Sun class="h-4 w-4" />
 				</Label>
 				<Label
 					for="dark"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'dark'
+						}
+					)}
 				>
 					<RadioGroup.Item
 						value="dark"
 						id="dark"
 						class="sr-only"
 						aria-label="Dark Theme"
-						onclick={() => setModeAndColor(settingsState, 'dark')}
+						onclick={() => settingsState.setThemeMode('dark')}
 					/>
 					<Moon class="h-4 w-4" />
 				</Label>
 				<Label
 					for="system"
-					class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+					class={cn(
+						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						{
+							'border-primary': settingsState.themeMode === 'system'
+						}
+					)}
 				>
 					<RadioGroup.Item
 						value="system"
 						id="system"
 						class="sr-only"
 						aria-label="System default theme"
-						onclick={() => setModeAndColor(settingsState, 'system')}
+						onclick={() => settingsState.setThemeMode('system')}
 					/>
 					<SunMoon class="h-4 w-4" />
 				</Label>
@@ -358,7 +433,6 @@
 					component_state.current.update_state = 'processing';
 					try {
 						component_state.current.app_update = await checkForUpdates();
-						console.log('component_state.current.app_update', component_state.current.app_update);
 						component_state.current.update_state = component_state.current.app_update
 							? 'available'
 							: 'no_updates';

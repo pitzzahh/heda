@@ -15,7 +15,5 @@ export function getKeyByValue<T extends Record<string, string>>(
 	obj: T,
 	value: string
 ): keyof T | undefined {
-	console.log('val', value);
-
 	return (Object.keys(obj) as (keyof T)[]).find((key) => obj[key] === value);
 }

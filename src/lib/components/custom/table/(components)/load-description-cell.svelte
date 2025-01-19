@@ -41,8 +41,8 @@
 			});
 			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			toast.success('Load description updated successfully');
-		} catch (error) {
-			console.log(error);
+		} catch (err) {
+			console.error(`Error: failed to update load description: ${JSON.stringify(err)}`);
 			toast.error('An error occured while updating the load description');
 		}
 	}

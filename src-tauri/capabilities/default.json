@@ -9,11 +9,25 @@
     "core:default",
     "log:default",
     "process:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-fullscreen",
     "updater:default",
-    "dialog:default",
-    "dialog:allow-ask",
-    "dialog:allow-message",
-    "updater:allow-check",
-    "updater:allow-download-and-install"
+    "fs:scope-home",
+    "fs:allow-home-read",
+    "fs:allow-home-write",
+    "fs:scope-home-index",
+    "fs:allow-home-read-recursive",
+    "fs:allow-home-write-recursive",
+    "fs:scope-home-recursive",
+    "fs:allow-rename",
+    "fs:allow-remove",
+    "fs:write-files",
+    "fs:read-files",
+    "dialog:default"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
   ]
 }

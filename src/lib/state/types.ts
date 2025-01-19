@@ -1,13 +1,19 @@
 import { SettingsState } from '@/hooks/settings-state.svelte';
 import { UndoRedoState } from '@/hooks/undo-redo.svelte';
+import { SelectNodesToDelete } from '@/hooks/select-nodes-to-delete.svelte';
+import { Collapsibles } from '@/hooks/node-collapsibles.svelte';
+import type { ProjectState } from '@/hooks/project-state.svelte';
+
 export type State =
 	| MainState
 	| RouteState
 	| DialogState
 	| CountState
-	| MiscState
 	| SettingsState
-	| UndoRedoState;
+	| UndoRedoState
+	| SelectNodesToDelete
+	| ProjectState
+	| Collapsibles;
 
 export type MainState = {
 	isArchiving: boolean;
@@ -21,6 +27,7 @@ export type RouteState = {
 
 export type DialogState = {
 	highestUnit: boolean;
+	has_unsaved_changes: boolean;
 };
 
 export type CountState = {
@@ -35,11 +42,4 @@ export type CountState = {
 	resignedEmployeesCount: number;
 	transferredEmployeesCount: number;
 	temporaryEmployeesCount: number;
-};
-
-export type MiscState = {
-	form_data?: {
-		data?: unknown;
-		label?: string;
-	};
 };

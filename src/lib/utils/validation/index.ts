@@ -1,3 +1,4 @@
+import { toast } from "svelte-sonner";
 
 /**
  * Deeply compares two objects or undefined values for structural equality.
@@ -132,17 +133,17 @@ type NestedKey = string | string[];
  * @returns True if all required keys are present and have data, otherwise false.
  */
 export function hasRequiredFields<T extends Record<string, any>>(obj: T, keys: NestedKey[]): boolean {
-    const isPresent = (value: any): boolean => value !== null && value !== undefined;
+	const isPresent = (value: any): boolean => value !== null && value !== undefined;
 
-    const checkKey = (obj: any, path: NestedKey): boolean => {
-        if (typeof path === "string") {
-            return isPresent(obj[path]);
-        }
+	const checkKey = (obj: any, path: NestedKey): boolean => {
+		if (typeof path === "string") {
+			return isPresent(obj[path]);
+		}
 
-        return path.reduce((subObj, key) => (isPresent(subObj) ? subObj[key] : undefined), obj) !== undefined;
-    };
+		return path.reduce((subObj, key) => (isPresent(subObj) ? subObj[key] : undefined), obj) !== undefined;
+	};
 
-    return keys.every((key) => checkKey(obj, key));
+	return keys.every((key) => checkKey(obj, key));
 }
 
 export function hasRequiredKeys<T extends object>(
@@ -159,4 +160,22 @@ export function hasRequiredKeys<T extends object>(
 		}
 		return obj[key] !== undefined && obj[key] !== null;
 	});
+}
+
+export function validateEnv(app_pass_phrase: string | null, file_encryption_salt: string | null) {
+	if (!app_pass_phrase) {
+		toast.warning('Failed to get the APP_PASS_PHRASE', {
+			description:
+				'This is a system error and should not be here, the error has been logged.'
+		});
+		return false;
+	}
+	if (!file_encryption_salt) {
+		return toast.warning('Failed to get the FILE_ENCRYPTION_SALT', {
+			description:
+				'This is a system error and should not be here, the error has been logged.'
+		});
+		return false;
+	}
+	return true;
 }

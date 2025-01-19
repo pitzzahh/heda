@@ -28,9 +28,8 @@
 			});
 			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			toast.success('Sets updated successfully');
-		} catch (error) {
-			console.log(error);
-			toast.error('An error occured while updating the sets');
+		} catch (err) {
+			console.error(`An error occured while updating the sets: ${JSON.stringify(err)}`);
 		}
 	}
 
