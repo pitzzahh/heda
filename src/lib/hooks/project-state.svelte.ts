@@ -1,7 +1,7 @@
 import { PersistedState } from 'runed';
 import { setState, getState } from '@/state/index.svelte';
 import { PROJECT_STATE_CTX } from '@/state/constants';
-import { exists, FileHandle } from '@tauri-apps/plugin-fs';
+import { exists } from '@tauri-apps/plugin-fs';
 
 type RecentProject = {
   id: string;
