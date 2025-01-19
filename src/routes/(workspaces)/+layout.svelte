@@ -23,23 +23,8 @@
 	const { is_new_file, is_load_file, generic_phase_panel_form, phase_main_load_form } = data;
 
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
-	let is_editing = $state(false);
 
 	let project_title = $state(data?.project?.project_name || 'Untitled');
-
-	function toggleEdit() {
-		is_editing = !is_editing;
-		tick().then(() => {
-			document.getElementById('project-title-input')?.focus();
-		});
-	}
-
-	async function saveProjectTitle() {
-		if (!data?.project || !project_title) return;
-		await updateProjectTitle(data.project.id, project_title);
-		await invalidateAll();
-		toggleEdit();
-	}
 
 	onMount(() => {
 		if (is_load_file && !data.root_node) {
@@ -66,36 +51,10 @@
 				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
 			>
 				<Sidebar.Trigger class="-ml-1" />
-
 				<Separator orientation="vertical" class="mr-2 h-4" />
-				<div class="flex items-center gap-2">
-					{#if is_editing}
-						<Input bind:value={project_title} type="text" id="project-title-input" />
-					{:else}
-						<p>
-							{data.project?.project_name || 'Untitled'}
-						</p>
-					{/if}
-
-					{#if data.project}
-						<Tooltip>
-							<TooltipTrigger>
-								<Button
-									size="icon"
-									variant="outline"
-									onclick={!is_editing ? toggleEdit : saveProjectTitle}
-								>
-									{#if is_editing}
-										<Save class="h-4 w-4" />
-									{:else}
-										<PenLine class="h-4 w-4" />
-									{/if}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>{is_editing ? 'Save' : 'Edit'}</TooltipContent>
-						</Tooltip>
-					{/if}
-				</div>
+				<p>
+					{project_title}
+				</p>
 			</header>
 
 			<svelte:boundary>
