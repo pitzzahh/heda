@@ -69,7 +69,16 @@
 			console.log(`Complete file path: ${complete_file_path}`);
 			console.log(`File name: ${file_name}`);
 
-			await loadCurrentProject(loaded_data, file_name);
+			await loadCurrentProject(
+				{
+					...loaded_data,
+					project: {
+						...loaded_data.project,
+						project_name: file_name
+					}
+				},
+				file_name
+			);
 
 			const { id } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
@@ -80,9 +89,6 @@
 				project_path: complete_file_path,
 				exists: true
 			};
-			await updateProjectTitle(loaded_data.project.id, file_name).then(() =>
-				undo_redo_state.setHasUnsavedActions()
-			);
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
 				.then(() => {
 					if (!projectExists) {
