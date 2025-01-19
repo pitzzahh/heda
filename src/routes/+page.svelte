@@ -11,7 +11,7 @@
 	import { getFileName, readEncryptedFile } from '@/helpers/file';
 	import type { FileExport } from '@/types/main';
 	import { loadCurrentProject, updateProjectTitle } from '@/db/mutations';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
@@ -66,29 +66,19 @@
 			console.log(`Complete file path: ${complete_file_path}`);
 			console.log(`File name: ${file_name}`);
 
-			await loadCurrentProject(
-				{
-					...loaded_data,
-					project: {
-						...loaded_data.project,
-						project_name: file_name
-					}
-				},
-				file_name
-			);
-
-			const { id } = loaded_data.project;
-			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
-
+			await loadCurrentProject(loaded_data, file_name);
 			const recent_project_data = {
-				id,
+				id: loaded_data.project.id,
 				project_name: file_name,
 				project_path: complete_file_path,
 				exists: true
 			};
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
+				.then(() => invalidate('app:workspace'))
 				.then(() => {
-					if (!projectExists) {
+					if (
+						!(project_state.recent_projects?.some((p) => p.id === recent_project_data.id) ?? false)
+					) {
 						project_state.addRecentProject(recent_project_data, true);
 					}
 					project_state.setCurrentProject(recent_project_data);
