@@ -58,6 +58,7 @@ export async function databaseInstance(name: string = 'heda'): Promise<RxDatabas
 					schema: node_schema
 				}
 			});
+			console.log(`Added collections: ${JSON.stringify(added_collections_result)}`);
 		} catch (err) {
 			await removeRxDatabase(name, getRxStorageDexie())
 			console.error(`Failed to add collections: ${JSON.stringify(err)}`);
