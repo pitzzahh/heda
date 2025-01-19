@@ -74,7 +74,6 @@
 				exists: true
 			};
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
-				.then(() => invalidate('app:workspace'))
 				.then(() => {
 					if (
 						!(project_state.recent_projects?.some((p) => p.id === recent_project_data.id) ?? false)
