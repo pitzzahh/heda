@@ -86,7 +86,7 @@
 		await updateProjectSettings(project.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
-		.then(() => undo_redo_state.setHasUnsavedActions())
+			.then(() => undo_redo_state.setHasUnsavedActions())
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
 	}
@@ -472,7 +472,7 @@
 			</Button>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>
-				<Button onclick={reset}>oops! try again</Button>
+				<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 			{/snippet}
 		</svelte:boundary>
 	</div>
