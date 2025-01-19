@@ -649,7 +649,7 @@ export async function resetData(minimumDeletedTime: number = 0) {
 	await db.nodes.cleanup(minimumDeletedTime);
 }
 
-export async function loadCurrentProject(file_export: FileExport) {
+export async function loadCurrentProject(file_export: FileExport, file_name: string) {
 	const db = await databaseInstance();
 	const { project, nodes } = file_export;
 
@@ -658,7 +658,10 @@ export async function loadCurrentProject(file_export: FileExport) {
 	await db.nodes.find().remove();
 
 	// Insert the project
-	await db.projects.insert(project);
+	await db.projects.insert({
+		...project,
+		project_name: file_name
+	});
 
 	// Insert the nodes
 	for (const node of nodes) {
