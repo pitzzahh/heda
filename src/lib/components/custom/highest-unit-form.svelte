@@ -64,6 +64,8 @@
 
 					const created_project = await createProject(project_name ?? 'Untitled', form.data);
 
+					console.log(`Created project: ${JSON.stringify(created_project)}`);
+
 					if (!created_project) {
 						return toast.warning('Failed to create project', {
 							description: 'The project was not created, please try again.'
