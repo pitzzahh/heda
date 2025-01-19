@@ -8,15 +8,17 @@
 	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
 	import { keyToString, getEnv, generateKey } from '@/helpers/security';
-	import { readEncryptedFile } from '@/helpers/file';
+	import { getFileName, getFileNameWithoutExtension, readEncryptedFile } from '@/helpers/file';
 	import type { FileExport } from '@/types/main';
-	import { loadCurrentProject } from '@/db/mutations';
+	import { loadCurrentProject, updateProjectTitle } from '@/db/mutations';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	const project_state = getProjectState();
+	const undo_redo_state = getUndoRedoState();
 
 	async function handleLoadFile(complete_file_path?: string | null) {
 		try {
@@ -50,17 +52,37 @@
 					description: 'An error occurred while loading the file.'
 				});
 			}
+
+			const file_name_with_extension = await getFileName(complete_file_path);
+
+			if (!file_name_with_extension) {
+				console.error(`Failed to get file name: ${file_name_with_extension}`);
+				return toast.warning(`Failed to get file name of: ${complete_file_path}`, {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
+			const file_name = getFileNameWithoutExtension(file_name_with_extension);
+
 			console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
-			await loadCurrentProject(loaded_data);
-			const { id, project_name } = loaded_data.project;
+			console.log(`File name with extension: ${file_name_with_extension}`);
+			console.log(`Complete file path: ${complete_file_path}`);
+			console.log(`File name: ${file_name}`);
+
+			await loadCurrentProject(loaded_data, file_name);
+
+			const { id } = loaded_data.project;
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
 
 			const recent_project_data = {
 				id,
-				project_name,
+				project_name: file_name,
 				project_path: complete_file_path,
 				exists: true
 			};
+			await updateProjectTitle(loaded_data.project.id, file_name).then(() =>
+				undo_redo_state.setHasUnsavedActions()
+			);
 			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
 				.then(() => {
 					if (!projectExists) {
@@ -68,15 +90,20 @@
 					}
 					project_state.setCurrentProject(recent_project_data);
 				})
-				.finally(() =>
+				.then(() =>
 					toast.success('Project loaded successfully', {
 						description: 'The file has been loaded successfully.'
+					})
+				)
+				.catch((err) =>
+					toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
+						description: 'This is a system error and should not be here, the error has been logged.'
 					})
 				);
 		} catch (err) {
 			console.error(`Failed to load file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while loading the file.'
+				description: 'This is a system error and should not be here, the error has been logged.'
 			});
 		}
 	}
@@ -147,9 +174,8 @@
 										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
 											<Button
 												variant={project.exists ? 'outline' : 'warning'}
-												class="flex flex-1 items-center justify-start px-1.5 py-3"
+												class="flex flex-1 items-center justify-start px-1.5 py-4"
 												disabled={!project.exists}
-												size="xl"
 												onclick={() => handleLoadFile(project.project_path)}
 											>
 												<MonitorCog class="mr-2" />
