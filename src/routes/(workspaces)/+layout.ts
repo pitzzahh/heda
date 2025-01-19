@@ -21,7 +21,6 @@ export const load = async ({ depends, url: { searchParams } }) => {
 		file_encryption_salt,
 		generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
-		project_title: project?.project_name,
 		can_create_project: app_pass_phrase !== null && file_encryption_salt !== null,
 		project,
 		root_node
