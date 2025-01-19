@@ -4,8 +4,10 @@ import type { GenericPhasePanelSchema } from '@/schema/panel';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { Project, Node } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+import type { FileExport } from '@/types/main';
+import { getCurrentProject } from '../queries';
 
-export async function createProject(highest_unit_form: Node['highest_unit_form']) {
+export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form']) {
 	const database = await databaseInstance();
 
 	try {
@@ -20,7 +22,7 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 		const project = await database.projects.insert({
 			id: createId(),
 			root_node_id: created_root_node._data.id,
-			project_name: 'Untitled',
+			project_name,
 			settings: {
 				is_adjustment_factor_dynamic: false
 			}
@@ -30,9 +32,8 @@ export async function createProject(highest_unit_form: Node['highest_unit_form']
 			project: project as Project,
 			root_node_id: created_root_node._data.id as string
 		};
-	} catch (error) {
-		console.error('Error creating a project:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error in creating project: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -55,8 +56,7 @@ export async function updateProjectSettings(
 			}
 		});
 	} catch (error) {
-		console.error('Error in updating project settings:', error);
-		throw error;
+		console.error(`Error in updating project settings: ${JSON.stringify(error)}`);
 	}
 }
 
@@ -76,9 +76,8 @@ export async function updateProjectTitle(id: string, project_name: string) {
 				project_name
 			}
 		});
-	} catch (error) {
-		console.error('Error updating project title:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error updating project title: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -124,9 +123,8 @@ export async function addNode({
 		});
 
 		return created_node._data;
-	} catch (error) {
-		console.error('Error adding a node:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error updating project title: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -177,7 +175,9 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			overrided_ampere_frames,
 			pole,
 			kaic,
-			is_at_used_as_currents_value
+			is_at_used_as_currents_value,
+			overrided_length,
+			overrided_z
 		} = existing_node._data;
 		const created_node = await database.nodes.insert({
 			id: createId(),
@@ -197,6 +197,8 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			egc_insulation,
 			conduit_type,
 			overrided_ampere_frames,
+			overrided_length,
+			overrided_z,
 			pole,
 			kaic,
 			is_at_used_as_currents_value,
@@ -232,9 +234,8 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 		}
 
 		return created_node._data;
-	} catch (error) {
-		console.error('Error copying and adding a node:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error copying and adding a node: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -266,73 +267,77 @@ export async function updateNode({
 
 		const update_query = !!whole_data
 			? query.update({
-					$set: {
-						...{
-							...whole_data,
-							panel_data: whole_data.panel_data
-								? JSON.parse(JSON.stringify(whole_data.panel_data))
-								: undefined,
-							load_data: whole_data.load_data
-								? JSON.parse(JSON.stringify(whole_data.load_data))
-								: undefined
-						}
+				$set: {
+					...{
+						...whole_data,
+						panel_data: whole_data.panel_data
+							? JSON.parse(JSON.stringify(whole_data.panel_data))
+							: undefined,
+						load_data: whole_data.load_data
+							? JSON.parse(JSON.stringify(whole_data.load_data))
+							: undefined
 					}
-				})
+				}
+			})
 			: query.update({
-					$set: {
-						parent_id,
-						panel_data,
-						length: load_data?.length || panel_data?.length,
-						circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
-						load_data: load_data as Node['load_data']
-					}
-				});
+				$set: {
+					parent_id,
+					panel_data,
+					length: load_data?.length || panel_data?.length,
+					circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
+					load_data: load_data as Node['load_data']
+				}
+			});
 
 		const is_changing_parent = parent_id !== existing_node._data.parent_id;
 
 		if (is_changing_parent) {
-			// remove the node from its current parent
-			if (existing_node._data.parent_id) {
-				const current_parent_query = database.nodes.findOne({
-					selector: { id: existing_node._data.parent_id }
-				});
-				const current_parent = await current_parent_query.exec();
 
-				if (current_parent) {
-					await current_parent_query.update({
-						$set: {
-							child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
-						}
-					});
-				}
-			}
+			await updateNodeParentById({
+				id,
+				parent_id: existing_node._data.parent_id
+			}, parent_id)
+			// // remove the node from its current parent
+			// if (existing_node._data.parent_id) {
+			// 	const current_parent_query = database.nodes.findOne({
+			// 		selector: { id: existing_node._data.parent_id }
+			// 	});
+			// 	const current_parent = await current_parent_query.exec();
 
-			// addd the node to the new parent
-			const new_parent_query = database.nodes.findOne({
-				selector: { id: parent_id }
-			});
-			const new_parent = await new_parent_query.exec();
+			// 	if (current_parent) {
+			// 		await current_parent_query.update({
+			// 			$set: {
+			// 				child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== id)
+			// 			}
+			// 		});
+			// 	}
+			// }
 
-			if (new_parent) {
-				await new_parent_query.update({
-					$set: {
-						child_ids: [...new_parent._data.child_ids, id]
-					}
-				});
-			}
+			// // addd the node to the new parent
+			// const new_parent_query = database.nodes.findOne({
+			// 	selector: { id: parent_id }
+			// });
+			// const new_parent = await new_parent_query.exec();
+
+			// if (new_parent) {
+			// 	await new_parent_query.update({
+			// 		$set: {
+			// 			child_ids: [...new_parent._data.child_ids, id]
+			// 		}
+			// 	});
+			// }
 		}
 
 		return (await update_query)?._data;
-	} catch (error) {
-		console.error('Error updating node:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error updating node: ${JSON.stringify(err)}`);
 	}
 }
 
 export async function removeNode(
 	id: string,
 	visited: Set<string> = new Set()
-): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }> {
+): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined> {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
 	}
@@ -345,13 +350,11 @@ export async function removeNode(
 		const children = await database.nodes.find({ selector: { parent_id: id } }).exec();
 
 		for (const child of children) {
-			const { removed_node, children_nodes: grand_children } = await removeNode(
-				child._data.id,
-				visited
-			);
-
-			// [...children_nodes, removed_node, ...grand_children]
-			children_nodes.push(removed_node, ...grand_children);
+			const result = await removeNode(child._data.id, visited);
+			if (result) {
+				const { removed_node, children_nodes: grand_children } = result;
+				children_nodes.push(removed_node, ...grand_children);
+			}
 		}
 
 		const query = database.nodes.findOne({ selector: { id } });
@@ -363,19 +366,12 @@ export async function removeNode(
 
 		await query.remove();
 
-		console.log(`Node ${id} removed successfully`);
-		console.log({
-			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
-			children_nodes
-		});
-
 		return {
 			removed_node: removed_node._data as unknown as PhaseLoadSchedule,
 			children_nodes
 		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
-		throw error;
 	}
 }
 
@@ -399,18 +395,26 @@ export async function deleteProject(project_id: string) {
 		await database.projects.find().remove(); // remove the other projects
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
-		throw error;
 	}
 }
 
-export type FieldType = 'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames';
+export type FieldType =
+	| 'egc_size'
+	| 'conductor_size'
+	| 'at'
+	| 'conduit_size'
+	| 'ampere_frames'
+	| 'length'
+	| 'z';
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
 	conductor_size: 'overrided_conductor_size',
 	at: 'overrided_at',
 	conduit_size: 'overrided_conduit_size',
-	ampere_frames: 'overrided_ampere_frames'
+	ampere_frames: 'overrided_ampere_frames',
+	length: 'overrided_length',
+	z: 'overrided_z'
 };
 
 export async function overrideField({
@@ -443,9 +447,8 @@ export async function overrideField({
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error overriding data:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error overriding data: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -466,9 +469,8 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error updating conductor sets:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error updating conductor sets: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -496,25 +498,24 @@ export async function updateLoadDescription({
 			$set: {
 				...(node_type === 'panel' &&
 					node_data?.panel_data && {
-						panel_data: {
-							...node_data.panel_data,
-							name: load_description
-						}
-					}),
+					panel_data: {
+						...node_data.panel_data,
+						name: load_description
+					}
+				}),
 				...(node_type === 'load' &&
 					node_data?.load_data && {
-						load_data: {
-							...node_data.load_data,
-							load_description
-						}
-					})
+					load_data: {
+						...node_data.load_data,
+						load_description
+					}
+				})
 			}
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error updating conductor load_description:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error updating conductor load_description: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -544,9 +545,8 @@ export async function changeInsulation({
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing insulation:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error changing insulation: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -567,9 +567,8 @@ export async function changePole(node_id: string, pole: string) {
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing pole:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error changing pole: ${JSON.stringify(err)}`);
 	}
 }
 
@@ -590,8 +589,79 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 		});
 
 		return updated_node?._data;
-	} catch (error) {
-		console.error('Error changing data:', error);
-		throw error;
+	} catch (err) {
+		console.error(`Error changing data: ${JSON.stringify(err)}`);
+	}
+}
+
+export async function updateNodeParentById(node_to_update: {
+	id: string;
+	parent_id?: string
+}, new_parent: string) {
+	const database = await databaseInstance();
+
+	const current_parent_query = database.nodes.findOne({
+		selector: { id: node_to_update.parent_id }
+	});
+	const current_parent = await current_parent_query.exec();
+
+	// remove the id of the node to its current parent.
+	if (current_parent) {
+		await current_parent_query.update({
+			$set: {
+				child_ids: current_parent._data.child_ids.filter((child_id) => child_id !== node_to_update.id)
+			}
+		});
+	}
+
+	// find the new parent and add the node_to_update id to its child_ids
+	const new_parent_query = database.nodes.findOne({
+		selector: { id: new_parent }
+	});
+	const new_parent_data = await new_parent_query.exec();
+	if (new_parent_data) {
+		await new_parent_query.update({
+			$set: {
+				child_ids: [...new_parent_data._data.child_ids, node_to_update.id]
+			}
+		});
+	}
+
+	// update the node with the new parent id
+	const node_query = database.nodes.findOne({
+		selector: { id: node_to_update.id }
+	});
+	const updated_node = await node_query.exec();
+	if (updated_node) {
+		return await updated_node.update({
+			$set: {
+				parent_id: new_parent
+			}
+		});
+	}
+}
+
+export async function resetData(minimumDeletedTime: number = 0) {
+	const db = await databaseInstance();
+	await db.projects.find().remove();
+	await db.nodes.find().remove();
+	await db.projects.cleanup(minimumDeletedTime);
+	await db.nodes.cleanup(minimumDeletedTime);
+}
+
+export async function loadCurrentProject(file_export: FileExport) {
+	const db = await databaseInstance();
+	const { project, nodes } = file_export;
+
+	// Remove all existing projects and nodes
+	await db.projects.find().remove();
+	await db.nodes.find().remove();
+
+	// Insert the project
+	await db.projects.insert(project);
+
+	// Insert the nodes
+	for (const node of nodes) {
+		await db.nodes.insert(node);
 	}
 }

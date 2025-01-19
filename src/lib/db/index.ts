@@ -8,8 +8,9 @@ import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import type { MyDatabaseCollections } from '@/types/db';
 import { project_schema, node_schema } from '@/db/schema/index.js';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
+import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
+import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { dev } from '$app/environment';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
 let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 
@@ -17,15 +18,9 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * Creates a new RxDatabase instance if it doesn't already exist.
  *
  * @param {string} [name='heda'] - The name of the database.
- * @param {boolean} [memory=false] - Whether to use memory storage.
- * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
-async function createDatabase(
-	name: string = 'heda',
-	memory: boolean = false,
-	validate_storage: boolean = false
-): Promise<RxDatabase<MyDatabaseCollections>> {
+async function createDatabase(name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
 	if (dbInstance) {
 		return dbInstance;
 	}
@@ -33,14 +28,13 @@ async function createDatabase(
 		addRxPlugin(RxDBDevModePlugin);
 	}
 
+	addRxPlugin(RxDBLeaderElectionPlugin);
+	addRxPlugin(RxDBCleanupPlugin);
 	addRxPlugin(RxDBUpdatePlugin);
 	addRxPlugin(RxDBQueryBuilderPlugin);
 	dbInstance = await createRxDatabase({
 		name,
-		// @ts-ignore
-		storage: memory ? getRxStorageMemory() : validate_storage ? wrappedValidateAjvStorage({
-			storage: getRxStorageDexie()
-		}) : getRxStorageDexie()
+		storage: getRxStorageMemory()
 	});
 	return dbInstance;
 }
@@ -49,14 +43,10 @@ async function createDatabase(
  * Returns the database instance with all required collections initialized.
  *
  * @param {string} [name='heda'] - The name of the database.
- * @param {boolean} [memory=false] - Whether to use memory storage.
- * @param {boolean} [validate_storage=false] - Whether to use validate storage.
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
-export async function databaseInstance(name: string = 'heda',
-	memory: boolean = false,
-	validate_storage: boolean = false): Promise<RxDatabase<MyDatabaseCollections>> {
-	const database = await createDatabase(name, memory, validate_storage);
+export async function databaseInstance(name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
+	const database = await createDatabase(name);
 
 	if (!database.projects || !database.nodes) {
 		try {
@@ -68,13 +58,11 @@ export async function databaseInstance(name: string = 'heda',
 					schema: node_schema
 				}
 			});
-			console.log('Collections added:', added_collections_result);
-		} catch (error) {
+		} catch (err) {
 			await removeRxDatabase(name, getRxStorageDexie())
-			console.error('Error adding collections:', error);
+			console.error(`Failed to add collections: ${JSON.stringify(err)}`);
 			throw new Error('Failed to add collections');
 		}
 	}
-
 	return database;
 }

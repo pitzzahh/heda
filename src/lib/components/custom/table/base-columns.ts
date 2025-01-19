@@ -1,16 +1,17 @@
 import { renderComponent } from '@/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import { ColumnDropdown } from '@/components/custom/table/(components)';
 import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
-import { AddLoadDialog } from '@/components/custom/load';
-import AtFooterCell from './(components)/at-footer-cell.svelte';
-import InsulationsDropdown from './(components)/insulations-dropdown.svelte';
-import PoleDropdown from './(components)/pole-dropdown.svelte';
-import LoadDescriptionCell from './(components)/load-description-cell.svelte';
-import ErrorCell from './(components)/error-cell.svelte';
+import {
+	PoleDropdown,
+	LoadDescriptionCell,
+	ErrorCell,
+	AtFooterCell,
+	InsulationsDropdown,
+	ActionsColumnDropdown
+} from './(components)';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
@@ -113,7 +114,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 						});
 					}
 
-					return 	at;
+					return at;
 				},
 				header: () => 'AT',
 				footer: (props) => {
@@ -299,7 +300,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		header: 'Actions',
 		cell: ({ row }) => {
-			return renderComponent(ColumnDropdown, {
+			return renderComponent(ActionsColumnDropdown, {
 				node: row.original,
 				phase_main_load_form,
 				highest_unit
@@ -307,7 +308,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 		},
 
 		footer: (props) => {
-			return renderComponent(ColumnDropdown, {
+			return renderComponent(ActionsColumnDropdown, {
 				node: current_node as PhaseLoadSchedule,
 				phase_main_load_form,
 				highest_unit

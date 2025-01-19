@@ -13,6 +13,7 @@
 					'border-input bg-background hover:bg-accent hover:text-accent-foreground border shadow-sm',
 				secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm',
 				ghost: 'hover:bg-accent hover:text-accent-foreground',
+				warning: 'text-yellow-600 border-yellow-600 bg-yellow-600/10',
 				link: 'text-primary underline-offset-4 hover:underline'
 			},
 			size: {

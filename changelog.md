@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.62] - 2025-01-18
+
+### Fix
+
+- Fixed issue in showing the overridden value of conductor size in the load schedule and voltage drop.
+
+## [1.6.61] - 2025-01-18
+
+### Fix
+
+- App won't start after update or if app is installed in Program files.
+
+## [1.6.60] - 2025-01-16
+
+### Add
+
+- Backup old project when overriding.
+- Added ability to save project files in any user folder.
+
+### Fix
+
+- Loading of file
+
+## [1.6.53] - 2025-01-13
+
+### Add
+
+- Recent projects list.
+- Load project from recent projects list.
+- Save location selector on project creation.
+
+
+### Fix
+
+- Save button only enables when there are changes in the project. 
+- Fix github actions build.
+
+## [1.5.50] - 2025-01-13
+
+### Test
+
+- New github actions build.
+
+### Fix
+
+- Fix issue where changing project title overrides the existing projects.
+
+### Add
+
+- Add persisted logs for debugging purposes.
+
+## [1.5.41] - 2025-01-11
+
+### Test
+
+- New github actions build.
+
+## [1.5.40] - 2025-01-11
+
+### Fix
+
+- Fix issue where the app cannot be used because of system error.
+- Project file names are now appended if the file already exists.
+- Fix missing plugin updater.
+- Fix ci/cd.
+
+## [1.4.35] - 2025-01-10
+
+### Add
+
+- Drag and drop changing panels/loads.
+- Multi copy of panels/loads.
+- Multi delete of panels/loads.
+- Save to file and load from file.
+
+### Fix
+
+- Fix issue of undoing a batch copy/remoal of panels/loads.(undoing a batch copy/removal of panels/loads will also undo as a batch).
+- Fix settings theme switcher.
+
 ## [0.4.30] - 2025-01-05
 
 ### Add

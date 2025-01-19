@@ -5,9 +5,7 @@ import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 import type { SuperValidated } from 'sveltekit-superforms';
 import type { Node } from '@/db/schema';
 import { renderComponent } from '@/components/ui/data-table';
-import ConductorSetsCell from '../(components)/conductor-sets-cell.svelte';
-import InsulationsDropdown from '../(components)/insulations-dropdown.svelte';
-import ErrorCell from '../(components)/error-cell.svelte';
+import { ConductorSetsCell, InsulationsDropdown, ErrorCell } from '../(components)';
 
 export function onePhaseMainOrWyeCols(
 	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,

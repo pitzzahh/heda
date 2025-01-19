@@ -38,8 +38,7 @@ export function computeVoltAmpere({
 		// load types with separate formula
 		return quantity * 230 * varies;
 	}
-
-	console.log('Invalid load_type or varies is not a number');
+	console.warn(`Invalid load_type or varies is not a number: ${varies}`);
 }
 
 export function computeAmpereTrip(current: number, load_type?: LoadType) {
