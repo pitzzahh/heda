@@ -14,7 +14,7 @@
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
 	import { toast } from 'svelte-sonner';
-	
+
 	let {
 		ref = $bindable(null),
 		generic_phase_panel_form,
@@ -71,7 +71,7 @@
 
 							{#snippet failed(error, reset)}
 								<p class="text-sm text-muted-foreground">{error}</p>
-								<Button onclick={reset}>oops! try again</Button>
+								<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 							{/snippet}
 						</svelte:boundary>
 					{:else}
