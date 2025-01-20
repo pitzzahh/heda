@@ -3,17 +3,20 @@ import type { Node } from '@/db/schema';
 import { getComputedLoads, getComputedVoltageDrops, getNodeById, getNodeDepth } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
+import type { ExcelExportType } from "@/types/misc";
+
+type ExportProcessResult = {
+  valid: boolean;
+  message?: string;
+  is_system_error?: boolean;
+  description?: string;
+}
 
 export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
   node_id: string,
   highest_unit?: Node['highest_unit_form']
-): Promise<{
-  valid: boolean;
-  message?: string;
-  is_system_error?: boolean;
-  description?: string;
-}> {
+): Promise<ExportProcessResult> {
   const current_node = await getNodeById(node_id);
   const children = await getComputedLoads(node_id);
 
@@ -222,7 +225,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
 export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
   node_id: string,
-  project_title?: string) {
+  project_title?: string): Promise<ExportProcessResult> {
   let worksheet = workbook.getWorksheet();
 
   if (!worksheet) {
@@ -292,7 +295,9 @@ export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
 }
 
 export async function exportToExcel(
+  type: ExcelExportType,
   node_id: string,
+  project_title: string,
   highest_unit?: Node['highest_unit_form'],
   file_name?: string,
   idle_callaback?: () => void,
@@ -328,19 +333,41 @@ export async function exportToExcel(
         workbook.subject = '1P Load Schedule';
         workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
         workbook.description = 'Load schedule for 1 phase load schedule';
-        const process_result = await processOnePhaseExcelPanelBoardSchedule(
-          workbook,
-          node_id,
-          highest_unit
-        );
-        if (!process_result.valid) {
-          idle_callaback && idle_callaback()
-          return toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-            description: process_result?.is_system_error
-              ? 'This is a system error and should not be here, the error has been logged.'
-              : (process_result?.description ?? undefined),
-            position: 'bottom-center'
-          });
+        switch (type) {
+          case 'LOAD_SCHEDULE':
+            const load_schedule_process_result = await processOnePhaseExcelPanelBoardSchedule(
+              workbook,
+              node_id,
+              highest_unit
+            );
+            if (!load_schedule_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P load schedule: ${JSON.stringify(load_schedule_process_result)}`);
+              return toast.warning(load_schedule_process_result.message ?? 'Something went wrong while exporting', {
+                description: load_schedule_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (load_schedule_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
+          case 'VOLTAGE_DROP':
+            const voltage_drop_process_result = await processOnePhaseVoltageDrop(
+              workbook,
+              node_id,
+              project_title
+            )
+            if (!voltage_drop_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P voltage drop: ${JSON.stringify(voltage_drop_process_result)}`);
+              return toast.warning(voltage_drop_process_result.message ?? 'Something went wrong while exporting', {
+                description: voltage_drop_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (voltage_drop_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
         }
         break;
       case '3P':
