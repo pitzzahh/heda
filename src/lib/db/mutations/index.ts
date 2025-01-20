@@ -649,7 +649,7 @@ export async function resetData(minimumDeletedTime: number = 0) {
 }
 
 export async function loadCurrentProject(file_export: FileExport, file_name: string): Promise<Project> {
-	const db = await databaseInstance(file_name);
+	const db = await databaseInstance();
 	const { project, nodes } = file_export;
 
 	// Remove all existing projects and nodes
