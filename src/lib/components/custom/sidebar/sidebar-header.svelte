@@ -120,55 +120,32 @@
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<DropdownMenu.Root>
-						<DropdownMenu.Content class="w-56">
-							<DropdownMenu.Group>
-								<DropdownMenu.GroupHeading>Appearance</DropdownMenu.GroupHeading>
-								<DropdownMenu.Separator />
-								<Tooltip.Provider>
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											{#snippet children()}
-												<DropdownMenu.Item
-													disabled={component_state.export_to_excel === 'loading'}
-													onclick={() =>
-														exportToExcel(
-															root_node.id,
-															root_node?.highest_unit_form,
-															project?.project_name,
-															() => (component_state.export_to_excel = 'idle'),
-															() => (component_state.export_to_excel = 'loading')
-														)}
-													><Sheet class="h-4 w-4" /> Export whole project load schedule</DropdownMenu.Item
-												>
-											{/snippet}
-										</Tooltip.Trigger>
-										<Tooltip.Content>Export whole project load schedule</Tooltip.Content>
-									</Tooltip.Root>
-								</Tooltip.Provider>
-								<Tooltip.Provider>
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											{#snippet children()}
-												<DropdownMenu.Item
-													><Sheet class="h-4 w-4" /> Export whole project voltage drop</DropdownMenu.Item
-												>
-											{/snippet}
-										</Tooltip.Trigger>
-										<Tooltip.Content>Export whole project voltage drop</Tooltip.Content>
-									</Tooltip.Root>
-								</Tooltip.Provider>
-							</DropdownMenu.Group>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-					<ArrowRightFromLine class="h-4 w-4" />
-				</Tooltip.Trigger>
-				<Tooltip.Content>Export project to Excel</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
+				<ArrowRightFromLine class="h-4 w-4" />
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content class="flex w-fit flex-col gap-2">
+				<DropdownMenu.Group>
+					<DropdownMenu.GroupHeading>Export options</DropdownMenu.GroupHeading>
+					<DropdownMenu.Separator />
+
+					<DropdownMenu.Item
+						disabled={component_state.export_to_excel === 'loading'}
+						onclick={() =>
+							exportToExcel(
+								root_node.id,
+								root_node?.highest_unit_form,
+								project?.project_name,
+								() => (component_state.export_to_excel = 'idle'),
+								() => (component_state.export_to_excel = 'loading')
+							)}><Sheet class="h-4 w-4" />Export whole project load schedule</DropdownMenu.Item
+					>
+					<DropdownMenu.Item
+						><Sheet class="h-4 w-4" /> Export whole project voltage drop
+					</DropdownMenu.Item>
+				</DropdownMenu.Group>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 		{#snippet failed(error, reset)}
 			<p class="text-sm text-muted-foreground">{error}</p>
 			<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
