@@ -1,6 +1,6 @@
 import { getOrdinalSuffix } from "@/utils/format";
 import type { Node } from '@/db/schema';
-import { getComputedLoads, getNodeById, getNodeDepth } from "@/db/queries";
+import { getComputedLoads, getComputedVoltageDrops, getNodeById, getNodeDepth } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
 
@@ -216,6 +216,77 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       );
     }
   }
+
+  return { valid: true };
+}
+
+export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
+  node_id: string,
+  project_title?: string) {
+  let worksheet = workbook.getWorksheet();
+
+  if (!worksheet) {
+    worksheet = workbook.addWorksheet();
+  }
+
+  type Header = { text: string; cols: number; subText?: string, sub_cols?: string[] };
+
+  const table_headers: Header[] = [
+    { text: 'From NODE', cols: 1 },
+    { text: 'To NODE', cols: 1 },
+    { text: 'VOLTAGE (V)', cols: 1 },
+    { text: 'APPARENT POWER (VA)', cols: 1 },
+    { text: 'CURRENT (A)', cols: 1 },
+    { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'kAIC'] },
+    { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'] },
+    { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
+    { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Insulation'] }
+  ];
+
+  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+  let current_header_column = 1;
+
+  table_headers.forEach((header: Header) => {
+    const cell = worksheet.getCell(startRow + 4, current_header_column);
+    cell.value = header.text;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { top: { style: 'thin' } };
+
+    if (header.sub_cols) {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 4,
+        current_header_column + header.cols - 1
+      );
+      header.sub_cols.forEach((subText, i) => {
+        const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+        subCell.value = subText;
+        subCell.font = { bold: true };
+        subCell.alignment = { horizontal: 'center' };
+        subCell.border = { bottom: { style: 'thick' } };
+      });
+    } else {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 5,
+        current_header_column
+      );
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thin' } };
+    }
+    current_header_column += header.cols;
+  });
+
+  worksheet.columns.forEach(column => {
+    const lengths = (column.values ?? []).map(v => v?.toString().length);
+    const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'));
+    column.width = maxLength;
+  });
+
+  const voltage_drops = await getComputedVoltageDrops(project_title);
 
   return { valid: true };
 }
