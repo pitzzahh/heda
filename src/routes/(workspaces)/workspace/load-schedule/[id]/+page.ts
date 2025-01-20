@@ -18,9 +18,8 @@ export const entries = () => {
 export const load = async ({ depends, params }) => {
 	depends('app:workspace/load-schedule');
 	const node_id = params.id.split('_').at(-1) as string;
-	const project = await getCurrentProject();
 	const root_node = await getRootNode();
-	if (!project || !node_id || !root_node) {
+	if (!node_id || !root_node) {
 		goto('/workspace');
 	}
 	const current_node = await getNodeById(node_id);
@@ -29,7 +28,6 @@ export const load = async ({ depends, params }) => {
 	const voltage_drops = await getComputedVoltageDrops()
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
-		project,
 		nodes: nodes && nodes?.length > 0 ? nodes : [],
 		root_node: root_node as Node,
 		current_node,
