@@ -10,15 +10,14 @@
 	import { keyToString, getEnv, generateKey } from '@/helpers/security';
 	import { getFileName, readEncryptedFile } from '@/helpers/file';
 	import type { FileExport } from '@/types/main';
-	import { loadCurrentProject, updateProjectTitle } from '@/db/mutations';
-	import { goto, invalidate } from '$app/navigation';
+	import { loadCurrentProject } from '@/db/mutations';
+	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	const project_state = getProjectState();
-	const undo_redo_state = getUndoRedoState();
 
 	async function handleLoadFile(complete_file_path?: string | null) {
 		try {
@@ -66,14 +65,15 @@
 			console.log(`Complete file path: ${complete_file_path}`);
 			console.log(`File name: ${file_name}`);
 
-			await loadCurrentProject(loaded_data, file_name);
+			const loaded_project = await loadCurrentProject(loaded_data, file_name);
+
 			const recent_project_data = {
-				id: loaded_data.project.id,
+				id: loaded_project.id,
 				project_name: file_name,
 				project_path: complete_file_path,
 				exists: true
 			};
-			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
+			goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}`)
 				.then(() => {
 					if (
 						!(project_state.recent_projects?.some((p) => p.id === recent_project_data.id) ?? false)
