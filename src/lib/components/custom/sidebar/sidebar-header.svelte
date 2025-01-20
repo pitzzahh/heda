@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, FileUp } from '@/assets/icons';
+	import { Save, ArrowRightFromLine } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { Settings } from '..';
@@ -11,7 +11,7 @@
 	import type { FileExport } from '@/types/main';
 	import { generateKey, keyToString } from '@/helpers/security';
 	import { writeEncryptedFile } from '@/helpers/file';
-	import { getAllChildNodes, getCurrentProject } from '@/db/queries';
+	import { getAllChildNodes } from '@/db/queries';
 	import { validateEnv } from '@/utils/validation';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -133,7 +133,7 @@
 							() => (component_state.export_to_excel = 'loading')
 						)}
 				>
-					<FileUp class="h-4 w-4" />
+					<ArrowRightFromLine class="h-4 w-4" />
 					Export to Excel
 				</Tooltip.Trigger>
 				<Tooltip.Content>Export project to excel</Tooltip.Content>
