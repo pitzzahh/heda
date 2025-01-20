@@ -143,7 +143,6 @@
 						<DropdownMenu.GroupHeading class="text-center">Export options</DropdownMenu.GroupHeading
 						>
 						<DropdownMenu.Separator />
-
 						<DropdownMenu.Item
 							disabled={component_state.status === 'processing'}
 							onclick={() =>
@@ -158,19 +157,29 @@
 								)}
 						>
 							<Loader
-								class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
 									block: component_state.status === 'processing'
 								})}
 							/>
 							<Sheet
-								class={cn('mr-1 block h-4 w-4', {
+								class={cn('mr-0.5 block h-4 w-4', {
 									'opacity-50': component_state.export_to_excel === 'loading'
 								})}
 							/>
 							Export whole project load schedule</DropdownMenu.Item
 						>
-						<DropdownMenu.Item
-							><Sheet class="h-4 w-4" /> Export whole project voltage drop
+						<DropdownMenu.Item>
+							<Loader
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+									block: component_state.status === 'processing'
+								})}
+							/>
+							<Sheet
+								class={cn('mr-0.5 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project voltage drop
 						</DropdownMenu.Item>
 					</DropdownMenu.Group>
 				</DropdownMenu.Content>
