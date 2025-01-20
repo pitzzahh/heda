@@ -15,7 +15,6 @@
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	const project_state = getProjectState();
 

@@ -648,8 +648,8 @@ export async function resetData(minimumDeletedTime: number = 0) {
 	await db.nodes.cleanup(minimumDeletedTime);
 }
 
-export async function loadCurrentProject(file_export: FileExport, file_name: string) {
-	const db = await databaseInstance();
+export async function loadCurrentProject(file_export: FileExport, file_name: string): Promise<Project> {
+	const db = await databaseInstance(file_name);
 	const { project, nodes } = file_export;
 
 	// Remove all existing projects and nodes
@@ -658,14 +658,11 @@ export async function loadCurrentProject(file_export: FileExport, file_name: str
 
 	const reconstructed_project = {
 		...project,
+		id: createId(),
 		project_name: file_name
 	}
 
-	console.log(`Reconstructed project: ${JSON.stringify(reconstructed_project)}`);
-
-	const inserted_loaded_project = await db.projects.insert(reconstructed_project);
-
-	console.log(`Inserted project: ${JSON.stringify(inserted_loaded_project)}`);
+	const inserted_loaded_project: Project = await db.projects.insert(reconstructed_project);
 
 	// Verify that the inserted project has the same project_name as the reconstructed project
 	if (inserted_loaded_project.project_name !== reconstructed_project.project_name) {
@@ -675,4 +672,6 @@ export async function loadCurrentProject(file_export: FileExport, file_name: str
 	for (const node of nodes) {
 		await db.nodes.insert(node);
 	}
+
+	return inserted_loaded_project
 }
