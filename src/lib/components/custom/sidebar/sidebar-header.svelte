@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, ArrowRightFromLine } from '@/assets/icons';
+	import { Save, Sheet, ArrowRightFromLine } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { Settings } from '..';
@@ -16,6 +16,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
+	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 
 	let {
 		project,
@@ -121,22 +122,51 @@
 	<svelte:boundary>
 		<Tooltip.Provider>
 			<Tooltip.Root>
-				<Tooltip.Trigger
-					disabled={component_state.export_to_excel === 'loading'}
-					class={buttonVariants({ variant: 'outline', size: 'sm' })}
-					onclick={() =>
-						exportToExcel(
-							root_node.id,
-							root_node?.highest_unit_form,
-							project?.project_name,
-							() => (component_state.export_to_excel = 'idle'),
-							() => (component_state.export_to_excel = 'loading')
-						)}
-				>
+				<Tooltip.Trigger>
+					<DropdownMenu.Root>
+						<DropdownMenu.Content class="w-56">
+							<DropdownMenu.Group>
+								<DropdownMenu.GroupHeading>Appearance</DropdownMenu.GroupHeading>
+								<DropdownMenu.Separator />
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											{#snippet children()}
+												<DropdownMenu.Item
+													disabled={component_state.export_to_excel === 'loading'}
+													onclick={() =>
+														exportToExcel(
+															root_node.id,
+															root_node?.highest_unit_form,
+															project?.project_name,
+															() => (component_state.export_to_excel = 'idle'),
+															() => (component_state.export_to_excel = 'loading')
+														)}
+													><Sheet class="h-4 w-4" /> Export whole project load schedule</DropdownMenu.Item
+												>
+											{/snippet}
+										</Tooltip.Trigger>
+										<Tooltip.Content>Export whole project load schedule</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											{#snippet children()}
+												<DropdownMenu.Item
+													><Sheet class="h-4 w-4" /> Export whole project voltage drop</DropdownMenu.Item
+												>
+											{/snippet}
+										</Tooltip.Trigger>
+										<Tooltip.Content>Export whole project voltage drop</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							</DropdownMenu.Group>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 					<ArrowRightFromLine class="h-4 w-4" />
-					Export to Excel
 				</Tooltip.Trigger>
-				<Tooltip.Content>Export project to excel</Tooltip.Content>
+				<Tooltip.Content>Export project to Excel</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		{#snippet failed(error, reset)}
