@@ -14,8 +14,8 @@ import type { VoltageDrop } from '@/types/voltage-drop';
 import { ALTERNATING_CURRENT_REACTANCE } from '@/constants';
 import type { ComputeCommonProperties, NodeByIdResult } from '@/types/db';
 
-export async function getCurrentProject(project_id?: string): Promise<Project | undefined> {
-	const db = await databaseInstance();
+export async function getCurrentProject(project_id?: string, name?: string): Promise<Project | undefined> {
+	const db = await databaseInstance(name);
 	const query = db.projects.find({
 		selector: project_id
 			? {
@@ -26,8 +26,8 @@ export async function getCurrentProject(project_id?: string): Promise<Project | 
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
 
-export async function getAllProjects(fields?: (keyof Project)[]): Promise<Project[] | undefined> {
-	const db = await databaseInstance();
+export async function getAllProjects(fields?: (keyof Project)[], name?: string): Promise<Project[] | undefined> {
+	const db = await databaseInstance(name);
 	const projects = await db.projects.find().exec();
 	if (fields?.length) {
 		return projects.map((project) => {
@@ -44,8 +44,8 @@ export async function getAllProjects(fields?: (keyof Project)[]): Promise<Projec
 
 	return projects.map((project) => project._data as Project);
 }
-export async function getRootNode(): Promise<Node | undefined> {
-	const db = await databaseInstance();
+export async function getRootNode(name?: string): Promise<Node | undefined> {
+	const db = await databaseInstance(name);
 	const query = db.nodes.find({
 		selector: {
 			node_type: 'root'
@@ -57,13 +57,15 @@ export async function getRootNode(): Promise<Node | undefined> {
 export async function checkNodeExists({
 	circuit_number,
 	parent_id,
-	node_id
+	node_id,
+	name
 }: {
 	circuit_number: number;
 	parent_id: string;
 	node_id?: string;
+	name?: string
 }) {
-	const db = await databaseInstance();
+	const db = await databaseInstance(name);
 	try {
 		const node = await db.nodes
 			.findOne({
@@ -87,8 +89,8 @@ export async function checkNodeExists({
 }
 
 
-export async function getNodeById(target_id: string): Promise<NodeByIdResult | null> {
-	const db = await databaseInstance();
+export async function getNodeById(target_id: string, name?: string): Promise<NodeByIdResult | null> {
+	const db = await databaseInstance(name);
 
 	const project = await getCurrentProject();
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
@@ -241,8 +243,8 @@ export async function getChildNodesByParentId(parent_id: string): Promise<Node[]
 	return (await query.sort({ circuit_number: 'asc' }).exec()).map((doc) => doc._data) as Node[];
 }
 
-export async function getParentNodes(excluded_id?: string) {
-	const db = await databaseInstance();
+export async function getParentNodes(excluded_id?: string, name?: string) {
+	const db = await databaseInstance(name);
 	const query = db.nodes.find({
 		selector: {
 			node_type: { $in: ['panel', 'root'] },
@@ -266,11 +268,11 @@ export async function getParentNodes(excluded_id?: string) {
 	return parent_nodes;
 }
 
-export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSchedule[]> {
+export async function getComputedLoads(parent_id: string, name?: string): Promise<PhaseLoadSchedule[]> {
 	const project = await getCurrentProject();
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
-	const db = await databaseInstance();
+	const db = await databaseInstance(name);
 	const child_nodes = (
 		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
 	).map((doc) => doc._data);
@@ -400,8 +402,8 @@ export async function getNodeDepth(nodeId: string): Promise<number> {
 	return depth;
 }
 
-export async function getNumberOfChildren(nodeId: string): Promise<number> {
-	const db = await databaseInstance();
+export async function getNumberOfChildren(nodeId: string, name?: string): Promise<number> {
+	const db = await databaseInstance(name);
 	let count = 0;
 
 	async function countChildren(parentId: string) {
@@ -419,8 +421,8 @@ export async function getNumberOfChildren(nodeId: string): Promise<number> {
 	return count;
 }
 
-export async function getComputedVoltageDrops() {
-	const db = await databaseInstance();
+export async function getComputedVoltageDrops(name?: string) {
+	const db = await databaseInstance(name);
 	let nodes = [] as PhaseLoadSchedule[];
 
 	const root_node = await db.nodes
@@ -491,8 +493,8 @@ export async function getComputedVoltageDrops() {
 	return nodes_with_additional_fields;
 }
 
-export async function getAllChildNodes(root_node_id: string, include_parent?: boolean): Promise<Node[]> {
-	const db = await databaseInstance();
+export async function getAllChildNodes(root_node_id: string, include_parent?: boolean, name?: string): Promise<Node[]> {
+	const db = await databaseInstance(name);
 	let allNodes: Node[] = [];
 
 	async function fetchChildNodes(parentId: string) {
