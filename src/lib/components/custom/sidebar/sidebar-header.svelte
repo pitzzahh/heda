@@ -148,7 +148,9 @@
 							disabled={component_state.status === 'processing'}
 							onclick={() =>
 								exportToExcel(
+									'LOAD_SCHEDULE',
 									root_node.id,
+									project?.project_name ?? 'Project',
 									root_node?.highest_unit_form,
 									project?.project_name,
 									() => (component_state.export_to_excel = 'idle'),

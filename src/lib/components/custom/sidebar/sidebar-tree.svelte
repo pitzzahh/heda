@@ -161,7 +161,7 @@
 	$effect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(`${e.key === 'Alt'}`)
+			console.log(`${e.key === 'Alt'}`);
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
@@ -182,8 +182,6 @@
 			window.removeEventListener('focus', handleWindowFocus);
 		};
 	});
-
-
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -340,7 +338,9 @@
 							});
 						}
 						exportToExcel(
+							'LOAD_SCHEDULE',
 							node.id,
+							project?.project_name ?? 'Project',
 							highest_unit,
 							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
 						);
