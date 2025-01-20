@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, Sheet, ArrowRightFromLine } from '@/assets/icons';
+	import { Save, Loader, Sheet, ArrowRightFromLine } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { Settings } from '..';
@@ -17,6 +17,7 @@
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
+	import { Portal } from 'bits-ui';
 
 	let {
 		project,
@@ -32,6 +33,7 @@
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
+		status: 'idle' as 'processing' | 'idle',
 		can_save: true
 	});
 
@@ -47,7 +49,7 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-
+			component_state.status = 'processing';
 			const file_data: FileExport = {
 				project,
 				nodes: await getAllChildNodes(project.root_node_id, true)
@@ -61,6 +63,7 @@
 				project_state.current_project_path
 			);
 			undo_redo_state.resetUnsavedActions();
+			component_state.status = 'idle';
 		} catch (err) {
 			console.error(`Failed to save file: ${JSON.stringify(err)}`);
 			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
@@ -97,12 +100,17 @@
 					<Tooltip.Trigger
 						disabled={project === undefined ||
 							!component_state.can_save ||
+							component_state.status === 'processing' ||
 							!undo_redo_state.has_unsaved_actions}
 						class={buttonVariants({ variant: 'default', size: 'sm' })}
 						onclick={handleSave}
 					>
-						<Save class="h-4 w-4" />
-						Save
+						{#if component_state.status === 'processing'}
+							<Loader class="mr-1 h-4 w-4 animate-spin" />
+						{:else}
+							<Save class="h-4 w-4" />
+							Save
+						{/if}
 					</Tooltip.Trigger>
 					<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
 				</Tooltip.Root>
@@ -124,27 +132,29 @@
 			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
 				<ArrowRightFromLine class="h-4 w-4" />
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content class="flex w-fit flex-col gap-2">
-				<DropdownMenu.Group>
-					<DropdownMenu.GroupHeading>Export options</DropdownMenu.GroupHeading>
-					<DropdownMenu.Separator />
+			<Portal>
+				<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
+					<DropdownMenu.Group>
+						<DropdownMenu.GroupHeading>Export options</DropdownMenu.GroupHeading>
+						<DropdownMenu.Separator />
 
-					<DropdownMenu.Item
-						disabled={component_state.export_to_excel === 'loading'}
-						onclick={() =>
-							exportToExcel(
-								root_node.id,
-								root_node?.highest_unit_form,
-								project?.project_name,
-								() => (component_state.export_to_excel = 'idle'),
-								() => (component_state.export_to_excel = 'loading')
-							)}><Sheet class="h-4 w-4" />Export whole project load schedule</DropdownMenu.Item
-					>
-					<DropdownMenu.Item
-						><Sheet class="h-4 w-4" /> Export whole project voltage drop
-					</DropdownMenu.Item>
-				</DropdownMenu.Group>
-			</DropdownMenu.Content>
+						<DropdownMenu.Item
+							disabled={component_state.export_to_excel === 'loading'}
+							onclick={() =>
+								exportToExcel(
+									root_node.id,
+									root_node?.highest_unit_form,
+									project?.project_name,
+									() => (component_state.export_to_excel = 'idle'),
+									() => (component_state.export_to_excel = 'loading')
+								)}><Sheet class="h-4 w-4" />Export whole project load schedule</DropdownMenu.Item
+						>
+						<DropdownMenu.Item
+							><Sheet class="h-4 w-4" /> Export whole project voltage drop
+						</DropdownMenu.Item>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</Portal>
 		</DropdownMenu.Root>
 		{#snippet failed(error, reset)}
 			<p class="text-sm text-muted-foreground">{error}</p>
