@@ -72,7 +72,9 @@
 				project_path: complete_file_path,
 				exists: true
 			};
-			goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}&project_title=${file_name}`)
+			goto(
+				`/workspace?is_load_file=true&project_id=${recent_project_data.id}&project_title=${file_name}`
+			)
 				.then(() => {
 					if (
 						!(project_state.recent_projects?.some((p) => p.id === recent_project_data.id) ?? false)
