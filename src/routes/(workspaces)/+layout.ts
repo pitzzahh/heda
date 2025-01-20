@@ -8,7 +8,9 @@ import { getEnv } from '@/helpers/security/index.js';
 
 export const load = async ({ depends, url: { searchParams } }) => {
 	depends('app:workspace');
-	const project = (await getCurrentProject(searchParams.get('project_id') ?? undefined));
+	const loaded_project_id = searchParams.get('project_id') ?? undefined;
+	const project_title = searchParams.get('project_title') ?? undefined;
+	const project = await getCurrentProject(loaded_project_id, project_title);
 	console.log(`PROJECT: ${JSON.stringify(project)}`);
 	const root_node = (await getRootNode());
 	const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
@@ -18,6 +20,7 @@ export const load = async ({ depends, url: { searchParams } }) => {
 		is_load_file: searchParams.get('load_file') === 'true',
 		highest_unit_form: await superValidate(zod(highest_unit_schema)),
 		app_pass_phrase,
+		project_title,
 		file_encryption_salt,
 		generic_phase_panel_form: await superValidate(zod(generic_phase_panel_schema)),
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
