@@ -18,6 +18,7 @@
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
 	import { Portal } from 'bits-ui';
+	import { cn } from '@/utils';
 
 	let {
 		project,
@@ -63,12 +64,16 @@
 				project_state.current_project_path
 			);
 			undo_redo_state.resetUnsavedActions();
-			component_state.status = 'idle';
 		} catch (err) {
 			console.error(`Failed to save file: ${JSON.stringify(err)}`);
-			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while saving the file.'
-			});
+			return toast.warning(
+				`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`,
+				{
+					description: 'An error occurred while saving the file. Please try again.'
+				}
+			);
+		} finally {
+			component_state.status = 'idle';
 		}
 
 		if (!settings_state.auto_save_enabled) {
@@ -139,7 +144,7 @@
 						<DropdownMenu.Separator />
 
 						<DropdownMenu.Item
-							disabled={component_state.export_to_excel === 'loading'}
+							disabled={component_state.status === 'processing'}
 							onclick={() =>
 								exportToExcel(
 									root_node.id,
@@ -147,7 +152,19 @@
 									project?.project_name,
 									() => (component_state.export_to_excel = 'idle'),
 									() => (component_state.export_to_excel = 'loading')
-								)}><Sheet class="h-4 w-4" />Export whole project load schedule</DropdownMenu.Item
+								)}
+						>
+							<Loader
+								class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+									block: component_state.status === 'processing'
+								})}
+							/>
+							<Sheet
+								class={cn('mr-1 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project load schedule</DropdownMenu.Item
 						>
 						<DropdownMenu.Item
 							><Sheet class="h-4 w-4" /> Export whole project voltage drop
