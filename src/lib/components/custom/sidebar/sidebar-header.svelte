@@ -140,7 +140,8 @@
 			<Portal>
 				<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
 					<DropdownMenu.Group>
-						<DropdownMenu.GroupHeading>Export options</DropdownMenu.GroupHeading>
+						<DropdownMenu.GroupHeading class="text-center">Export options</DropdownMenu.GroupHeading
+						>
 						<DropdownMenu.Separator />
 
 						<DropdownMenu.Item
