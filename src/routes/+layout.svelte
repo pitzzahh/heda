@@ -11,6 +11,7 @@
 	import { setCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 	import { setProjectState } from '@/hooks/project-state.svelte';
 	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
+	import { onNavigate } from '$app/navigation';
 
 	let { children } = $props();
 
@@ -43,6 +44,17 @@
 	forwardConsole('info', info);
 	forwardConsole('warn', warn);
 	forwardConsole('error', error);
+
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <svelte:document oncontextmenu={(e) => e.preventDefault()} />
