@@ -27,12 +27,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
   // Use the existing getNodeDepth2 function to calculate the depth
   const actualDepth = await getNodeDepth(node_id);
-  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
   const panel_level = getOrdinalSuffix(actualDepth);
-
   const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
+  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
+  const from_supply_name = current_node?.node_type === 'root' ? '--' : parent_node?.panel_data?.name ?? 'Transformer'
 
   let worksheet = workbook.getWorksheet(panel_level);
+
   if (!worksheet) {
     worksheet = workbook.addWorksheet(panel_level);
   }
@@ -54,7 +55,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   worksheet.getCell(`B${startRow + 1}`).value =
     `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
   worksheet.getCell(`B${startRow + 2}`).value =
-    `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
+    `: ${from_supply_name}`;
   worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
   description_label_column_position_data
