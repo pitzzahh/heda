@@ -658,16 +658,18 @@ export async function loadCurrentProject(file_export: FileExport, file_name: str
 
 	const reconstructed_project = {
 		...project,
-		project_name: file_name || project.project_name
+		project_name: file_name
 	}
+
+	console.log(`Reconstructed project: ${JSON.stringify(reconstructed_project)}`);
 
 	const inserted_loaded_project = await db.projects.insert(reconstructed_project);
 
+	console.log(`Inserted project: ${JSON.stringify(inserted_loaded_project)}`);
+
 	// Verify that the inserted project has the same project_name as the reconstructed project
 	if (inserted_loaded_project.project_name !== reconstructed_project.project_name) {
-		console.log(`Reconstructed project: ${JSON.stringify(reconstructed_project)}`);
 		console.error('Project name mismatch after insertion');
-		console.log(`Inserted project: ${JSON.stringify(inserted_loaded_project)}`);
 	}
 
 	for (const node of nodes) {
