@@ -29,6 +29,7 @@ export class ProjectState {
     });
     this.persisted_state = _persisted_state;
     this.validateRecentProjects();
+    this.recent_projects = this.persisted_state.current.recent_projects;
     recent_project && this.addRecentProject(recent_project);
   }
 
