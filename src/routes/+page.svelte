@@ -1,19 +1,15 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '@/components/ui/button';
-
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { MonitorCog, CircleAlert, Loader, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
-	import { keyToString, getEnv, generateKey } from '@/helpers/security';
-	import { getFileName, handleLoadFile, readEncryptedFile } from '@/helpers/file';
-	import type { FileExport, RecentProject } from '@/types/main';
-	import { loadCurrentProject } from '@/db/mutations';
+	import { handleLoadFile } from '@/helpers/file';
+	import type { RecentProject } from '@/types/main';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
-	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { cn } from '@/utils';
 
