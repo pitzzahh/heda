@@ -6,6 +6,7 @@ import type { RecentProject } from '@/types/main';
 
 type ProjectStateType = {
   recent_projects?: RecentProject[],
+  loaded?: boolean,
   current_project?: RecentProject
 }
 
@@ -17,10 +18,12 @@ export class ProjectState {
   current_project_name = $state<string | undefined>(undefined);
   current_project_path = $state('');
   exists = $state(false)
+  loaded = $state(false)
 
   constructor(recent_project?: RecentProject) {
     const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
       recent_projects: [],
+      loaded: false,
       current_project: undefined
     });
     this.persisted_state = _persisted_state;
@@ -55,6 +58,11 @@ export class ProjectState {
     this.current_project_name = current_project.project_name;
     this.current_project_path = current_project.project_path;
     this.exists = current_project.exists;
+  }
+
+  setProjectLoaded(loaded: boolean) {
+    this.persisted_state.current.loaded = loaded;
+    this.loaded = loaded;
   }
 
   updateProject(project_id: string, new_project: Partial<RecentProject>, update_current: boolean = false) {
