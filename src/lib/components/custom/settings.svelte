@@ -240,7 +240,6 @@
 				</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
 				id="backup_project_file"
 				checked={settingsState.backup_project_file_if_exists}
 				onCheckedChange={(value) => settingsState.setBackupProjectFileIfExists(value)}
