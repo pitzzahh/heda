@@ -2,13 +2,7 @@ import { PersistedState } from 'runed';
 import { setState, getState } from '@/state/index.svelte';
 import { PROJECT_STATE_CTX } from '@/state/constants';
 import { exists } from '@tauri-apps/plugin-fs';
-
-type RecentProject = {
-  id: string;
-  project_name?: string;
-  project_path: string;
-  exists: boolean;
-}
+import type { RecentProject } from '@/types/main';
 
 type ProjectStateType = {
   recent_projects?: RecentProject[]
