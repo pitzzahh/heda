@@ -133,58 +133,67 @@
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
-				<ArrowRightFromLine class="h-4 w-4" />
-			</DropdownMenu.Trigger>
-			<Portal>
-				<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
-					<DropdownMenu.Group>
-						<DropdownMenu.GroupHeading class="text-center">Export options</DropdownMenu.GroupHeading
-						>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Item
-							disabled={component_state.status === 'processing'}
-							onclick={() =>
-								exportToExcel(
-									'LOAD_SCHEDULE',
-									root_node.id,
-									project?.project_name ?? 'Project',
-									root_node?.highest_unit_form,
-									project?.project_name,
-									() => (component_state.export_to_excel = 'idle'),
-									() => (component_state.export_to_excel = 'loading')
-								)}
-						>
-							<Loader
-								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-									block: component_state.status === 'processing'
-								})}
-							/>
-							<Sheet
-								class={cn('mr-0.5 block h-4 w-4', {
-									'opacity-50': component_state.export_to_excel === 'loading'
-								})}
-							/>
-							Export whole project load schedule</DropdownMenu.Item
-						>
-						<DropdownMenu.Item>
-							<Loader
-								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-									block: component_state.status === 'processing'
-								})}
-							/>
-							<Sheet
-								class={cn('mr-0.5 block h-4 w-4', {
-									'opacity-50': component_state.export_to_excel === 'loading'
-								})}
-							/>
-							Export whole project voltage drop
-						</DropdownMenu.Item>
-					</DropdownMenu.Group>
-				</DropdownMenu.Content>
-			</Portal>
-		</DropdownMenu.Root>
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
+							<ArrowRightFromLine class="h-4 w-4" />
+						</DropdownMenu.Trigger>
+
+						<Portal>
+							<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
+								<DropdownMenu.Group>
+									<DropdownMenu.GroupHeading class="text-center"
+										>Export options</DropdownMenu.GroupHeading
+									>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item
+										disabled={component_state.status === 'processing'}
+										onclick={() =>
+											exportToExcel(
+												'LOAD_SCHEDULE',
+												root_node.id,
+												project?.project_name ?? 'Project',
+												root_node?.highest_unit_form,
+												project?.project_name,
+												() => (component_state.export_to_excel = 'idle'),
+												() => (component_state.export_to_excel = 'loading')
+											)}
+									>
+										<Loader
+											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+												block: component_state.status === 'processing'
+											})}
+										/>
+										<Sheet
+											class={cn('mr-0.5 block h-4 w-4', {
+												'opacity-50': component_state.export_to_excel === 'loading'
+											})}
+										/>
+										Export whole project load schedule</DropdownMenu.Item
+									>
+									<DropdownMenu.Item>
+										<Loader
+											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+												block: component_state.status === 'processing'
+											})}
+										/>
+										<Sheet
+											class={cn('mr-0.5 block h-4 w-4', {
+												'opacity-50': component_state.export_to_excel === 'loading'
+											})}
+										/>
+										Export whole project voltage drop
+									</DropdownMenu.Item>
+								</DropdownMenu.Group>
+							</DropdownMenu.Content>
+						</Portal>
+					</DropdownMenu.Root>
+				</Tooltip.Trigger>
+				<Tooltip.Content>Export</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 		{#snippet failed(error, reset)}
 			<p class="text-sm text-muted-foreground">{error}</p>
 			<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
