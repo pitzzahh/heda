@@ -5,7 +5,7 @@
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
-	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
+	import { MonitorCog, CircleAlert, Loader, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
 	import { keyToString, getEnv, generateKey } from '@/helpers/security';
 	import { getFileName, readEncryptedFile } from '@/helpers/file';
@@ -15,15 +15,24 @@
 	import { Separator } from '@/components/ui/separator';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { cn } from '@/utils';
 
 	const project_state = getProjectState();
 
+	let component_state = $state({
+		status: 'idle' as 'idle' | 'processing'
+	});
+
 	async function handleLoadFile(complete_file_path?: string | null) {
 		try {
+			component_state.status = 'processing';
 			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
 
-			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
+			if (!validateEnv(app_pass_phrase, file_encryption_salt)) {
+				component_state.status = 'idle';
+				return;
+			}
 
 			if (!complete_file_path) {
 				complete_file_path = await open({
@@ -33,6 +42,7 @@
 				});
 
 				if (!complete_file_path) {
+					component_state.status = 'idle';
 					return toast.warning('No file selected', {
 						description: 'Cannot proceed, no file is selected.'
 					});
@@ -46,6 +56,7 @@
 
 			if (!loaded_data) {
 				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
+				component_state.status = 'idle';
 				return toast.warning('Failed to load file', {
 					description: 'An error occurred while loading the file.'
 				});
@@ -55,6 +66,7 @@
 
 			if (!file_name) {
 				console.error(`Failed to get file name of: ${complete_file_path}`);
+				component_state.status = 'idle';
 				return toast.warning(`Failed to get file name of: ${complete_file_path}`, {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
@@ -72,9 +84,7 @@
 				project_path: complete_file_path,
 				exists: true
 			};
-			goto(
-				`/workspace?is_load_file=true&project_id=${recent_project_data.id}&project_title=${file_name}`
-			)
+			goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}`)
 				.then(() => {
 					if (
 						!project_state.recent_projects?.every(
@@ -100,6 +110,8 @@
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
+		} finally {
+			component_state.status = 'idle';
 		}
 	}
 </script>
@@ -145,11 +157,19 @@
 						<Dialog.Trigger
 							type="button"
 							onclick={() => project_state.validateRecentProjects()}
+							disabled={component_state.status === 'processing'}
 							class={buttonVariants({
 								size: '2xl',
 								className:
 									'w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]'
-							})}>Load File</Dialog.Trigger
+							})}
+						>
+							<Loader
+								class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+									block: component_state.status === 'processing'
+								})}
+							/>
+							Load File</Dialog.Trigger
 						>
 						<Dialog.Content>
 							<Dialog.Header>
