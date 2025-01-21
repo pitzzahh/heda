@@ -5,7 +5,8 @@ import { exists } from '@tauri-apps/plugin-fs';
 import type { RecentProject } from '@/types/main';
 
 type ProjectStateType = {
-  recent_projects?: RecentProject[]
+  recent_projects?: RecentProject[],
+  current_project?: RecentProject
 }
 
 export class ProjectState {
@@ -19,7 +20,8 @@ export class ProjectState {
 
   constructor(recent_project?: RecentProject) {
     const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
-      recent_projects: []
+      recent_projects: [],
+      current_project: undefined
     });
     this.persisted_state = _persisted_state;
     this.validateRecentProjects();
@@ -48,6 +50,7 @@ export class ProjectState {
   }
 
   setCurrentProject(current_project: RecentProject) {
+    this.persisted_state.current.current_project = current_project;
     this.id = current_project.id;
     this.current_project_name = current_project.project_name;
     this.current_project_path = current_project.project_path;
