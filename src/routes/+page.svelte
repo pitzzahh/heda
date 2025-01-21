@@ -178,9 +178,20 @@
 									Choose from the list of recent projects to load or load a file from your computer.
 								</Dialog.Description>
 							</Dialog.Header>
-							<Button onclick={() => handleLoadFile()}>
-								<MonitorCog />
-								Load File
+							<Button
+								disabled={component_state.status === 'processing'}
+								onclick={() => handleLoadFile()}
+							>
+								<Loader
+									class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+										block: component_state.status === 'processing'
+									})}
+								/>
+								<MonitorCog
+									class={cn('mr-1 block', {
+										hidden: component_state.status === 'processing'
+									})}
+								/>Load File
 							</Button>
 							<Separator class="h-1" />
 							<ScrollArea class="flex h-72 w-full flex-col pr-2.5">
