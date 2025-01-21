@@ -68,7 +68,6 @@
 
 	const settingsState = getSettingsState();
 	const undo_redo_state = getUndoRedoState();
-	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
