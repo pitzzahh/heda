@@ -34,17 +34,18 @@
 					project_state.addRecentProject(recent_project_data, true);
 				}
 				project_state.setCurrentProject(recent_project_data);
-			})
-			.then(() =>
+
+				project_state.setProjectLoaded(true);
 				toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
-				})
-			)
-			.catch((err) =>
+				});
+			})
+			.catch((err) => {
+				console.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`);
 				toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
 					description: 'This is a system error and should not be here, the error has been logged.'
-				})
-			);
+				});
+			});
 	}
 	function isRecentProject(obj: any): obj is RecentProject {
 		return obj && typeof obj === 'object' && 'id' in obj && 'project_name' in obj;
