@@ -38,3 +38,4 @@ export { default as Rss } from 'lucide-svelte/icons/rss';
 export { default as Sliders } from 'lucide-svelte/icons/sliders';
 export { default as SearchX } from 'lucide-svelte/icons/search-x';
 export { default as ArrowRightFromLine } from 'lucide-svelte/icons/arrow-right-from-line';
+export { default as House } from 'lucide-svelte/icons/house';
