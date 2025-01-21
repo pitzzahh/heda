@@ -38,7 +38,7 @@
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck, File, SunMoon, Moon, Sun } from '@/assets/icons';
+	import { Cog, Loader, PackageCheck, File, SunMoon, House, Moon, Sun } from '@/assets/icons';
 	import { Label } from '@/components/ui/label/index.js';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
@@ -190,7 +190,7 @@
 		<p class="font-semibold">Project</p>
 		<div class="grid w-full grid-cols-2 gap-1.5">
 			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
-				<File />
+				<House />
 				Home
 			</Button>
 			<Button onclick={handleNewProject} class="w-full">
