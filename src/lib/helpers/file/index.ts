@@ -1,6 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { BaseDirectory, exists, open as openFile, FileHandle, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
-import { encryptData, decryptData } from "@/helpers/security";
+import { encryptData, decryptData, getEnv, generateKey, keyToString } from "@/helpers/security";
+import { validateEnv } from "@/utils/validation";
+import type { FileExport, RecentProject } from "@/types/main";
+import { goto } from "$app/navigation";
+import { loadCurrentProject } from "@/db/mutations";
+import { toast } from "svelte-sonner";
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
 
 export const BASE_DIR = BaseDirectory.Document;
 export const BASE_DIR_PATH = 'heda';
@@ -90,4 +96,76 @@ export async function readEncryptedFile<T>(filePath: string, secret_key: string)
   const decryptedData: T = decryptData<T>(new TextDecoder().decode(await readFile(filePath)), secret_key);
   console.log("File read successfully!");
   return decryptedData;
+}
+
+
+export async function handleLoadFile(complete_file_path?: string | null, _procesing?: () => void, _idle?: () => void): Promise<RecentProject | undefined | string | number> {
+  try {
+    _procesing?.();
+    const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
+    const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
+
+    if (!validateEnv(app_pass_phrase, file_encryption_salt)) {
+      _idle?.();
+      return;
+    }
+
+    if (!complete_file_path) {
+      complete_file_path = await openDialog({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
+      });
+
+      if (!complete_file_path) {
+        _idle?.();
+        return toast.warning('No file selected', {
+          description: 'Cannot proceed, no file is selected.'
+        });
+      }
+    }
+
+    const loaded_data = await readEncryptedFile<FileExport>(
+      complete_file_path,
+      keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
+    );
+
+    if (!loaded_data) {
+      console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
+      _idle?.();
+      return toast.warning('Failed to load file', {
+        description: 'An error occurred while loading the file.'
+      });
+    }
+
+    const file_name = await getFileName(complete_file_path);
+
+    if (!file_name) {
+      console.error(`Failed to get file name of: ${complete_file_path}`);
+      _idle?.();
+      return toast.warning(`Failed to get file name of: ${complete_file_path}`, {
+        description: 'This is a system error and should not be here, the error has been logged.'
+      });
+    }
+
+    console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
+    console.log(`Complete file path: ${complete_file_path}`);
+    console.log(`File name: ${file_name}`);
+
+    const loaded_project = await loadCurrentProject(loaded_data, file_name);
+
+    return {
+      id: loaded_project.id,
+      project_name: file_name,
+      project_path: complete_file_path,
+      exists: true
+    };
+  } catch (err) {
+    console.error(`Failed to load file: ${JSON.stringify(err)}`);
+    toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
+      description: 'This is a system error and should not be here, the error has been logged.'
+    });
+  } finally {
+    _idle?.();
+  }
 }
