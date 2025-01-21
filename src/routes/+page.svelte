@@ -87,7 +87,7 @@
 			goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}`)
 				.then(() => {
 					if (
-						!project_state.recent_projects?.every(
+						!project_state.recent_projects?.some(
 							(p) => p.project_name === recent_project_data.project_name
 						)
 					) {
