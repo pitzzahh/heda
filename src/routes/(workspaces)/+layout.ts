@@ -10,8 +10,6 @@ export const load = async ({ depends, url: { searchParams } }) => {
 	depends('app:workspace');
 	const loaded_project_id = searchParams.get('project_id') ?? undefined;
 	const project_title = searchParams.get('project_title') ?? undefined;
-	const project = await getCurrentProject(loaded_project_id, project_title);
-	console.log(`PROJECT: ${JSON.stringify(project)}`);
 	const root_node = (await getRootNode());
 	const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
 	const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
@@ -26,7 +24,6 @@ export const load = async ({ depends, url: { searchParams } }) => {
 		project_title,
 		file_encryption_salt,
 		can_create_project: app_pass_phrase !== null && file_encryption_salt !== null,
-		project,
 		root_node
 	};
 };

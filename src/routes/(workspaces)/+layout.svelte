@@ -12,15 +12,17 @@
 	import type { Node } from '@/db/schema';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
+	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 
 	let { data, children } = $props();
 
 	const {
 		is_new_file,
 		is_load_file,
+		loaded_project_id,
+		project_title,
 		generic_phase_panel_form,
 		phase_main_load_form,
-		project,
 		app_pass_phrase,
 		file_encryption_salt,
 		can_create_project
@@ -41,15 +43,19 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
-		<AppSidebar
-			project={data.project}
-			root_node={data.root_node as Node}
-			{generic_phase_panel_form}
-			{phase_main_load_form}
-			{can_create_project}
-			{app_pass_phrase}
-			{file_encryption_salt}
-		/>
+		{#await getCurrentProject(loaded_project_id, project_title)}
+			Waiting
+		{:then project}
+			<AppSidebar
+				{project}
+				root_node={data.root_node as Node}
+				{generic_phase_panel_form}
+				{phase_main_load_form}
+				{can_create_project}
+				{app_pass_phrase}
+				{file_encryption_salt}
+			/>
+		{/await}
 		<Sidebar.Inset>
 			<header
 				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
@@ -57,7 +63,7 @@
 				<Sidebar.Trigger class="-ml-1" />
 				<Separator orientation="vertical" class="mr-2 h-4" />
 				<p>
-					{project?.project_name ?? 'Untitled'}
+					{project_title ?? 'Untitled'}
 				</p>
 			</header>
 
