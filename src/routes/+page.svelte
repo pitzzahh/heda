@@ -86,7 +86,11 @@
 						class="w-[150px] border border-black dark:border-white/90 lg:w-[200px] xl:w-[250px]"
 						href="/workspace?new_file=true">New File</Button
 					>
-					<Dialog.Root>
+					<Dialog.Root
+						onOpenChange={(o) => {
+							if (!o) component_state.status = 'idle';
+						}}
+					>
 						<Dialog.Trigger
 							type="button"
 							onclick={() => project_state.validateRecentProjects()}
