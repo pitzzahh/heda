@@ -10,10 +10,12 @@
 	import Button from '@/components/ui/button/button.svelte';
 
 	let is_confirmation_dialog_open = $state(false);
+	let button_state = $state<'stale' | 'processing'>('stale');
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 	const undo_redo_state = getUndoRedoState();
 
 	async function handleRemoveSelectedItems() {
+		button_state = 'processing';
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
@@ -36,6 +38,7 @@
 		await invalidate('app:workspace');
 		select_nodes_to_delete_state.removeAllNodeIds();
 		is_confirmation_dialog_open = false;
+		button_state = 'stale';
 	}
 </script>
 
@@ -64,6 +67,7 @@
 
 	<ConfirmationDialog
 		bind:open_dialog_state={is_confirmation_dialog_open}
+		bind:button_state
 		trigger_text="Remove Items"
 		trigger_variant="destructive"
 		onConfirm={handleRemoveSelectedItems}
