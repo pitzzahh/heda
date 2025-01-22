@@ -17,6 +17,7 @@
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
+	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 	import { Portal } from 'bits-ui';
 	import { cn } from '@/utils';
 
@@ -24,11 +25,15 @@
 		project,
 		root_node,
 		app_pass_phrase,
+		loaded_project_id,
+		project_title,
 		file_encryption_salt
 	}: {
 		project?: Project;
 		root_node: Node;
 		app_pass_phrase: string | null;
+		loaded_project_id: string | undefined;
+		project_title: string | undefined;
 		file_encryption_salt: string | null;
 	} = $props();
 
@@ -45,12 +50,17 @@
 	async function handleSave() {
 		try {
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
+
+			component_state.status = 'processing';
+
+			const project = await getCurrentProject(loaded_project_id, project_title);
+
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			component_state.status = 'processing';
+			
 			const file_data: FileExport = {
 				project,
 				nodes: await getAllChildNodes(project.root_node_id, true)
