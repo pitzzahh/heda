@@ -143,7 +143,15 @@
 												variant={project.exists ? 'outline' : 'warning'}
 												class="flex flex-1 items-center justify-start px-1.5 py-4"
 												disabled={!project.exists}
-												onclick={() => handleLoadFile(project.project_path)}
+												onclick={async () => {
+													const handle_file_result = await handleLoadFile(
+														project.project_path,
+														() => (component_state.status = 'processing')
+													);
+													if (isRecentProject(handle_file_result)) {
+														handleLoadFileSuccess(handle_file_result);
+													}
+												}}
 											>
 												<MonitorCog class="mr-2" />
 												<div class="flex flex-col items-start">
