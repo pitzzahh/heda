@@ -145,8 +145,10 @@
 										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
 											<Button
 												variant={project.exists ? 'outline' : 'warning'}
-												class="flex flex-1 items-center justify-start px-1.5 py-4"
-												disabled={!project.exists}
+												class={cn('flex flex-1 items-center justify-start px-1.5 py-4', {
+													'opacity-50': component_state.status === 'processing'
+												})}
+												disabled={!project.exists || component_state.status === 'processing'}
 												onclick={async () => {
 													const handle_file_result = await handleLoadFile(
 														project.project_path,
