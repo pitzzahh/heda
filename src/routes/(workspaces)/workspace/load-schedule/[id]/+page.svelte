@@ -7,9 +7,7 @@
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import type { NodeByIdResult } from '@/types/db/index.js';
 	import {
-		getCurrentProject,
 		getNodeById,
-		getRootNode,
 		getComputedLoads,
 		getComputedVoltageDrops
 	} from '@/db/queries/index.js';
