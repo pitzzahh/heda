@@ -3,17 +3,21 @@
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/state';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
-	import { getNodeById } from '@/db/queries/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import type { NodeByIdResult } from '@/types/db/index.js';
+	import {
+		getCurrentProject,
+		getNodeById,
+		getRootNode,
+		getComputedLoads,
+		getComputedVoltageDrops
+	} from '@/db/queries/index.js';
 
 	let { data } = $props();
 
-	const { root_node } = data;
+	const { root_node, node_id } = $derived(data);
 	const params = $derived(page.params);
-	const loads = $derived(data?.nodes);
-	const voltage_drops = $derived(data?.voltage_drops);
 
 	let supply_from_name = $state('');
 	let node: NodeByIdResult | null = $state(null);
@@ -62,19 +66,27 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched">
-			<DataTable
-				data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-				columns={onePhaseMainOrWyeCols(
-					data.phase_main_load_form,
-					data.current_node as PhaseLoadSchedule,
-					root_node?.highest_unit_form,
-					loads && loads.length > 0 ? loads.at(-1) : undefined
-				)}
-				is_footer_shown={data.current_node?.node_type !== 'root'}
-			/>
+			{#await getComputedLoads(node_id)}
+				Loading
+			{:then loads}
+				<DataTable
+					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
+					columns={onePhaseMainOrWyeCols(
+						data.phase_main_load_form,
+						data.current_node as PhaseLoadSchedule,
+						root_node?.highest_unit_form,
+						loads && loads.length > 0 ? loads.at(-1) : undefined
+					)}
+					is_footer_shown={data.current_node?.node_type !== 'root'}
+				/>
+			{/await}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+			{#await getComputedVoltageDrops()}
+				Loading
+			{:then voltage_drops}
+				<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+			{/await}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
