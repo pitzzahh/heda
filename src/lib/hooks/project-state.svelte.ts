@@ -53,6 +53,13 @@ export class ProjectState {
     }
   }
 
+  removeCurrentProject() {
+    this.id = '';
+    this.current_project_name = '';
+    this.current_project_path = '';
+    this.exists = false;
+  }
+
   setCurrentProject(current_project: RecentProject) {
     this.persisted_state.current.current_project = current_project;
     this.id = current_project.id;
