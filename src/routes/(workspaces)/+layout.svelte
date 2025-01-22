@@ -12,7 +12,7 @@
 	import type { Node } from '@/db/schema';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import { getCurrentProject } from '@/db/queries/index.js';
+	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { handleLoadFile } from '@/helpers/file/index.js';
 
@@ -34,12 +34,6 @@
 	const project_state = getProjectState();
 
 	$effect(() => {
-		if (project_state.loaded) {
-			handleLoadFile(project_state.current_project_path);
-		}
-	});
-
-	$effect(() => {
 		if (is_load_file) {
 			toast.loading('Loading project data', {
 				description: 'Please wait while we load your project data.'
@@ -49,16 +43,26 @@
 	});
 </script>
 
+<svelte:window
+	onload={() => {
+		if (project_state.loaded) {
+			handleLoadFile(project_state.current_project_path).finally(() => {
+				toast.success('Project loaded successfully');
+			});
+		}
+	}}
+/>
+
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
 		{#if project_state.loaded}
-			{#await getCurrentProject(loaded_project_id)}
+			{#await Promise.all([getCurrentProject(loaded_project_id), getRootNode()])}
 				<Skeletal />
-			{:then project}
+			{:then [project, root_node]}
 				<AppSidebar
 					{project}
-					root_node={data.root_node as Node}
+					root_node={root_node as Node}
 					{generic_phase_panel_form}
 					{phase_main_load_form}
 					{loaded_project_id}
