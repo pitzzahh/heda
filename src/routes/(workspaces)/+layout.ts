@@ -2,7 +2,7 @@ import { highest_unit_schema } from '@/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { generic_phase_panel_schema } from '@/schema/panel';
-import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
+import { getRootNode } from '@/db/queries/index.js';
 import { generic_phase_main_load_schema } from '@/schema/load';
 import { getEnv } from '@/helpers/security/index.js';
 
