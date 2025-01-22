@@ -56,44 +56,42 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
-		{#if project_state.loaded}
-			{#await Promise.all([getCurrentProject(loaded_project_id), getRootNode()])}
-				<Skeletal />
-			{:then [project, root_node]}
-				<AppSidebar
-					{project}
-					root_node={root_node as Node}
-					{generic_phase_panel_form}
-					{phase_main_load_form}
-					{loaded_project_id}
-					{project_title}
-					{can_create_project}
-					{app_pass_phrase}
-					{file_encryption_salt}
-				/>
-			{/await}
-			<Sidebar.Inset>
-				<header
-					class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
-				>
-					<Sidebar.Trigger class="-ml-1" />
-					<Separator orientation="vertical" class="mr-2 h-4" />
-					<p>
-						{project_title ?? 'Untitled'}
-					</p>
-				</header>
+		{#await Promise.all([getCurrentProject(loaded_project_id), getRootNode()])}
+			<Skeletal />
+		{:then [project, root_node]}
+			<AppSidebar
+				{project}
+				root_node={root_node as Node}
+				{generic_phase_panel_form}
+				{phase_main_load_form}
+				{loaded_project_id}
+				{project_title}
+				{can_create_project}
+				{app_pass_phrase}
+				{file_encryption_salt}
+			/>
+		{/await}
+		<Sidebar.Inset>
+			<header
+				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
+			>
+				<Sidebar.Trigger class="-ml-1" />
+				<Separator orientation="vertical" class="mr-2 h-4" />
+				<p>
+					{project_title ?? 'Untitled'}
+				</p>
+			</header>
 
-				<svelte:boundary>
-					<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
-						{@render children?.()}
-					</div>
-					{#snippet failed(error, reset)}
-						<p class="text-sm text-muted-foreground">{error}</p>
-						<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
-					{/snippet}
-				</svelte:boundary>
-			</Sidebar.Inset>
-		{/if}
+			<svelte:boundary>
+				<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
+					{@render children?.()}
+				</div>
+				{#snippet failed(error, reset)}
+					<p class="text-sm text-muted-foreground">{error}</p>
+					<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
+				{/snippet}
+			</svelte:boundary>
+		</Sidebar.Inset>
 	</Sidebar.Provider>
 
 	<Dialog.Root bind:open={dialogs_state.highestUnit}>
