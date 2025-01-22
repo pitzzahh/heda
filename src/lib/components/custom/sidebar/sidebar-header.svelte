@@ -22,14 +22,12 @@
 	import { cn } from '@/utils';
 
 	let {
-		project,
 		root_node,
 		app_pass_phrase,
 		loaded_project_id,
 		project_title,
 		file_encryption_salt
 	}: {
-		project?: Project;
 		root_node: Node;
 		app_pass_phrase: string | null;
 		loaded_project_id: string | undefined;
@@ -60,7 +58,7 @@
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
-			
+
 			const file_data: FileExport = {
 				project,
 				nodes: await getAllChildNodes(project.root_node_id, true)
@@ -113,7 +111,7 @@
 			<Tooltip.Provider>
 				<Tooltip.Root>
 					<Tooltip.Trigger
-						disabled={project === undefined ||
+						disabled={!project_state.loaded ||
 							!component_state.can_save ||
 							component_state.status === 'processing' ||
 							!undo_redo_state.has_unsaved_actions}
@@ -135,7 +133,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<Settings {project} />
+					<Settings project_id={loaded_project_id} />
 				</Tooltip.Trigger>
 				<Tooltip.Content>Settings</Tooltip.Content>
 			</Tooltip.Root>
@@ -164,9 +162,9 @@
 											exportToExcel(
 												'LOAD_SCHEDULE',
 												root_node.id,
-												project?.project_name ?? 'Project',
+												project_title ?? 'Project',
 												root_node?.highest_unit_form,
-												project?.project_name,
+												project_title,
 												() => (component_state.export_to_excel = 'idle'),
 												() => (component_state.export_to_excel = 'loading')
 											)}
