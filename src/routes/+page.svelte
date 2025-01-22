@@ -24,7 +24,7 @@
 			.then(() => {
 				if (
 					!project_state.recent_projects?.some(
-						(p) => p.project_name === recent_project_data.project_name
+						(p) => p.id === recent_project_data.id
 					)
 				) {
 					project_state.addRecentProject(recent_project_data, true);
