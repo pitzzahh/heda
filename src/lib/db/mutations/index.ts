@@ -6,7 +6,7 @@ import type { Project, Node } from '@/db/schema';
 import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { FileExport } from '@/types/main';
 
-export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form'], instance_name?: string) {
+export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form'], instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -38,7 +38,7 @@ export async function createProject(project_name: string, highest_unit_form: Nod
 
 export async function updateProjectSettings(
 	project_id: string,
-	settings: Partial<Project['settings']>, instance_name?: string
+	settings: Partial<Project['settings']>, instance_name: string = 'heda'
 ) {
 	const database = await databaseInstance(instance_name);
 
@@ -59,7 +59,7 @@ export async function updateProjectSettings(
 	}
 }
 
-export async function updateProjectTitle(id: string, project_name: string, instance_name?: string) {
+export async function updateProjectTitle(id: string, project_name: string, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -85,13 +85,13 @@ export async function addNode({
 	panel_data,
 	parent_id,
 	existing_id,
-	instance_name
+	instance_name  = 'heda'
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 	existing_id?: string;
-	instance_name?: string;
+	instance_name: string;
 }) {
 	const database = await databaseInstance(instance_name);
 
@@ -129,7 +129,7 @@ export async function addNode({
 	}
 }
 
-export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string, instance_name?: string) {
+export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -246,14 +246,14 @@ export async function updateNode({
 	parent_id,
 	id,
 	whole_data,
-	instance_name
+	instance_name  = 'heda'
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
 	parent_id: string;
 	panel_data?: GenericPhasePanelSchema;
 	whole_data?: Node;
-	instance_name?: string;
+	instance_name: string;
 }) {
 	const database = await databaseInstance(instance_name);
 
@@ -339,7 +339,7 @@ export async function updateNode({
 
 export async function removeNode(
 	id: string,
-	visited: Set<string> = new Set(), instance_name?: string
+	visited: Set<string> = new Set(), instance_name: string = 'heda'
 ): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined> {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
@@ -378,7 +378,7 @@ export async function removeNode(
 	}
 }
 
-export async function deleteProject(project_id: string, instance_name?: string) {
+export async function deleteProject(project_id: string, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -425,13 +425,13 @@ export async function overrideField({
 	field_data,
 	unoverride = false,
 	field_type,
-	instance_name
+	instance_name  = 'heda'
 }: {
 	node_id: string;
 	field_data?: number;
 	unoverride?: boolean;
 	field_type: FieldType;
-	instance_name?: string
+	instance_name: string;
 }) {
 	const database = await databaseInstance(instance_name);
 
@@ -457,7 +457,7 @@ export async function overrideField({
 	}
 }
 
-export async function updateConductorSets({ node_id, sets, instance_name }: { node_id: string; sets: number; instance_name?: string; }) {
+export async function updateConductorSets({ node_id, sets, instance_name = 'heda' }: { node_id: string; sets: number; instance_name: string; }) {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -483,12 +483,12 @@ export async function updateLoadDescription({
 	node_id,
 	load_description,
 	node_type,
-	instance_name
+	instance_name  = 'heda'
 }: {
 	node_id: string;
 	load_description: string;
 	node_type: 'panel' | 'load';
-	instance_name?: string;
+	instance_name: string;
 }) {
 	const database = await databaseInstance(instance_name);
 
@@ -530,12 +530,12 @@ export async function changeInsulation({
 	node_id,
 	insulation,
 	type,
-	instance_name
+	instance_name  = 'heda'
 }: {
 	node_id: string;
 	insulation: string;
 	type: 'egc' | 'conductor';
-	instance_name?: string
+	instance_name: string;
 }) {
 	const database = await databaseInstance(instance_name);
 
@@ -559,7 +559,7 @@ export async function changeInsulation({
 	}
 }
 
-export async function changePole(node_id: string, pole: string, instance_name?: string) {
+export async function changePole(node_id: string, pole: string, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -581,7 +581,7 @@ export async function changePole(node_id: string, pole: string, instance_name?: 
 	}
 }
 
-export async function useAtAsCurrentsValue(node_id: string, is_use: boolean, instance_name?: string) {
+export async function useAtAsCurrentsValue(node_id: string, is_use: boolean, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	try {
@@ -606,7 +606,7 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean, ins
 export async function updateNodeParentById(node_to_update: {
 	id: string;
 	parent_id?: string;
-}, new_parent: string, instance_name?: string) {
+}, new_parent: string, instance_name: string = 'heda') {
 	const database = await databaseInstance(instance_name);
 
 	const current_parent_query = database.nodes.findOne({
@@ -650,7 +650,7 @@ export async function updateNodeParentById(node_to_update: {
 	}
 }
 
-export async function resetData(minimumDeletedTime?: number, instance_name?: string) {
+export async function resetData(minimumDeletedTime?: number, instance_name: string = 'heda') {
 	const db = await databaseInstance(instance_name);
 	await db.projects.find().remove();
 	await db.nodes.find().remove();
@@ -658,7 +658,7 @@ export async function resetData(minimumDeletedTime?: number, instance_name?: str
 	await db.nodes.cleanup(minimumDeletedTime);
 }
 
-export async function loadCurrentProject(file_export: FileExport, instance_name?: string): Promise<Project> {
+export async function loadCurrentProject(file_export: FileExport, instance_name: string = 'heda'): Promise<Project> {
 	await resetData(undefined, instance_name)
 	const db = await databaseInstance(instance_name);
 	const { project, nodes } = file_export;
