@@ -41,7 +41,8 @@
 				toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
-			});
+			})
+			.finally(() => (component_state.status = 'idle'));
 	}
 	function isRecentProject(obj: any): obj is RecentProject {
 		return obj && typeof obj === 'object' && 'id' in obj && 'project_name' in obj;
@@ -115,8 +116,7 @@
 								onclick={async () => {
 									const handle_file_result = await handleLoadFile(
 										undefined,
-										() => (component_state.status = 'processing'),
-										() => (component_state.status = 'idle')
+										() => (component_state.status = 'processing')
 									);
 									if (isRecentProject(handle_file_result)) {
 										handleLoadFileSuccess(handle_file_result);
