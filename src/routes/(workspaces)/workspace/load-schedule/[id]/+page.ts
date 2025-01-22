@@ -2,11 +2,8 @@ import { generic_phase_main_load_schema } from '@/schema/load';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import {
-	getCurrentProject,
 	getNodeById,
-	getRootNode,
-	getComputedLoads,
-	getComputedVoltageDrops
+	getRootNode
 } from '@/db/queries/index.js';
 import { goto } from '$app/navigation';
 import type { Node } from '@/db/schema';
@@ -24,13 +21,10 @@ export const load = async ({ depends, params }) => {
 	}
 	const current_node = await getNodeById(node_id);
 	if (!current_node) goto('/workspace');
-	const nodes = await getComputedLoads(node_id);
-	const voltage_drops = await getComputedVoltageDrops()
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
-		nodes: nodes && nodes?.length > 0 ? nodes : [],
+		node_id,
 		root_node: root_node as Node,
-		current_node,
-		voltage_drops
+		current_node
 	};
 };
