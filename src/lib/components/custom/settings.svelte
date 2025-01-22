@@ -58,8 +58,9 @@
 	import type { DialogState } from '@/state/types';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { resetData } from '@/db/mutations';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
-	let { project }: { project?: Project } = $props();
+	let { project_id }: { project_id?: string | undefined } = $props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -68,6 +69,7 @@
 
 	const settingsState = getSettingsState();
 	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
@@ -80,9 +82,21 @@
 	});
 
 	async function savePreference(message: string) {
-		if (!project) return;
+		if (!project_state.loaded) {
+			console.error(`Failed to save preference, project not yet loaded`);
+			return toast.warning('Failed to save preference, project not yet loaded', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+		}
 
-		await updateProjectSettings(project.id, {
+		if (!project_id) {
+			console.error(`Failed to save preference, no project found`);
+			return toast.warning('Failed to save preference, no project found', {
+				description: 'This is a system error and should not be here, the error has been logged.'
+			});
+		}
+
+		await updateProjectSettings(project_id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
 			.then(() => undo_redo_state.setHasUnsavedActions())
@@ -209,7 +223,7 @@
 				</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="adjustment_factor"
 				bind:checked={settingsState.is_adjustment_factor_dynamic}
 				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
@@ -223,7 +237,7 @@
 				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="auto_save"
 				checked={settingsState.auto_save_enabled}
 				onCheckedChange={(value) => settingsState.setAutoSave(value)}
