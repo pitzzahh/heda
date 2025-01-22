@@ -48,6 +48,8 @@ async function createDatabase(name: string = 'heda'): Promise<RxDatabase<MyDatab
 export async function databaseInstance(name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
 	const database = await createDatabase(name);
 
+	console.log(`Database instance: ${JSON.stringify(database, null, 2)}`);
+
 	if (!database.projects || !database.nodes) {
 		try {
 			const added_collections_result = await database.addCollections({
