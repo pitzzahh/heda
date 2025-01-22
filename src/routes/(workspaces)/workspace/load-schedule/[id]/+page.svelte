@@ -14,7 +14,7 @@
 	const params = $derived(page.params);
 	const loads = $derived(data?.nodes);
 	const voltage_drops = $derived(data?.voltage_drops);
-  
+
 	let supply_from_name = $state('');
 	let node: NodeByIdResult | null = $state(null);
 
@@ -38,7 +38,11 @@
 	<div class="grid grid-cols-2">
 		<div>
 			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal">{node?.panel_data?.name ?? node?.highest_unit_form?.distribution_unit ?? 'NOT FOUND'}</span>
+				Distribution Unit: <span class="font-normal"
+					>{node?.panel_data?.name ??
+						node?.highest_unit_form?.distribution_unit ??
+						'NOT FOUND'}</span
+				>
 			</p>
 			<p class="font-semibold">
 				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
@@ -58,18 +62,16 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched">
-			{#key loads}
-				<DataTable
-					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-					columns={onePhaseMainOrWyeCols(
-						data.phase_main_load_form,
-						data.current_node as PhaseLoadSchedule,
-						root_node?.highest_unit_form,
-						loads && loads.length > 0 ? loads.at(-1) : undefined
-					)}
-					is_footer_shown={data.current_node?.node_type !== 'root'}
-				/>
-			{/key}
+			<DataTable
+				data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
+				columns={onePhaseMainOrWyeCols(
+					data.phase_main_load_form,
+					data.current_node as PhaseLoadSchedule,
+					root_node?.highest_unit_form,
+					loads && loads.length > 0 ? loads.at(-1) : undefined
+				)}
+				is_footer_shown={data.current_node?.node_type !== 'root'}
+			/>
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
 			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
