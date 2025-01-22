@@ -5,7 +5,7 @@
 	import { buttonVariants, Button } from '@/components/ui/button/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-	import { HighestUnitForm, PageProgress } from '@/components/custom';
+	import { HighestUnitForm, PageProgress, Skeletal } from '@/components/custom';
 	import { getState } from '@/state/index.svelte';
 	import { DIALOG_STATE_CTX } from '@/state/constants.js';
 	import type { DialogState } from '@/state/types.js';
@@ -47,13 +47,15 @@
 	<Sidebar.Provider>
 		{#if project_state.loaded}
 			{#await getCurrentProject(loaded_project_id, project_title)}
-				Waiting
+				<Skeletal />
 			{:then project}
 				<AppSidebar
 					{project}
 					root_node={data.root_node as Node}
 					{generic_phase_panel_form}
 					{phase_main_load_form}
+					{loaded_project_id}
+					{project_title}
 					{can_create_project}
 					{app_pass_phrase}
 					{file_encryption_salt}
