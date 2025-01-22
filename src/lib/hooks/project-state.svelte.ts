@@ -6,7 +6,7 @@ import type { RecentProject } from '@/types/main';
 
 type ProjectStateType = {
   recent_projects?: RecentProject[],
-  loaded?: boolean,
+  loaded: boolean,
   current_project?: RecentProject
 }
 
@@ -28,6 +28,7 @@ export class ProjectState {
     });
     this.persisted_state = _persisted_state;
     this.validateRecentProjects();
+    this.setProjectLoaded(this.persisted_state.current.loaded);
     this.recent_projects = this.persisted_state.current.recent_projects;
     recent_project && this.addRecentProject(recent_project);
   }
