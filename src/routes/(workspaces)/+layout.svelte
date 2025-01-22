@@ -13,6 +13,7 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let { data, children } = $props();
 
@@ -29,6 +30,7 @@
 	} = $derived(data);
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+	const project_state = getProjectState();
 
 	$effect(() => {
 		if (is_load_file) {
@@ -43,40 +45,43 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider>
-		{#await getCurrentProject(loaded_project_id, project_title)}
-			Waiting
-		{:then project}
-			<AppSidebar
-				{project}
-				root_node={data.root_node as Node}
-				{generic_phase_panel_form}
-				{phase_main_load_form}
-				{can_create_project}
-				{app_pass_phrase}
-				{file_encryption_salt}
-			/>
-		{/await}
-		<Sidebar.Inset>
-			<header
-				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
-			>
-				<Sidebar.Trigger class="-ml-1" />
-				<Separator orientation="vertical" class="mr-2 h-4" />
-				<p>
-					{project_title ?? 'Untitled'}
-				</p>
-			</header>
+		{#if project_state.loaded}
+			{#await getCurrentProject(loaded_project_id, project_title)}
+				Waiting
+			{:then project}
+				<AppSidebar
+					{project}
+					root_node={data.root_node as Node}
+					{generic_phase_panel_form}
+					{phase_main_load_form}
+					{can_create_project}
+					{app_pass_phrase}
+					{file_encryption_salt}
+				/>
+			{/await}
+		{:else}
+			<Sidebar.Inset>
+				<header
+					class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
+				>
+					<Sidebar.Trigger class="-ml-1" />
+					<Separator orientation="vertical" class="mr-2 h-4" />
+					<p>
+						{project_title ?? 'Untitled'}
+					</p>
+				</header>
 
-			<svelte:boundary>
-				<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
-					{@render children?.()}
-				</div>
-				{#snippet failed(error, reset)}
-					<p class="text-sm text-muted-foreground">{error}</p>
-					<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
-				{/snippet}
-			</svelte:boundary>
-		</Sidebar.Inset>
+				<svelte:boundary>
+					<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
+						{@render children?.()}
+					</div>
+					{#snippet failed(error, reset)}
+						<p class="text-sm text-muted-foreground">{error}</p>
+						<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
+					{/snippet}
+				</svelte:boundary>
+			</Sidebar.Inset>
+		{/if}
 	</Sidebar.Provider>
 
 	<Dialog.Root bind:open={dialogs_state.highestUnit}>
