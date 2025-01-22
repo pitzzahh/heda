@@ -171,6 +171,7 @@
 												variant="outline"
 												class="hover:bg-destructive"
 												size="icon"
+												disabled={component_state.status === 'processing'}
 												onclick={() => {
 													project_state.removeRecentProject(project.id);
 													toast.info(`${project.project_name ?? 'Project'} removed successfully`);
