@@ -47,6 +47,11 @@
 	function isRecentProject(obj: any): obj is RecentProject {
 		return obj && typeof obj === 'object' && 'id' in obj && 'project_name' in obj;
 	}
+
+	$effect(() => {
+		project_state.setProjectLoaded(false);
+		project_state.removeCurrentProject()
+	})
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
