@@ -61,7 +61,6 @@
 <SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
 	<SidebarHeader
-		{project}
 		{root_node}
 		{loaded_project_id}
 		{project_title}
