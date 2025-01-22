@@ -165,7 +165,5 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
     toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
       description: 'This is a system error and should not be here, the error has been logged.'
     });
-  } finally {
-    _idle?.();
   }
 }
