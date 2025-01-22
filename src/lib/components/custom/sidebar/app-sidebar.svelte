@@ -90,31 +90,27 @@
 										<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 									{/snippet}
 								</svelte:boundary>
-							{:else}
-								<div class="grid h-[85vh] place-content-center">
-									<div class="grid gap-2">
-										<div class="text-center">
-											<p class="text-lg font-bold text-muted-foreground">
-												There is no project yet.
-											</p>
-											<p class="text-sm text-muted-foreground">
-												Create a new project to get started.
-											</p>
-										</div>
-
-										<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
-										<Button
-											size="sm"
-											disabled={disable_create_project}
-											onclick={() => (dialogs_state.highestUnit = true)}
-											href="/workspace?new_file=true"
-										>
-											<PlusIcon className="size-4 ml-3" /> Create a project
-										</Button>
-									</div>
-								</div>
 							{/if}
 						{/await}
+					{:else}
+						<div class="grid h-[85vh] place-content-center">
+							<div class="grid gap-2">
+								<div class="text-center">
+									<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
+									<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
+								</div>
+
+								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
+								<Button
+									size="sm"
+									disabled={disable_create_project}
+									onclick={() => (dialogs_state.highestUnit = true)}
+									href="/workspace?new_file=true"
+								>
+									<PlusIcon className="size-4 ml-3" /> Create a project
+								</Button>
+							</div>
+						</div>
 					{/if}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
