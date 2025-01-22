@@ -12,8 +12,9 @@
 	import type { Node } from '@/db/schema';
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
-	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
+	import { getCurrentProject } from '@/db/queries/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte';
+	import { handleLoadFile } from '@/helpers/file/index.js';
 
 	let { data, children } = $props();
 
@@ -33,6 +34,12 @@
 	const project_state = getProjectState();
 
 	$effect(() => {
+		if (project_state.loaded) {
+			handleLoadFile(project_state.current_project_path);
+		}
+	});
+
+	$effect(() => {
 		if (is_load_file) {
 			toast.loading('Loading project data', {
 				description: 'Please wait while we load your project data.'
@@ -46,7 +53,7 @@
 <UndoRedoWrapper>
 	<Sidebar.Provider>
 		{#if project_state.loaded}
-			{#await getCurrentProject(loaded_project_id, project_title)}
+			{#await getCurrentProject(loaded_project_id)}
 				<Skeletal />
 			{:then project}
 				<AppSidebar
