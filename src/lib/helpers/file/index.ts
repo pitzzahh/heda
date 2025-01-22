@@ -125,6 +125,10 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
       }
     }
 
+    toast.loading(`Loading file: ${complete_file_path}`, {
+      description: 'Please wait while the file is being loaded.'
+    });
+
     const loaded_data = await readEncryptedFile<FileExport>(
       complete_file_path,
       keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
@@ -161,6 +165,7 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
       exists: true
     };
   } catch (err) {
+    _idle?.();
     console.error(`Failed to load file: ${JSON.stringify(err)}`);
     toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
       description: 'This is a system error and should not be here, the error has been logged.'
