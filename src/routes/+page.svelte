@@ -120,7 +120,8 @@
 								onclick={async () => {
 									const handle_file_result = await handleLoadFile(
 										undefined,
-										() => (component_state.status = 'processing')
+										() => (component_state.status = 'processing'),
+										() => (component_state.status = 'idle')
 									);
 									if (isRecentProject(handle_file_result)) {
 										handleLoadFileSuccess(handle_file_result);
@@ -152,7 +153,8 @@
 												onclick={async () => {
 													const handle_file_result = await handleLoadFile(
 														project.project_path,
-														() => (component_state.status = 'processing')
+														() => (component_state.status = 'processing'),
+														() => (component_state.status = 'idle')
 													);
 													if (isRecentProject(handle_file_result)) {
 														handleLoadFileSuccess(handle_file_result);
