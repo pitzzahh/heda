@@ -17,7 +17,7 @@
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
-	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
+	import { getCurrentProject } from '@/db/queries/index.js';
 	import { Portal } from 'bits-ui';
 	import { cn } from '@/utils';
 
@@ -51,7 +51,7 @@
 
 			component_state.status = 'processing';
 
-			const project = await getCurrentProject(loaded_project_id, project_title);
+			const project = await getCurrentProject(loaded_project_id);
 
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
