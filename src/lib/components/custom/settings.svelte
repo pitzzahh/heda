@@ -120,7 +120,9 @@
 	}
 
 	async function handleNewProject() {
-		await resetData(undefined, project_state.current_project_name);
+		if(project_state.loaded) {
+			await resetData(undefined, project_state.current_project_name);
+		}
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}
