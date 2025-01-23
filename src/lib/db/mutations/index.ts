@@ -7,6 +7,7 @@ import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 import type { FileExport } from '@/types/main';
 
 export async function createProject(project_name: string, highest_unit_form: Node['highest_unit_form'], instance_name: string) {
+	console.log(`Creating project ${project_name} in instance ${instance_name} with highest unit form ${JSON.stringify(highest_unit_form, null, 2)}`);
 	const database = await databaseInstance(instance_name);
 
 	try {
