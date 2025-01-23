@@ -113,7 +113,7 @@
 
 					const file_data: FileExport = {
 						project,
-						nodes: await getAllChildNodes(project.root_node_id, true)
+						nodes: await getAllChildNodes(project_name, project.root_node_id, true)
 					};
 
 					await writeEncryptedFile(
@@ -124,7 +124,7 @@
 					closeDialog();
 
 					await invalidate('app:workspace')
-						.then(() =>
+						.then(() => {
 							project_state.addRecentProject(
 								{
 									id: project.id,
@@ -133,26 +133,24 @@
 									exists: true
 								},
 								true
-							)
-						)
-						.then(() => {
+							);
 							undo_redo_state.resetUnsavedActions();
+							goto(
+								`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}?project_title=${project_name}`
+							);
+							console.log(`${project_state.current_project_name} created successfully`);
+							toast.success(`${project_state.current_project_name} created successfully`);
 						})
-						.then(() =>
-							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
-						)
-						.finally(() =>
-							toast.success(`${project_state.current_project_name} created successfully`)
-						)
-						.catch((err) =>
+						.catch((err) => {
+							console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 							toast.error(
 								`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 								{
 									description:
 										'This is a system error and should not be here, the error has been logged.'
 								}
-							)
-						);
+							);
+						});
 				} catch (err) {
 					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 					return toast.error(
