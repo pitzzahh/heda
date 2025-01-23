@@ -57,7 +57,7 @@
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#key project_state.loaded}
+					{#if project_state.loaded}
 						{#await Promise.all( [getCurrentProject(project_state.current_project_name, project_state.id), getRootNode(project_state.current_project_name)] ) then [project, root_node]}
 							{#if root_node?.highest_unit_form}
 								<svelte:boundary>
@@ -68,7 +68,6 @@
 										{generic_phase_panel_form}
 										{project}
 									/>
-
 									{#snippet failed(error, reset)}
 										<p class="text-sm text-muted-foreground">{error}</p>
 										<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
@@ -76,7 +75,7 @@
 								</svelte:boundary>
 							{/if}
 						{/await}
-					{/key}
+					{/if}
 					<div class="grid h-[85vh] place-content-center">
 						<div class="grid gap-2">
 							<div class="text-center">
