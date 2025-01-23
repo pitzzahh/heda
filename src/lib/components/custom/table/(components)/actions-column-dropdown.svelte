@@ -22,6 +22,7 @@
 	import type { VoltageDrop } from '@/types/voltage-drop';
 	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		node,
@@ -45,13 +46,14 @@
 	let node_name = $state('Unknown');
 	let open_copy_dialog = $state(false);
 
-	let undo_redo_state = getUndoRedoState();
-	let settings_state = getSettingsState();
-	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	const undo_redo_state = getUndoRedoState();
+	const settings_state = getSettingsState();
+	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	const project_state = getProjectState();
 
 	$effect(() => {
 		if (node.parent_id) {
-			getNodeById(node.parent_id).then((node) => {
+			getNodeById(node.parent_id, project_state.current_project_name).then((node) => {
 				selected_parent = {
 					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
 					id: node?.id || ''
@@ -61,7 +63,7 @@
 	});
 
 	async function handleRemoveLoad() {
-		const result = await removeNode(node.id);
+		const result = await removeNode(node.id, project_state.current_project_name);
 		if (result) {
 			undo_redo_state.setActionToUndo({
 				action: 'delete_node',
@@ -82,7 +84,7 @@
 	async function copyNodeById(node_id: string) {
 		node_name = node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (open_copy_dialog) return;
-		await copyAndAddNodeById(node_id)
+		await copyAndAddNodeById(project_state.current_project_name, node_id)
 			.then((copied_node) => {
 				undo_redo_state.setActionToUndo({
 					action: 'copy_node',

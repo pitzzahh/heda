@@ -11,6 +11,7 @@
 	import { cn } from '@/utils';
 	import type { Node } from '@/db/schema';
 	import { getNodeById } from '@/db/queries';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		children,
@@ -33,6 +34,8 @@
 	} = $props();
 
 	const { phase } = highest_unit;
+
+	const project_state = getProjectState();
 
 	let clickTimeout: number | null = null; // To store the timeout for single-click
 
@@ -65,7 +68,7 @@
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
-							{#await getNodeById(parent_id)}
+							{#await getNodeById(parent_id, project_state.current_project_name)}
 								<p></p>
 							{:then parent_node}
 								<p>

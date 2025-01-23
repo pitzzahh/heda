@@ -10,6 +10,7 @@
 	import type { Node } from '@/db/schema';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { getNodeById } from '@/db/queries';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		generic_phase_panel_form,
@@ -33,11 +34,13 @@
 
 	const { phase } = highest_unit;
 
+	const project_state = getProjectState();
+
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
 	$effect(() => {
 		if (panel_to_edit.parent_id) {
-			getNodeById(panel_to_edit.parent_id).then((node) => {
+			getNodeById(panel_to_edit.parent_id, project_state.current_project_name).then((node) => {
 				selected_parent = {
 					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
 					id: node?.id || ''

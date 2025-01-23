@@ -10,6 +10,7 @@
 	import Separator from '@/components/ui/separator/separator.svelte';
 	import { getNodeById } from '@/db/queries';
 	import { page } from '$app/state';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	interface Props {
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
@@ -29,6 +30,8 @@
 		panel_id_from_tree,
 		...props
 	}: Props = $props();
+
+	const project_state = getProjectState();
 </script>
 
 <div class="flex flex-col gap-2">
@@ -40,7 +43,7 @@
 			<Dialog.Trigger
 				class={buttonVariants({
 					variant: 'outline',
-					className: 'h-6 w-full bg-primary text-white hover:bg-primary/80 hover:text-white'
+					className: 'bg-primary hover:bg-primary/80 h-6 w-full text-white hover:text-white'
 				})}
 			>
 				<CirclePlus class="size-4" />
@@ -59,7 +62,7 @@
 								<h4 class="font-semibold">Supply From:</h4>
 								{#await getNodeById(panel_id_from_tree || page.params.id
 											.split('_')
-											.at(-1) || '') then parent_node}
+											.at(-1) || '', project_state.current_project_name) then parent_node}
 									<p>
 										{parent_node?.highest_unit_form?.distribution_unit ||
 											parent_node?.panel_data?.name ||
