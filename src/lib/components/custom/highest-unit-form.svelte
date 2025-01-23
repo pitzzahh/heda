@@ -14,7 +14,13 @@
 	import type { Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString } from '@/helpers/security';
-	import { getFileName, writeEncryptedFile, EXTENSION, doesFileExists } from '@/helpers/file';
+	import {
+		getFileName,
+		writeEncryptedFile,
+		EXTENSION,
+		doesFileExists,
+		generateUniqueFileName
+	} from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -60,7 +66,7 @@
 						});
 					}
 
-					const project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
+					let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
 					const created_project = await createProject(project_name, form.data, project_name);
 
@@ -75,7 +81,8 @@
 					const { project, root_node_id } = created_project;
 
 					if (!project_name) {
-						await updateProjectTitle(project.id, 'Untitled');
+						project_name = await generateUniqueFileName('Untitled Project');
+						await updateProjectTitle(project.id, project_name, project_name);
 						toast.warning('Project title not fetched from file name.', {
 							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
@@ -190,7 +197,7 @@
 									buttonVariants({
 										variant: 'outline',
 										className:
-											'w-full font-normal hover:bg-primary/20 hover:text-white [&:has([data-state=checked])]:bg-primary/20'
+											'hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20 w-full font-normal hover:text-white'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'
