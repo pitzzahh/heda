@@ -156,7 +156,7 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
     console.log(`Complete file path: ${complete_file_path}`);
     console.log(`File name: ${file_name}`);
 
-    const loaded_project = await loadCurrentProject(loaded_data);
+    const loaded_project = await loadCurrentProject(loaded_data, file_name);
 
     return {
       id: loaded_project.id,
