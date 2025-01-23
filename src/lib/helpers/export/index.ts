@@ -14,11 +14,12 @@ type ExportProcessResult = {
 
 export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
+  instance_name: string,
   node_id: string,
-  highest_unit?: Node['highest_unit_form']
+  highest_unit?: Node['highest_unit_form'],
 ): Promise<ExportProcessResult> {
-  const current_node = await getNodeById(node_id);
-  const children = await getComputedLoads(node_id);
+  const current_node = await getNodeById(node_id, instance_name);
+  const children = await getComputedLoads(node_id, instance_name);
 
   if (!current_node) {
     return {
@@ -29,9 +30,9 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   }
 
   // Use the existing getNodeDepth2 function to calculate the depth
-  const actualDepth = await getNodeDepth(node_id);
+  const actualDepth = await getNodeDepth(node_id, instance_name);
   const panel_level = getOrdinalSuffix(actualDepth);
-  const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
+  const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id, instance_name) : undefined;
   const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
   const from_supply_name = current_node?.node_type === 'root' ? '--' : parent_node?.panel_data?.name ?? 'Transformer'
 
@@ -145,7 +146,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     { width: 10 }, { width: 15 }
   ];
 
-  const loads = await getComputedLoads(node_id);
+  const loads = await getComputedLoads(node_id, instance_name);
   let current_load_row = startRow + 6;
 
   for (const load of loads) {
@@ -214,6 +215,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     if (child.node_type === 'root' || child.node_type === 'panel') {
       await processOnePhaseExcelPanelBoardSchedule(
         workbook,
+        instance_name,
         child.id,
         highest_unit
       );
@@ -223,9 +225,10 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   return { valid: true };
 }
 
-export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
-  node_id: string,
-  project_title?: string): Promise<ExportProcessResult> {
+export async function processOnePhaseVoltageDrop(
+  workbook: ExcelJS.Workbook,
+  instance_name: string,
+  node_id: string): Promise<ExportProcessResult> {
   let worksheet = workbook.getWorksheet();
 
   if (!worksheet) {
@@ -289,7 +292,7 @@ export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
     column.width = maxLength;
   });
 
-  const voltage_drops = await getComputedVoltageDrops(project_title);
+  const voltage_drops = await getComputedVoltageDrops(instance_name);
 
   return { valid: true };
 }
@@ -297,7 +300,7 @@ export async function processOnePhaseVoltageDrop(workbook: ExcelJS.Workbook,
 export async function exportToExcel(
   type: ExcelExportType,
   node_id: string,
-  project_title: string,
+  instance_name: string,
   highest_unit?: Node['highest_unit_form'],
   file_name?: string,
   idle_callaback?: () => void,
@@ -337,6 +340,7 @@ export async function exportToExcel(
           case 'LOAD_SCHEDULE':
             const load_schedule_process_result = await processOnePhaseExcelPanelBoardSchedule(
               workbook,
+              instance_name,
               node_id,
               highest_unit
             );
@@ -354,8 +358,8 @@ export async function exportToExcel(
           case 'VOLTAGE_DROP':
             const voltage_drop_process_result = await processOnePhaseVoltageDrop(
               workbook,
-              node_id,
-              project_title
+              instance_name,
+              node_id
             )
             if (!voltage_drop_process_result.valid) {
               idle_callaback && idle_callaback();
