@@ -3,8 +3,10 @@
 	import * as Command from '@/components/ui/command/index.js';
 	import { buttonVariants } from '@/components/ui/button';
 	import { cn } from '@/utils';
+	// TODO: Replace icons with icons from assets/icons
 	import { Check, ChevronsUpDown } from 'lucide-svelte';
 	import { getParentNodes } from '@/db/queries';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		current_parent_id,
@@ -17,10 +19,12 @@
 		excluded_node_id: string;
 	} = $props();
 
+	const project_state = getProjectState();
+
 	let is_popover_open = $state(false);
 </script>
 
-{#await getParentNodes(excluded_node_id) then parent_nodes}
+{#await getParentNodes(project_state.current_project_name, excluded_node_id) then parent_nodes}
 	<Popover.Root bind:open={is_popover_open}>
 		<Popover.Trigger
 			class={cn(buttonVariants({ variant: 'outline' }), 'min-w-[150px]  justify-between')}
