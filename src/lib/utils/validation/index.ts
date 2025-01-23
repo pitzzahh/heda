@@ -164,18 +164,16 @@ export function hasRequiredKeys<T extends object>(
 
 export function validateEnv(app_pass_phrase: string | null, file_encryption_salt: string | null) {
 	if (!app_pass_phrase) {
-		toast.warning('Failed to get the APP_PASS_PHRASE', {
+		return toast.warning('Failed to get the APP_PASS_PHRASE', {
 			description:
 				'This is a system error and should not be here, the error has been logged.'
 		});
-		return false;
 	}
 	if (!file_encryption_salt) {
 		return toast.warning('Failed to get the FILE_ENCRYPTION_SALT', {
 			description:
 				'This is a system error and should not be here, the error has been logged.'
 		});
-		return false;
 	}
 	return true;
 }
