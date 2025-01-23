@@ -96,9 +96,13 @@
 			});
 		}
 
-		await updateProjectSettings(project_id, {
-			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
-		})
+		await updateProjectSettings(
+			project_id,
+			{
+				is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
+			},
+			project_state.current_project_name
+		)
 			.then(() => undo_redo_state.setHasUnsavedActions())
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
@@ -118,7 +122,7 @@
 	}
 
 	async function handleNewProject() {
-		await resetData();
+		await resetData(undefined, project_state.current_project_name);
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}
@@ -202,7 +206,12 @@
 	<div class="flex flex-col gap-2">
 		<p class="font-semibold">Project</p>
 		<div class="grid w-full grid-cols-2 gap-1.5">
-			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
+			<Button
+				onclick={() => resetData(undefined, project_state.current_project_name)}
+				href="/"
+				class="w-full"
+				variant="outline"
+			>
 				<House />
 				Home
 			</Button>
@@ -216,7 +225,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					{settingsState.is_adjustment_factor_dynamic
 						? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
 						: 'The adjustment factor for all loads will be set to 100%.'}
@@ -234,7 +243,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="auto_save">Auto Save</Label>
-				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
+				<p class="text-muted-foreground text-xs">Automatically save the changes in your project</p>
 			</div>
 			<Switch
 				disabled={!project_state.loaded}
@@ -247,7 +256,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="backup_project_file">Backup old project file</Label>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					Automatically backup old project file when creating new project and performing replacing
 					it upon project creation.
 				</p>
@@ -269,7 +278,7 @@
 				<Label
 					for="light"
 					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						'border-muted bg-popover hover:bg-accent hover:text-accent-foreground flex flex-col items-center justify-between rounded-md border-2 p-2',
 						{
 							'border-primary': settingsState.themeMode === 'light'
 						}
@@ -287,7 +296,7 @@
 				<Label
 					for="dark"
 					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						'border-muted bg-popover hover:bg-accent hover:text-accent-foreground flex flex-col items-center justify-between rounded-md border-2 p-2',
 						{
 							'border-primary': settingsState.themeMode === 'dark'
 						}
@@ -305,7 +314,7 @@
 				<Label
 					for="system"
 					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
+						'border-muted bg-popover hover:bg-accent hover:text-accent-foreground flex flex-col items-center justify-between rounded-md border-2 p-2',
 						{
 							'border-primary': settingsState.themeMode === 'system'
 						}
@@ -343,7 +352,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label>Show loads in Unit Heirarchy</Label>
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Show or hide loads in the unit hierarchy, minimizing the hierarchy view.
 			</p>
 		</div>
@@ -356,7 +365,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label>Enable panel multi copy</Label>
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Enable this option to prompt for the number of panels to be copied when copying a panel.
 			</p>
 		</div>
@@ -369,7 +378,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label>Enable load multi copy</Label>
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Enable this option to prompt for the number of loads to be copied when copying a load.
 			</p>
 		</div>
@@ -483,7 +492,7 @@
 				</span>
 			</Button>
 			{#snippet failed(error, reset)}
-				<p class="text-sm text-muted-foreground">{error}</p>
+				<p class="text-muted-foreground text-sm">{error}</p>
 				<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 			{/snippet}
 		</svelte:boundary>
