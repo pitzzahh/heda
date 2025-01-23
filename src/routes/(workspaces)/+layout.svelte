@@ -19,13 +19,13 @@
 	const {
 		is_new_file,
 		is_load_file,
-		loaded_project_id,
-		project_title,
 		generic_phase_panel_form,
 		phase_main_load_form,
 		app_pass_phrase,
 		file_encryption_salt,
-		can_create_project
+		can_create_project,
+		current_project,
+		root_node,
 	} = $derived(data);
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
@@ -57,8 +57,6 @@
 		<AppSidebar
 			{generic_phase_panel_form}
 			{phase_main_load_form}
-			{loaded_project_id}
-			{project_title}
 			{can_create_project}
 			{app_pass_phrase}
 			{file_encryption_salt}
