@@ -50,6 +50,7 @@
 		if (!can_create_project) {
 			disable_create_project = true;
 			dialogs_state.highestUnit = false;
+			console.error('Failed to get the APP_PASS_PHRASE');
 			toast.warning('Failed to get the APP_PASS_PHRASE', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
@@ -72,45 +73,42 @@
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if project_state.loaded}
-						{#await getCurrentProject(loaded_project_id, project_title) then current_project}
-							{#if root_node?.highest_unit_form}
-								<svelte:boundary>
-									<SidebarTree
-										node={root_node}
-										highest_unit={root_node.highest_unit_form}
-										{phase_main_load_form}
-										{generic_phase_panel_form}
-										{project}
-									/>
+					{#await getCurrentProject(loaded_project_id, project_title) then current_project}
+						{#if root_node?.highest_unit_form}
+							<svelte:boundary>
+								<SidebarTree
+									node={root_node}
+									highest_unit={root_node.highest_unit_form}
+									{phase_main_load_form}
+									{generic_phase_panel_form}
+									{project}
+								/>
 
-									{#snippet failed(error, reset)}
-										<p class="text-sm text-muted-foreground">{error}</p>
-										<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
-									{/snippet}
-								</svelte:boundary>
-							{/if}
-						{/await}
-					{:else}
-						<div class="grid h-[85vh] place-content-center">
-							<div class="grid gap-2">
-								<div class="text-center">
-									<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
-									<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
-								</div>
-
-								<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
-								<Button
-									size="sm"
-									disabled={disable_create_project}
-									onclick={() => (dialogs_state.highestUnit = true)}
-									href="/workspace?new_file=true"
-								>
-									<PlusIcon className="size-4 ml-3" /> Create a project
-								</Button>
+								{#snippet failed(error, reset)}
+									<p class="text-sm text-muted-foreground">{error}</p>
+									<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
+								{/snippet}
+							</svelte:boundary>
+						{/if}
+					{/await}
+					<div class="grid h-[85vh] place-content-center">
+						<div class="grid gap-2">
+							<div class="text-center">
+								<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
+								<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
 							</div>
+
+							<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
+							<Button
+								size="sm"
+								disabled={disable_create_project}
+								onclick={() => (dialogs_state.highestUnit = true)}
+								href="/workspace?new_file=true"
+							>
+								<PlusIcon className="size-4 ml-3" /> Create a project
+							</Button>
 						</div>
-					{/if}
+					</div>
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
