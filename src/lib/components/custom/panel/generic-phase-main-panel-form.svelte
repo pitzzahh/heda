@@ -29,6 +29,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { Collapsibles, getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	interface Props {
 		generic_phase_panel_form: T;
@@ -52,8 +53,9 @@
 		selected_parent_id
 	}: Props = $props();
 
-	let undo_redo_state = getUndoRedoState();
-	let collapsibles = getCollapsiblesState();
+	const undo_redo_state = getUndoRedoState();
+	const collapsibles = getCollapsiblesState();
+	const project_state = getProjectState();
 
 	const form = superForm(generic_phase_panel_form, {
 		SPA: true,
@@ -70,7 +72,8 @@
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
 					parent_id: selected_parent_id || parent_id,
-					node_id: node_to_edit?.id
+					node_id: node_to_edit?.id,
+					instance_name: project_state.current_project_name
 				});
 
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
@@ -82,7 +85,11 @@
 
 				switch (action) {
 					case 'add':
-						const added_node = await addNode({ parent_id, panel_data: form.data });
+						const added_node = await addNode({
+							parent_id,
+							panel_data: form.data,
+							instance_name: project_state.current_project_name
+						});
 						toast.success(`${form.data.name} added successfully`);
 						collapsibles.addNodeId(parent_id);
 						undo_redo_state.setActionToUndo({
@@ -95,7 +102,8 @@
 							const updated_node = await updateNode({
 								panel_data: form.data,
 								id: node_to_edit.id,
-								parent_id: selected_parent_id
+								parent_id: selected_parent_id,
+								instance_name: project_state.current_project_name
 							});
 							toast.success('Panel updated successfully');
 							undo_redo_state.setActionToUndo({
