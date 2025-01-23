@@ -51,6 +51,10 @@ async function createDatabase(instance_name: string) {
 export async function databaseInstance(instance_name: string): Promise<RxDatabase<MyDatabaseCollections>> {
 	const { dbInstance, storage } = await createDatabase(instance_name);
 	console.log(`Database instance: ${JSON.stringify(dbInstance, null, 2)}`);
+	console.log(`Adding collections to: ${JSON.stringify(dbInstance, null, 2)}`);
+	console.log(`Current collections: ${JSON.stringify(dbInstance.collections, null, 2)}`);
+	console.log(`Projects collection: ${JSON.stringify(dbInstance.projects, null, 2)}`);
+	console.log(`Nodes collection: ${JSON.stringify(dbInstance.nodes, null, 2)}`);
 	if (!dbInstance.projects || !dbInstance.nodes) {
 		try {
 			const added_collections_result = await dbInstance.addCollections({
