@@ -4,6 +4,7 @@
 	import { changeInsulation } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
@@ -16,7 +17,8 @@
 
 	let { adjusted_current, type, current_insulation, node }: Props = $props();
 	let selected_insulation = $state<Insulations>(current_insulation as Insulations);
-	let undo_redo_state = getUndoRedoState();
+	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	const insulations = ['TW-Cu', 'THWN-Cu', 'THWN-2-Cu', 'THHN-Cu'] as const;
 	const insulations_to_map =
@@ -33,7 +35,12 @@
 	});
 
 	async function handleChangeInsulation(insulation: Insulations) {
-		const updated_node = await changeInsulation({ node_id: node.id, insulation, type });
+		const updated_node = await changeInsulation({
+			node_id: node.id,
+			insulation,
+			type,
+			instance_name: project_state.current_project_name
+		});
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			data: updated_node as unknown as PhaseLoadSchedule,
