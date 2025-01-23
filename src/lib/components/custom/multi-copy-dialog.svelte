@@ -47,7 +47,7 @@
 		if (latest_node) {
 			if (latest_node.node_type === 'panel') {
 				// check if might_take_some_time
-				const child_count = await getNumberOfChildren(node_id);
+				const child_count = await getNumberOfChildren(node_id, project_state.current_project_name);
 				multi_copy.might_take_long = child_count >= 15;
 			} else if (latest_node.node_type === 'load') {
 				// check if might_take_some_time
