@@ -20,22 +20,18 @@
 	});
 
 	function handleLoadFileSuccess(recent_project_data: RecentProject) {
-		goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}`)
-			.then(() => {
-				if (
-					!project_state.recent_projects?.some(
-						(p) => p.id === recent_project_data.id
-					)
-				) {
-					project_state.addRecentProject(recent_project_data, true);
-				}
-				project_state.setCurrentProject(recent_project_data);
+		if (!project_state.recent_projects?.some((p) => p.id === recent_project_data.id)) {
+			project_state.addRecentProject(recent_project_data, true);
+		}
+		project_state.setCurrentProject(recent_project_data);
 
-				project_state.setProjectLoaded(true);
+		project_state.setProjectLoaded(true);
+		goto(`/workspace?is_load_file=true&project_id=${recent_project_data.id}`)
+			.then(() =>
 				toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
-				});
-			})
+				})
+			)
 			.catch((err) => {
 				console.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`);
 				toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
@@ -50,8 +46,8 @@
 
 	$effect(() => {
 		project_state.setProjectLoaded(false);
-		project_state.removeCurrentProject()
-	})
+		project_state.removeCurrentProject();
+	});
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
