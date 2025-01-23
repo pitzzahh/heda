@@ -660,8 +660,12 @@ export async function resetData(minimumDeletedTime: number = 0, instance_name: s
 }
 
 export async function loadCurrentProject(file_export: FileExport, instance_name: string): Promise<Project> {
-	await resetData(undefined, instance_name)
-	const db = await databaseInstance(instance_name);
+	let db = await databaseInstance(instance_name);
+	const is_destroyed = await db.destroy();
+	if (!is_destroyed) {
+		return Promise.reject('Failed to destroy the database. This is a system error and should not be here. The error has been logged.');
+	}
+	db = await databaseInstance(instance_name);
 	const { project, nodes } = file_export;
 
 	const reconstructed_project = {
