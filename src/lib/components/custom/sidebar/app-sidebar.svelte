@@ -9,8 +9,6 @@
 	import { DIALOG_STATE_CTX } from '@/state/constants';
 	import type { GenericPhasePanelSchema } from '@/schema/panel';
 	import type { SuperValidated } from 'sveltekit-superforms';
-	import type { Project } from '@/db/schema';
-	import type { Node } from '@/db/schema';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
 	import { toast } from 'svelte-sonner';
@@ -21,8 +19,6 @@
 		ref = $bindable(null),
 		generic_phase_panel_form,
 		phase_main_load_form,
-		project,
-		root_node,
 		app_pass_phrase,
 		loaded_project_id,
 		project_title,
@@ -32,8 +28,6 @@
 	}: ComponentProps<typeof Sidebar.Root> & {
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
-		project?: Project;
-		root_node: Node;
 		loaded_project_id: string | undefined;
 		project_title: string | undefined;
 		app_pass_phrase: string | null;
@@ -61,19 +55,13 @@
 
 <SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
-	<SidebarHeader
-		{root_node}
-		{loaded_project_id}
-		{project_title}
-		{app_pass_phrase}
-		{file_encryption_salt}
-	/>
+	<SidebarHeader {loaded_project_id} {project_title} {app_pass_phrase} {file_encryption_salt} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#await getCurrentProject(loaded_project_id, project_title) then current_project}
+					{#await Promise.all( [getCurrentProject(loaded_project_id), getRootNode()] ) then [project, root_node]}
 						{#if root_node?.highest_unit_form}
 							<svelte:boundary>
 								<SidebarTree
