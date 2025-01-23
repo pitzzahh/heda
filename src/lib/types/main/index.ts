@@ -12,7 +12,7 @@ export type FileExport = {
 
 export type RecentProject = {
   id: string;
-  project_name?: string;
+  project_name: string;
   project_path: string;
   exists: boolean;
 }
