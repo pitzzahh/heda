@@ -6,16 +6,16 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import type { NodeByIdResult } from '@/types/db/index.js';
-	import {
-		getNodeById,
-		getComputedLoads,
-		getComputedVoltageDrops
-	} from '@/db/queries/index.js';
+	import { getNodeById, getComputedLoads, getComputedVoltageDrops } from '@/db/queries/index.js';
+	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { Skeletal } from '@/components/custom/index.js';
 
 	let { data } = $props();
 
 	const { root_node, node_id } = $derived(data);
+
 	const params = $derived(page.params);
+	const project_state = getProjectState();
 
 	let supply_from_name = $state('');
 	let node: NodeByIdResult | null = $state(null);
@@ -23,11 +23,11 @@
 	$effect(() => {
 		const nodeId = params.id.split('_').at(-1) as string;
 
-		getNodeById(nodeId).then((current_node) => {
+		getNodeById(nodeId, project_state.current_project_name).then((current_node) => {
 			const parentId = current_node?.parent_id;
 			node = current_node;
 			if (parentId) {
-				getNodeById(parentId).then((node) => {
+				getNodeById(parentId, project_state.current_project_name).then((node) => {
 					supply_from_name =
 						node?.panel_data?.name || node?.highest_unit_form?.distribution_unit || '--';
 				});
@@ -64,8 +64,8 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched">
-			{#await getComputedLoads(node_id)}
-				Loading
+			{#await getComputedLoads(node_id, project_state.current_project_name)}
+				<Skeletal options_count={10} />
 			{:then loads}
 				<DataTable
 					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
@@ -80,8 +80,8 @@
 			{/await}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			{#await getComputedVoltageDrops()}
-				Loading
+			{#await getComputedVoltageDrops(project_state.current_project_name)}
+				<Skeletal options_count={10} />
 			{:then voltage_drops}
 				<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
 			{/await}
