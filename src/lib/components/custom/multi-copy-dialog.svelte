@@ -24,6 +24,7 @@
 	import { Label } from '@/components/ui/label/index.js';
 	import { cn } from '@/utils';
 	import Button from '../ui/button/button.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
 	let multi_copy = $state<MultiCopy>({
@@ -32,7 +33,8 @@
 		processing: false,
 		might_take_long: false
 	});
-	let undo_redo_state = getUndoRedoState();
+	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	async function handleMultiCopy(node_id: string) {
 		if (!multi_copy.valid) {
@@ -40,7 +42,7 @@
 		}
 		multi_copy.processing = true;
 		const copy_count = Number(multi_copy.value);
-		let latest_node = await copyAndAddNodeById(node_id);
+		let latest_node = await copyAndAddNodeById(project_state.current_project_name, node_id);
 
 		if (latest_node) {
 			if (latest_node.node_type === 'panel') {
@@ -63,7 +65,7 @@
 			];
 
 			for (let i = 1; i < copy_count; i++) {
-				latest_node = await copyAndAddNodeById(latest_node.id);
+				latest_node = await copyAndAddNodeById(project_state.current_project_name, latest_node.id);
 
 				if (!latest_node) {
 					multi_copy.processing = false;
@@ -114,7 +116,7 @@
 				placeholder="Enter the circuit number"
 				bind:value={multi_copy.value}
 				class={cn('col-span-3', {
-					'border-red-600 outline-red-600 ring ring-red-600': !multi_copy.valid
+					'border-red-600 ring ring-red-600 outline-red-600': !multi_copy.valid
 				})}
 			/>
 		</div>
