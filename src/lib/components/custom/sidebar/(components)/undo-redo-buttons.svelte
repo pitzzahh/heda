@@ -3,8 +3,10 @@
 	import { buttonVariants } from '@/components/ui/button';
 	import { Redo, Undo } from 'lucide-svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { cn } from '@/utils';
 	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 </script>
 
 <Tooltip.Provider delayDuration={100}>
@@ -19,7 +21,7 @@
 					'cursor-not-allowed': !undo_redo_state.hasUndoActions()
 				}
 			)}
-			onclick={() => undo_redo_state.undo()}
+			onclick={() => undo_redo_state.undo(project_state.current_project_name)}
 			disabled={!undo_redo_state.hasUndoActions()}
 		>
 			<Undo class="h-4 w-4" />
@@ -40,7 +42,7 @@
 					'cursor-not-allowed': !undo_redo_state.hasRedoActions()
 				}
 			)}
-			onclick={() => undo_redo_state.redo()}
+			onclick={() => undo_redo_state.redo(project_state.current_project_name)}
 			disabled={!undo_redo_state.hasRedoActions()}
 		>
 			<Redo class="h-4 w-4" />
