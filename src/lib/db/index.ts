@@ -20,7 +20,10 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * @param {string} [instance_name='heda'] - The name of the database instance.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
-async function createDatabase(instance_name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
+async function createDatabase(instance_name: string): Promise<RxDatabase<MyDatabaseCollections>> {
+
+	console.log(`createDatabase instance: ${JSON.stringify(dbInstance, null, 2)}`);
+
 	if (dbInstance) {
 		return dbInstance;
 	}
@@ -45,7 +48,7 @@ async function createDatabase(instance_name: string = 'heda'): Promise<RxDatabas
  * @param {string} [instance_name='heda'] - The name of the database instance.
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
-export async function databaseInstance(instance_name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
+export async function databaseInstance(instance_name: string): Promise<RxDatabase<MyDatabaseCollections>> {
 	const database = await createDatabase(instance_name);
 
 	console.log(`Database instance: ${JSON.stringify(database, null, 2)}`);
