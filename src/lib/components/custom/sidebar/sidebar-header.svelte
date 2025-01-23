@@ -23,13 +23,9 @@
 
 	let {
 		app_pass_phrase,
-		loaded_project_id,
-		project_title,
 		file_encryption_salt
 	}: {
 		app_pass_phrase: string | null;
-		loaded_project_id: string | undefined;
-		project_title: string | undefined;
 		file_encryption_salt: string | null;
 	} = $props();
 
@@ -49,10 +45,7 @@
 
 			component_state.status = 'processing';
 
-			const project = await getCurrentProject(
-				project_state.current_project_name,
-				loaded_project_id
-			);
+			const project = await getCurrentProject(project_state.current_project_name, project_state.id);
 
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
@@ -138,7 +131,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<Settings project_id={loaded_project_id} />
+					<Settings />
 				</Tooltip.Trigger>
 				<Tooltip.Content>Settings</Tooltip.Content>
 			</Tooltip.Root>
@@ -180,9 +173,9 @@
 											exportToExcel(
 												'LOAD_SCHEDULE',
 												root_node.id,
-												project_title ?? 'Project',
+												project_state.current_project_name,
 												root_node?.highest_unit_form,
-												project_title,
+												project_state.current_project_name,
 												() => (component_state.export_to_excel = 'idle'),
 												() => (component_state.export_to_excel = 'loading')
 											);
@@ -222,7 +215,7 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		{#snippet failed(error, reset)}
-			<p class="text-muted-foreground text-sm">{error}</p>
+			<p class="text-sm text-muted-foreground">{error}</p>
 			<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 		{/snippet}
 	</svelte:boundary>
