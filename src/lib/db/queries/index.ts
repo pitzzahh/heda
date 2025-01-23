@@ -14,8 +14,8 @@ import type { VoltageDrop } from '@/types/voltage-drop';
 import { ALTERNATING_CURRENT_REACTANCE } from '@/constants';
 import type { ComputeCommonProperties, NodeByIdResult } from '@/types/db';
 
-export async function getCurrentProject(project_id?: string, name: string = 'heda'): Promise<Project | undefined> {
-	const db = await databaseInstance(name);
+export async function getCurrentProject(instance_name: string, project_id?: string): Promise<Project | undefined> {
+	const db = await databaseInstance(instance_name);
 	const query = db.projects.find({
 		selector: project_id
 			? {
@@ -26,8 +26,8 @@ export async function getCurrentProject(project_id?: string, name: string = 'hed
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
 
-export async function getAllProjects(fields?: (keyof Project)[], name: string = 'heda'): Promise<Project[] | undefined> {
-	const db = await databaseInstance(name);
+export async function getAllProjects(instance_name: string, fields?: (keyof Project)[]): Promise<Project[] | undefined> {
+	const db = await databaseInstance(instance_name);
 	const projects = await db.projects.find().exec();
 	if (fields?.length) {
 		return projects.map((project) => {
@@ -44,8 +44,8 @@ export async function getAllProjects(fields?: (keyof Project)[], name: string = 
 
 	return projects.map((project) => project._data as Project);
 }
-export async function getRootNode(name: string = 'heda'): Promise<Node | undefined> {
-	const db = await databaseInstance(name);
+export async function getRootNode(instance_name: string): Promise<Node | undefined> {
+	const db = await databaseInstance(instance_name);
 	const query = db.nodes.find({
 		selector: {
 			node_type: 'root'
@@ -58,14 +58,14 @@ export async function checkNodeExists({
 	circuit_number,
 	parent_id,
 	node_id,
-	name = 'heda'
+	instance_name
 }: {
 	circuit_number: number;
 	parent_id: string;
 	node_id?: string;
-	name: string;
+	instance_name: string;
 }) {
-	const db = await databaseInstance(name);
+	const db = await databaseInstance(instance_name);
 	try {
 		const node = await db.nodes
 			.findOne({
@@ -89,10 +89,10 @@ export async function checkNodeExists({
 }
 
 
-export async function getNodeById(target_id: string, name: string = 'heda'): Promise<NodeByIdResult | null> {
-	const db = await databaseInstance(name);
+export async function getNodeById(target_id: string, instance_name: string): Promise<NodeByIdResult | null> {
+	const db = await databaseInstance(instance_name);
 
-	const project = await getCurrentProject();
+	const project = await getCurrentProject(instance_name, undefined);
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const node = await db.nodes
@@ -169,7 +169,7 @@ export async function getNodeById(target_id: string, name: string = 'heda'): Pro
 		const total_values = { va: 0, current: 0 };
 
 		for (const child_node of child_nodes) {
-			const child_data = await getNodeById(child_node._data.id);
+			const child_data = await getNodeById(child_node._data.id, instance_name);
 			if (child_data) {
 				total_values.va += child_data.va || 0;
 				total_values.current += child_data.current || 0;
@@ -233,8 +233,8 @@ export async function getNodeById(target_id: string, name: string = 'heda'): Pro
 	};
 }
 
-export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
-	const db = await databaseInstance();
+export async function getChildNodesByParentId(parent_id: string, instance_name: string): Promise<Node[]> {
+	const db = await databaseInstance(instance_name);
 	const query = db.nodes.find({
 		selector: {
 			parent_id
@@ -243,8 +243,8 @@ export async function getChildNodesByParentId(parent_id: string): Promise<Node[]
 	return (await query.sort({ circuit_number: 'asc' }).exec()).map((doc) => doc._data) as Node[];
 }
 
-export async function getParentNodes(excluded_id?: string, name: string = 'heda') {
-	const db = await databaseInstance(name);
+export async function getParentNodes(instance_name: string, excluded_id?: string) {
+	const db = await databaseInstance(instance_name);
 	const query = db.nodes.find({
 		selector: {
 			node_type: { $in: ['panel', 'root'] },
@@ -268,11 +268,11 @@ export async function getParentNodes(excluded_id?: string, name: string = 'heda'
 	return parent_nodes;
 }
 
-export async function getComputedLoads(parent_id: string, name: string = 'heda'): Promise<PhaseLoadSchedule[]> {
-	const project = await getCurrentProject();
+export async function getComputedLoads(parent_id: string, instance_name: string): Promise<PhaseLoadSchedule[]> {
+	const project = await getCurrentProject(instance_name, undefined);
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
-	const db = await databaseInstance(name);
+	const db = await databaseInstance(instance_name);
 	const child_nodes = (
 		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
 	).map((doc) => doc._data);
@@ -320,7 +320,7 @@ export async function getComputedLoads(parent_id: string, name: string = 'heda')
 
 			if (data.panel_data) {
 				// Recursive fetch for panel's computed loads
-				const panel_loads = await getComputedLoads(data.id);
+				const panel_loads = await getComputedLoads(data.id, instance_name);
 
 				const total_loads = panel_loads.reduce(
 					(totals, load) => ({
@@ -389,21 +389,21 @@ export async function getComputedLoads(parent_id: string, name: string = 'heda')
 }
 
 // Utility function to calculate the actual depth of the node in the hierarchy
-export async function getNodeDepth(nodeId: string): Promise<number> {
+export async function getNodeDepth(nodeId: string, instance_name: string): Promise<number> {
 	let depth = 1;
-	let currentNode = await getNodeById(nodeId);
+	let currentNode = await getNodeById(nodeId, instance_name);
 
 	// Traverse up the node tree to calculate depth
 	while (currentNode && currentNode.parent_id) {
 		depth++;
-		currentNode = await getNodeById(currentNode.parent_id);
+		currentNode = await getNodeById(currentNode.parent_id, instance_name);
 	}
 
 	return depth;
 }
 
-export async function getNumberOfChildren(nodeId: string, name: string = 'heda'): Promise<number> {
-	const db = await databaseInstance(name);
+export async function getNumberOfChildren(nodeId: string, instance_name: string): Promise<number> {
+	const db = await databaseInstance(instance_name);
 	let count = 0;
 
 	async function countChildren(parentId: string) {
@@ -421,8 +421,8 @@ export async function getNumberOfChildren(nodeId: string, name: string = 'heda')
 	return count;
 }
 
-export async function getComputedVoltageDrops(name: string = 'heda') {
-	const db = await databaseInstance(name);
+export async function getComputedVoltageDrops(instance_name: string) {
+	const db = await databaseInstance(instance_name);
 	let nodes = [] as PhaseLoadSchedule[];
 
 	const root_node = await db.nodes
@@ -440,22 +440,22 @@ export async function getComputedVoltageDrops(name: string = 'heda') {
 		// 	nodes = [...nodes, computed_root_node_load];
 		// }
 
-		async function fetchChildNodes(parentId: string) {
-			const child_nodes = await getComputedLoads(parentId);
+		async function fetchChildNodes(parentId: string, instance_name: string) {
+			const child_nodes = await getComputedLoads(parentId, instance_name);
 			nodes = [...nodes, ...child_nodes];
 
 			for (const child_node of child_nodes) {
-				await fetchChildNodes(child_node.id);
+				await fetchChildNodes(child_node.id, instance_name);
 			}
 		}
 
-		await fetchChildNodes(root_node._data.id);
+		await fetchChildNodes(root_node._data.id, instance_name);
 	}
 
 	const nodes_with_additional_fields: VoltageDrop[] = [];
 
 	for (const node of nodes) {
-		const parent_node = await getNodeById(node.parent_id as string);
+		const parent_node = await getNodeById(node.parent_id as string, instance_name);
 
 		const parent_voltage_at_end_circuit = nodes_with_additional_fields.find(
 			(n) => n.id === node.parent_id
@@ -493,8 +493,8 @@ export async function getComputedVoltageDrops(name: string = 'heda') {
 	return nodes_with_additional_fields;
 }
 
-export async function getAllChildNodes(root_node_id: string, include_parent?: boolean, name: string = 'heda'): Promise<Node[]> {
-	const db = await databaseInstance(name);
+export async function getAllChildNodes(instance_name: string, root_node_id: string, include_parent?: boolean): Promise<Node[]> {
+	const db = await databaseInstance(instance_name);
 	let allNodes: Node[] = [];
 
 	async function fetchChildNodes(parentId: string) {
