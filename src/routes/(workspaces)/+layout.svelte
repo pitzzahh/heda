@@ -41,15 +41,15 @@
 	});
 </script>
 
-<svelte:window
-	onload={() => {
+<!-- <svelte:window
+	onloadstart={() => {
 		if (project_state.loaded) {
 			handleLoadFile(project_state.current_project_path).finally(() => {
 				toast.success('Project loaded successfully');
 			});
 		}
 	}}
-/>
+/> -->
 
 <PageProgress />
 <UndoRedoWrapper>
