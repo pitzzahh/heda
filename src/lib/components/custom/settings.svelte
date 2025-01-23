@@ -60,8 +60,6 @@
 	import { resetData } from '@/db/mutations';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 
-	let { project_id }: { project_id?: string | undefined } = $props();
-
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
 		{ name: 'Excel', value: 'excel', bg: 'bg-[#20B356]' }
@@ -89,7 +87,7 @@
 			});
 		}
 
-		if (!project_id) {
+		if (!project_state.id) {
 			console.error(`Failed to save preference, no project found`);
 			return toast.warning('Failed to save preference, no project found', {
 				description: 'This is a system error and should not be here, the error has been logged.'
@@ -97,7 +95,7 @@
 		}
 
 		await updateProjectSettings(
-			project_id,
+			project_state.id,
 			{
 				is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 			},
