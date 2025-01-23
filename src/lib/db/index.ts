@@ -17,10 +17,10 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 /**
  * Creates a new RxDatabase instance if it doesn't already exist.
  *
- * @param {string} [name='heda'] - The name of the database.
+ * @param {string} [instance_name='heda'] - The name of the database instance.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
-async function createDatabase(name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
+async function createDatabase(instance_name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
 	if (dbInstance) {
 		return dbInstance;
 	}
@@ -33,7 +33,7 @@ async function createDatabase(name: string = 'heda'): Promise<RxDatabase<MyDatab
 	addRxPlugin(RxDBUpdatePlugin);
 	addRxPlugin(RxDBQueryBuilderPlugin);
 	dbInstance = await createRxDatabase({
-		name,
+		name: instance_name,
 		storage: getRxStorageMemory()
 	});
 	return dbInstance;
@@ -42,11 +42,11 @@ async function createDatabase(name: string = 'heda'): Promise<RxDatabase<MyDatab
 /**
  * Returns the database instance with all required collections initialized.
  *
- * @param {string} [name='heda'] - The name of the database.
+ * @param {string} [instance_name='heda'] - The name of the database instance.
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
-export async function databaseInstance(name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
-	const database = await createDatabase(name);
+export async function databaseInstance(instance_name: string = 'heda'): Promise<RxDatabase<MyDatabaseCollections>> {
+	const database = await createDatabase(instance_name);
 
 	console.log(`Database instance: ${JSON.stringify(database, null, 2)}`);
 
@@ -62,7 +62,7 @@ export async function databaseInstance(name: string = 'heda'): Promise<RxDatabas
 			});
 			console.log(`Added collections: ${JSON.stringify(added_collections_result)}`);
 		} catch (err) {
-			await removeRxDatabase(name, getRxStorageDexie())
+			await removeRxDatabase(instance_name, getRxStorageDexie())
 			console.error(`Failed to add collections: ${JSON.stringify(err)}`);
 			throw new Error('Failed to add collections', { cause: err });
 		}

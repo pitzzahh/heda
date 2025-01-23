@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { buttonVariants } from '@/components/ui/button';
 	import { Redo, Undo } from 'lucide-svelte';
