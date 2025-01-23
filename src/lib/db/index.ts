@@ -50,7 +50,7 @@ export async function databaseInstance(instance_name: string = 'heda'): Promise<
 
 	console.log(`Database instance: ${JSON.stringify(database, null, 2)}`);
 
-	if (!database.projects && !database.nodes) {
+	if (!database.projects || !database.nodes) {
 		try {
 			const added_collections_result = await database.addCollections({
 				projects: {
