@@ -37,7 +37,7 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
 	addRxPlugin(RxDBUpdatePlugin);
 	addRxPlugin(RxDBQueryBuilderPlugin);
 	dbInstance = await createRxDatabase({
-		name: instance_name,
+		name: 'heda',
 		storage
 	});
 	return { dbInstance, storage };
@@ -50,14 +50,15 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
  * @returns {Promise<RxDatabase<MyDatabaseCollections>>} The initialized database instance.
  */
 export async function databaseInstance(instance_name: string): Promise<RxDatabase<MyDatabaseCollections>> {
-	const { dbInstance, storage } = await createDatabase(instance_name);
-	console.log(`Database instance: ${JSON.stringify(dbInstance, null, 2)}`);
-	console.log(`Current collections: ${JSON.stringify(dbInstance.collections, null, 2)}`);
-	console.log(`Projects collection: ${JSON.stringify(dbInstance.projects, null, 2)}`);
-	console.log(`Nodes collection: ${JSON.stringify(dbInstance.nodes, null, 2)}`);
-	if (!dbInstance.projects || !dbInstance.nodes) {
+	const { dbInstance: db_instance, storage } = await createDatabase(instance_name);
+	console.log(`Database instance: ${JSON.stringify(db_instance, null, 2)}`);
+	console.log(`Current collections: ${JSON.stringify(db_instance.collections, null, 2)}`);
+	console.log(`Projects collection: ${JSON.stringify(db_instance.projects, null, 2)}`);
+	console.log(`Nodes collection: ${JSON.stringify(db_instance.nodes, null, 2)}`);
+	if (!db_instance.projects || !db_instance.nodes) {
 		try {
-			const added_collections_result = await dbInstance.addCollections({
+			console.log('Adding collections');
+			const added_collections_result = await db_instance.addCollections({
 				projects: {
 					schema: project_schema
 				},
@@ -72,5 +73,5 @@ export async function databaseInstance(instance_name: string): Promise<RxDatabas
 			throw new Error('Failed to add collections', { cause: err });
 		}
 	}
-	return dbInstance;
+	return db_instance;
 }
