@@ -4,6 +4,7 @@
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	let { sets, node }: { sets: number; node: PhaseLoadSchedule } = $props();
@@ -11,13 +12,15 @@
 	let formElement = $state<HTMLFormElement>();
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
-	let undo_redo_state = getUndoRedoState();
+	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	async function saveSetsChanges() {
 		try {
 			const updated_set = await updateConductorSets({
 				node_id: node.id,
-				sets: !sets_value ? 1 : sets_value
+				sets: !sets_value ? 1 : sets_value,
+				instance_name: project_state.current_project_name
 			});
 
 			sets_value = updated_set?.conductor_sets as number;
@@ -48,6 +51,6 @@
 	<input
 		type="number"
 		bind:value={sets_value}
-		class="w-16 bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="outline-primary w-16 [appearance:textfield] bg-transparent p-2 text-center focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>
