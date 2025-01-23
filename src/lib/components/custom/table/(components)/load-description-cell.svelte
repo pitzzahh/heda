@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { updateLoadDescription } from '@/db/mutations';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	let {
@@ -22,7 +23,8 @@
 	let formElement = $state<HTMLFormElement>();
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
-	let undo_redo_state = getUndoRedoState();
+	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	async function saveLoadDescChanges() {
 		try {
@@ -32,7 +34,8 @@
 					node_type === 'load'
 						? (load_description.split(' - ').at(0) as string) + ' - ' + load_description_state
 						: load_description_state,
-				node_type
+				node_type,
+				instance_name: project_state.current_project_name
 			});
 			undo_redo_state.setActionToUndo({
 				action: 'update_node',
@@ -79,6 +82,6 @@
 	<input
 		type="text"
 		bind:value={load_description_state}
-		class="w-full bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="outline-primary w-full [appearance:textfield] bg-transparent p-2 text-center focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>
