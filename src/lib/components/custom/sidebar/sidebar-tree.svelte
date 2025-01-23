@@ -63,6 +63,7 @@
 	import { draggable, droppable, type DragDropState } from '@thisux/sveltednd';
 	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
 	import { MultiCopyDialog } from '@/components/custom';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let {
 		node,
@@ -98,15 +99,16 @@
 		is_alt_pressed: false
 	});
 
-	let undo_redo_state = getUndoRedoState();
-	let collapsibles = getCollapsiblesState();
-	let is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
+	const undo_redo_state = getUndoRedoState();
+	const collapsibles = getCollapsiblesState();
+	const is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
+	const project_state = getProjectState();
 
 	async function copyNodeById(node_id: string) {
 		component_state.node_name =
 			node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (component_state.open_copy_dialog) return;
-		await copyAndAddNodeById(node_id)
+		await copyAndAddNodeById(project_state.current_project_name, node_id)
 			.then((copied_node) => {
 				undo_redo_state.setActionToUndo({
 					action: 'copy_node',
@@ -133,7 +135,8 @@
 					id: draggedItem.id,
 					parent_id: draggedItem.parent_id
 				},
-				targetContainer
+				targetContainer,
+				project_state.current_project_name
 			);
 			undo_redo_state.setActionToUndo({
 				action: 'update_node',
@@ -157,36 +160,24 @@
 					? _node?.load_data?.load_description
 					: 'unknown';
 	}
-
-	$effect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(`${e.key === 'Alt'}`);
-		};
-
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = false;
-		};
-
-		const handleWindowFocus = () => {
-			component_state.is_alt_pressed = false;
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('keyup', handleKeyUp);
-		window.addEventListener('focus', handleWindowFocus);
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('keyup', handleKeyUp);
-			window.removeEventListener('focus', handleWindowFocus);
-		};
-	});
 </script>
 
-{#await getChildNodesByParentId(node.id)}
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = true;
+		console.log(`${e.key === 'Alt'}`);
+	}}
+	onkeyup={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = false;
+	}}
+	onfocus={() => {
+		component_state.is_alt_pressed = false;
+	}}
+/>
+
+{#await getChildNodesByParentId(node.id, project_state.current_project_name)}
 	<Sidebar.MenuButton
-		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
+		class="hover:bg-primary/20 flex w-full items-center justify-between data-[active=true]:bg-transparent"
 	>
 		{#snippet children()}
 			<Skeleton class="h-6 w-full" />
@@ -207,7 +198,7 @@
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
 						onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
-						class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
+						class="hover:bg-primary/20 active:bg-primary/20 flex w-full items-center data-[active=true]:bg-transparent"
 					>
 						<ContextMenu.Root bind:open={component_state.open_load_context_menu}>
 							<ContextMenu.Trigger class="flex w-full items-center gap-1">
@@ -236,7 +227,7 @@
 										trigger_variant="destructive"
 										bind:some_open_state={component_state.open_load_context_menu}
 										onConfirm={async () => {
-											await removeNode(node.id)
+											await removeNode(node.id, project_state.current_project_name)
 												.then(() => invalidate('app:workspace'))
 												.finally(() => invalidate('app:workspace/load-schedule'));
 										}}
@@ -382,7 +373,7 @@
 				>
 					<Sidebar.MenuButton
 						class={cn(
-							'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
+							'hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20 relative',
 							{
 								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
 							}
@@ -453,9 +444,12 @@
 										bind:some_open_state={component_state.open_panel_context_menu}
 										onConfirm={async () => {
 											if (node.node_type === 'root' && project) {
-												await deleteProject(project.id);
+												await deleteProject(project.id, project_state.current_project_name);
 											} else {
-												const removed_node = await removeNode(node.id);
+												const removed_node = await removeNode(
+													node.id,
+													project_state.current_project_name
+												);
 
 												if (removed_node) {
 													undo_redo_state.setActionToUndo({
@@ -556,10 +550,10 @@
 		onConfirm={async () => {
 			component_state.button_state = 'processing';
 			if (node.node_type === 'root' && project) {
-				await deleteProject(project.id);
+				await deleteProject(project.id, project_state.current_project_name);
 				collapsibles.removeAllNodeId();
 			} else {
-				const removed_node = await removeNode(node.id);
+				const removed_node = await removeNode(node.id, project_state.current_project_name);
 
 				if (removed_node) {
 					undo_redo_state.setActionToUndo({
