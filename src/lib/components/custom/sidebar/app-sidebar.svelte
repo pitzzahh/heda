@@ -20,16 +20,12 @@
 		generic_phase_panel_form,
 		phase_main_load_form,
 		app_pass_phrase,
-		loaded_project_id,
-		project_title,
 		file_encryption_salt,
 		can_create_project,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
-		loaded_project_id: string | undefined;
-		project_title: string | undefined;
 		app_pass_phrase: string | null;
 		file_encryption_salt: string | null;
 		can_create_project: boolean;
@@ -55,35 +51,37 @@
 
 <SelectedNodesActions />
 <Sidebar.Root bind:ref {...restProps}>
-	<SidebarHeader {loaded_project_id} {project_title} {app_pass_phrase} {file_encryption_salt} />
+	<SidebarHeader {app_pass_phrase} {file_encryption_salt} />
 	<Sidebar.Content class="overflow-y-auto">
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#await Promise.all( [getCurrentProject(project_state.current_project_name, loaded_project_id), getRootNode(project_state.current_project_name)] ) then [project, root_node]}
-						{#if root_node?.highest_unit_form}
-							<svelte:boundary>
-								<SidebarTree
-									node={root_node}
-									highest_unit={root_node.highest_unit_form}
-									{phase_main_load_form}
-									{generic_phase_panel_form}
-									{project}
-								/>
+					{#key project_state.loaded}
+						{#await Promise.all( [getCurrentProject(project_state.current_project_name, project_state.id), getRootNode(project_state.current_project_name)] ) then [project, root_node]}
+							{#if root_node?.highest_unit_form}
+								<svelte:boundary>
+									<SidebarTree
+										node={root_node}
+										highest_unit={root_node.highest_unit_form}
+										{phase_main_load_form}
+										{generic_phase_panel_form}
+										{project}
+									/>
 
-								{#snippet failed(error, reset)}
-									<p class="text-muted-foreground text-sm">{error}</p>
-									<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
-								{/snippet}
-							</svelte:boundary>
-						{/if}
-					{/await}
+									{#snippet failed(error, reset)}
+										<p class="text-sm text-muted-foreground">{error}</p>
+										<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
+									{/snippet}
+								</svelte:boundary>
+							{/if}
+						{/await}
+					{/key}
 					<div class="grid h-[85vh] place-content-center">
 						<div class="grid gap-2">
 							<div class="text-center">
-								<p class="text-muted-foreground text-lg font-bold">There is no project yet.</p>
-								<p class="text-muted-foreground text-sm">Create a new project to get started.</p>
+								<p class="text-lg font-bold text-muted-foreground">There is no project yet.</p>
+								<p class="text-sm text-muted-foreground">Create a new project to get started.</p>
 							</div>
 
 							<!-- OPENS THE HIGHEST UNIT FORM IF THERE'S NO EXISTING PROJECT -->
