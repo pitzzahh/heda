@@ -52,7 +52,6 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
 export async function databaseInstance(instance_name: string): Promise<RxDatabase<MyDatabaseCollections>> {
 	const { dbInstance, storage } = await createDatabase(instance_name);
 	console.log(`Database instance: ${JSON.stringify(dbInstance, null, 2)}`);
-	console.log(`Adding collections to: ${JSON.stringify(dbInstance, null, 2)}`);
 	console.log(`Current collections: ${JSON.stringify(dbInstance.collections, null, 2)}`);
 	console.log(`Projects collection: ${JSON.stringify(dbInstance.projects, null, 2)}`);
 	console.log(`Nodes collection: ${JSON.stringify(dbInstance.nodes, null, 2)}`);
@@ -68,7 +67,7 @@ export async function databaseInstance(instance_name: string): Promise<RxDatabas
 			});
 			console.log(`Added collections: ${JSON.stringify(added_collections_result)}`);
 		} catch (err) {
-			await removeRxDatabase(instance_name, storage)
+			// await removeRxDatabase(instance_name, storage)
 			console.error(`Failed to add collections: ${JSON.stringify(err, null, 2)}`);
 			throw new Error('Failed to add collections', { cause: err });
 		}
