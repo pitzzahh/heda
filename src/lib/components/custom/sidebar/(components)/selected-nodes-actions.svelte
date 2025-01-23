@@ -8,18 +8,20 @@
 	import { ConfirmationDialog } from '../..';
 	import { fly } from 'svelte/transition';
 	import Button from '@/components/ui/button/button.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	let is_confirmation_dialog_open = $state(false);
 	let button_state = $state<'stale' | 'processing'>('stale');
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 	const undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	async function handleRemoveSelectedItems() {
 		button_state = 'processing';
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
-			const result = await removeNode(node_id);
+			const result = await removeNode(node_id, project_state.current_project_name);
 
 			if (result) {
 				results = [
@@ -47,7 +49,7 @@
 	<div
 		out:fly={{ y: 50, duration: 300 }}
 		in:fly={{ y: 50, duration: 300 }}
-		class="fixed bottom-6 right-6 z-[30] rounded-[0.5rem] border bg-sidebar p-4"
+		class="bg-sidebar fixed right-6 bottom-6 z-[30] rounded-[0.5rem] border p-4"
 	>
 		<div class="flex items-center gap-2">
 			<Button
