@@ -25,7 +25,6 @@ export async function getCurrentProject(instance_name: string, project_id?: stri
 	});
 	return (await query.exec()).at(0)?._data as Project | undefined;
 }
-
 export async function getAllProjects(instance_name: string, fields?: (keyof Project)[]): Promise<Project[] | undefined> {
 	const db = await databaseInstance(instance_name);
 	const projects = await db.projects.find().exec();
@@ -53,7 +52,6 @@ export async function getRootNode(instance_name: string): Promise<Node | undefin
 	});
 	return (await query.exec()).at(0)?._data as Node | undefined;
 }
-
 export async function checkNodeExists({
 	circuit_number,
 	parent_id,
@@ -87,7 +85,6 @@ export async function checkNodeExists({
 		return false;
 	}
 }
-
 
 export async function getNodeById(target_id: string, instance_name: string): Promise<NodeByIdResult | null> {
 	const db = await databaseInstance(instance_name);
