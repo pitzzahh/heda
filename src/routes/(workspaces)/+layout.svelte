@@ -12,7 +12,6 @@
 	import { toast } from 'svelte-sonner';
 	import UndoRedoWrapper from '@/components/custom/undo-redo-wrapper.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
-	import { handleLoadFile } from '@/helpers/file/index.js';
 
 	let { data, children } = $props();
 
@@ -23,9 +22,7 @@
 		phase_main_load_form,
 		app_pass_phrase,
 		file_encryption_salt,
-		can_create_project,
-		current_project,
-		root_node,
+		can_create_project
 	} = $derived(data);
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
@@ -68,7 +65,7 @@
 				<Sidebar.Trigger class="-ml-1" />
 				<Separator orientation="vertical" class="mr-2 h-4" />
 				<p>
-					{project_title ?? 'Untitled'}
+					{project_state.current_project_name ?? 'Untitled'}
 				</p>
 			</header>
 
