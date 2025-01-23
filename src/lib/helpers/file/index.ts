@@ -1,15 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import { BaseDirectory, exists, open as openFile, FileHandle, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import { exists, open as openFile, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
 import { encryptData, decryptData, getEnv, generateKey, keyToString } from "@/helpers/security";
 import { validateEnv } from "@/utils/validation";
 import type { FileExport, RecentProject } from "@/types/main";
-import { goto } from "$app/navigation";
 import { loadCurrentProject } from "@/db/mutations";
 import { toast } from "svelte-sonner";
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 
-export const BASE_DIR = BaseDirectory.Document;
-export const BASE_DIR_PATH = 'heda';
 export const EXTENSION = 'heda'
 
 export interface ParsedFileName {
@@ -142,9 +139,9 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
       });
     }
 
-    const file_name = await getFileName(complete_file_path);
+    const instance_name = await getFileName(complete_file_path);
 
-    if (!file_name) {
+    if (!instance_name) {
       console.error(`Failed to get file name of: ${complete_file_path}`);
       _idle?.();
       return toast.warning(`Failed to get file name of: ${complete_file_path}`, {
@@ -154,13 +151,13 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
 
     console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
     console.log(`Complete file path: ${complete_file_path}`);
-    console.log(`File name: ${file_name}`);
+    console.log(`File name: ${instance_name}`);
 
-    const loaded_project = await loadCurrentProject(loaded_data, file_name);
+    const loaded_project = await loadCurrentProject(loaded_data, instance_name);
 
     return {
       id: loaded_project.id,
-      project_name: file_name,
+      project_name: instance_name,
       project_path: complete_file_path,
       exists: true
     };
