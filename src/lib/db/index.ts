@@ -1,7 +1,8 @@
-import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase } from 'rxdb';
+import { addRxPlugin, createRxDatabase, type RxDatabase, removeRxDatabase, type RxStorage } from 'rxdb';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import {
-	getRxStorageMemory
+	getRxStorageMemory,
+	type RxStorageMemory
 } from 'rxdb/plugins/storage-memory';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 import type { MyDatabaseCollections } from '@/types/db';
@@ -19,7 +20,7 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * @param {string} [instance_name='heda'] - The name of the database instance.
  * @returns {Promise<RxDatabase>} The RxDatabase instance.
  */
-async function createDatabase(instance_name: string) {
+async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDatabase<MyDatabaseCollections>, storage: RxStorage<any, any> }> {
 
 	console.log(`createDatabase instance: ${JSON.stringify(dbInstance, null, 2)} with instance_name: ${instance_name}`);
 	const storage = getRxStorageMemory();
