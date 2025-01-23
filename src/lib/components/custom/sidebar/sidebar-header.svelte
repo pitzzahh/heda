@@ -11,7 +11,7 @@
 	import type { FileExport } from '@/types/main';
 	import { generateKey, keyToString } from '@/helpers/security';
 	import { writeEncryptedFile } from '@/helpers/file';
-	import { getAllChildNodes } from '@/db/queries';
+	import { getAllChildNodes, getRootNode } from '@/db/queries';
 	import { validateEnv } from '@/utils/validation';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -22,13 +22,11 @@
 	import { cn } from '@/utils';
 
 	let {
-		root_node,
 		app_pass_phrase,
 		loaded_project_id,
 		project_title,
 		file_encryption_salt
 	}: {
-		root_node: Node;
 		app_pass_phrase: string | null;
 		loaded_project_id: string | undefined;
 		project_title: string | undefined;
@@ -158,7 +156,8 @@
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item
 										disabled={component_state.status === 'processing'}
-										onclick={() =>
+										onclick={async () => {
+											const root_node = (await getRootNode()) as Node;
 											exportToExcel(
 												'LOAD_SCHEDULE',
 												root_node.id,
@@ -167,7 +166,8 @@
 												project_title,
 												() => (component_state.export_to_excel = 'idle'),
 												() => (component_state.export_to_excel = 'loading')
-											)}
+											);
+										}}
 									>
 										<Loader
 											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
