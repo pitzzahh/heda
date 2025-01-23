@@ -63,7 +63,7 @@ export class UndoRedoState {
 		return this.undo_stack.length > 0;
 	}
 
-	private async addNewNode(node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
+	private async addNewNode(instance_name: string, node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
 		const added_node = await addNode({
 			existing_id: node_data.id,
 			parent_id: node_data.parent_id as string,
@@ -78,13 +78,14 @@ export class UndoRedoState {
 					...node_data.load_data,
 					circuit_number: node_data.circuit_number
 				} as any
-			})
+			}),
+			instance_name
 		});
 
 		//we want to revert the deleted node's children as well
 		if (children_nodes && children_nodes.length > 0) {
 			for (const child_node of children_nodes) {
-				await this.addNewNode(child_node);
+				await this.addNewNode(instance_name, child_node);
 			}
 		}
 
@@ -93,7 +94,8 @@ export class UndoRedoState {
 
 	private async handleBatchOperation(
 		last_action: Action<PhaseLoadSchedule>,
-		operation: 'add' | 'remove'
+		operation: 'add' | 'remove',
+		instance_name: string
 	): Promise<BatchData[]> {
 		if (!last_action.batch_data?.length) return [];
 
@@ -105,6 +107,7 @@ export class UndoRedoState {
 		if (operation === 'add') {
 			for (const data of last_action.batch_data) {
 				const added_node = (await this.addNewNode(
+					instance_name,
 					data.data,
 					data.children_nodes
 				)) as unknown as PhaseLoadSchedule;
@@ -113,7 +116,7 @@ export class UndoRedoState {
 			}
 		} else {
 			for (const data of last_action.batch_data) {
-				const result = await removeNode(data.data.id);
+				const result = await removeNode(data.data.id, instance_name);
 
 				if (result) {
 					batch_data = [
@@ -132,19 +135,22 @@ export class UndoRedoState {
 		field_data,
 		field_type,
 		node_id,
-		action
+		action,
+		instance_name
 	}: {
 		field_type: FieldType;
 		node_id: string;
 		is_undo?: boolean;
 		field_data?: number;
+		instance_name: string;
 		action: Action<PhaseLoadSchedule>;
 	}) {
 		await overrideField({
 			unoverride: is_undo,
 			field_type,
 			node_id: node_id,
-			field_data
+			field_data,
+			instance_name
 		});
 
 		is_undo
@@ -152,7 +158,7 @@ export class UndoRedoState {
 			: (this.undo_stack = [...this.undo_stack, action]);
 	}
 
-	async undo() {
+	async undo(instance_name: string) {
 		const last_action = this.undo_stack.pop();
 		this.setHasUnsavedActions();
 
@@ -161,7 +167,7 @@ export class UndoRedoState {
 				case 'create_node':
 					if (!last_action.data) return;
 
-					const result_in_create_node = await removeNode(last_action.data.id);
+					const result_in_create_node = await removeNode(last_action.data.id, instance_name);
 					if (result_in_create_node) {
 						this.redo_stack = [
 							...this.redo_stack,
@@ -182,7 +188,8 @@ export class UndoRedoState {
 						const updated_node = await updateNode({
 							id: previous_data.id,
 							whole_data: previous_data,
-							parent_id: previous_data.parent_id as string
+							parent_id: previous_data.parent_id as string,
+							instance_name
 						});
 
 						this.redo_stack = [
@@ -200,7 +207,7 @@ export class UndoRedoState {
 				case 'delete_node':
 					if (!last_action.data) return;
 
-					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
+					const added_node = await this.addNewNode(instance_name, last_action.data, last_action.children_nodes);
 					this.redo_stack = [
 						...this.redo_stack,
 						{
@@ -213,7 +220,7 @@ export class UndoRedoState {
 
 				case 'batch_delete':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'add');
+						const batch_data = await this.handleBatchOperation(last_action, 'add', instance_name);
 
 						this.redo_stack = [
 							...this.redo_stack,
@@ -228,7 +235,7 @@ export class UndoRedoState {
 
 				case 'batch_copy_node':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'remove');
+						const batch_data = await this.handleBatchOperation(last_action, 'remove', instance_name);
 
 						this.redo_stack = [
 							...this.redo_stack,
@@ -243,7 +250,7 @@ export class UndoRedoState {
 				case 'copy_node':
 					if (!last_action.data) return;
 
-					const result_in_copy_node = await removeNode(last_action.data.id);
+					const result_in_copy_node = await removeNode(last_action.data.id, instance_name);
 					if (result_in_copy_node) {
 						this.redo_stack = [
 							...this.redo_stack,
@@ -263,7 +270,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'at',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 
 					break;
@@ -274,7 +282,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'ampere_frames',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 
@@ -285,7 +294,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'conductor_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_conduit_size':
@@ -295,7 +305,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'conduit_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_egc_size':
@@ -305,7 +316,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'egc_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 
@@ -316,7 +328,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'z',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 
@@ -327,7 +340,8 @@ export class UndoRedoState {
 						is_undo: true,
 						action: last_action,
 						field_type: 'length',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 			}
@@ -336,7 +350,7 @@ export class UndoRedoState {
 		}
 	}
 
-	async redo() {
+	async redo(instance_name: string) {
 		const last_action = this.redo_stack.pop();
 		this.setHasUnsavedActions();
 
@@ -345,7 +359,7 @@ export class UndoRedoState {
 				case 'create_node':
 					if (!last_action.data) return;
 
-					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
+					const added_node = await this.addNewNode(instance_name, last_action.data, last_action.children_nodes);
 					this.undo_stack = [
 						...this.undo_stack,
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
@@ -360,7 +374,8 @@ export class UndoRedoState {
 						const updated_node = await updateNode({
 							id: previous_data.id,
 							whole_data: previous_data,
-							parent_id: previous_data.parent_id as string
+							parent_id: previous_data.parent_id as string,
+							instance_name
 						});
 
 						this.undo_stack = [
@@ -377,7 +392,7 @@ export class UndoRedoState {
 				case 'delete_node':
 					if (!last_action.data) return;
 
-					const result = await removeNode(last_action.data.id);
+					const result = await removeNode(last_action.data.id, instance_name);
 					if (result) {
 						this.undo_stack = [
 							...this.undo_stack,
@@ -388,7 +403,7 @@ export class UndoRedoState {
 
 				case 'batch_delete':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'remove');
+						const batch_data = await this.handleBatchOperation(last_action, 'remove', instance_name);
 
 						this.undo_stack = [
 							...this.undo_stack,
@@ -404,6 +419,7 @@ export class UndoRedoState {
 					if (!last_action.data) return;
 
 					const added_copied_node = await this.addNewNode(
+						instance_name,
 						last_action.data,
 						last_action.children_nodes
 					);
@@ -415,7 +431,7 @@ export class UndoRedoState {
 
 				case 'batch_copy_node':
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'add');
+						const batch_data = await this.handleBatchOperation(last_action, 'add', instance_name);
 
 						this.undo_stack = [
 							...this.undo_stack,
@@ -433,7 +449,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_at as number,
 						action: last_action,
 						field_type: 'at',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_af':
@@ -443,7 +460,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_ampere_frames as number,
 						action: last_action,
 						field_type: 'ampere_frames',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 
@@ -454,7 +472,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_conductor_size as number,
 						action: last_action,
 						field_type: 'conductor_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_conduit_size':
@@ -464,7 +483,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_conduit_size as number,
 						action: last_action,
 						field_type: 'conduit_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_egc_size':
@@ -474,7 +494,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_egc_size as number,
 						action: last_action,
 						field_type: 'egc_size',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_z':
@@ -484,7 +505,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_z as number,
 						action: last_action,
 						field_type: 'z',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 				case 'override_length':
@@ -494,7 +516,8 @@ export class UndoRedoState {
 						field_data: last_action.data.overrided_length as number,
 						action: last_action,
 						field_type: 'length',
-						node_id: last_action.data.id
+						node_id: last_action.data.id,
+						instance_name
 					});
 					break;
 			}
