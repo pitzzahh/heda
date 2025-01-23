@@ -71,7 +71,7 @@
 			);
 			undo_redo_state.resetUnsavedActions();
 		} catch (err) {
-			console.error(`Failed to save file: ${JSON.stringify(err)}`);
+			console.error(`Failed to save file: ${JSON.stringify(err, null, 2)}`);
 			return toast.warning(
 				`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`,
 				{

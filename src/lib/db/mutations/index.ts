@@ -32,7 +32,7 @@ export async function createProject(project_name: string, highest_unit_form: Nod
 			root_node_id: created_root_node._data.id as string
 		};
 	} catch (err) {
-		console.error(`Error in creating project: ${JSON.stringify(err)}`);
+		console.error(`Error in creating project: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -76,7 +76,7 @@ export async function updateProjectTitle(id: string, project_name: string, insta
 			}
 		});
 	} catch (err) {
-		console.error(`Error updating project title: ${JSON.stringify(err)}`);
+		console.error(`Error updating project title: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -85,7 +85,7 @@ export async function addNode({
 	panel_data,
 	parent_id,
 	existing_id,
-	instance_name  = 'heda'
+	instance_name = 'heda'
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	parent_id: string;
@@ -125,7 +125,7 @@ export async function addNode({
 
 		return created_node._data;
 	} catch (err) {
-		console.error(`Error updating project title: ${JSON.stringify(err)}`);
+		console.error(`Error updating project title: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -236,7 +236,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 
 		return created_node._data;
 	} catch (err) {
-		console.error(`Error copying and adding a node: ${JSON.stringify(err)}`);
+		console.error(`Error copying and adding a node: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -246,7 +246,7 @@ export async function updateNode({
 	parent_id,
 	id,
 	whole_data,
-	instance_name  = 'heda'
+	instance_name = 'heda'
 }: {
 	load_data?: GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 	id: string;
@@ -333,7 +333,7 @@ export async function updateNode({
 
 		return (await update_query)?._data;
 	} catch (err) {
-		console.error(`Error updating node: ${JSON.stringify(err)}`);
+		console.error(`Error updating node: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -425,7 +425,7 @@ export async function overrideField({
 	field_data,
 	unoverride = false,
 	field_type,
-	instance_name  = 'heda'
+	instance_name = 'heda'
 }: {
 	node_id: string;
 	field_data?: number;
@@ -453,7 +453,7 @@ export async function overrideField({
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error overriding data: ${JSON.stringify(err)}`);
+		console.error(`Error overriding data: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -475,7 +475,7 @@ export async function updateConductorSets({ node_id, sets, instance_name = 'heda
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error updating conductor sets: ${JSON.stringify(err)}`);
+		console.error(`Error updating conductor sets: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -483,7 +483,7 @@ export async function updateLoadDescription({
 	node_id,
 	load_description,
 	node_type,
-	instance_name  = 'heda'
+	instance_name = 'heda'
 }: {
 	node_id: string;
 	load_description: string;
@@ -522,7 +522,7 @@ export async function updateLoadDescription({
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error updating conductor load_description: ${JSON.stringify(err)}`);
+		console.error(`Error updating conductor load_description: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -530,7 +530,7 @@ export async function changeInsulation({
 	node_id,
 	insulation,
 	type,
-	instance_name  = 'heda'
+	instance_name = 'heda'
 }: {
 	node_id: string;
 	insulation: string;
@@ -555,7 +555,7 @@ export async function changeInsulation({
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error changing insulation: ${JSON.stringify(err)}`);
+		console.error(`Error changing insulation: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -577,7 +577,7 @@ export async function changePole(node_id: string, pole: string, instance_name: s
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error changing pole: ${JSON.stringify(err)}`);
+		console.error(`Error changing pole: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 
@@ -599,7 +599,7 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean, ins
 
 		return updated_node?._data;
 	} catch (err) {
-		console.error(`Error changing data: ${JSON.stringify(err)}`);
+		console.error(`Error changing data: ${JSON.stringify(err, null, 2)}`);
 	}
 }
 

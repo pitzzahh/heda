@@ -60,9 +60,9 @@
 						});
 					}
 
-					const project_name = await getFileName(file_path_with_file);
+					const project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
-					const created_project = await createProject(project_name ?? 'Untitled', form.data);
+					const created_project = await createProject(project_name, form.data, project_name);
 
 					console.log(`Created project: ${JSON.stringify(created_project)}`);
 
@@ -145,7 +145,7 @@
 							)
 						);
 				} catch (err) {
-					console.error(`Error: failed to create project: ${JSON.stringify(err)}`);
+					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 					return toast.error(
 						`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 						{

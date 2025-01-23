@@ -51,7 +51,7 @@ export async function getFileMetaData(path: string) {
   try {
     return await invoke('get_file_metadata', { path });
   } catch (err) {
-    console.error(`Error reading file attributes: ${JSON.stringify(err)}`);
+    console.error(`Error reading file attributes: ${JSON.stringify(err, null, 2)}`);
   }
 }
 
@@ -59,7 +59,7 @@ export async function getFileName(path: string): Promise<string | undefined> {
   try {
     return await invoke("get_file_name", { path });
   } catch (err) {
-    console.error(`Error fetching environment variable: ${JSON.stringify(err)}`);
+    console.error(`Error fetching environment variable: ${JSON.stringify(err, null, 2)}`);
 
     return undefined;
   }
@@ -69,7 +69,7 @@ export async function doesFileExists(path: string | URL, options?: ExistsOptions
   try {
     return await exists(path, options);
   } catch (err) {
-    console.error(`Error checking if file exists: ${JSON.stringify(err)}`);
+    console.error(`Error checking if file exists: ${JSON.stringify(err, null, 2)}`);
     return false;
   }
 }
@@ -166,7 +166,7 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
     };
   } catch (err) {
     _idle?.();
-    console.error(`Failed to load file: ${JSON.stringify(err)}`);
+    console.error(`Failed to load file: ${JSON.stringify(err, null, 2)}`);
     toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
       description: 'This is a system error and should not be here, the error has been logged.'
     });

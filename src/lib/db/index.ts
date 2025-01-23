@@ -50,7 +50,7 @@ export async function databaseInstance(instance_name: string = 'heda'): Promise<
 
 	console.log(`Database instance: ${JSON.stringify(database, null, 2)}`);
 
-	if (!database.projects || !database.nodes) {
+	if (!database.projects && !database.nodes) {
 		try {
 			const added_collections_result = await database.addCollections({
 				projects: {
@@ -63,7 +63,7 @@ export async function databaseInstance(instance_name: string = 'heda'): Promise<
 			console.log(`Added collections: ${JSON.stringify(added_collections_result)}`);
 		} catch (err) {
 			await removeRxDatabase(instance_name, getRxStorageDexie())
-			console.error(`Failed to add collections: ${JSON.stringify(err)}`);
+			console.error(`Failed to add collections: ${JSON.stringify(err, null, 2)}`);
 			throw new Error('Failed to add collections', { cause: err });
 		}
 	}
