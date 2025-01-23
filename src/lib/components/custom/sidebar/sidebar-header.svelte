@@ -49,7 +49,10 @@
 
 			component_state.status = 'processing';
 
-			const project = await getCurrentProject(loaded_project_id);
+			const project = await getCurrentProject(
+				project_state.current_project_name,
+				loaded_project_id
+			);
 
 			if (!project) {
 				return toast.warning('Failed to save, no project found', {
@@ -59,7 +62,11 @@
 
 			const file_data: FileExport = {
 				project,
-				nodes: await getAllChildNodes(project.root_node_id, true)
+				nodes: await getAllChildNodes(
+					project_state.current_project_name,
+					project.root_node_id,
+					true
+				)
 			};
 
 			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
@@ -167,7 +174,9 @@
 									<DropdownMenu.Item
 										disabled={component_state.status === 'processing'}
 										onclick={async () => {
-											const root_node = (await getRootNode()) as Node;
+											const root_node = (await getRootNode(
+												project_state.current_project_name
+											)) as Node;
 											exportToExcel(
 												'LOAD_SCHEDULE',
 												root_node.id,
@@ -213,7 +222,7 @@
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		{#snippet failed(error, reset)}
-			<p class="text-sm text-muted-foreground">{error}</p>
+			<p class="text-muted-foreground text-sm">{error}</p>
 			<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
 		{/snippet}
 	</svelte:boundary>
