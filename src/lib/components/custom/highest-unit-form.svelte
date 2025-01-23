@@ -68,6 +68,8 @@
 
 					let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
+					console.log(`Project data: ${JSON.stringify(form.data, null, 2)}`);
+
 					const created_project = await createProject(project_name, form.data, project_name);
 
 					console.log(`Created project: ${JSON.stringify(created_project)}`);
