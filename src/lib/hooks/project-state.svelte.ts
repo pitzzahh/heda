@@ -15,7 +15,7 @@ export class ProjectState {
 
   recent_projects = $state<RecentProject[]>();
   id = $state('')
-  current_project_name = $state<string | undefined>(undefined);
+  current_project_name = $state<string>('');
   current_project_path = $state('');
   exists = $state(false)
   loaded = $state(false)
