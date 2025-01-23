@@ -14,6 +14,7 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Input from '@/components/ui/input/input.svelte';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 
 	interface Props {
@@ -52,6 +53,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+	const project_state = getProjectState();
 
 	// AT
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);
@@ -110,7 +112,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: selected_ampere_rating,
-					field_type: 'at'
+					field_type: 'at',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('AT');
 				undo_redo_state.setActionToUndo({
@@ -123,7 +126,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: selected_conductor_size,
-					field_type: 'conductor_size'
+					field_type: 'conductor_size',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('Conductor Size');
 				undo_redo_state.setActionToUndo({
@@ -136,7 +140,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: selected_egc_size,
-					field_type: 'egc_size'
+					field_type: 'egc_size',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('EGC Size');
 				undo_redo_state.setActionToUndo({
@@ -149,7 +154,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: selected_conduit_size,
-					field_type: 'conduit_size'
+					field_type: 'conduit_size',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('Conduit Size');
 				undo_redo_state.setActionToUndo({
@@ -162,7 +168,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: Number(ampere_frames),
-					field_type: 'ampere_frames'
+					field_type: 'ampere_frames',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('Ampere Frames (AT)');
 				undo_redo_state.setActionToUndo({
@@ -175,7 +182,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: length,
-					field_type: 'length'
+					field_type: 'length',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('Length');
 				undo_redo_state.setActionToUndo({
@@ -188,7 +196,8 @@
 				const updated_node = await overrideField({
 					node_id,
 					field_data: z,
-					field_type: 'z'
+					field_type: 'z',
+					instance_name: project_state.current_project_name
 				});
 				overridden_fields.push('Z');
 				undo_redo_state.setActionToUndo({
@@ -211,7 +220,12 @@
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 
-		await overrideField({ node_id, field_type, unoverride: true });
+		await overrideField({
+			node_id,
+			field_type,
+			unoverride: true,
+			instance_name: project_state.current_project_name
+		});
 		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 		closeDialog();
 		toast.success(`Removed override for ${formatted_field}`);
