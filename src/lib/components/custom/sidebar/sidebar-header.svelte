@@ -4,7 +4,7 @@
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { Settings } from '..';
 	import { toast } from 'svelte-sonner';
-	import type { Project, Node } from '@/db/schema';
+	import type { Node } from '@/db/schema';
 	import { UndoRedoButtons } from './(components)';
 	import { exportToExcel } from '@/helpers/export';
 	import type { ButtonState } from '@/types/misc';
