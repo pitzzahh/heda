@@ -29,16 +29,8 @@
 		</div>
 
 		<div class="flex items-center justify-between gap-2">
-			<div class="flex-1 text-sm text-muted-foreground">
+			<div class="text-muted-foreground flex-1 text-sm">
 				<Skeleton class="h-9 w-32 rounded-md" />
-			</div>
-
-			<div class="flex items-center justify-center gap-2">
-				<Skeleton class="h-9 w-40 rounded-md" />
-				<Skeleton class="h-9 w-28 rounded-md" />
-				{#each Array(4) as _}
-					<Skeleton class="h-9 w-9 rounded-md" />
-				{/each}
 			</div>
 		</div>
 	{/if}
