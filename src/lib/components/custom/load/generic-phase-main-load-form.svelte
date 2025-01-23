@@ -3,7 +3,7 @@
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
-	import SuperDebug, { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '@/components/ui/input/index.js';
@@ -34,11 +34,11 @@
 	import { convertToNormalText } from '@/utils/text';
 	import type { Node } from '@/db/schema';
 	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '@/types/load';
-	import { dev } from '$app/environment';
 	import { formatFraction } from '@/utils/format';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 
 	interface Props {
 		phase_main_load_form: T;
@@ -64,6 +64,7 @@
 
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
+	const project_state = getProjectState();
 
 	const form = superForm(phase_main_load_form, {
 		SPA: true,
@@ -104,7 +105,8 @@
 					circuit_number: form.data.circuit_number,
 					//we want to check if the circuit number is alrdy existing in the parent we want to move in
 					parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
-					node_id: node_to_edit?.id
+					node_id: node_to_edit?.id,
+					instance_name: project_state.current_project_name
 				});
 
 				if (is_circuit_number_taken_state.is_circuit_number_taken) {
@@ -134,7 +136,8 @@
 							const parent_id = panel_id_from_tree as string;
 							const added_node = await addNode({
 								load_data,
-								parent_id
+								parent_id,
+								instance_name: project_state.current_project_name
 							});
 							toast.success(`${load_description} added successfully`);
 							collapsibles.addNodeId(parent_id);
@@ -148,7 +151,8 @@
 								const updated_node = await updateNode({
 									load_data,
 									id: node_to_edit.id,
-									parent_id: selected_parent_id
+									parent_id: selected_parent_id,
+									instance_name: project_state.current_project_name
 								});
 								undo_redo_state.setActionToUndo({
 									action: 'update_node',
@@ -450,10 +454,6 @@
 		<Form.Button class="w-full" type="submit">Save</Form.Button>
 	</div>
 </form>
-
-{#if dev}
-	<SuperDebug data={$formData} />
-{/if}
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
