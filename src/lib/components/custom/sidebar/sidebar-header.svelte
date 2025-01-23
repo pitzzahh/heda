@@ -141,9 +141,19 @@
 	<svelte:boundary>
 		<Tooltip.Provider>
 			<Tooltip.Root>
-				<Tooltip.Trigger>
+				<Tooltip.Trigger
+					disabled={!project_state.loaded}
+					class={cn({
+						'cursor-not-allowed': !project_state.loaded
+					})}
+				>
 					<DropdownMenu.Root>
-						<DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
+						<DropdownMenu.Trigger
+							disabled={!project_state.loaded}
+							class={buttonVariants({
+								variant: 'outline'
+							})}
+						>
 							<ArrowRightFromLine class="h-4 w-4" />
 						</DropdownMenu.Trigger>
 
