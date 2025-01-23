@@ -149,11 +149,13 @@ export async function handleLoadFile(complete_file_path?: string | null, _proces
       });
     }
 
-    console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
+    console.log(`Loaded data: ${JSON.stringify(loaded_data, null, 2)}`);
     console.log(`Complete file path: ${complete_file_path}`);
     console.log(`File name: ${instance_name}`);
 
     const loaded_project = await loadCurrentProject(loaded_data, instance_name);
+
+    console.log(`Loaded project: ${JSON.stringify(loaded_project, null, 2)}`);
 
     return {
       id: loaded_project.id,
