@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends SuperValidated<NonNullable<Node['highest_unit_form']>>">
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { toast } from 'svelte-sonner';
@@ -122,22 +122,21 @@
 						file_path_with_file
 					);
 					closeDialog();
+					project_state.addRecentProject(
+						{
+							id: project.id,
+							project_name,
+							project_path: file_path_with_file,
+							exists: true
+						},
+						true
+					);
+					undo_redo_state.resetUnsavedActions();
 
-					await invalidate('app:workspace')
+					await goto(
+						`/workspace?instance_name=${project_name}&distribution_unit=${form.data.distribution_unit}`
+					)
 						.then(() => {
-							project_state.addRecentProject(
-								{
-									id: project.id,
-									project_name,
-									project_path: file_path_with_file,
-									exists: true
-								},
-								true
-							);
-							undo_redo_state.resetUnsavedActions();
-							goto(
-								`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}?project_title=${project_name}`
-							);
 							console.log(`${project_state.current_project_name} created successfully`);
 							toast.success(`${project_state.current_project_name} created successfully`);
 						})
@@ -197,7 +196,7 @@
 									buttonVariants({
 										variant: 'outline',
 										className:
-											'hover:bg-primary/20 [&:has([data-state=checked])]:bg-primary/20 w-full font-normal hover:text-white'
+											'w-full font-normal hover:bg-primary/20 hover:text-white [&:has([data-state=checked])]:bg-primary/20'
 									}),
 									{
 										'cursor-not-allowed': phase_option !== '1P'
