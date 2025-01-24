@@ -111,6 +111,8 @@
 						await remove(file_path_with_file);
 					}
 
+					console.log('Generating file data');
+
 					const file_data: FileExport = {
 						project,
 						nodes: await getAllChildNodes(project_name, project.root_node_id, true)
