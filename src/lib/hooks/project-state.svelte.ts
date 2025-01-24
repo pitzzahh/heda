@@ -21,12 +21,11 @@ export class ProjectState {
   loaded = $state(false)
 
   constructor(recent_project?: RecentProject) {
-    const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
+    this.persisted_state = new PersistedState<ProjectStateType>('project_state', {
       recent_projects: [],
       loaded: false,
       current_project: undefined
     });
-    this.persisted_state = _persisted_state;
     this.validateRecentProjects();
     this.setProjectLoaded(this.persisted_state.current.loaded);
     this.recent_projects = this.persisted_state.current.recent_projects;
@@ -34,7 +33,13 @@ export class ProjectState {
   }
 
   addRecentProject(recent_project: RecentProject, set_as_current: boolean = false) {
-    this.persisted_state.current.recent_projects?.push(recent_project);
+    this.persisted_state.current = {
+      ...this.persisted_state.current,
+      recent_projects: [
+        ...this.persisted_state.current.recent_projects || [],
+        recent_project
+      ]
+    }
     this.recent_projects = this.persisted_state.current.recent_projects;
     if (set_as_current) {
       this.setCurrentProject(recent_project);
@@ -42,7 +47,10 @@ export class ProjectState {
   }
 
   removeRecentProject(project_id: string, remove_current: boolean = false) {
-    this.persisted_state.current.recent_projects = this.persisted_state.current.recent_projects?.filter(project => project.id !== project_id);
+    this.persisted_state.current = {
+      ...this.persisted_state.current,
+      recent_projects: this.persisted_state.current.recent_projects?.filter(project => project.id !== project_id)
+    }
     this.recent_projects = this.persisted_state.current.recent_projects;
     if (remove_current) {
       this.id = '';
@@ -61,7 +69,10 @@ export class ProjectState {
   }
 
   setCurrentProject(current_project: RecentProject) {
-    this.persisted_state.current.current_project = current_project;
+    this.persisted_state.current = {
+      ...this.persisted_state.current,
+      current_project
+    }
     this.id = current_project.id;
     this.current_project_name = current_project.project_name;
     this.current_project_path = current_project.project_path;
@@ -80,7 +91,14 @@ export class ProjectState {
         ...this.persisted_state.current.recent_projects[projectIndex],
         ...new_project
       };
-      this.persisted_state.current.recent_projects[projectIndex] = updatedProject;
+      this.persisted_state.current = {
+        ...this.persisted_state.current,
+        recent_projects: [
+          ...this.persisted_state.current.recent_projects.slice(0, projectIndex),
+          updatedProject,
+          ...this.persisted_state.current.recent_projects.slice(projectIndex + 1)
+        ]
+      }
       this.recent_projects = this.persisted_state.current.recent_projects;
 
       if (update_current) {
