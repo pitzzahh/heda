@@ -7,6 +7,7 @@
 			variant: {
 				default: 'bg-background text-foreground',
 				warning: 'text-yellow-600 border-yellow-600 [&>svg]:text-yellow-600 bg-yellow-600/10',
+				valid: 'text-green-600 border-green-600 [&>svg]:text-green-600 bg-green-600/10',
 				destructive:
 					'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive'
 			}
