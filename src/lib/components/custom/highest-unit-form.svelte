@@ -152,7 +152,8 @@
 										'This is a system error and should not be here, the error has been logged.'
 								}
 							);
-						});
+						})
+						.finally(() => undo_redo_state.setHasUnsavedActions());
 				} catch (err) {
 					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 					return toast.error(
