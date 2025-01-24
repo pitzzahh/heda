@@ -24,15 +24,6 @@
 	const project_state = getProjectState();
 
 	$effect(() => {
-		if (node_id) {
-			toast.info('Loading...', {
-				description: 'Please wait while the data is being fetched.',
-				position: 'top-center'
-			});
-		}
-	});
-
-	$effect(() => {
 		if (!project_state.loaded) {
 			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
 				description: 'Please create a project or load an existing one first.'
