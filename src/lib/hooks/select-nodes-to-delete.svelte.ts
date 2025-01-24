@@ -2,9 +2,11 @@ import { setState, getState } from '@/state/index.svelte';
 import { SELECT_NODES_TO_DELETE_CTX } from '@/state/constants';
 
 export class SelectNodesToDelete {
-	selected_nodes_id = $state<Set<string>>(new Set());
+	selected_nodes_id: Set<string>;
 
-	constructor() { }
+	constructor() {
+		this.selected_nodes_id = $state(new Set<string>());
+	}
 
 	addOrRemoveNodeId(id: string) {
 		if (this.checkIsIdSelected(id)) {
