@@ -13,6 +13,8 @@ type ExportProcessResult = {
   description?: string;
 }
 
+type Header = { text: string; cols: number; subText?: string, sub_cols?: string[] };
+
 export async function processOnePhaseExcelPanelBoardSchedule(
   workbook: ExcelJS.Workbook,
   node_id: string,
@@ -139,13 +141,6 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     current_header_column += header.cols;
   });
 
-  worksheet.columns = [
-    { width: 15 }, { width: 30 }, { width: 15 }, { width: 30 }, { width: 15 },
-    { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
-    { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
-    { width: 10 }, { width: 15 }
-  ];
-
   const loads = await getComputedLoads(node_id);
   let current_load_row = startRow + 6;
 
@@ -221,19 +216,34 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     }
   }
 
+  for (let i = 0; i < worksheet.columns.length; i += 1) {
+    let dataMax = 0;
+    const column = worksheet.columns[i];
+    const headerLength = String(column.values?.[1] ?? '').length;
+    for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
+      const columnLength = String(column.values?.[j] ?? '').length;
+      if (columnLength > dataMax) {
+        dataMax = columnLength;
+      }
+    }
+    column.width = Math.max(dataMax, headerLength, 10);
+  }
+
   return { valid: true };
 }
 
 export async function processOnePhaseVoltageDrop(
   workbook: ExcelJS.Workbook,
-  node_id: string): Promise<ExportProcessResult> {
+  node_id: string
+): Promise<ExportProcessResult> {
   let worksheet = workbook.getWorksheet();
 
   if (!worksheet) {
     worksheet = workbook.addWorksheet();
   }
 
-  type Header = { text: string; cols: number; subText?: string, sub_cols?: string[] };
+  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+
 
   const table_headers: Header[] = [
     { text: 'From NODE', cols: 1 },
@@ -247,7 +257,6 @@ export async function processOnePhaseVoltageDrop(
     { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Insulation'] }
   ];
 
-  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
   let current_header_column = 1;
 
   table_headers.forEach((header: Header) => {
@@ -279,18 +288,55 @@ export async function processOnePhaseVoltageDrop(
         current_header_column
       );
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = { bottom: { style: 'thin' } };
+      cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
     }
     current_header_column += header.cols;
   });
 
-  worksheet.columns.forEach(column => {
-    const lengths = (column.values ?? []).map(v => v?.toString().length);
-    const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'));
-    column.width = maxLength;
-  });
-
   const voltage_drops = await getComputedVoltageDrops();
+  let current_load_row = startRow + 6;
+
+  for (const voltage_drop_node of voltage_drops) {
+    const loadCells = [
+      { column: 'A', value: voltage_drop_node.circuit_number },
+      { column: 'B', value: voltage_drop_node.load_description },
+      { column: 'C', value: voltage_drop_node.voltage },
+      { column: 'D', value: voltage_drop_node.va },
+      { column: 'E', value: voltage_drop_node.current },
+      { column: 'F', value: voltage_drop_node.at },
+      { column: 'G', value: voltage_drop_node.ampere_frames },
+      { column: 'H', value: voltage_drop_node.pole },
+      { column: 'I', value: voltage_drop_node.kaic },
+      { column: 'J', value: voltage_drop_node.conductor_sets },
+      { column: 'K', value: voltage_drop_node.conductor_qty },
+      { column: 'L', value: voltage_drop_node.conductor_size },
+      { column: 'M', value: voltage_drop_node.conductor_insulation },
+      { column: 'N', value: voltage_drop_node.egc_size },
+      { column: 'O', value: voltage_drop_node.egc_insulation },
+      { column: 'P', value: voltage_drop_node.conduit_size },
+      { column: 'Q', value: voltage_drop_node.conduit_type }
+    ];
+
+    loadCells.forEach(({ column, value }) => {
+      const cell = worksheet.getCell(`${column}${current_load_row}`);
+      cell.value = value;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thin' } };
+    });
+    current_load_row++;
+  }
+
+  for (let i = 0; i < worksheet.columns.length; i += 1) {
+    let dataMax = 0;
+    const column = worksheet.columns[i];
+    for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
+      const columnLength = String(column.values?.[j] ?? '').length;
+      if (columnLength > dataMax) {
+        dataMax = columnLength;
+      }
+    }
+    column.width = dataMax < 10 ? 10 : dataMax;
+  }
 
   return { valid: true };
 }
@@ -324,7 +370,7 @@ export async function exportToExcel(
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.title = 'Exported Panelboard Schedule';
+  workbook.title = `Exported ${file_name} ${convertToNormalText(type, true)}`;
   workbook.creator = 'HEDA(Desktop App)';
 
   try {
@@ -404,7 +450,7 @@ export async function exportToExcel(
   // Create a link and download the file
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${file_name}.xlsx`;
+  link.download = `${workbook.title}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
