@@ -37,7 +37,7 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
 	addRxPlugin(RxDBUpdatePlugin);
 	addRxPlugin(RxDBQueryBuilderPlugin);
 	dbInstance = await createRxDatabase({
-		name: 'heda',
+		name: instance_name,
 		storage
 	});
 	return { dbInstance, storage };
