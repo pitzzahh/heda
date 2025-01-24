@@ -340,6 +340,7 @@
 							});
 						}
 						exportToExcel(
+							'LOAD_SCHEDULE',
 							node.id,
 							highest_unit,
 							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
