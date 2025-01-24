@@ -8,6 +8,7 @@
 	import { ConfirmationDialog } from '../..';
 	import { fly } from 'svelte/transition';
 	import Button from '@/components/ui/button/button.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let is_confirmation_dialog_open = $state(false);
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
@@ -21,6 +22,7 @@
 	async function handleRemoveSelectedItems() {
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 		component_state.button_state = 'processing';
+		toast.loading(`Removing ${select_nodes_to_delete_state.selected_nodes_id.length} items`);
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
 			const result = await removeNode(node_id);
 
@@ -37,11 +39,15 @@
 			batch_data: results
 		});
 
-		await invalidate('app:workspace/load-schedule');
-		await invalidate('app:workspace');
-		select_nodes_to_delete_state.removeAllNodeIds();
+		toast.success(`${
+			select_nodes_to_delete_state.selected_nodes_id.length
+		} items removed successfully`);
+		await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'))
+		.finally(() => {
+			select_nodes_to_delete_state.removeAllNodeIds();
 		is_confirmation_dialog_open = false;
 		component_state.button_state = 'stale';
+		});
 	}
 </script>
 
