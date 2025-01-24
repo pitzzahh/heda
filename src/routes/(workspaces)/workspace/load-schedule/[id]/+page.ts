@@ -9,8 +9,7 @@ export const entries = () => {
 
 export const load = async ({ depends, params }) => {
 	depends('app:workspace/load-schedule');
-	const node_id = params.id.split('_').at(-1) as string;
-	if (!node_id) {
+	if (!params.id.split('_').at(-1)) {
 		console.warn('Viewing workspace without node_id');
 		goto('/');
 	}
