@@ -260,7 +260,7 @@ export async function processOnePhaseVoltageDrop(
   let current_header_column = 1;
 
   table_headers.forEach((header: Header) => {
-    const cell = worksheet.getCell(startRow + 4, current_header_column);
+    const cell = worksheet.getCell(startRow, current_header_column);
     cell.value = header.text;
     cell.font = { bold: true };
     cell.alignment = { horizontal: 'center' };
@@ -268,13 +268,13 @@ export async function processOnePhaseVoltageDrop(
 
     if (header.sub_cols) {
       worksheet.mergeCells(
-        startRow + 4,
+        startRow,
         current_header_column,
-        startRow + 4,
+        startRow,
         current_header_column + header.cols - 1
       );
       header.sub_cols.forEach((subText, i) => {
-        const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+        const subCell = worksheet.getCell(startRow + 1, current_header_column + i);
         subCell.value = subText;
         subCell.font = { bold: true };
         subCell.alignment = { horizontal: 'center' };
@@ -282,9 +282,9 @@ export async function processOnePhaseVoltageDrop(
       });
     } else {
       worksheet.mergeCells(
-        startRow + 4,
+        startRow,
         current_header_column,
-        startRow + 5,
+        startRow + 1,
         current_header_column
       );
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -294,7 +294,7 @@ export async function processOnePhaseVoltageDrop(
   });
 
   const voltage_drops = await getComputedVoltageDrops();
-  let current_load_row = startRow + 6;
+  let current_load_row = startRow + 2;
 
   for (const voltage_drop_node of voltage_drops) {
     const loadCells = [
