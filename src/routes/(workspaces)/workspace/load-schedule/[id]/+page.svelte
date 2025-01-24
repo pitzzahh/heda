@@ -3,7 +3,12 @@
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/state';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
-	import { getComputedLoads, getComputedVoltageDrops, getNodeById } from '@/db/queries/index.js';
+	import {
+		getComputedLoads,
+		getComputedVoltageDrops,
+		getRootNode,
+		getNodeById
+	} from '@/db/queries/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { Skeletal } from '@/components/custom/index.js';
@@ -19,10 +24,15 @@
 	const project_state = getProjectState();
 
 	$effect(() => {
-		toast.info('Loading...', {
-			description: 'Please wait while the data is being fetched.',
-			position: 'top-center'
-		});
+		if (node_id) {
+			toast.info('Loading...', {
+				description: 'Please wait while the data is being fetched.',
+				position: 'top-center'
+			});
+		}
+	});
+
+	$effect(() => {
 		if (!project_state.loaded) {
 			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
 				description: 'Please create a project or load an existing one first.'
@@ -47,7 +57,13 @@
 				</span>
 			</p>
 			<p class="font-semibold">
-				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
+				Phase: <span class="font-normal">
+					{#await getRootNode()}
+						Loading...
+					{:then root_node}
+						{root_node?.highest_unit_form?.phase ?? ''}
+					{/await}</span
+				>
 			</p>
 		</div>
 
