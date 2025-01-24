@@ -13,9 +13,14 @@
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 	const undo_redo_state = getUndoRedoState();
 
+	const component_state = $state({
+		is_confirmation_dialog_open: false,
+		button_state: 'stale' as 'stale' | 'processing'
+	});
+
 	async function handleRemoveSelectedItems() {
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
-
+		component_state.button_state = 'processing';
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
 			const result = await removeNode(node_id);
 
@@ -36,10 +41,11 @@
 		await invalidate('app:workspace');
 		select_nodes_to_delete_state.removeAllNodeIds();
 		is_confirmation_dialog_open = false;
+		component_state.button_state = 'stale';
 	}
 </script>
 
-{#if select_nodes_to_delete_state.selected_nodes_id.length > 0}
+{#if select_nodes_to_delete_state.selected_nodes_id.size > 0}
 	{@const count = select_nodes_to_delete_state.getSelectedNodeIdsCount()}
 	<div
 		out:fly={{ y: 50, duration: 300 }}
@@ -64,6 +70,7 @@
 
 	<ConfirmationDialog
 		bind:open_dialog_state={is_confirmation_dialog_open}
+		bind:button_state={component_state.button_state}
 		trigger_text="Remove Items"
 		trigger_variant="destructive"
 		onConfirm={handleRemoveSelectedItems}
