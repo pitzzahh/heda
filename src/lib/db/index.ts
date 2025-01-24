@@ -58,7 +58,7 @@ export async function databaseInstance(instance_name: string): Promise<RxDatabas
 	if (!db_instance.projects || !db_instance.nodes) {
 		try {
 			console.log('Adding collections');
-			const added_collections_result = await db_instance.addCollections({
+			await db_instance.addCollections({
 				projects: {
 					schema: project_schema
 				},
@@ -66,9 +66,8 @@ export async function databaseInstance(instance_name: string): Promise<RxDatabas
 					schema: node_schema
 				}
 			});
-			console.log(`Added collections: ${JSON.stringify(added_collections_result)}`);
 		} catch (err) {
-			// await removeRxDatabase(instance_name, storage)
+			await removeRxDatabase(instance_name, storage)
 			console.error(`Failed to add collections: ${JSON.stringify(err, null, 2)}`);
 			throw new Error('Failed to add collections', { cause: err });
 		}
