@@ -12,8 +12,12 @@
 	import { Separator } from '@/components/ui/separator';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
 	import { cn } from '@/utils';
+	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 
 	const project_state = getProjectState();
+	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	const undo_redo_state = getUndoRedoState();
 
 	let component_state = $state({
 		status: 'idle' as 'idle' | 'processing'
@@ -48,6 +52,8 @@
 	$effect(() => {
 		project_state.setProjectLoaded(false);
 		project_state.removeCurrentProject();
+		select_nodes_to_delete_state.removeAllNodeIds();
+		undo_redo_state.resetData();
 	});
 </script>
 
