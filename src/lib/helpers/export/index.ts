@@ -71,11 +71,11 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     });
 
   const table_headers: Header[] = [
-    { text: ' ', cols: 1, subText: 'CKT NO.' },
-    { text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
-    { text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
-    { text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
-    { text: ' ', cols: 1, subText: 'CURRENT (A)' },
+    { text: ' ', cols: 1, subText: 'CKT NO.', sub_cols: ['CRKT NO.'] },
+    { text: ' ', cols: 1, sub_cols: ['LOAD DESCRIPTION'] },
+    { text: ' ', cols: 1, sub_cols: ['VOLTAGE (V)'] },
+    { text: ' ', cols: 1, sub_cols: ['APPARENT POWER (VA)'] },
+    { text: ' ', cols: 1, sub_cols: ['CURRENT (A)'] },
     { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'KAIC'] },
     { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'] },
     { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
