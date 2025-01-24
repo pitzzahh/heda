@@ -11,6 +11,7 @@
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
 	import { SelectedNodesActions } from './(components)';
+	import type { Project, Node } from '@/db/schema';
 	import { toast } from 'svelte-sonner';
 	import { getCurrentProject, getRootNode } from '@/db/queries/index.js';
 	import { getProjectState } from '@/hooks/project-state.svelte';
@@ -22,6 +23,8 @@
 		app_pass_phrase,
 		file_encryption_salt,
 		can_create_project,
+		current_project,
+		root_node,
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> & {
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
@@ -29,6 +32,8 @@
 		app_pass_phrase: string | null;
 		file_encryption_salt: string | null;
 		can_create_project: boolean;
+		current_project?: Project | null;
+		root_node?: Node | null;
 	} = $props();
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
@@ -57,24 +62,20 @@
 			<Sidebar.GroupLabel>System Hierarchy</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#if project_state.loaded}
-						{#await Promise.all( [getCurrentProject(project_state.current_project_name, project_state.id), getRootNode(project_state.current_project_name)] ) then [project, root_node]}
-							{#if root_node?.highest_unit_form}
-								<svelte:boundary>
-									<SidebarTree
-										node={root_node}
-										highest_unit={root_node.highest_unit_form}
-										{phase_main_load_form}
-										{generic_phase_panel_form}
-										{project}
-									/>
-									{#snippet failed(error, reset)}
-										<p class="text-sm text-muted-foreground">{error}</p>
-										<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
-									{/snippet}
-								</svelte:boundary>
-							{/if}
-						{/await}
+					{#if root_node?.highest_unit_form}
+						<svelte:boundary>
+							<SidebarTree
+								node={root_node}
+								highest_unit={root_node.highest_unit_form}
+								{phase_main_load_form}
+								{generic_phase_panel_form}
+								project={current_project}
+							/>
+							{#snippet failed(error, reset)}
+								<p class="text-sm text-muted-foreground">{error}</p>
+								<Button onclick={reset}>Something went horribly wrong. Click to FIX me</Button>
+							{/snippet}
+						</svelte:boundary>
 					{/if}
 					<div class="grid h-[85vh] place-content-center">
 						<div class="grid gap-2">
