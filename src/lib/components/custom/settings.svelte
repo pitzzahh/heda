@@ -56,7 +56,6 @@
 	import { ViewChangelog } from '.';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import { Switch } from '@/components/ui/switch/index.js';
-	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates, installUpdate } from '@/utils/update';
@@ -70,8 +69,6 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { resetData } from '@/db/mutations';
-
-	let { project }: { project?: Project } = $props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -461,7 +458,8 @@
 				class={cn('relative w-full', {
 					'!cursor-not-allowed opacity-50':
 						component_state.current.update_state === 'processing' ||
-						component_state.current.update_state === 'no_updates'
+						component_state.current.update_state === 'no_updates',
+					'p-0': component_state.current.update_state === 'downloading'
 				})}
 				onclick={async () => {
 					if (
@@ -503,28 +501,34 @@
 						block: component_state.current.update_state === 'processing'
 					})}
 				/>
-				<span>
-					{#if component_state.current.update_state === 'processing'}
-						Checking
-					{:else if component_state.current.update_state === 'available'}
-						Download and install v{component_state.current.app_update?.version}
-					{:else if component_state.current.update_state === 'no_updates'}
-						No updates available
-					{:else if component_state.current.update_state === 'downloading'}
-						<div class="mt-5 h-4 w-full overflow-hidden rounded-full">
-							<div
-								class="h-4 rounded-full bg-green-400 transition-all duration-500 ease-in-out"
-								style="width: {tween.target}% "
-							>
-								{tween.target}%
-							</div>
+
+				{#if component_state.current.update_state === 'processing'}
+					Checking
+				{:else if component_state.current.update_state === 'available'}
+					Download and install v{component_state.current.app_update?.version}
+				{:else if component_state.current.update_state === 'no_updates'}
+					No updates available
+				{:else if component_state.current.update_state === 'downloading'}
+					<div class="m-0 h-full w-full overflow-hidden rounded-md">
+						<div
+							class={cn(
+								'flex h-full items-center justify-center transition-all duration-500 ease-in-out',
+								{
+									'bg-red-500': tween.target < 30,
+									'bg-yellow-500': tween.target >= 30 && tween.target < 70,
+									'bg-green-500': tween.target >= 70
+								}
+							)}
+							style="width: {tween.target}%"
+						>
+							{tween.target}%
 						</div>
-					{:else if component_state.current.update_state === 'error'}
-						Something went wrong while checking for updates
-					{:else}
-						Check for updates
-					{/if}
-				</span>
+					</div>
+				{:else if component_state.current.update_state === 'error'}
+					Something went wrong while checking for updates
+				{:else}
+					Check for updates
+				{/if}
 			</Button>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>
@@ -533,5 +537,3 @@
 		</svelte:boundary>
 	</div>
 {/snippet}
-
-{#snippet advanced_settings()}{/snippet}
