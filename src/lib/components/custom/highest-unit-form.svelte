@@ -134,7 +134,7 @@
 					undo_redo_state.resetUnsavedActions();
 
 					await goto(
-						`/workspace?instance_name=${project_name}&distribution_unit=${form.data.distribution_unit}`
+						`/?instance_name=${project_name}&distribution_unit=${form.data.distribution_unit}`
 					)
 						.then(() => {
 							console.log(`${project_state.current_project_name} created successfully`);

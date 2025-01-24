@@ -26,7 +26,7 @@
 		project_state.setCurrentProject(recent_project_data);
 
 		project_state.setProjectLoaded(true);
-		goto(`/workspace?is_load_file=true?instance_name=${recent_project_data.project_name}`)
+		goto(`/?is_load_file=true?instance_name=${recent_project_data.project_name}`)
 			.then(() =>
 				toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
