@@ -42,7 +42,7 @@
 			<p class="font-semibold">
 				Distribution Unit: <span class="font-normal">
 					{#await getNodeById(node_id)}
-						<Skeleton class="h-6 w-[200px] inline-block"/>
+						<Skeleton class="inline-block h-6 w-[200px]" />
 					{:then current_node}
 						{current_node?.panel_data?.name ??
 							current_node?.highest_unit_form?.distribution_unit ??
@@ -53,7 +53,7 @@
 			<p class="font-semibold">
 				Phase: <span class="font-normal">
 					{#await getRootNode()}
-					<Skeleton class="h-6 w-[200px] inline-block"/>
+						<Skeleton class="inline-block h-6 w-[200px]" />
 					{:then root_node}
 						{root_node?.highest_unit_form?.phase ?? ''}
 					{/await}</span
@@ -65,12 +65,12 @@
 			Supply From:
 			<span class="font-normal">
 				{#await getNodeById(node_id)}
-					<Skeleton class="h-6 w-[200px] inline-block"/>
+					<Skeleton class="inline-block h-6 w-[200px]" />
 				{:then current_node}
 					{@const parent_id = current_node?.parent_id}
 					{#if parent_id}
 						{#await getNodeById(parent_id)}
-							<Skeleton class="h-6 w-[200px] inline-block"/>
+							<Skeleton class="inline-block h-6 w-[200px]" />
 						{:then parent_node}
 							{parent_node?.panel_data?.name ||
 								parent_node?.highest_unit_form?.distribution_unit ||
@@ -88,8 +88,8 @@
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
-		{#key undo_redo_state.has_unsaved_actions}
-			<Tabs.Content value="load-sched">
+		<Tabs.Content value="load-sched">
+			{#key undo_redo_state.has_unsaved_actions}
 				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
 					<Skeletal options_count={10} />
 				{:then [current_node, loads]}
@@ -104,14 +104,16 @@
 						is_footer_shown={current_node?.node_type !== 'root'}
 					/>
 				{/await}
-			</Tabs.Content>
-			<Tabs.Content value="voltage-drop">
+			{/key}
+		</Tabs.Content>
+		<Tabs.Content value="voltage-drop">
+			{#key undo_redo_state.has_unsaved_actions}
 				{#await getComputedVoltageDrops()}
 					<Skeletal options_count={10} />
 				{:then voltage_drops}
 					<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
 				{/await}
-			</Tabs.Content>
-		{/key}
+			{/key}
+		</Tabs.Content>
 	</Tabs.Root>
 </div>
