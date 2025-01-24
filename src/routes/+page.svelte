@@ -9,7 +9,7 @@
 	import { toast } from 'svelte-sonner';
 	import { keyToString, getEnv, generateKey } from '@/helpers/security';
 	import { readEncryptedFile } from '@/helpers/file';
-	import type { FileExport } from '@/types/main';
+	import type { FileExport, RecentProject } from '@/types/main';
 	import { loadCurrentProject } from '@/db/mutations';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
@@ -53,30 +53,35 @@
 			console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
 			await loadCurrentProject(loaded_data);
 			const { id, project_name } = loaded_data.project;
+
+			if (!project_name) {
+				console.error(`Failed to get project name: ${JSON.stringify(loaded_data)}`);
+				return toast.error(`Failed to get project name: ${JSON.stringify(loaded_data)}`, {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
 			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
 
-			const recent_project_data = {
+			const recent_project_data: RecentProject = {
 				id,
 				project_name,
 				project_path: complete_file_path,
 				exists: true
 			};
-			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`)
-				.then(() => {
-					if (!projectExists) {
-						project_state.addRecentProject(recent_project_data, true);
-					}
-					project_state.setCurrentProject(recent_project_data);
-				})
-				.finally(() =>
-					toast.success('Project loaded successfully', {
-						description: 'The file has been loaded successfully.'
-					})
-				);
+			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`).then(() => {
+				if (!projectExists) {
+					project_state.addRecentProject(recent_project_data, true);
+				}
+				project_state.setCurrentProject(recent_project_data);
+				project_state.setProjectLoaded(true);
+				return toast.success('Project loaded successfully', {
+					description: 'The file has been loaded successfully.'
+				});
+			});
 		} catch (err) {
-			console.error(`Failed to load file: ${JSON.stringify(err)}`);
+			console.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`);
 			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while loading the file.'
+				description: 'This is a system error and should not be here, the error has been logged.'
 			});
 		}
 	}
