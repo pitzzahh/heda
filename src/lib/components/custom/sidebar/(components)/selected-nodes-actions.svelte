@@ -39,15 +39,16 @@
 			batch_data: results
 		});
 
-		toast.success(`${
-			select_nodes_to_delete_state.selected_nodes_id.length
-		} items removed successfully`);
-		await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'))
-		.finally(() => {
-			select_nodes_to_delete_state.removeAllNodeIds();
-		is_confirmation_dialog_open = false;
-		component_state.button_state = 'stale';
-		});
+		toast.success(
+			`${select_nodes_to_delete_state.selected_nodes_id.length} items removed successfully`
+		);
+		await invalidate('app:workspace')
+			.then(() => invalidate('app:workspace/load-schedule'))
+			.finally(() => {
+				is_confirmation_dialog_open = false;
+				component_state.button_state = 'stale';
+				select_nodes_to_delete_state.removeAllNodeIds();
+			});
 	}
 </script>
 
