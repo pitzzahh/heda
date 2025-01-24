@@ -33,7 +33,8 @@
 		Copy,
 		Grid2x2Plus,
 		Pencil,
-		Trash2
+		Trash2,
+		Loader
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -48,7 +49,7 @@
 	} from '@/db/mutations';
 	import { goto, invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
 	import { Portal } from 'bits-ui';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
@@ -161,7 +162,7 @@
 	$effect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(`${e.key === 'Alt'}`)
+			console.log(`${e.key === 'Alt'}`);
 		};
 
 		const handleKeyUp = (e: KeyboardEvent) => {
@@ -182,8 +183,6 @@
 			window.removeEventListener('focus', handleWindowFocus);
 		};
 	});
-
-
 </script>
 
 {#await getChildNodesByParentId(node.id)}
@@ -281,7 +280,7 @@
 			</button>
 		{/if}
 	{:else}
-		<Sidebar.MenuItem class="w-full">
+		<Sidebar.MenuItem class="w-full" aria-disabled={component_state.button_state === 'processing'}>
 			{@const node_name = (node.highest_unit_form?.distribution_unit ||
 				node.panel_data?.name) as string}
 			{@const tooltip_data = [
@@ -366,14 +365,29 @@
 			]}
 
 			<Collapsible.Root
+				disabled={component_state.button_state === 'processing'}
 				open={is_collapsible_open}
-				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
+				class={cn(
+					'group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90',
+					{
+						'cursor-not-allowed': component_state.button_state === 'processing'
+					}
+				)}
 			>
 				<button
 					onclick={() => {
 						if (component_state.is_alt_pressed && node.node_type === 'panel') {
 							select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
-						} else goto(`/workspace/load-schedule/${node_name + '_' + node.id}`);
+						} else {
+							component_state.button_state = 'processing';
+							toast.info('Loading...', {
+								description: 'Please wait while the data is being fetched.',
+								position: 'top-center'
+							});
+							goto(`/workspace/load-schedule/${node_name + '_' + node.id}`).finally(
+								() => (component_state.button_state = 'stale')
+							);
+						}
 					}}
 					class="w-full"
 					use:droppable={{
@@ -385,7 +399,8 @@
 						class={cn(
 							'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 							{
-								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id,
+								'cursor-not-allowed opacity-50': component_state.button_state === 'processing'
 							}
 						)}
 					>
@@ -416,6 +431,11 @@
 											? child_nodes[child_nodes.length - 1]
 											: undefined}
 									>
+										<Loader
+											class={cn('hidden h-4 w-4 animate-spin', {
+												block: component_state.button_state === 'processing'
+											})}
+										/>
 										{#if node.node_type === 'root'}
 											<div class="w-4">
 												<DatabaseZap class="size-4" />
