@@ -10,6 +10,7 @@ import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { RxDBCleanupPlugin } from 'rxdb/plugins/cleanup';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
 import { dev } from '$app/environment';
+import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 
 let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
 
@@ -17,13 +18,9 @@ let dbInstance: RxDatabase<MyDatabaseCollections> | null = null;
  * Creates a new RxDatabase instance if it doesn't already exist.
  *
  * @param {string} [instance_name='heda'] - The name of the database instance.
- * @returns {Promise<RxDatabase>} The RxDatabase instance.
+ * @returns {Promise<{ dbInstance: RxDatabase<MyDatabaseCollections>, storage: RxStorage<any, any> }>} The initialized database instance and storage.
  */
 async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDatabase<MyDatabaseCollections>, storage: RxStorage<any, any> }> {
-
-	console.log(`createDatabase instance: ${JSON.stringify(dbInstance, null, 2)} with instance_name: ${instance_name}`);
-	const storage = getRxStorageMemory();
-
 	if (dev) {
 		addRxPlugin(RxDBDevModePlugin);
 	}
@@ -34,14 +31,14 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
 
 	if (dbInstance && dbInstance.name === instance_name) {
 		console.log(`Returning existing database instance: ${JSON.stringify(dbInstance, null, 2)}`);
-		return { dbInstance, storage };
+		return { dbInstance, storage: dbInstance.storage };
 	}
 
 	dbInstance = await createRxDatabase({
 		name: instance_name,
-		storage
+		storage: getRxStorageDexie(),
 	});
-	return { dbInstance, storage };
+	return { dbInstance, storage: dbInstance.storage };
 }
 
 /**
