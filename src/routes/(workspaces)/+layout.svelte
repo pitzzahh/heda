@@ -21,6 +21,8 @@
 		generic_phase_panel_form,
 		phase_main_load_form,
 		app_pass_phrase,
+		current_project,
+		root_node,
 		file_encryption_salt,
 		can_create_project
 	} = $derived(data);
@@ -52,6 +54,8 @@
 <UndoRedoWrapper>
 	<Sidebar.Provider>
 		<AppSidebar
+			{current_project}
+			{root_node}
 			{generic_phase_panel_form}
 			{phase_main_load_form}
 			{can_create_project}
