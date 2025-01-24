@@ -4,6 +4,7 @@ import { getComputedLoads, getComputedVoltageDrops, getNodeById, getNodeDepth } 
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
 import type { ExcelExportType } from "@/types/misc";
+import { convertToNormalText } from "@/utils/text";
 
 type ExportProcessResult = {
   valid: boolean;
@@ -329,8 +330,8 @@ export async function exportToExcel(
   try {
     switch (highest_unit?.phase) {
       case '1P':
-        workbook.subject = '1P Load Schedule';
-        workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
+        workbook.subject = `1P ${convertToNormalText(type, true)}`;
+        workbook.category = ['1P', `${convertToNormalText(type, true)}`, 'Export'].join(',');
         workbook.description = 'Load schedule for 1 phase load schedule';
         switch (type) {
           case 'LOAD_SCHEDULE':
