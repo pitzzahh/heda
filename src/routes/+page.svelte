@@ -19,14 +19,14 @@
 		status: 'idle' as 'idle' | 'processing'
 	});
 
-	function handleLoadFileSuccess(recent_project_data: RecentProject) {
+	async function handleLoadFileSuccess(recent_project_data: RecentProject) {
 		if (!project_state.recent_projects?.some((p) => p.id === recent_project_data.id)) {
 			project_state.addRecentProject(recent_project_data, true);
 		}
 		project_state.setCurrentProject(recent_project_data);
 
 		project_state.setProjectLoaded(true);
-		goto(`/workspace?load_file=true?instance_name=${recent_project_data.project_name}`)
+		await goto(`/workspace?load_file=true?instance_name=${recent_project_data.project_name}`)
 			.then(() =>
 				toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
