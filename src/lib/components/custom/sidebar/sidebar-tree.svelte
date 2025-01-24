@@ -352,7 +352,6 @@
 			]}
 
 			<Collapsible.Root
-				disabled={component_state.button_state === 'processing'}
 				open={is_collapsible_open}
 				class={cn(
 					'group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90',

@@ -82,9 +82,11 @@
 				batch_data
 			});
 
-			multi_copy.processing = false;
-			open_dialog = false;
-			return toast.success(`[${copy_count}]: ${node_name} copied successfully`);
+			return invalidate('app:workspace').then(() => {
+				multi_copy.processing = false;
+				open_dialog = false;
+				return toast.success(`[${copy_count}]: ${node_name} copied successfully`);
+			});
 		} else {
 			multi_copy.processing = false;
 			console.warn('Failed to copy the initial node.');
