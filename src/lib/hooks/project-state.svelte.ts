@@ -21,11 +21,12 @@ export class ProjectState {
   loaded = $state(false)
 
   constructor(recent_project?: RecentProject) {
-    this.persisted_state = new PersistedState<ProjectStateType>('project_state', {
+    const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
       recent_projects: [],
       loaded: false,
       current_project: undefined
     });
+    this.persisted_state = _persisted_state;
     this.validateRecentProjects();
     this.setProjectLoaded(this.persisted_state.current.loaded);
     this.recent_projects = this.persisted_state.current.recent_projects;
