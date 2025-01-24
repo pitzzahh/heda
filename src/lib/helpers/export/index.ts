@@ -244,17 +244,17 @@ export async function processOnePhaseVoltageDrop(
 
   const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
 
-
   const table_headers: Header[] = [
     { text: 'From NODE', cols: 1 },
     { text: 'To NODE', cols: 1 },
-    { text: 'VOLTAGE (V)', cols: 1 },
-    { text: 'APPARENT POWER (VA)', cols: 1 },
-    { text: 'CURRENT (A)', cols: 1 },
-    { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'kAIC'] },
-    { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'] },
-    { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
-    { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Insulation'] }
+    { text: 'CABLE', cols: 3, sub_cols: ['Sets', 'Qty', 'Size (mm2)'] },
+    { text: 'Z', cols: 1, sub_cols: ['(Ω/305m)'] },
+    { text: 'LENGTH', cols: 1, sub_cols: ['(m)'] },
+    { text: 'CURRENT', cols: 1, sub_cols: ['(A)'] },
+    { text: 'Actual Z', cols: 1, sub_cols: ['(Ω)'] },
+    { text: 'VOLTAGE DROP (V)', cols: 2, sub_cols: ['Per Segment', 'At End Circuit'] },
+    { text: 'VOLTAGE AT RECEIVING END (V)', cols: 1 },
+    { text: 'PERCENTAGE VOLTAGE DROP (%)', cols: 1 },
   ];
 
   let current_header_column = 1;
@@ -298,8 +298,8 @@ export async function processOnePhaseVoltageDrop(
 
   for (const voltage_drop_node of voltage_drops) {
     const loadCells = [
-      { column: 'A', value: voltage_drop_node.circuit_number },
-      { column: 'B', value: voltage_drop_node.load_description },
+      { column: 'A', value: voltage_drop_node.from_node_name },
+      { column: 'B', value: voltage_drop_node.to_node_name },
       { column: 'C', value: voltage_drop_node.voltage },
       { column: 'D', value: voltage_drop_node.va },
       { column: 'E', value: voltage_drop_node.current },
