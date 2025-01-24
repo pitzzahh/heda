@@ -1,90 +1,54 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '@/components/ui/button';
-	import { open } from '@tauri-apps/plugin-dialog';
 	import { ScrollArea } from '@/components/ui/scroll-area/index.js';
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as Dialog from '@/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
-	import { MonitorCog, CircleAlert, Trash2 } from '@/assets/icons';
+	import { MonitorCog, CircleAlert, Loader, Trash2 } from '@/assets/icons';
 	import { toast } from 'svelte-sonner';
-	import { keyToString, getEnv, generateKey } from '@/helpers/security';
-	import { readEncryptedFile } from '@/helpers/file';
-	import type { FileExport, RecentProject } from '@/types/main';
-	import { loadCurrentProject } from '@/db/mutations';
+	import { handleLoadFile } from '@/helpers/file';
+	import type { RecentProject } from '@/types/main';
 	import { goto } from '$app/navigation';
 	import { Separator } from '@/components/ui/separator';
-	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { cn } from '@/utils';
 
 	const project_state = getProjectState();
 
-	async function handleLoadFile(complete_file_path?: string | null) {
-		try {
-			const app_pass_phrase = await getEnv('APP_PASS_PHRASE');
-			const file_encryption_salt = await getEnv('FILE_ENCRYPTION_SALT');
+	let component_state = $state({
+		status: 'idle' as 'idle' | 'processing'
+	});
 
-			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
-
-			if (!complete_file_path) {
-				complete_file_path = await open({
-					multiple: false,
-					directory: false,
-					filters: [{ name: 'HEDA Files', extensions: ['heda'] }]
-				});
-
-				if (!complete_file_path) {
-					return toast.warning('No file selected', {
-						description: 'Cannot proceed, no file is selected.'
-					});
-				}
-			}
-
-			const loaded_data = await readEncryptedFile<FileExport>(
-				complete_file_path,
-				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!))
-			);
-
-			if (!loaded_data) {
-				console.warn(`Failed to load file: ${JSON.stringify(loaded_data)}`);
-				return toast.warning('Failed to load file', {
-					description: 'An error occurred while loading the file.'
-				});
-			}
-			console.log(`Loaded data: ${JSON.stringify(loaded_data)}`);
-			await loadCurrentProject(loaded_data);
-			const { id, project_name } = loaded_data.project;
-
-			if (!project_name) {
-				console.error(`Failed to get project name: ${JSON.stringify(loaded_data)}`);
-				return toast.error(`Failed to get project name: ${JSON.stringify(loaded_data)}`, {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-			const projectExists = project_state.recent_projects?.some((p) => p.id === id) ?? false;
-
-			const recent_project_data: RecentProject = {
-				id,
-				project_name,
-				project_path: complete_file_path,
-				exists: true
-			};
-			goto(`/workspace?is_load_file=true&project_id=${loaded_data.project.id}`).then(() => {
-				if (!projectExists) {
+	async function handleLoadFileSuccess(recent_project_data: RecentProject) {
+		await goto(`/workspace?load_file=true?project_id=${recent_project_data.id}`)
+			.then(() => {
+				if (!project_state.recent_projects?.some((p) => p.id === recent_project_data.id)) {
 					project_state.addRecentProject(recent_project_data, true);
 				}
 				project_state.setCurrentProject(recent_project_data);
+
 				project_state.setProjectLoaded(true);
 				return toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
 				});
-			});
-		} catch (err) {
-			console.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`);
-			toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'This is a system error and should not be here, the error has been logged.'
-			});
-		}
+			})
+			.catch((err) => {
+				console.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`);
+				toast.error(`Failed to load file: ${(err as any)?.message ?? 'something went wrong'}`, {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			})
+			.finally(() => (component_state.status = 'idle'));
 	}
+
+	function isRecentProject(obj: any): obj is RecentProject {
+		return obj && typeof obj === 'object' && 'id' in obj && 'project_name' in obj;
+	}
+
+	$effect(() => {
+		project_state.setProjectLoaded(false);
+		project_state.removeCurrentProject();
+	});
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -141,8 +105,29 @@
 									Choose from the list of recent projects to load or load a file from your computer.
 								</Dialog.Description>
 							</Dialog.Header>
-							<Button onclick={() => handleLoadFile()}>
-								<MonitorCog />
+							<Button
+								disabled={component_state.status === 'processing'}
+								onclick={async () => {
+									const handle_file_result = await handleLoadFile(
+										undefined,
+										() => (component_state.status = 'processing'),
+										() => (component_state.status = 'idle')
+									);
+									if (isRecentProject(handle_file_result)) {
+										handleLoadFileSuccess(handle_file_result);
+									}
+								}}
+							>
+								<Loader
+									class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+										block: component_state.status === 'processing'
+									})}
+								/>
+								<MonitorCog
+									class={cn('mr-1 block', {
+										hidden: component_state.status === 'processing'
+									})}
+								/>
 								Load File
 							</Button>
 							<Separator class="h-1" />
@@ -152,10 +137,20 @@
 										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
 											<Button
 												variant={project.exists ? 'outline' : 'warning'}
-												class="flex flex-1 items-center justify-start px-1.5 py-3"
-												disabled={!project.exists}
-												size="xl"
-												onclick={() => handleLoadFile(project.project_path)}
+												class={cn('flex flex-1 items-center justify-start px-1.5 py-4', {
+													'opacity-50': component_state.status === 'processing'
+												})}
+												disabled={!project.exists || component_state.status === 'processing'}
+												onclick={async () => {
+													const handle_file_result = await handleLoadFile(
+														project.project_path,
+														() => (component_state.status = 'processing'),
+														() => (component_state.status = 'idle')
+													);
+													if (isRecentProject(handle_file_result)) {
+														handleLoadFileSuccess(handle_file_result);
+													}
+												}}
 											>
 												<MonitorCog class="mr-2" />
 												<div class="flex flex-col items-start">
