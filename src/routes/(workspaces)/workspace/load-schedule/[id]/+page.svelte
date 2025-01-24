@@ -12,7 +12,8 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { Skeletal } from '@/components/custom/index.js';
-	import { getProjectState } from '@/hooks/project-state.svelte.js';
+	import { getProjectState } from '@/hooks/project-state.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 
@@ -22,6 +23,16 @@
 	const params = $derived(page.params);
 	const node_id = $derived(params.id.split('_').at(-1) as string);
 	const project_state = getProjectState();
+	const undo_redo_state = getUndoRedoState();
+
+	$effect(() => {
+		if (node_id) {
+			toast.info('Loading...', {
+				description: 'Please wait while the data is being fetched.',
+				position: 'top-center'
+			});
+		}
+	});
 
 	$effect(() => {
 		if (!project_state.loaded) {
@@ -86,20 +97,22 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched">
-			{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
-				<Skeletal options_count={10} />
-			{:then [current_node, loads]}
-				<DataTable
-					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-					columns={onePhaseMainOrWyeCols(
-						data.phase_main_load_form,
-						current_node as PhaseLoadSchedule,
-						root_node?.highest_unit_form,
-						loads && loads.length > 0 ? loads.at(-1) : undefined
-					)}
-					is_footer_shown={current_node?.node_type !== 'root'}
-				/>
-			{/await}
+			{#key undo_redo_state.has_unsaved_actions}
+				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
+					<Skeletal options_count={10} />
+				{:then [current_node, loads]}
+					<DataTable
+						data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
+						columns={onePhaseMainOrWyeCols(
+							data.phase_main_load_form,
+							current_node as PhaseLoadSchedule,
+							root_node?.highest_unit_form,
+							loads && loads.length > 0 ? loads.at(-1) : undefined
+						)}
+						is_footer_shown={current_node?.node_type !== 'root'}
+					/>
+				{/await}
+			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
 			{#await getComputedVoltageDrops()}
