@@ -12,7 +12,7 @@ export const load = async ({ depends, params }) => {
 	const node_id = params.id.split('_').at(-1) as string;
 	if (!node_id) {
 		console.warn('Viewing workspace without node_id');
-		goto('/workspace');
+		goto('/');
 	}
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema))
