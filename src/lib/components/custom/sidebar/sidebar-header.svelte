@@ -20,12 +20,10 @@
 	import { Portal } from 'bits-ui';
 	import { cn } from '@/utils';
 	let {
-		project,
 		root_node,
 		app_pass_phrase,
 		file_encryption_salt
 	}: {
-		project?: Project;
 		root_node: Node;
 		app_pass_phrase: string | null;
 		file_encryption_salt: string | null;
@@ -44,15 +42,25 @@
 	async function handleSave() {
 		try {
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
-			if (!project) {
+			if (!project_state.loaded) {
+				console.error('Failed to save, project not yet loaded');
+				return toast.warning('Failed to save, project not yet loaded', {
+					description: 'This is a system error and should not be here, the error has been logged.'
+				});
+			}
+
+			const current_project = await getCurrentProject();
+
+			if (!current_project) {
+				console.error('Failed to save, no project found');
 				return toast.warning('Failed to save, no project found', {
 					description: 'This is a system error and should not be here, the error has been logged.'
 				});
 			}
 
 			const file_data: FileExport = {
-				project,
-				nodes: await getAllChildNodes(project.root_node_id, true)
+				project: current_project,
+				nodes: await getAllChildNodes(current_project.root_node_id, true)
 			};
 
 			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
@@ -97,7 +105,7 @@
 			<Tooltip.Provider>
 				<Tooltip.Root>
 					<Tooltip.Trigger
-						disabled={project === undefined ||
+						disabled={!project_state.loaded ||
 							!component_state.can_save ||
 							!undo_redo_state.has_unsaved_actions}
 						class={buttonVariants({ variant: 'default', size: 'sm' })}
@@ -114,7 +122,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<Settings {project} />
+					<Settings />
 				</Tooltip.Trigger>
 				<Tooltip.Content>Settings</Tooltip.Content>
 			</Tooltip.Root>
