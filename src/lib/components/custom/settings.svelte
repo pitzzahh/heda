@@ -38,7 +38,18 @@
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck, File, House, SunMoon, Moon, Sun } from '@/assets/icons';
+	import {
+		Cog,
+		Loader,
+		PackageCheck,
+		File,
+		House,
+		SquareCheck,
+		CircleAlert,
+		SunMoon,
+		Moon,
+		Sun
+	} from '@/assets/icons';
 	import { Label } from '@/components/ui/label/index.js';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
@@ -227,24 +238,58 @@
 				disabled={project === undefined}
 				id="auto_save"
 				checked={settingsState.auto_save_enabled}
-				onCheckedChange={(value) => settingsState.setAutoSave(value)}
+				onCheckedChange={(value) => {
+					settingsState.setAutoSave(value);
+					toast.success(`Auto save ${value ? 'enabled' : 'disabled'} successfully`);
+				}}
 			/>
 		</div>
 		<Separator class="my-1 w-full" />
-		<div class="flex flex-row items-center justify-between gap-3">
-			<div class="space-y-0.5">
-				<Label for="backup_project_file">Backup old project file</Label>
-				<p class="text-xs text-muted-foreground">
-					Automatically backup old project file when creating new project and performing replacing
-					it upon project creation.
-				</p>
+		<div class="flex flex-col gap-2">
+			<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'valid' : 'warning'}>
+				{#if settingsState.backup_project_file_if_exists}
+					<SquareCheck class="size-4" />
+				{:else}
+					<CircleAlert class="size-4" />
+				{/if}
+
+				<Alert.Description>
+					{#if settingsState.backup_project_file_if_exists}
+						Old project file will be backed up when creating new project and replacing it upon
+						project creation.
+					{:else}
+						Old project file will not be backed up when creating new project and replacing it upon
+						project creation.
+					{/if}
+				</Alert.Description>
+			</Alert.Root>
+			<div class="flex flex-row items-center justify-between gap-3">
+				<div class="space-y-0.5">
+					<Label for="backup_project_file">Backup old project file</Label>
+					<p class="text-xs text-muted-foreground">
+						Automatically backup old project file when creating new project and performing replacing
+						it upon project creation.
+					</p>
+				</div>
+				<Switch
+					id="backup_project_file"
+					checked={settingsState.backup_project_file_if_exists}
+					onCheckedChange={(value) => {
+						settingsState.setBackupProjectFileIfExists(value);
+						if (value) {
+							toast.success(`Backup project file enabled successfully`, {
+								description:
+									'Old project file will be backed up when creating new project and replacing it upon project creation.'
+							});
+						} else {
+							toast.warning(`Backup project file disabled successfully`, {
+								description:
+									'Old project file will not be backed up when creating new project and replacing it upon project creation.'
+							});
+						}
+					}}
+				/>
 			</div>
-			<Switch
-				disabled={project === undefined}
-				id="backup_project_file"
-				checked={settingsState.backup_project_file_if_exists}
-				onCheckedChange={(value) => settingsState.setBackupProjectFileIfExists(value)}
-			/>
 		</div>
 	</div>
 {/snippet}
@@ -477,3 +522,5 @@
 		</svelte:boundary>
 	</div>
 {/snippet}
+
+{#snippet advanced_settings()}{/snippet}
