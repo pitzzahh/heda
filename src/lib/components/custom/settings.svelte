@@ -458,7 +458,7 @@
 		<svelte:boundary>
 			<Button
 				variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
-				class={cn('button-background', {
+				class={cn('relative w-full', {
 					'!cursor-not-allowed opacity-50':
 						component_state.current.update_state === 'processing' ||
 						component_state.current.update_state === 'no_updates'
@@ -511,7 +511,14 @@
 					{:else if component_state.current.update_state === 'no_updates'}
 						No updates available
 					{:else if component_state.current.update_state === 'downloading'}
-						{tween.target}%
+						<div class="mt-5 h-4 w-full overflow-hidden rounded-full">
+							<div
+								class="h-4 rounded-full bg-green-400 transition-all duration-500 ease-in-out"
+								style="width: {tween.target}% "
+							>
+								{tween.target}%
+							</div>
+						</div>
 					{:else if component_state.current.update_state === 'error'}
 						Something went wrong while checking for updates
 					{:else}
