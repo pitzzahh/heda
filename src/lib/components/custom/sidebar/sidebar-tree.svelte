@@ -353,12 +353,7 @@
 
 			<Collapsible.Root
 				open={is_collapsible_open}
-				class={cn(
-					'group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90',
-					{
-						'cursor-not-allowed': component_state.button_state === 'processing'
-					}
-				)}
+				class="group/collapsible [&[data-state=open]>button>button>svg:first-child]:rotate-90"
 			>
 				<button
 					onclick={() => {
@@ -374,7 +369,9 @@
 							}
 						}
 					}}
-					class="w-full"
+					class={cn('w-full', {
+						'cursor-not-allowed': component_state.button_state === 'processing'
+					})}
 					use:droppable={{
 						container: node.id,
 						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
