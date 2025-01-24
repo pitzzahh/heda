@@ -562,6 +562,13 @@
 		bind:button_state={component_state.button_state}
 		onConfirm={async () => {
 			component_state.button_state = 'processing';
+			toast.loading(
+				node.node_type === 'root'
+					? `Removing ${project?.project_name ?? 'Project'}`
+					: node.node_type === 'panel'
+						? `Removing ${node.panel_data?.name ?? 'Panel'}`
+						: `Removing ${node.load_data?.load_description ?? 'Load'}`
+			);
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
 				collapsibles.removeAllNodeId();
@@ -578,19 +585,17 @@
 					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 				}
 			}
-			invalidate('app:workspace')
-				.then(() => invalidate('app:workspace/load-schedule'))
-				.finally(() => {
-					component_state.button_state = 'stale';
-					component_state.open_tree_delete_dialog = false;
-					toast.success(
-						node.node_type === 'root'
-							? `${project?.project_name ?? 'Project'} removed succesfully`
-							: node.node_type === 'panel'
-								? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
-								: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
-					);
-				});
+			invalidate('app:workspace').finally(() => {
+				component_state.button_state = 'stale';
+				component_state.open_tree_delete_dialog = false;
+				toast.success(
+					node.node_type === 'root'
+						? `${project?.project_name ?? 'Project'} removed succesfully`
+						: node.node_type === 'panel'
+							? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+							: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
+				);
+			});
 		}}
 	/>
 {/snippet}
