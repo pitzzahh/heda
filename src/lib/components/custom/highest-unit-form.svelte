@@ -116,6 +116,8 @@
 						nodes: await getAllChildNodes(project_name, project.root_node_id, true)
 					};
 
+					console.log(`File data to be writted: ${JSON.stringify(file_data, null, 2)}`);
+
 					await writeEncryptedFile(
 						file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
@@ -132,10 +134,9 @@
 						},
 						true
 					);
-					undo_redo_state.resetUnsavedActions();
-
+					console.log(`Redirecting to project: ${project_name}`);
 					await goto(
-						`/?instance_name=${project_name}&distribution_unit=${form.data.distribution_unit}`
+						`/workspace?new_file=true&instance_name=${project_name}&distribution_unit=${form.data.distribution_unit}`
 					)
 						.then(() => {
 							console.log(`${project_state.current_project_name} created successfully`);
