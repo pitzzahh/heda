@@ -138,7 +138,7 @@
 							</Button>
 							<Separator class="h-1" />
 							<ScrollArea class="flex h-72 w-full flex-col pr-2.5">
-								{#if project_state.recent_projects}
+								{#if project_state.recent_projects && project_state?.recent_projects?.length > 0}
 									{#each project_state.recent_projects as project (project.id)}
 										<div class="mb-2 flex w-full items-center justify-between gap-2 px-2 py-1">
 											<Button
