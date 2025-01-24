@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, FileUp } from '@/assets/icons';
+	import { Save, Loader, Sheet, ArrowRightFromLine } from '@/assets/icons';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '@/components/ui/button';
 	import { Settings } from '..';
@@ -16,7 +16,9 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
 	import { getProjectState } from '@/hooks/project-state.svelte';
-
+	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
+	import { Portal } from 'bits-ui';
+	import { cn } from '@/utils';
 	let {
 		project,
 		root_node,
@@ -31,6 +33,7 @@
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
+		status: 'idle' as 'idle' | 'processing',
 		can_save: true
 	});
 
@@ -122,21 +125,72 @@
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger
-					disabled={component_state.export_to_excel === 'loading'}
-					class={buttonVariants({ variant: 'outline', size: 'sm' })}
-					onclick={() =>
-						exportToExcel(
-							root_node.id,
-							root_node?.highest_unit_form,
-							project?.project_name,
-							() => (component_state.export_to_excel = 'idle'),
-							() => (component_state.export_to_excel = 'loading')
-						)}
+					disabled={!project_state.loaded}
+					class={cn({
+						'cursor-not-allowed': !project_state.loaded
+					})}
 				>
-					<FileUp class="h-4 w-4" />
-					Export to Excel
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger
+							disabled={!project_state.loaded}
+							class={buttonVariants({
+								variant: 'outline'
+							})}
+						>
+							<ArrowRightFromLine class="h-4 w-4" />
+						</DropdownMenu.Trigger>
+
+						<Portal>
+							<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
+								<DropdownMenu.Group>
+									<DropdownMenu.GroupHeading class="text-center"
+										>Export options</DropdownMenu.GroupHeading
+									>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item
+										disabled={component_state.status === 'processing'}
+										onclick={async () => {
+											exportToExcel(
+												'LOAD_SCHEDULE',
+												root_node.id,
+												root_node?.highest_unit_form,
+												project_state.current_project_name,
+												() => (component_state.export_to_excel = 'idle'),
+												() => (component_state.export_to_excel = 'loading')
+											);
+										}}
+									>
+										<Loader
+											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+												block: component_state.status === 'processing'
+											})}
+										/>
+										<Sheet
+											class={cn('mr-0.5 block h-4 w-4', {
+												'opacity-50': component_state.export_to_excel === 'loading'
+											})}
+										/>
+										Export whole project load schedule</DropdownMenu.Item
+									>
+									<DropdownMenu.Item>
+										<Loader
+											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+												block: component_state.status === 'processing'
+											})}
+										/>
+										<Sheet
+											class={cn('mr-0.5 block h-4 w-4', {
+												'opacity-50': component_state.export_to_excel === 'loading'
+											})}
+										/>
+										Export whole project voltage drop
+									</DropdownMenu.Item>
+								</DropdownMenu.Group>
+							</DropdownMenu.Content>
+						</Portal>
+					</DropdownMenu.Root>
 				</Tooltip.Trigger>
-				<Tooltip.Content>Export project to excel</Tooltip.Content>
+				<Tooltip.Content>Export</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
 		{#snippet failed(error, reset)}
