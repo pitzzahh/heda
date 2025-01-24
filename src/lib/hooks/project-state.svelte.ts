@@ -1,17 +1,13 @@
 import { PersistedState } from 'runed';
 import { setState, getState } from '@/state/index.svelte';
 import { PROJECT_STATE_CTX } from '@/state/constants';
-import { exists, FileHandle } from '@tauri-apps/plugin-fs';
-
-type RecentProject = {
-  id: string;
-  project_name?: string;
-  project_path: string;
-  exists: boolean;
-}
+import { exists } from '@tauri-apps/plugin-fs';
+import type { RecentProject } from '@/types/main';
 
 type ProjectStateType = {
-  recent_projects?: RecentProject[]
+  recent_projects?: RecentProject[],
+  loaded: boolean,
+  current_project?: RecentProject
 }
 
 export class ProjectState {
@@ -19,16 +15,21 @@ export class ProjectState {
 
   recent_projects = $state<RecentProject[]>();
   id = $state('')
-  current_project_name = $state<string | undefined>(undefined);
+  current_project_name = $state<string>('');
   current_project_path = $state('');
   exists = $state(false)
+  loaded = $state(false)
 
   constructor(recent_project?: RecentProject) {
     const _persisted_state = new PersistedState<ProjectStateType>('project_state', {
-      recent_projects: []
+      recent_projects: [],
+      loaded: false,
+      current_project: undefined
     });
     this.persisted_state = _persisted_state;
     this.validateRecentProjects();
+    this.setProjectLoaded(this.persisted_state.current.loaded);
+    this.recent_projects = this.persisted_state.current.recent_projects;
     recent_project && this.addRecentProject(recent_project);
   }
 
@@ -52,11 +53,24 @@ export class ProjectState {
     }
   }
 
+  removeCurrentProject() {
+    this.id = '';
+    this.current_project_name = '';
+    this.current_project_path = '';
+    this.exists = false;
+  }
+
   setCurrentProject(current_project: RecentProject) {
+    this.persisted_state.current.current_project = current_project;
     this.id = current_project.id;
     this.current_project_name = current_project.project_name;
     this.current_project_path = current_project.project_path;
     this.exists = current_project.exists;
+  }
+
+  setProjectLoaded(loaded: boolean) {
+    this.persisted_state.current.loaded = loaded;
+    this.loaded = loaded;
   }
 
   updateProject(project_id: string, new_project: Partial<RecentProject>, update_current: boolean = false) {
