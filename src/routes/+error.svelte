@@ -1,17 +1,30 @@
+<script module lang="ts">
+	export type ErrorPageProps = {
+		title?: string;
+		description?: string;
+		return_to?: string;
+		with_return_button?: boolean;
+		title_size?: string;
+		description_size?: string;
+		centered?: boolean;
+	};
+</script>
+
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { Button } from '@/components/ui/button';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
 	import { cn } from '@/utils';
-
-	export let title: string = `${page.status}: ${page.error?.message}`;
-	export let description: string = 'Oops! Something went wrong. Please try again later.';
-	export let return_to: string = browser ? document.referrer : '/dashboard';
-	export let with_return_button: boolean = true;
-	export let title_size: string = 'text-4xl';
-	export let description_size: string = 'text-lg';
-	export let centered: boolean = true;
+	let {
+		title = $bindable(`${page.status}: ${page.error?.message}`),
+		description = $bindable('Oops! Something went wrong. Please try again later.'),
+		return_to = $bindable('/'),
+		with_return_button = $bindable(true),
+		title_size = $bindable('text-4xl'),
+		description_size = $bindable('text-lg'),
+		centered = $bindable(true)
+	}: ErrorPageProps = $props();
 </script>
 
 <svelte:head>
@@ -30,6 +43,6 @@
 		<img src={heda_logo_for_light} alt="Heda Logo" class="block h-80 dark:hidden" />
 	</div>
 	{#if with_return_button}
-		<Button href={return_to}>Try again</Button>
+		<Button href={return_to}>Go to Home</Button>
 	{/if}
 </div>
