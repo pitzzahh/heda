@@ -172,7 +172,19 @@
 										/>
 										Export whole project load schedule</DropdownMenu.Item
 									>
-									<DropdownMenu.Item>
+									<DropdownMenu.Item
+										disabled={component_state.status === 'processing'}
+										onclick={async () => {
+											exportToExcel(
+												'VOLTAGE_DROP',
+												root_node.id,
+												root_node?.highest_unit_form,
+												project_state.current_project_name,
+												() => (component_state.export_to_excel = 'idle'),
+												() => (component_state.export_to_excel = 'loading')
+											);
+										}}
+									>
 										<Loader
 											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
 												block: component_state.status === 'processing'
