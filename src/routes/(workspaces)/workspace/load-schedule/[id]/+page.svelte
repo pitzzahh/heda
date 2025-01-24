@@ -16,6 +16,7 @@
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
+	import { Skeleton } from '@/components/ui/skeleton';
 
 	let { data } = $props();
 
@@ -41,7 +42,7 @@
 			<p class="font-semibold">
 				Distribution Unit: <span class="font-normal">
 					{#await getNodeById(node_id)}
-						Loading...
+						<Skeleton class="h-6 w-[200px] inline-block"/>
 					{:then current_node}
 						{current_node?.panel_data?.name ??
 							current_node?.highest_unit_form?.distribution_unit ??
@@ -52,7 +53,7 @@
 			<p class="font-semibold">
 				Phase: <span class="font-normal">
 					{#await getRootNode()}
-						Loading...
+					<Skeleton class="h-6 w-[200px] inline-block"/>
 					{:then root_node}
 						{root_node?.highest_unit_form?.phase ?? ''}
 					{/await}</span
@@ -64,12 +65,12 @@
 			Supply From:
 			<span class="font-normal">
 				{#await getNodeById(node_id)}
-					Loading...
+					<Skeleton class="h-6 w-[200px] inline-block"/>
 				{:then current_node}
 					{@const parent_id = current_node?.parent_id}
 					{#if parent_id}
 						{#await getNodeById(parent_id)}
-							Loading...
+							<Skeleton class="h-6 w-[200px] inline-block"/>
 						{:then parent_node}
 							{parent_node?.panel_data?.name ||
 								parent_node?.highest_unit_form?.distribution_unit ||
