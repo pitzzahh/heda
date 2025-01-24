@@ -70,73 +70,49 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       worksheet.getCell(cell).font = { bold: true };
     });
 
-  type Header = { text: string; cols: number; subText?: string };
-
   const table_headers: Header[] = [
     { text: ' ', cols: 1, subText: 'CKT NO.' },
     { text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
     { text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
     { text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
     { text: ' ', cols: 1, subText: 'CURRENT (A)' },
-    { text: 'CIRCUIT BREAKER', cols: 4 },
-    { text: 'CONDUCTOR', cols: 4 },
-    { text: 'EGC', cols: 2 },
-    { text: 'CONDUIT', cols: 2 }
+    { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'KAIC'] },
+    { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'] },
+    { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
+    { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Type'] }
   ];
 
   let current_header_column = 1;
   table_headers.forEach((header: Header) => {
     const cell = worksheet.getCell(startRow + 4, current_header_column);
-    if (header.subText) {
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { horizontal: 'center' };
-      cell.border = { top: { style: 'thin' } };
+    cell.value = header.text;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { top: { style: 'thin' } };
 
-      const subCell = worksheet.getCell(startRow + 5, current_header_column);
-      subCell.value = header.subText;
-      subCell.font = { bold: true };
-      subCell.alignment = { horizontal: 'center' };
-      subCell.border = { bottom: { style: 'thick' } };
-    } else if (header.cols === 1) {
-      worksheet.mergeCells(
-        startRow + 4,
-        current_header_column,
-        startRow + 5,
-        current_header_column
-      );
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = { bottom: { style: 'thin' }, top: { style: 'thin' } };
-    } else {
+    if (header.sub_cols) {
       worksheet.mergeCells(
         startRow + 4,
         current_header_column,
         startRow + 4,
         current_header_column + header.cols - 1
       );
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { horizontal: 'center' };
-      cell.border = { top: { style: 'thin' } };
-
-      const subHeadersMap: Record<string, string[]> = {
-        'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
-        CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
-        EGC: ['Size', 'Insulation'],
-        CONDUIT: ['Size', 'Insulation']
-      };
-
-      if (subHeadersMap[header.text]) {
-        subHeadersMap[header.text].forEach((text, i) => {
-          const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
-          subCell.value = text;
-          subCell.font = { bold: true };
-          subCell.alignment = { horizontal: 'center' };
-          subCell.border = { bottom: { style: 'thick' } };
-        });
-      }
+      header.sub_cols.forEach((subText, i) => {
+        const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+        subCell.value = subText;
+        subCell.font = { bold: true };
+        subCell.alignment = { horizontal: 'center' };
+        subCell.border = { bottom: { style: 'thick' } };
+      });
+    } else {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 5,
+        current_header_column
+      );
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
     }
     current_header_column += header.cols;
   });
