@@ -11,6 +11,7 @@
 	import { setCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
 	import { setProjectState } from '@/hooks/project-state.svelte';
 	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
+	import { toast } from 'svelte-sonner';
 
 	let { children } = $props();
 
@@ -45,7 +46,17 @@
 	forwardConsole('error', error);
 </script>
 
-<svelte:document oncontextmenu={(e) => e.preventDefault()} />
+<svelte:document
+	oncontextmenu={(e) => e.preventDefault()}
+	onkeydown={(e) => {
+		if (e.key === 'F5') {
+			toast.info('F5 is disabled', {
+				description: 'This is a system message, F5 is disabled in this application.'
+			});
+			e.preventDefault();
+		}
+	}}
+/>
 
 <Toaster richColors position="top-right" />
 <ModeWatcher />
