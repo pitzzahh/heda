@@ -49,7 +49,7 @@
 	} from '@/db/mutations';
 	import { goto, invalidate } from '$app/navigation';
 	import type { Node, Project } from '@/db/schema';
-	import { page, navigating } from '$app/state';
+	import { page } from '$app/state';
 	import { Portal } from 'bits-ui';
 	import { UpdatePanelDialog, UpdateLoadDialog } from '.';
 	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
@@ -120,7 +120,7 @@
 
 	// Handle drops between containers
 	async function handleDrop(state: DragDropState<Node>, _node: Node) {
-		const { draggedItem, sourceContainer, targetContainer } = state;
+		const { draggedItem, targetContainer } = state;
 		if (!targetContainer || _node.id === draggedItem.parent_id) {
 			toast.warning(
 				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
@@ -379,14 +379,17 @@
 						if (component_state.is_alt_pressed && node.node_type === 'panel') {
 							select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 						} else {
-							component_state.button_state = 'processing';
-							toast.info('Loading...', {
-								description: 'Please wait while the data is being fetched.',
-								position: 'top-center'
-							});
-							goto(`/workspace/load-schedule/${node_name + '_' + node.id}`).finally(
-								() => (component_state.button_state = 'stale')
-							);
+							const current_id = params.id?.split('_').at(-1);
+							if (current_id !== node.id) {
+								component_state.button_state = 'processing';
+								toast.info('Loading...', {
+									description: 'Please wait while the data is being fetched.',
+									position: 'top-center'
+								});
+								goto(`/workspace/load-schedule/${node_name + '_' + node.id}`).finally(
+									() => (component_state.button_state = 'stale')
+								);
+							}
 						}
 					}}
 					class="w-full"
