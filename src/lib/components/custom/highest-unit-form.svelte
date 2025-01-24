@@ -119,7 +119,8 @@
 					await writeEncryptedFile(
 						file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-						file_path_with_file
+						file_path_with_file,
+						true
 					);
 					closeDialog();
 					project_state.addRecentProject(
