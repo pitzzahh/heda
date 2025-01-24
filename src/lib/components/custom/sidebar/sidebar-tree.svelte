@@ -369,10 +369,6 @@
 							const current_id = params.id?.split('_').at(-1);
 							if (current_id !== node.id) {
 								component_state.button_state = 'processing';
-								toast.info('Loading...', {
-									description: 'Please wait while the data is being fetched.',
-									position: 'top-center'
-								});
 								goto(`/workspace/load-schedule/${node_name + '_' + node.id}`).finally(
 									() => (component_state.button_state = 'stale')
 								);
