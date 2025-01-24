@@ -68,6 +68,7 @@
 	import { getState } from '@/state/index.svelte';
 	import type { DialogState } from '@/state/types';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { resetData } from '@/db/mutations';
 
 	let { project }: { project?: Project } = $props();
@@ -78,8 +79,8 @@
 	] as const;
 
 	const settingsState = getSettingsState();
+	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
@@ -92,9 +93,9 @@
 	});
 
 	async function savePreference(message: string) {
-		if (!project) return;
+		if (!project_state.loaded) return;
 
-		await updateProjectSettings(project.id, {
+		await updateProjectSettings(project_state.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
 			.then(() => undo_redo_state.setHasUnsavedActions())
@@ -221,7 +222,7 @@
 				</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="adjustment_factor"
 				bind:checked={settingsState.is_adjustment_factor_dynamic}
 				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
@@ -235,7 +236,7 @@
 				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="auto_save"
 				checked={settingsState.auto_save_enabled}
 				onCheckedChange={(value) => {
@@ -381,6 +382,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.show_loads_on_unit_hierarchy}
 			onCheckedChange={(v) => settingsState.setShowLoadsOnUnitHeirarchy(v)}
 		/>
@@ -394,6 +396,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.is_panel_multi_copy}
 			onCheckedChange={(v) => settingsState.setIsPanelMultiCopy(v)}
 		/>
@@ -407,6 +410,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.is_load_multi_copy}
 			onCheckedChange={(v) => settingsState.setIsLoadMultiCopy(v)}
 		/>
