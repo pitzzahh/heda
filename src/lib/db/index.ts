@@ -25,7 +25,7 @@ async function createDatabase(instance_name: string): Promise<{ dbInstance: RxDa
 	console.log(`createDatabase instance: ${JSON.stringify(dbInstance, null, 2)} with instance_name: ${instance_name}`);
 	const storage = getRxStorageMemory();
 
-	if (dbInstance) {
+	if (dbInstance?.name === instance_name) {
 		return { dbInstance, storage };
 	}
 	if (dev) {
