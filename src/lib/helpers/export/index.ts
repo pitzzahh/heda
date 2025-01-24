@@ -236,11 +236,7 @@ export async function processOnePhaseVoltageDrop(
   workbook: ExcelJS.Workbook,
   node_id: string
 ): Promise<ExportProcessResult> {
-  let worksheet = workbook.getWorksheet();
-
-  if (!worksheet) {
-    worksheet = workbook.addWorksheet();
-  }
+  let worksheet = workbook.addWorksheet('Voltage Drop');
 
   const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
 
@@ -293,7 +289,7 @@ export async function processOnePhaseVoltageDrop(
     current_header_column += header.cols;
   });
 
-  const voltage_drops = await getComputedVoltageDrops();
+  const voltage_drops = await getComputedVoltageDrops(node_id);
   let current_load_row = startRow + 2;
 
   for (const voltage_drop_node of voltage_drops) {
