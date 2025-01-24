@@ -185,44 +185,14 @@
 		/>
 		<Sidebar.Inset>
 			<header
-				class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
-			>
-				<Sidebar.Trigger class="-ml-1" />
-
-				<Separator orientation="vertical" class="mr-2 h-4" />
-				<div class="flex items-center gap-2">
-					{#if component_state.is_editing}
-						<Input
-							bind:value={component_state.project_title}
-							type="text"
-							id="project-title-input"
-						/>
-					{:else}
-						<p>
-							{component_state.project_title || 'Untitled'}
-						</p>
-					{/if}
-
-					{#if data.project}
-						<Tooltip>
-							<TooltipTrigger>
-								<Button
-									size="icon"
-									variant="outline"
-									onclick={!component_state.is_editing ? toggleEdit : saveProjectTitle}
-								>
-									{#if component_state.is_editing}
-										<Save class="h-4 w-4" />
-									{:else}
-										<PenLine class="h-4 w-4" />
-									{/if}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>{component_state.is_editing ? 'Save' : 'Edit'}</TooltipContent>
-						</Tooltip>
-					{/if}
-				</div>
-			</header>
+			class="fixed z-10 flex h-16 w-full shrink-0 items-center gap-2 border-b bg-background px-4"
+		>
+			<Sidebar.Trigger class="-ml-1" />
+			<Separator orientation="vertical" class="mr-2 h-4" />
+			<p>
+				{project_state.current_project_name ?? 'Untitled'}
+			</p>
+		</header>
 
 			<svelte:boundary>
 				<div class="mt-16 flex w-full items-center justify-center gap-4 p-4">
