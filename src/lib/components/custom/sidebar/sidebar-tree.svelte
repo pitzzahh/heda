@@ -158,33 +158,20 @@
 					? _node?.load_data?.load_description
 					: 'unknown';
 	}
-
-	$effect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(`${e.key === 'Alt'}`);
-		};
-
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = false;
-		};
-
-		const handleWindowFocus = () => {
-			component_state.is_alt_pressed = false;
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('keyup', handleKeyUp);
-		window.addEventListener('focus', handleWindowFocus);
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('keyup', handleKeyUp);
-			window.removeEventListener('focus', handleWindowFocus);
-		};
-	});
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = true;
+		console.log(`${e.key === 'Alt'}`);
+	}}
+	onkeyup={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = false;
+	}}
+	onfocus={() => {
+		component_state.is_alt_pressed = false;
+	}}
+/>
 {#await getChildNodesByParentId(node.id)}
 	<Sidebar.MenuButton
 		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
