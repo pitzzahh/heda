@@ -628,7 +628,7 @@
 {/snippet}
 
 <MultiCopyDialog
-	open_dialog={component_state.open_copy_dialog}
+	bind:open_dialog={component_state.open_copy_dialog}
 	node_name={component_state.node_name}
 	node_id={node.id}
 />
