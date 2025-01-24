@@ -7,204 +7,201 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.90] - 2025-01-25
 
-### Fix
+### Fixed
 
-- Fixed issue regarding backing up of old project files upon overriding with new project.
-- Fix loading of recent projects list.
-- Some performance issues.
+- Resolved backup system for project files during override operations
+- Corrected recent projects list loading mechanism
+- Improved application performance
+- Fixed progress bar visibility during update downloads
 
-### Add
+### Added
 
-- Voltage drop export to excel.
-- Automatic excel column width adjustment for panelboard schedule and voltage drop.
-- More toast notifications for better user feedback.
+- Excel export functionality for voltage drop calculations
+- Automatic column width adjustment for panelboard schedule and voltage drop exports
+- Enhanced user feedback system with additional toast notifications
 
 ## [1.6.62] - 2025-01-18
 
-### Fix
+### Fixed
 
-- Fixed issue in showing the overridden value of conductor size in the load schedule and voltage drop.
+- Resolved display issue for overridden conductor size values in load schedule and voltage drop calculations.
 
 ## [1.6.61] - 2025-01-18
 
-### Fix
+### Fixed
 
-- App won't start after update or if app is installed in Program files.
+- Fixed application startup issue after updates or when installed in Program Files directory.
 
 ## [1.6.60] - 2025-01-16
 
-### Add
+### Added
 
 - Backup old project when overriding.
 - Added ability to save project files in any user folder.
 
-### Fix
+### Fixed
 
-- Loading of file
+- Improved file loading mechanism
 
 ## [1.6.53] - 2025-01-13
 
-### Add
+### Added
 
-- Recent projects list.
-- Load project from recent projects list.
-- Save location selector on project creation.
+- Recent projects list functionality
+- Project loading from recent projects list
+- Save location selector for project creation
 
+### Fixed
 
-### Fix
-
-- Save button only enables when there are changes in the project. 
-- Fix github actions build.
+- Save button activation based on project changes
+- GitHub Actions build configuration
 
 ## [1.5.50] - 2025-01-13
 
-### Test
+### Fixed
 
-- New github actions build.
+- Resolved project title modification to prevent overriding existing projects
+- Implemented new GitHub Actions build configuration
 
-### Fix
+### Added
 
-- Fix issue where changing project title overrides the existing projects.
-
-### Add
-
-- Add persisted logs for debugging purposes.
+- Implemented persistent logging system for debugging purposes
 
 ## [1.5.41] - 2025-01-11
 
-### Test
+### Changed
 
-- New github actions build.
+- Updated GitHub Actions build configuration for improved stability.
 
 ## [1.5.40] - 2025-01-11
 
-### Fix
+### Fixed
 
-- Fix issue where the app cannot be used because of system error.
-- Project file names are now appended if the file already exists.
-- Fix missing plugin updater.
-- Fix ci/cd.
+- Resolved critical system error preventing application usage.
+- Implemented automatic file name handling for duplicate project names.
+- Restored missing plugin update functionality.
+- Optimized CI/CD pipeline configuration.
 
 ## [1.4.35] - 2025-01-10
 
-### Add
+### Added
 
-- Drag and drop changing panels/loads.
-- Multi copy of panels/loads.
-- Multi delete of panels/loads.
-- Save to file and load from file.
+- Drag and drop functionality for panel and load reordering
+- Multi-selection copy functionality for panels and loads
+- Multi-selection delete functionality for panels and loads
+- Project file import and export capabilities
 
-### Fix
+### Fixed
 
-- Fix issue of undoing a batch copy/remoal of panels/loads.(undoing a batch copy/removal of panels/loads will also undo as a batch).
-- Fix settings theme switcher.
+- Batch operations (copy/removal) now properly support group undo/redo functionality
+- Settings theme switcher functionality
 
 ## [0.4.30] - 2025-01-05
 
-### Add
+### Added
 
-- New Settings dialog for clean and easy access to app settings.
-- Multi copy preference for copying multiple panels or loads in settings.
-- Multi copy of panels or loads.
-- Voltage drop.
-- Undo & Redo functionality.
+- Implemented new Settings dialog for improved application configuration
+- Added multi-panel and multi-load copy preferences in Settings
+- Introduced panel and load bulk copy functionality
+- Integrated voltage drop calculations
+- Implemented Undo & Redo system
 
 ## [0.4.29] - 2025-01-04
 
-### Add
+### Added
 
-- Dropdown menu for selecting heirarchy actions
-- Ability to export specific panelboard schedule.
-- Add preference to show or hide loads in Unit Heirarchy.
+- Implemented hierarchy action dropdown menu
+- Added selective panelboard schedule export functionality
+- Introduced load visibility toggle in Unit Hierarchy
 
-### Fix
+### Fixed
 
-- Fix extra shifted load data row, add one more row spacing.
-- Unit Heirarchy tree re-rendering behavior when modifying load schedule, now updates only affected nodes.
+- Corrected load data row alignment and spacing
+- Optimized Unit Hierarchy tree rendering during load schedule modifications
 
 ## [0.3.28] - 2025-01-01
 
-### Fix
+### Fixed
 
-- Changelog history markdown rendering.
-- Overlapping panelboard schedule excel export when heirarchy is too complex.
+- Resolved markdown rendering issues in changelog history
+- Fixed overlapping content in panelboard schedule Excel export for complex hierarchies
 
 ## [0.3.27] - 2024-12-30
 
-### Add
+### Added
 
-- Toast notification when performing export to excel.
-- Add ErrorCell component and integrate error handling for conduit and conductor sizes in table columns.
-- Updated app logo.
+- Implemented toast notifications for Excel export operations
+- Added ErrorCell component with integrated error handling for conduit and conductor size validation
+- Updated application logo
 
-### Fix
+### Fixed
 
-- Remove adding load in crkt no. cell in load schedule.
-- Update column headers and improve rendering logic in base columns for better clarity and functionality.
-- Adjust ampacity range condition and add error handling for conduit size in computations.
-- Enhance error handling in sidebar header by adding a description field for improved clarity on export failures.
-- Improve export error handling in sidebar header by adding descriptive messages for missing project and highest unit.
-- Swap voltage and apparent power values in sidebar header for correct data representation.
-- Adjust calculation placement for l(t) in sidebar header to correct row positioning.
-- Fix alignment and value assignment for l(t) calculation in sidebar header.
-- Update load schedule handling for 1P and 3P phases in sidebar header.
+- Prevented load creation in circuit number cells within load schedule
+- Enhanced column header presentation and base column rendering logic
+- Implemented proper error handling for ampacity range validation in conduit sizing
+- Added descriptive error messages in sidebar header for export operations
+- Improved project and unit validation messaging in sidebar header
+- Corrected voltage and apparent power value positions in sidebar header
+- Optimized positioning of load total calculations in sidebar header
+- Resolved alignment issues for load total calculations
+- Enhanced phase handling for single-phase and three-phase loads in sidebar header
 
 ## [0.3.26] - 2024-12-30
 
-### Test
+### Testing
 
-- Test release for in app update.
+- Internal testing of application update mechanism.
 
 ## [0.3.25] - 2024-12-29
 
-### Add
+### Added
 
-- Exporting of panelboard schedule to excel file.
-- In app updates.
-- Changelog history.
+- Implemented panelboard schedule Excel export functionality.
+- Integrated automatic application update system.
+- Added changelog version history tracking.
 
-### Fix
+### Fixed
 
-- In app updates
-- Changelog history loader.
+- Resolved application update system issues.
+- Enhanced changelog history loading mechanism.
 
 
 ## [0.2.24] - 2024-12-27
 
-### Fix
+### Fixed
 
 - In app update automation
 
 ## [0.2.23] - 2024-12-27
 
-### Fix
+### Fixed
 
 - In app update
 
 ## [0.2.22] - 2024-12-26
 
-### Add
+### Added
 
-- Add Ampere Trip overriding feature.
-- Add Ampere Trip indicator on load schedule.
-- Computation of EGC Size
-- Computation of Conductor Size
-- Computation of Conduit Size
-- Refactoring Node Retrieval by ID
-- Overriding Data in EGC Size, Conduit, Ampere Frames and Conductor
-- Changing Insulations for EGC and Conductor
-- Add default values of kAIC, pole, conduit type, and ampere frames
-- Implement Adjustment Factor toggle in app settings
-- In app update
+- Ampere Trip override functionality
+- Ampere Trip indicators in load schedule
+- Equipment Grounding Conductor (EGC) size calculation
+- Conductor size calculation
+- Conduit size calculation
+- Improved node retrieval system
+- Override capabilities for EGC size, conduit, ampere frames and conductor
+- Insulation selection for EGC and conductor
+- Default values for kAIC, pole, conduit type, and ampere frames
+- Adjustment Factor toggle in application settings
+- Automatic update system
 
 ## [0.1.21] - 2024-12-20
 
-### Add
+### Added
 
-- Add Ampere Trip overriding feature.
-- Add Ampere Trip indicator on load schedule.
+- Ampere Trip override functionality
+- Ampere Trip indicators in load schedule
 
-### Fix
+### Fixed
 
 - Load schedule heirarchy when deep copying a panel.
 - Improve query performance.
@@ -212,172 +209,175 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.19] - 2024-12-16
 
-### Fix
+### Fixed
 
 - Inconsistent window title version indicator.
 
 ## [0.1.18] - 2024-12-16
 
-## Update
+### Changed
 
-- Update dependencies to fix security vulnerabilities.
+- Updated dependencies to address security vulnerabilities
 
-### Add
+### Added
 
-- Heirarchy quick actions
+- Hierarchy quick actions
 - Quick copy panel/load actions
-- Etc..
+- Additional system improvements
 
-### Fix
+### Fixed
 
-- Supply from when adding panel/load using the quick actions
-- Quick copy of highest unit removes the whole project (fixed and should not be possible)
+- Supply source selection when adding panel/load using quick actions
+- Prevented accidental project deletion when copying top-level unit
 
 ## [0.1.17] - 2024-12-13
 
-## Update
+## [0.1.17] - 2024-12-13
 
-- Update dependencies to fix security vulnerabilities.
+### Changed
+
+- Updated dependencies to address security vulnerabilities.
 
 ## [0.1.16] - 2024-12-13
 
-### Add
+### Added
 
-- Changing of load supply from to any load or highest unit.
-- More bugs
+- Added ability to change load supply source to any load or highest unit.
+- Enhanced system functionality with additional features.
 
-### Fix
+### Fixed
 
-- Horsepower rating dropdown options.
+- Corrected horsepower rating dropdown options display.
 
 ## [0.1.15] - 2024-12-12
 
-### Add
+### Added
 
-- Alert in form when circuit number is already taken by a panel/load.
+- Added validation alert when attempting to use an existing circuit number.
 
-### Fix
+### Fixed
 
-- Fix remove load context menu state on heirarchy.
+- Resolved load context menu state persistence in hierarchy view.
 
 ## [0.1.14] - 2024-12-12
 
-### Fix
+### Fixed
 
-- Inconsistent icons library(sticking with lucide-svelte)
-- Transformer distribution unit not being set to default value when first load.
+- Standardized icon library implementation using lucide-svelte.
+- Corrected default value initialization for transformer distribution units.
 
-### Add
+### Added
 
-- Panel total load to panel supplier.
-- Load type varying input/options.
-- Terminal temperature default value to "Standard temperature"
+- Panel total load calculation for panel suppliers
+- Dynamic load type input options
+- Default terminal temperature set to "Standard Temperature"
 
 ## [0.1.12] - 2024-12-10
 
-### Fix
+### Fixed
 
-- Fixed issue where the context menu dialog would not close after completing or canceling an action
-- Remove max varies limit
+- Context menu dialog now closes properly after action completion or cancellation
+- Removed maximum varies limit restriction
 
-### Add
+### Added
 
-- Distinguishable heirarchy icon/label
-- Automatically repopulate varies/continuous/load type fields when the load description is changed on DEFAULT loads
+- Distinctive hierarchy icons and labels
+- Automatic field population for varies, continuous, and load type when modifying DEFAULT load descriptions
 
 ## [0.1.11] - 2024-12-9
 
-### Add
+### Added
 
-- Circuit number validation
-- Confirmation dialog upon project/panel/load removal
+- Implemented circuit number validation system
+- Added confirmation dialogs for project, panel, and load deletion
 
 ## [0.1.10] - 2024-12-9
 
-### Fix
+### Fixed
 
-- Fix sidebar issue when resizing
+- Resolved sidebar resizing issues
 
 ## [0.1.9] - 2024-12-8
 
-### Fix
+### Fixed
 
-- Ui update after mutations.
+- Improved UI synchronization after data mutations
 
 ## [0.1.8] - 2024-12-7
 
-### Add
+### Added
 
-- Main description (highest unit form) when adding new panel.
-- Add app icon
-- Etc.
+- Enhanced unit form with main description field for new panels
+- Integrated application icon
+- Additional system improvements
 
 ## [0.1.7] - 2024-12-7
 
-### Fix
+### Fixed
 
-- Fix deployment issue
+- Resolved deployment configuration issues
 
 ## [0.1.6] - 2024-12-7
 
-### Fix
+### Fixed
 
-- Fix data sync issue
+- Resolved data synchronization conflicts
 
-### Add
+### Added
 
-- Add delete heirarchy function
+- Implemented hierarchy deletion functionality
 
 ## [0.1.5] - 2024-12-7
 
-### Fix
+### Fixed
 
-- Fix adding loads and panels by adding rxdb update plugin
+- Enhanced panel and load management by integrating RxDB update plugin
 
 ## [0.1.4] - 2024-12-7
 
-### Fix
+### Fixed
 
-- Fix adding loads and panels
+- Resolved issues with panel and load creation functionality
+- Enhanced data persistence reliability
 
 ## [0.1.3] - 2024-12-6
 
-### Fix
+### Fixed
 
-- Add changelog entry.
-- Fix cargo lock file
+- Added comprehensive changelog documentation
+- Updated Cargo.lock dependencies for improved stability
 
 ## [0.1.2] - 2024-12-6
 
-### Fix
+### Fixed
 
-- Add changelog entry.
-- Fix rxdb heirarchy
+- Added initial changelog documentation
+- Resolved RxDB hierarchy implementation issues
 
 ## [0.0.13] - 2024-12-3
 
-### Fix
+### Fixed
 
-- Fix changelog entry.
-- Test cross-platform deployment.
+- Updated changelog documentation
+- Implemented cross-platform deployment testing
 
 ## [0.0.11] - 2024-11-12
 
-### Fix
+### Fixed
 
-- Fix ci/cd pipeline again this time.
+- Enhanced CI/CD pipeline configuration
 
 ## [0.0.10] - 2024-11-12
 
-#### Fix
+### Fixed
 
-- Fix ci/cd pipeline again.
+- Enhanced CI/CD pipeline configuration
 
 ## [0.0.9] - 2024-11-12
 
-#### Fix
+### Fixed
 
-- Fix ci/cd pipeline
+- Improved CI/CD pipeline stability and reliability
 
 ## [Unreleased]
 
@@ -385,4 +385,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The project has now a changelog
+- Initial changelog implementation
