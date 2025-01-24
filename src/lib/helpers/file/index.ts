@@ -85,9 +85,11 @@ export async function writeEncryptedFile<T>(data: T, secret_key: string, file_pa
   if (!file_path) {
     throw new Error("No file to write to");
   }
+  console.log(`Writing file: ${file_path}`);
   const file = await openFile(file_path, { write: true, create: true, createNew: new_file });
   await file.write(new TextEncoder().encode(encryptData<T>(data, secret_key)));
   await file.close();
+  console.log(`File written successfully: ${file_path}`);
 }
 export async function readEncryptedFile<T>(filePath: string, secret_key: string): Promise<T | null> {
   const decryptedData: T = decryptData<T>(new TextDecoder().decode(await readFile(filePath)), secret_key);
