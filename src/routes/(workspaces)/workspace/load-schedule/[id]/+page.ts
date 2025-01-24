@@ -5,8 +5,8 @@ import {
 	getNodeById,
 	getRootNode
 } from '@/db/queries/index.js';
-import { goto } from '$app/navigation';
 import type { Node } from '@/db/schema';
+import { redirect } from '@sveltejs/kit';
 
 export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];
@@ -18,14 +18,14 @@ export const load = async ({ depends, params, url: { searchParams } }) => {
 	const project_name = searchParams.get('project_name');
 	if (!project_name) {
 		console.warn('No project name found in the URL');
-		return goto('/workspace');
+		return redirect(307, '/workspace');
 	}
 	const root_node = await getRootNode(project_name);
 	if (!node_id || !root_node) {
-		goto('/workspace');
+		redirect(307, '/workspace');
 	}
 	const current_node = await getNodeById(node_id, project_name);
-	if (!current_node) goto('/workspace');
+	if (!current_node) redirect(307, '/workspace');
 	return {
 		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema)),
 		node_id,

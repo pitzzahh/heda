@@ -74,7 +74,7 @@
 	}: {
 		node: Node;
 		highest_unit: NonNullable<Node['highest_unit_form']>;
-		project?: Project;
+		project?: Project | null;
 		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
 		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
 	} = $props();
@@ -177,7 +177,7 @@
 
 {#await getChildNodesByParentId(node.id, project_state.current_project_name)}
 	<Sidebar.MenuButton
-		class="hover:bg-primary/20 flex w-full items-center justify-between data-[active=true]:bg-transparent"
+		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
 	>
 		{#snippet children()}
 			<Skeleton class="h-6 w-full" />
@@ -198,7 +198,7 @@
 					<Sidebar.MenuButton
 						onmouseenter={() => (component_state.is_hovering_on_tree_item = true)}
 						onmouseleave={() => (component_state.is_hovering_on_tree_item = false)}
-						class="hover:bg-primary/20 active:bg-primary/20 flex w-full items-center data-[active=true]:bg-transparent"
+						class="flex w-full items-center hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-transparent"
 					>
 						<ContextMenu.Root bind:open={component_state.open_load_context_menu}>
 							<ContextMenu.Trigger class="flex w-full items-center gap-1">
@@ -373,7 +373,7 @@
 				>
 					<Sidebar.MenuButton
 						class={cn(
-							'hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20 relative',
+							'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 							{
 								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
 							}
