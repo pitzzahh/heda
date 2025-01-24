@@ -1,19 +1,23 @@
 import { getOrdinalSuffix } from "@/utils/format";
 import type { Node } from '@/db/schema';
-import { getComputedLoads, getNodeById, getNodeDepth } from "@/db/queries";
+import { getComputedLoads, getComputedVoltageDrops, getNodeById, getNodeDepth } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
+import type { ExcelExportType } from "@/types/misc";
 
-export async function processOnePhaseExcelPanelBoardSchedule(
-  workbook: ExcelJS.Workbook,
-  node_id: string,
-  highest_unit?: Node['highest_unit_form']
-): Promise<{
+type ExportProcessResult = {
   valid: boolean;
   message?: string;
   is_system_error?: boolean;
   description?: string;
-}> {
+}
+
+export async function processOnePhaseExcelPanelBoardSchedule(
+  workbook: ExcelJS.Workbook,
+  instance_name: string,
+  node_id: string,
+  highest_unit?: Node['highest_unit_form'],
+): Promise<ExportProcessResult> {
   const current_node = await getNodeById(node_id);
   const children = await getComputedLoads(node_id);
 
@@ -27,12 +31,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
   // Use the existing getNodeDepth2 function to calculate the depth
   const actualDepth = await getNodeDepth(node_id);
-  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
   const panel_level = getOrdinalSuffix(actualDepth);
-
   const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
+  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
+  const from_supply_name = current_node?.node_type === 'root' ? '--' : parent_node?.panel_data?.name ?? 'Transformer'
 
   let worksheet = workbook.getWorksheet(panel_level);
+
   if (!worksheet) {
     worksheet = workbook.addWorksheet(panel_level);
   }
@@ -54,7 +59,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   worksheet.getCell(`B${startRow + 1}`).value =
     `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
   worksheet.getCell(`B${startRow + 2}`).value =
-    `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
+    `: ${from_supply_name}`;
   worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
   description_label_column_position_data
@@ -210,6 +215,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     if (child.node_type === 'root' || child.node_type === 'panel') {
       await processOnePhaseExcelPanelBoardSchedule(
         workbook,
+        instance_name,
         child.id,
         highest_unit
       );
@@ -219,8 +225,82 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   return { valid: true };
 }
 
+export async function processOnePhaseVoltageDrop(
+  workbook: ExcelJS.Workbook,
+  instance_name: string,
+  node_id: string): Promise<ExportProcessResult> {
+  let worksheet = workbook.getWorksheet();
+
+  if (!worksheet) {
+    worksheet = workbook.addWorksheet();
+  }
+
+  type Header = { text: string; cols: number; subText?: string, sub_cols?: string[] };
+
+  const table_headers: Header[] = [
+    { text: 'From NODE', cols: 1 },
+    { text: 'To NODE', cols: 1 },
+    { text: 'VOLTAGE (V)', cols: 1 },
+    { text: 'APPARENT POWER (VA)', cols: 1 },
+    { text: 'CURRENT (A)', cols: 1 },
+    { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'kAIC'] },
+    { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'] },
+    { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
+    { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Insulation'] }
+  ];
+
+  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+  let current_header_column = 1;
+
+  table_headers.forEach((header: Header) => {
+    const cell = worksheet.getCell(startRow + 4, current_header_column);
+    cell.value = header.text;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { top: { style: 'thin' } };
+
+    if (header.sub_cols) {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 4,
+        current_header_column + header.cols - 1
+      );
+      header.sub_cols.forEach((subText, i) => {
+        const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+        subCell.value = subText;
+        subCell.font = { bold: true };
+        subCell.alignment = { horizontal: 'center' };
+        subCell.border = { bottom: { style: 'thick' } };
+      });
+    } else {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 5,
+        current_header_column
+      );
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thin' } };
+    }
+    current_header_column += header.cols;
+  });
+
+  worksheet.columns.forEach(column => {
+    const lengths = (column.values ?? []).map(v => v?.toString().length);
+    const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'));
+    column.width = maxLength;
+  });
+
+  const voltage_drops = await getComputedVoltageDrops();
+
+  return { valid: true };
+}
+
 export async function exportToExcel(
+  type: ExcelExportType,
   node_id: string,
+  instance_name: string,
   highest_unit?: Node['highest_unit_form'],
   file_name?: string,
   idle_callaback?: () => void,
@@ -256,19 +336,42 @@ export async function exportToExcel(
         workbook.subject = '1P Load Schedule';
         workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
         workbook.description = 'Load schedule for 1 phase load schedule';
-        const process_result = await processOnePhaseExcelPanelBoardSchedule(
-          workbook,
-          node_id,
-          highest_unit
-        );
-        if (!process_result.valid) {
-          idle_callaback && idle_callaback()
-          return toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-            description: process_result?.is_system_error
-              ? 'This is a system error and should not be here, the error has been logged.'
-              : (process_result?.description ?? undefined),
-            position: 'bottom-center'
-          });
+        switch (type) {
+          case 'LOAD_SCHEDULE':
+            const load_schedule_process_result = await processOnePhaseExcelPanelBoardSchedule(
+              workbook,
+              instance_name,
+              node_id,
+              highest_unit
+            );
+            if (!load_schedule_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P load schedule: ${JSON.stringify(load_schedule_process_result)}`);
+              return toast.warning(load_schedule_process_result.message ?? 'Something went wrong while exporting', {
+                description: load_schedule_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (load_schedule_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
+          case 'VOLTAGE_DROP':
+            const voltage_drop_process_result = await processOnePhaseVoltageDrop(
+              workbook,
+              instance_name,
+              node_id
+            )
+            if (!voltage_drop_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P voltage drop: ${JSON.stringify(voltage_drop_process_result)}`);
+              return toast.warning(voltage_drop_process_result.message ?? 'Something went wrong while exporting', {
+                description: voltage_drop_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (voltage_drop_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
         }
         break;
       case '3P':
