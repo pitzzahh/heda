@@ -300,21 +300,17 @@ export async function processOnePhaseVoltageDrop(
     const loadCells = [
       { column: 'A', value: voltage_drop_node.from_node_name },
       { column: 'B', value: voltage_drop_node.to_node_name },
-      { column: 'C', value: voltage_drop_node.voltage },
-      { column: 'D', value: voltage_drop_node.va },
-      { column: 'E', value: voltage_drop_node.current },
-      { column: 'F', value: voltage_drop_node.at },
-      { column: 'G', value: voltage_drop_node.ampere_frames },
-      { column: 'H', value: voltage_drop_node.pole },
-      { column: 'I', value: voltage_drop_node.kaic },
-      { column: 'J', value: voltage_drop_node.conductor_sets },
-      { column: 'K', value: voltage_drop_node.conductor_qty },
-      { column: 'L', value: voltage_drop_node.conductor_size },
-      { column: 'M', value: voltage_drop_node.conductor_insulation },
-      { column: 'N', value: voltage_drop_node.egc_size },
-      { column: 'O', value: voltage_drop_node.egc_insulation },
-      { column: 'P', value: voltage_drop_node.conduit_size },
-      { column: 'Q', value: voltage_drop_node.conduit_type }
+      { column: 'C', value: voltage_drop_node.conductor_sets },
+      { column: 'D', value: voltage_drop_node.conductor_qty },
+      { column: 'E', value: voltage_drop_node.conductor_size },
+      { column: 'F', value: voltage_drop_node.z },
+      { column: 'G', value: voltage_drop_node.length },
+      { column: 'H', value: voltage_drop_node.current },
+      { column: 'I', value: voltage_drop_node.actual_z },
+      { column: 'J', value: voltage_drop_node.voltage_per_segment },
+      { column: 'K', value: voltage_drop_node.voltage_at_end_circuit },
+      { column: 'L', value: voltage_drop_node.voltage_at_receiving_end },
+      { column: 'M', value: voltage_drop_node.percent_voltage_drop },
     ];
 
     loadCells.forEach(({ column, value }) => {
