@@ -45,7 +45,7 @@
 	}
 </script>
 
-{#if select_nodes_to_delete_state.selected_nodes_id.size > 0}
+{#if select_nodes_to_delete_state.selected_nodes_id.length > 0}
 	{@const count = select_nodes_to_delete_state.getSelectedNodeIdsCount()}
 	<div
 		out:fly={{ y: 50, duration: 300 }}
