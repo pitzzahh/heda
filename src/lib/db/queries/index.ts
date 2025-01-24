@@ -492,6 +492,7 @@ export async function getComputedVoltageDrops(instance_name: string) {
 
 export async function getAllChildNodes(instance_name: string, root_node_id: string, include_parent?: boolean): Promise<Node[]> {
 	const db = await databaseInstance(instance_name);
+	console.log(`getAllChildNodes db instance: ${JSON.stringify(db, null, 2)}`);
 	let allNodes: Node[] = [];
 
 	async function fetchChildNodes(parentId: string) {
