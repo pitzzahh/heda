@@ -87,8 +87,8 @@
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
-		<Tabs.Content value="load-sched">
-			{#key undo_redo_state.has_unsaved_actions}
+		{#key undo_redo_state.has_unsaved_actions}
+			<Tabs.Content value="load-sched">
 				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
 					<Skeletal options_count={10} />
 				{:then [current_node, loads]}
@@ -103,14 +103,14 @@
 						is_footer_shown={current_node?.node_type !== 'root'}
 					/>
 				{/await}
-			{/key}
-		</Tabs.Content>
-		<Tabs.Content value="voltage-drop">
-			{#await getComputedVoltageDrops()}
-				<Skeletal options_count={10} />
-			{:then voltage_drops}
-				<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
-			{/await}
-		</Tabs.Content>
+			</Tabs.Content>
+			<Tabs.Content value="voltage-drop">
+				{#await getComputedVoltageDrops()}
+					<Skeletal options_count={10} />
+				{:then voltage_drops}
+					<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+				{/await}
+			</Tabs.Content>
+		{/key}
 	</Tabs.Root>
 </div>
