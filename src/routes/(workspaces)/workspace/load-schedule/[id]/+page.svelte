@@ -39,7 +39,7 @@
 			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
 				description: 'Please create a project or load an existing one first.'
 			});
-			goto(`/workspaces`);
+			goto(`/`);
 		}
 	});
 </script>
