@@ -44,6 +44,9 @@
 			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 
 			component_state.status = 'processing';
+			toast.info('Saving project...', {
+				description: 'Please wait while the file is being saved.'
+			});
 
 			const project = await getCurrentProject(project_state.current_project_name, project_state.id);
 
