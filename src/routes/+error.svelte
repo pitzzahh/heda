@@ -11,7 +11,6 @@
 </script>
 
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { Button } from '@/components/ui/button';
 	import { heda_logo_for_dark, heda_logo_for_light } from '@/assets/index';
