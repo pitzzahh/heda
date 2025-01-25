@@ -419,11 +419,11 @@ export async function getNumberOfChildren(nodeId: string): Promise<number> {
 	return count;
 }
 
-export async function getComputedVoltageDrops() {
+export async function getComputedVoltageDrops(node_id?: string) {
 	const db = await databaseInstance();
 	let nodes = [] as PhaseLoadSchedule[];
 
-	const root_node = await db.nodes
+	const start_node = await db.nodes
 		.findOne({
 			selector: {
 				node_type: 'root'
@@ -431,7 +431,7 @@ export async function getComputedVoltageDrops() {
 		})
 		.exec();
 
-	if (root_node) {
+	if (start_node) {
 		// const computed_root_node_load = await getNodeById(root_node._data.id) as PhaseLoadSchedule
 
 		// if (computed_root_node_load) {
@@ -447,7 +447,7 @@ export async function getComputedVoltageDrops() {
 			}
 		}
 
-		await fetchChildNodes(root_node._data.id);
+		await fetchChildNodes(start_node._data.id);
 	}
 
 	const nodes_with_additional_fields: VoltageDrop[] = [];

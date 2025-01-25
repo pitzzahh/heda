@@ -4,7 +4,7 @@ import { SELECT_NODES_TO_DELETE_CTX } from '@/state/constants';
 export class SelectNodesToDelete {
 	selected_nodes_id = $state<string[]>([]);
 
-	constructor() {}
+	constructor() { }
 
 	addOrRemoveNodeId(id: string) {
 		if (this.checkIsIdSelected(id)) {
@@ -15,7 +15,7 @@ export class SelectNodesToDelete {
 	checkIsIdSelected(id: string) {
 		return this.selected_nodes_id.includes(id);
 	}
-	
+
 	removeNodeId(id: string) {
 		this.selected_nodes_id = this.selected_nodes_id.filter((node_id) => node_id !== id);
 	}

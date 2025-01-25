@@ -14,7 +14,13 @@
 	import type { Node } from '@/db/schema';
 	import { getAllChildNodes } from '@/db/queries';
 	import { generateKey, keyToString } from '@/helpers/security';
-	import { getFileName, writeEncryptedFile, EXTENSION, doesFileExists } from '@/helpers/file';
+	import {
+		getFileName,
+		writeEncryptedFile,
+		EXTENSION,
+		doesFileExists,
+		generateUniqueFileName
+	} from '@/helpers/file';
 	import { validateEnv } from '@/utils/validation';
 	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { getSettingsState } from '@/hooks/settings-state.svelte';
@@ -60,9 +66,13 @@
 						});
 					}
 
-					const project_name = await getFileName(file_path_with_file);
+					let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
-					const created_project = await createProject(project_name ?? 'Untitled', form.data);
+					console.log(`Project data: ${JSON.stringify(form.data, null, 2)}`);
+
+					const created_project = await createProject(project_name, form.data);
+
+					console.log(`Created project: ${JSON.stringify(created_project)}`);
 
 					if (!created_project) {
 						return toast.warning('Failed to create project', {
@@ -73,7 +83,8 @@
 					const { project, root_node_id } = created_project;
 
 					if (!project_name) {
-						await updateProjectTitle(project.id, 'Untitled');
+						project_name = await generateUniqueFileName('Untitled Project');
+						await updateProjectTitle(project.id, project_name);
 						toast.warning('Project title not fetched from file name.', {
 							description: 'The project title is changed to untitled to avoid conflicts.'
 						});
@@ -100,50 +111,51 @@
 						await remove(file_path_with_file);
 					}
 
+					console.log('Generating file data');
+
 					const file_data: FileExport = {
 						project,
 						nodes: await getAllChildNodes(project.root_node_id, true)
 					};
 
+					console.log(`File data to be writted: ${JSON.stringify(file_data, null, 2)}`);
+
 					await writeEncryptedFile(
 						file_data,
 						keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-						file_path_with_file
+						file_path_with_file,
+						true
 					);
 					closeDialog();
-
-					await invalidate('app:workspace')
-						.then(() =>
-							project_state.addRecentProject(
-								{
-									id: project.id,
-									project_name,
-									project_path: file_path_with_file,
-									exists: true
-								},
-								true
-							)
-						)
+					project_state.addRecentProject(
+						{
+							id: project.id,
+							project_name,
+							project_path: file_path_with_file,
+							exists: true
+						},
+						true
+					);
+					console.log(`Redirecting to project: ${project_name}`);
+					await goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
 						.then(() => {
-							undo_redo_state.resetUnsavedActions();
+							invalidate('app:workspace');
+							console.log(`${project_state.current_project_name} created successfully`);
+							toast.success(`${project_state.current_project_name} created successfully`);
 						})
-						.then(() =>
-							goto(`/workspace/load-schedule/${form.data.distribution_unit}_${root_node_id}`)
-						)
-						.finally(() =>
-							toast.success(`${project_state.current_project_name} created successfully`)
-						)
-						.catch((err) =>
+						.catch((err) => {
+							console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 							toast.error(
 								`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 								{
 									description:
 										'This is a system error and should not be here, the error has been logged.'
 								}
-							)
-						);
+							);
+						})
+						.finally(() => undo_redo_state.setHasUnsavedActions());
 				} catch (err) {
-					console.error(`Error: failed to create project: ${JSON.stringify(err)}`);
+					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
 					return toast.error(
 						`Error: failed to create project ${(err as any)?.message ?? 'something went wrong'}`,
 						{

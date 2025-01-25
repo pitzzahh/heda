@@ -1,19 +1,25 @@
 import { getOrdinalSuffix } from "@/utils/format";
 import type { Node } from '@/db/schema';
-import { getComputedLoads, getNodeById, getNodeDepth } from "@/db/queries";
+import { getComputedLoads, getComputedVoltageDrops, getNodeById, getNodeDepth } from "@/db/queries";
 import { toast } from "svelte-sonner";
 import ExcelJS from 'exceljs';
+import type { ExcelExportType } from "@/types/misc";
+import { convertToNormalText } from "@/utils/text";
 
-export async function processOnePhaseExcelPanelBoardSchedule(
-  workbook: ExcelJS.Workbook,
-  node_id: string,
-  highest_unit?: Node['highest_unit_form']
-): Promise<{
+type ExportProcessResult = {
   valid: boolean;
   message?: string;
   is_system_error?: boolean;
   description?: string;
-}> {
+}
+
+type Header = { text: string; cols: number; subText?: string, sub_cols?: string[] };
+
+export async function processOnePhaseExcelPanelBoardSchedule(
+  workbook: ExcelJS.Workbook,
+  node_id: string,
+  highest_unit?: Node['highest_unit_form'],
+): Promise<ExportProcessResult> {
   const current_node = await getNodeById(node_id);
   const children = await getComputedLoads(node_id);
 
@@ -27,12 +33,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 
   // Use the existing getNodeDepth2 function to calculate the depth
   const actualDepth = await getNodeDepth(node_id);
-  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
   const panel_level = getOrdinalSuffix(actualDepth);
-
   const parent_node = current_node.parent_id ? await getNodeById(current_node.parent_id) : undefined;
+  const panel_name = current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit ?? 'Unknown Panel';
+  const from_supply_name = current_node?.node_type === 'root' ? '--' : parent_node?.panel_data?.name ?? 'Transformer'
 
   let worksheet = workbook.getWorksheet(panel_level);
+
   if (!worksheet) {
     worksheet = workbook.addWorksheet(panel_level);
   }
@@ -54,7 +61,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
   worksheet.getCell(`B${startRow + 1}`).value =
     `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
   worksheet.getCell(`B${startRow + 2}`).value =
-    `: ${parent_node?.panel_data?.name ?? 'Transformer'}`;
+    `: ${from_supply_name}`;
   worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
   description_label_column_position_data
@@ -63,83 +70,52 @@ export async function processOnePhaseExcelPanelBoardSchedule(
       worksheet.getCell(cell).font = { bold: true };
     });
 
-  type Header = { text: string; cols: number; subText?: string };
-
   const table_headers: Header[] = [
-    { text: ' ', cols: 1, subText: 'CKT NO.' },
-    { text: ' ', cols: 1, subText: 'LOAD DESCRIPTION' },
-    { text: ' ', cols: 1, subText: 'VOLTAGE (V)' },
-    { text: ' ', cols: 1, subText: 'APPARENT POWER (VA)' },
-    { text: ' ', cols: 1, subText: 'CURRENT (A)' },
-    { text: 'CIRCUIT BREAKER', cols: 4 },
-    { text: 'CONDUCTOR', cols: 4 },
-    { text: 'EGC', cols: 2 },
-    { text: 'CONDUIT', cols: 2 }
+    { text: ' ', cols: 1, subText: 'CKT NO.', sub_cols: ['CRKT NO.'] },
+    { text: ' ', cols: 1, sub_cols: ['LOAD DESCRIPTION'] },
+    { text: ' ', cols: 1, sub_cols: ['VOLTAGE (V)'] },
+    { text: ' ', cols: 1, sub_cols: ['APPARENT POWER (VA)'] },
+    { text: ' ', cols: 1, sub_cols: ['CURRENT (A)'] },
+    { text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'KAIC'] },
+    { text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'] },
+    { text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
+    { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Type'] }
   ];
 
   let current_header_column = 1;
   table_headers.forEach((header: Header) => {
     const cell = worksheet.getCell(startRow + 4, current_header_column);
-    if (header.subText) {
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { horizontal: 'center' };
-      cell.border = { top: { style: 'thin' } };
+    cell.value = header.text;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { top: { style: 'thin' } };
 
-      const subCell = worksheet.getCell(startRow + 5, current_header_column);
-      subCell.value = header.subText;
-      subCell.font = { bold: true };
-      subCell.alignment = { horizontal: 'center' };
-      subCell.border = { bottom: { style: 'thick' } };
-    } else if (header.cols === 1) {
-      worksheet.mergeCells(
-        startRow + 4,
-        current_header_column,
-        startRow + 5,
-        current_header_column
-      );
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = { bottom: { style: 'thin' }, top: { style: 'thin' } };
-    } else {
+    if (header.sub_cols) {
       worksheet.mergeCells(
         startRow + 4,
         current_header_column,
         startRow + 4,
         current_header_column + header.cols - 1
       );
-      cell.value = header.text;
-      cell.font = { bold: true };
-      cell.alignment = { horizontal: 'center' };
-      cell.border = { top: { style: 'thin' } };
-
-      const subHeadersMap: Record<string, string[]> = {
-        'CIRCUIT BREAKER': ['AT', 'AF', 'Pole', 'kAIC'],
-        CONDUCTOR: ['Sets', 'Qty', 'Size\n(mm2)', 'Insulation'],
-        EGC: ['Size', 'Insulation'],
-        CONDUIT: ['Size', 'Insulation']
-      };
-
-      if (subHeadersMap[header.text]) {
-        subHeadersMap[header.text].forEach((text, i) => {
-          const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
-          subCell.value = text;
-          subCell.font = { bold: true };
-          subCell.alignment = { horizontal: 'center' };
-          subCell.border = { bottom: { style: 'thick' } };
-        });
-      }
+      header.sub_cols.forEach((subText, i) => {
+        const subCell = worksheet.getCell(startRow + 5, current_header_column + i);
+        subCell.value = subText;
+        subCell.font = { bold: true };
+        subCell.alignment = { horizontal: 'center' };
+        subCell.border = { bottom: { style: 'thick' } };
+      });
+    } else {
+      worksheet.mergeCells(
+        startRow + 4,
+        current_header_column,
+        startRow + 5,
+        current_header_column
+      );
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
     }
     current_header_column += header.cols;
   });
-
-  worksheet.columns = [
-    { width: 15 }, { width: 30 }, { width: 15 }, { width: 30 }, { width: 15 },
-    { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
-    { width: 10 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
-    { width: 10 }, { width: 15 }
-  ];
 
   const loads = await getComputedLoads(node_id);
   let current_load_row = startRow + 6;
@@ -216,10 +192,125 @@ export async function processOnePhaseExcelPanelBoardSchedule(
     }
   }
 
+  for (let i = 0; i < worksheet.columns.length; i += 1) {
+    let dataMax = 0;
+    const column = worksheet.columns[i];
+    const headerLength = String(column.values?.[1] ?? '').length;
+    for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
+      const columnLength = String(column.values?.[j] ?? '').length;
+      if (columnLength > dataMax) {
+        dataMax = columnLength;
+      }
+    }
+    column.width = Math.max(dataMax, headerLength, 10);
+  }
+
+  return { valid: true };
+}
+
+export async function processOnePhaseVoltageDrop(
+  workbook: ExcelJS.Workbook,
+  node_id: string
+): Promise<ExportProcessResult> {
+  let worksheet = workbook.addWorksheet('Voltage Drop');
+
+  const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
+
+  const table_headers: Header[] = [
+    { text: 'From NODE', cols: 1 },
+    { text: 'To NODE', cols: 1 },
+    { text: 'CABLE', cols: 3, sub_cols: ['Sets', 'Qty', 'Size (mm2)'] },
+    { text: 'Z', cols: 1, sub_cols: ['(Ω/305m)'] },
+    { text: 'LENGTH', cols: 1, sub_cols: ['(m)'] },
+    { text: 'CURRENT', cols: 1, sub_cols: ['(A)'] },
+    { text: 'Actual Z', cols: 1, sub_cols: ['(Ω)'] },
+    { text: 'VOLTAGE DROP (V)', cols: 2, sub_cols: ['Per Segment', 'At End Circuit'] },
+    { text: 'VOLTAGE AT RECEIVING END (V)', cols: 1 },
+    { text: 'PERCENTAGE VOLTAGE DROP (%)', cols: 1 },
+  ];
+
+  let current_header_column = 1;
+
+  table_headers.forEach((header: Header) => {
+    const cell = worksheet.getCell(startRow, current_header_column);
+    cell.value = header.text;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { top: { style: 'thin' } };
+
+    if (header.sub_cols) {
+      worksheet.mergeCells(
+        startRow,
+        current_header_column,
+        startRow,
+        current_header_column + header.cols - 1
+      );
+      header.sub_cols.forEach((subText, i) => {
+        const subCell = worksheet.getCell(startRow + 1, current_header_column + i);
+        subCell.value = subText;
+        subCell.font = { bold: true };
+        subCell.alignment = { horizontal: 'center' };
+        subCell.border = { bottom: { style: 'thick' } };
+      });
+    } else {
+      worksheet.mergeCells(
+        startRow,
+        current_header_column,
+        startRow + 1,
+        current_header_column
+      );
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thick' }, top: { style: 'thin' } };
+    }
+    current_header_column += header.cols;
+  });
+
+  const voltage_drops = await getComputedVoltageDrops(node_id);
+  let current_load_row = startRow + 2;
+
+  for (const voltage_drop_node of voltage_drops) {
+    const loadCells = [
+      { column: 'A', value: voltage_drop_node.from_node_name },
+      { column: 'B', value: voltage_drop_node.to_node_name },
+      { column: 'C', value: voltage_drop_node.conductor_sets },
+      { column: 'D', value: voltage_drop_node.conductor_qty },
+      { column: 'E', value: voltage_drop_node.conductor_size },
+      { column: 'F', value: voltage_drop_node.z },
+      { column: 'G', value: voltage_drop_node.length },
+      { column: 'H', value: voltage_drop_node.current },
+      { column: 'I', value: voltage_drop_node.actual_z },
+      { column: 'J', value: voltage_drop_node.voltage_per_segment },
+      { column: 'K', value: voltage_drop_node.voltage_at_end_circuit },
+      { column: 'L', value: voltage_drop_node.voltage_at_receiving_end },
+      { column: 'M', value: voltage_drop_node.percent_voltage_drop },
+    ];
+
+    loadCells.forEach(({ column, value }) => {
+      const cell = worksheet.getCell(`${column}${current_load_row}`);
+      cell.value = value;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { bottom: { style: 'thin' } };
+    });
+    current_load_row++;
+  }
+
+  for (let i = 0; i < worksheet.columns.length; i += 1) {
+    let dataMax = 0;
+    const column = worksheet.columns[i];
+    for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
+      const columnLength = String(column.values?.[j] ?? '').length;
+      if (columnLength > dataMax) {
+        dataMax = columnLength;
+      }
+    }
+    column.width = dataMax < 10 ? 10 : dataMax;
+  }
+
   return { valid: true };
 }
 
 export async function exportToExcel(
+  type: ExcelExportType,
   node_id: string,
   highest_unit?: Node['highest_unit_form'],
   file_name?: string,
@@ -247,28 +338,49 @@ export async function exportToExcel(
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.title = 'Exported Panelboard Schedule';
+  workbook.title = `Exported ${file_name} ${convertToNormalText(type, true)}`;
   workbook.creator = 'HEDA(Desktop App)';
 
   try {
     switch (highest_unit?.phase) {
       case '1P':
-        workbook.subject = '1P Load Schedule';
-        workbook.category = ['1P', 'Load Schedule', 'Export'].join(',');
+        workbook.subject = `1P ${convertToNormalText(type, true)}`;
+        workbook.category = ['1P', `${convertToNormalText(type, true)}`, 'Export'].join(',');
         workbook.description = 'Load schedule for 1 phase load schedule';
-        const process_result = await processOnePhaseExcelPanelBoardSchedule(
-          workbook,
-          node_id,
-          highest_unit
-        );
-        if (!process_result.valid) {
-          idle_callaback && idle_callaback()
-          return toast.warning(process_result.message ?? 'Something went wrong while exporting', {
-            description: process_result?.is_system_error
-              ? 'This is a system error and should not be here, the error has been logged.'
-              : (process_result?.description ?? undefined),
-            position: 'bottom-center'
-          });
+        switch (type) {
+          case 'LOAD_SCHEDULE':
+            const load_schedule_process_result = await processOnePhaseExcelPanelBoardSchedule(
+              workbook,
+              node_id,
+              highest_unit
+            );
+            if (!load_schedule_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P load schedule: ${JSON.stringify(load_schedule_process_result)}`);
+              return toast.warning(load_schedule_process_result.message ?? 'Something went wrong while exporting', {
+                description: load_schedule_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (load_schedule_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
+          case 'VOLTAGE_DROP':
+            const voltage_drop_process_result = await processOnePhaseVoltageDrop(
+              workbook,
+              node_id
+            )
+            if (!voltage_drop_process_result.valid) {
+              idle_callaback && idle_callaback();
+              console.error(`Error while processing 1P voltage drop: ${JSON.stringify(voltage_drop_process_result)}`);
+              return toast.warning(voltage_drop_process_result.message ?? 'Something went wrong while exporting', {
+                description: voltage_drop_process_result?.is_system_error
+                  ? 'This is a system error and should not be here, the error has been logged.'
+                  : (voltage_drop_process_result?.description ?? undefined),
+                position: 'bottom-center'
+              });
+            }
+            break;
         }
         break;
       case '3P':
@@ -306,7 +418,7 @@ export async function exportToExcel(
   // Create a link and download the file
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${file_name}.xlsx`;
+  link.download = `${workbook.title}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

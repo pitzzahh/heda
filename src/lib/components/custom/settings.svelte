@@ -38,14 +38,24 @@
 	import * as Alert from '@/components/ui/alert/index.js';
 	import * as RadioGroup from '@/components/ui/radio-group/index.js';
 	import * as Select from '@/components/ui/select';
-	import { Cog, Loader, PackageCheck, File, SunMoon, Moon, Sun } from '@/assets/icons';
+	import {
+		Cog,
+		Loader,
+		PackageCheck,
+		File,
+		House,
+		SquareCheck,
+		CircleAlert,
+		SunMoon,
+		Moon,
+		Sun
+	} from '@/assets/icons';
 	import { Label } from '@/components/ui/label/index.js';
 	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
 	import { cn } from '@/utils';
 	import { ViewChangelog } from '.';
 	import { Separator } from '@/components/ui/separator/index.js';
 	import { Switch } from '@/components/ui/switch/index.js';
-	import type { Project } from '@/db/schema';
 	import { updateProjectSettings } from '@/db/mutations';
 	import { toast } from 'svelte-sonner';
 	import { checkForUpdates, installUpdate } from '@/utils/update';
@@ -57,9 +67,8 @@
 	import { getState } from '@/state/index.svelte';
 	import type { DialogState } from '@/state/types';
 	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getProjectState } from '@/hooks/project-state.svelte';
 	import { resetData } from '@/db/mutations';
-
-	let { project }: { project?: Project } = $props();
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
@@ -67,8 +76,8 @@
 	] as const;
 
 	const settingsState = getSettingsState();
+	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	const selectedThemeMode = $derived(settingsState.themeMode);
 	const selectedFont = $derived(settingsState.font);
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
@@ -81,12 +90,12 @@
 	});
 
 	async function savePreference(message: string) {
-		if (!project) return;
+		if (!project_state.loaded) return;
 
-		await updateProjectSettings(project.id, {
+		await updateProjectSettings(project_state.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
 		})
-		.then(() => undo_redo_state.setHasUnsavedActions())
+			.then(() => undo_redo_state.setHasUnsavedActions())
 			.finally(() => toast.success(message))
 			.catch((e) => toast.warning(e));
 	}
@@ -190,7 +199,7 @@
 		<p class="font-semibold">Project</p>
 		<div class="grid w-full grid-cols-2 gap-1.5">
 			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
-				<File />
+				<House />
 				Home
 			</Button>
 			<Button onclick={handleNewProject} class="w-full">
@@ -210,7 +219,7 @@
 				</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="adjustment_factor"
 				bind:checked={settingsState.is_adjustment_factor_dynamic}
 				onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
@@ -224,27 +233,61 @@
 				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
 			</div>
 			<Switch
-				disabled={project === undefined}
+				disabled={!project_state.loaded}
 				id="auto_save"
 				checked={settingsState.auto_save_enabled}
-				onCheckedChange={(value) => settingsState.setAutoSave(value)}
+				onCheckedChange={(value) => {
+					settingsState.setAutoSave(value);
+					toast.success(`Auto save ${value ? 'enabled' : 'disabled'} successfully`);
+				}}
 			/>
 		</div>
 		<Separator class="my-1 w-full" />
-		<div class="flex flex-row items-center justify-between gap-3">
-			<div class="space-y-0.5">
-				<Label for="backup_project_file">Backup old project file</Label>
-				<p class="text-xs text-muted-foreground">
-					Automatically backup old project file when creating new project and performing replacing
-					it upon project creation.
-				</p>
+		<div class="flex flex-col gap-2">
+			<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'valid' : 'warning'}>
+				{#if settingsState.backup_project_file_if_exists}
+					<SquareCheck class="size-4" />
+				{:else}
+					<CircleAlert class="size-4" />
+				{/if}
+
+				<Alert.Description>
+					{#if settingsState.backup_project_file_if_exists}
+						Old project file will be backed up when creating new project and replacing it upon
+						project creation.
+					{:else}
+						Old project file will not be backed up when creating new project and replacing it upon
+						project creation.
+					{/if}
+				</Alert.Description>
+			</Alert.Root>
+			<div class="flex flex-row items-center justify-between gap-3">
+				<div class="space-y-0.5">
+					<Label for="backup_project_file">Backup old project file</Label>
+					<p class="text-xs text-muted-foreground">
+						Automatically backup old project file when creating new project and performing replacing
+						it upon project creation.
+					</p>
+				</div>
+				<Switch
+					id="backup_project_file"
+					checked={settingsState.backup_project_file_if_exists}
+					onCheckedChange={(value) => {
+						settingsState.setBackupProjectFileIfExists(value);
+						if (value) {
+							toast.success(`Backup project file enabled successfully`, {
+								description:
+									'Old project file will be backed up when creating new project and replacing it upon project creation.'
+							});
+						} else {
+							toast.warning(`Backup project file disabled successfully`, {
+								description:
+									'Old project file will not be backed up when creating new project and replacing it upon project creation.'
+							});
+						}
+					}}
+				/>
 			</div>
-			<Switch
-				disabled={project === undefined}
-				id="backup_project_file"
-				checked={settingsState.backup_project_file_if_exists}
-				onCheckedChange={(value) => settingsState.setBackupProjectFileIfExists(value)}
-			/>
 		</div>
 	</div>
 {/snippet}
@@ -336,6 +379,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.show_loads_on_unit_hierarchy}
 			onCheckedChange={(v) => settingsState.setShowLoadsOnUnitHeirarchy(v)}
 		/>
@@ -349,6 +393,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.is_panel_multi_copy}
 			onCheckedChange={(v) => settingsState.setIsPanelMultiCopy(v)}
 		/>
@@ -362,6 +407,7 @@
 			</p>
 		</div>
 		<Switch
+			disabled={!project_state.loaded}
 			checked={settingsState.is_load_multi_copy}
 			onCheckedChange={(v) => settingsState.setIsLoadMultiCopy(v)}
 		/>
@@ -409,10 +455,11 @@
 		<svelte:boundary>
 			<Button
 				variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
-				class={cn('button-background', {
+				class={cn('relative w-full', {
 					'!cursor-not-allowed opacity-50':
 						component_state.current.update_state === 'processing' ||
-						component_state.current.update_state === 'no_updates'
+						component_state.current.update_state === 'no_updates',
+					'p-0': component_state.current.update_state === 'downloading'
 				})}
 				onclick={async () => {
 					if (
@@ -454,21 +501,34 @@
 						block: component_state.current.update_state === 'processing'
 					})}
 				/>
-				<span>
-					{#if component_state.current.update_state === 'processing'}
-						Checking
-					{:else if component_state.current.update_state === 'available'}
-						Download and install v{component_state.current.app_update?.version}
-					{:else if component_state.current.update_state === 'no_updates'}
-						No updates available
-					{:else if component_state.current.update_state === 'downloading'}
-						{tween.target}%
-					{:else if component_state.current.update_state === 'error'}
-						Something went wrong while checking for updates
-					{:else}
-						Check for updates
-					{/if}
-				</span>
+
+				{#if component_state.current.update_state === 'processing'}
+					Checking
+				{:else if component_state.current.update_state === 'available'}
+					Download and install v{component_state.current.app_update?.version}
+				{:else if component_state.current.update_state === 'no_updates'}
+					No updates available
+				{:else if component_state.current.update_state === 'downloading'}
+					<div class="m-0 h-full w-full overflow-hidden rounded-md">
+						<div
+							class={cn(
+								'flex h-full items-center justify-center transition-all duration-500 ease-in-out',
+								{
+									'bg-red-500': tween.target < 30,
+									'bg-yellow-500': tween.target >= 30 && tween.target < 70,
+									'bg-green-500': tween.target >= 70
+								}
+							)}
+							style="width: {tween.target}%"
+						>
+							{tween.target}%
+						</div>
+					</div>
+				{:else if component_state.current.update_state === 'error'}
+					Something went wrong while checking for updates
+				{:else}
+					Check for updates
+				{/if}
 			</Button>
 			{#snippet failed(error, reset)}
 				<p class="text-sm text-muted-foreground">{error}</p>

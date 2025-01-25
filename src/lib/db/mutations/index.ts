@@ -649,19 +649,26 @@ export async function resetData(minimumDeletedTime: number = 0) {
 	await db.nodes.cleanup(minimumDeletedTime);
 }
 
-export async function loadCurrentProject(file_export: FileExport) {
+export async function loadCurrentProject(file_export: FileExport): Promise<Project> {
+	await resetData(0);
 	const db = await databaseInstance();
 	const { project, nodes } = file_export;
 
-	// Remove all existing projects and nodes
-	await db.projects.find().remove();
-	await db.nodes.find().remove();
+	const reconstructed_project = {
+		...project,
+		id: createId()
+	}
 
-	// Insert the project
-	await db.projects.insert(project);
+	const inserted_loaded_project: Project = await db.projects.insert(project);
 
-	// Insert the nodes
+	// Verify that the inserted project has the same project_name as the reconstructed project
+	if (inserted_loaded_project.project_name !== reconstructed_project.project_name) {
+		console.error('Project name mismatch after insertion');
+	}
+
 	for (const node of nodes) {
 		await db.nodes.insert(node);
 	}
+
+	return inserted_loaded_project
 }

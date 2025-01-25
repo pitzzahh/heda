@@ -33,7 +33,8 @@
 		Copy,
 		Grid2x2Plus,
 		Pencil,
-		Trash2
+		Trash2,
+		Loader
 	} from '@/assets/icons';
 	import { ConfirmationDialog } from '@/components/custom';
 	import type { SuperValidated } from 'sveltekit-superforms';
@@ -119,7 +120,7 @@
 
 	// Handle drops between containers
 	async function handleDrop(state: DragDropState<Node>, _node: Node) {
-		const { draggedItem, sourceContainer, targetContainer } = state;
+		const { draggedItem, targetContainer } = state;
 		if (!targetContainer || _node.id === draggedItem.parent_id) {
 			toast.warning(
 				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
@@ -157,35 +158,20 @@
 					? _node?.load_data?.load_description
 					: 'unknown';
 	}
-
-	$effect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = true;
-			console.log(`${e.key === 'Alt'}`)
-		};
-
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (e.key === 'Alt') component_state.is_alt_pressed = false;
-		};
-
-		const handleWindowFocus = () => {
-			component_state.is_alt_pressed = false;
-		};
-
-		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('keyup', handleKeyUp);
-		window.addEventListener('focus', handleWindowFocus);
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('keyup', handleKeyUp);
-			window.removeEventListener('focus', handleWindowFocus);
-		};
-	});
-
-
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = true;
+		console.log(`${e.key === 'Alt'}`);
+	}}
+	onkeyup={(e) => {
+		if (e.key === 'Alt') component_state.is_alt_pressed = false;
+	}}
+	onfocus={() => {
+		component_state.is_alt_pressed = false;
+	}}
+/>
 {#await getChildNodesByParentId(node.id)}
 	<Sidebar.MenuButton
 		class="flex w-full items-center justify-between hover:bg-primary/20 data-[active=true]:bg-transparent"
@@ -281,7 +267,7 @@
 			</button>
 		{/if}
 	{:else}
-		<Sidebar.MenuItem class="w-full">
+		<Sidebar.MenuItem class="w-full" aria-disabled={component_state.button_state === 'processing'}>
 			{@const node_name = (node.highest_unit_form?.distribution_unit ||
 				node.panel_data?.name) as string}
 			{@const tooltip_data = [
@@ -340,6 +326,7 @@
 							});
 						}
 						exportToExcel(
+							'LOAD_SCHEDULE',
 							node.id,
 							highest_unit,
 							node.node_type === 'root' ? `${project?.project_name ?? 'Project'}` : some_name
@@ -372,9 +359,19 @@
 					onclick={() => {
 						if (component_state.is_alt_pressed && node.node_type === 'panel') {
 							select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
-						} else goto(`/workspace/load-schedule/${node_name + '_' + node.id}`);
+						} else {
+							const current_id = params.id?.split('_').at(-1);
+							if (current_id !== node.id) {
+								component_state.button_state = 'processing';
+								goto(`/workspace/load-schedule/${node_name + '_' + node.id}`).finally(
+									() => (component_state.button_state = 'stale')
+								);
+							}
+						}
 					}}
-					class="w-full"
+					class={cn('w-full', {
+						'cursor-not-allowed': component_state.button_state === 'processing'
+					})}
 					use:droppable={{
 						container: node.id,
 						callbacks: { onDrop: async (state: DragDropState<Node>) => handleDrop(state, node) }
@@ -384,7 +381,8 @@
 						class={cn(
 							'relative hover:bg-primary/20 active:bg-primary/20 data-[active=true]:bg-primary/20',
 							{
-								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id
+								'bg-primary/20': params.id && params.id.split('_').at(-1) === node.id,
+								'cursor-not-allowed opacity-50': component_state.button_state === 'processing'
 							}
 						)}
 					>
@@ -415,6 +413,11 @@
 											? child_nodes[child_nodes.length - 1]
 											: undefined}
 									>
+										<Loader
+											class={cn('hidden h-4 w-4 animate-spin', {
+												block: component_state.button_state === 'processing'
+											})}
+										/>
 										{#if node.node_type === 'root'}
 											<div class="w-4">
 												<DatabaseZap class="size-4" />
@@ -555,6 +558,13 @@
 		bind:button_state={component_state.button_state}
 		onConfirm={async () => {
 			component_state.button_state = 'processing';
+			toast.loading(
+				node.node_type === 'root'
+					? `Removing ${project?.project_name ?? 'Project'}`
+					: node.node_type === 'panel'
+						? `Removing ${node.panel_data?.name ?? 'Panel'}`
+						: `Removing ${node.load_data?.load_description ?? 'Load'}`
+			);
 			if (node.node_type === 'root' && project) {
 				await deleteProject(project.id);
 				collapsibles.removeAllNodeId();
@@ -571,19 +581,17 @@
 					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 				}
 			}
-			invalidate('app:workspace')
-				.then(() => invalidate('app:workspace/load-schedule'))
-				.finally(() => {
-					component_state.button_state = 'stale';
-					component_state.open_tree_delete_dialog = false;
-					toast.success(
-						node.node_type === 'root'
-							? `${project?.project_name ?? 'Project'} removed succesfully`
-							: node.node_type === 'panel'
-								? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
-								: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
-					);
-				});
+			invalidate('app:workspace').finally(() => {
+				component_state.button_state = 'stale';
+				component_state.open_tree_delete_dialog = false;
+				toast.success(
+					node.node_type === 'root'
+						? `${project?.project_name ?? 'Project'} removed succesfully`
+						: node.node_type === 'panel'
+							? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+							: `${node.load_data?.load_description ?? 'Load'} removed succesfully`
+				);
+			});
 		}}
 	/>
 {/snippet}
@@ -620,7 +628,7 @@
 {/snippet}
 
 <MultiCopyDialog
-	open_dialog={component_state.open_copy_dialog}
+	bind:open_dialog={component_state.open_copy_dialog}
 	node_name={component_state.node_name}
 	node_id={node.id}
 />

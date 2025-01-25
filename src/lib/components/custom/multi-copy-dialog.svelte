@@ -38,6 +38,7 @@
 		if (!multi_copy.valid) {
 			return toast.warning('Invalid copy count, must be greater than 0');
 		}
+		toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
 		multi_copy.processing = true;
 		const copy_count = Number(multi_copy.value);
 		let latest_node = await copyAndAddNodeById(node_id);
@@ -81,12 +82,14 @@
 				batch_data
 			});
 
-			multi_copy.processing = false;
-			open_dialog = false;
-			await invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-			return toast.success(`[${copy_count}]: ${node_name} copied successfully`);
+			return invalidate('app:workspace').then(() => {
+				multi_copy.processing = false;
+				open_dialog = false;
+				return toast.success(`[${copy_count}]: ${node_name} copied successfully`);
+			});
 		} else {
 			multi_copy.processing = false;
+			console.warn('Failed to copy the initial node.');
 			return toast.error('Failed to copy the initial node.');
 		}
 	}

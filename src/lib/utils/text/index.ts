@@ -1,7 +1,7 @@
 export function convertToNormalText(
   text: unknown,
   include_separators: boolean = false,
-  separators: string[] = []
+  separators: string[] = ['|', '_', '-']
 ): string {
   let textStr = String(text);
   let trimmedText = textStr.trim().replaceAll('_', ' ').replaceAll('-', ' ');

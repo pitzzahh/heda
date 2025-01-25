@@ -3,34 +3,36 @@
 	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
 	import { page } from '$app/state';
 	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
-	import { getNodeById } from '@/db/queries/index.js';
+	import {
+		getComputedLoads,
+		getComputedVoltageDrops,
+		getRootNode,
+		getNodeById
+	} from '@/db/queries/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
-	import type { NodeByIdResult } from '@/types/db/index.js';
+	import { Skeletal } from '@/components/custom/index.js';
+	import { getProjectState } from '@/hooks/project-state.svelte';
+	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import { Skeleton } from '@/components/ui/skeleton';
 
 	let { data } = $props();
 
 	const { root_node } = data;
 	const params = $derived(page.params);
-	const loads = $derived(data?.nodes);
-	const voltage_drops = $derived(data?.voltage_drops);
-  
-	let supply_from_name = $state('');
-	let node: NodeByIdResult | null = $state(null);
+	const node_id = $derived(params.id.split('_').at(-1) as string);
+	const project_state = getProjectState();
+	const undo_redo_state = getUndoRedoState();
 
 	$effect(() => {
-		const nodeId = params.id.split('_').at(-1) as string;
-
-		getNodeById(nodeId).then((current_node) => {
-			const parentId = current_node?.parent_id;
-			node = current_node;
-			if (parentId) {
-				getNodeById(parentId).then((node) => {
-					supply_from_name =
-						node?.panel_data?.name || node?.highest_unit_form?.distribution_unit || '--';
-				});
-			} else supply_from_name = '--';
-		});
+		if (!project_state.loaded) {
+			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
+				description: 'Please create a project or load an existing one first.'
+			});
+			goto(`/`);
+		}
 	});
 </script>
 
@@ -38,17 +40,46 @@
 	<div class="grid grid-cols-2">
 		<div>
 			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal">{node?.panel_data?.name ?? node?.highest_unit_form?.distribution_unit ?? 'NOT FOUND'}</span>
+				Distribution Unit: <span class="font-normal">
+					{#await getNodeById(node_id)}
+						<Skeleton class="inline-block h-6 w-[200px]" />
+					{:then current_node}
+						{current_node?.panel_data?.name ??
+							current_node?.highest_unit_form?.distribution_unit ??
+							'NOT FOUND'}
+					{/await}
+				</span>
 			</p>
 			<p class="font-semibold">
-				Phase: <span class="font-normal">{root_node?.highest_unit_form?.phase ?? ''}</span>
+				Phase: <span class="font-normal">
+					{#await getRootNode()}
+						<Skeleton class="inline-block h-6 w-[200px]" />
+					{:then root_node}
+						{root_node?.highest_unit_form?.phase ?? ''}
+					{/await}</span
+				>
 			</p>
 		</div>
 
 		<p class="font-semibold">
 			Supply From:
 			<span class="font-normal">
-				{supply_from_name}
+				{#await getNodeById(node_id)}
+					<Skeleton class="inline-block h-6 w-[200px]" />
+				{:then current_node}
+					{@const parent_id = current_node?.parent_id}
+					{#if parent_id}
+						{#await getNodeById(parent_id)}
+							<Skeleton class="inline-block h-6 w-[200px]" />
+						{:then parent_node}
+							{parent_node?.panel_data?.name ||
+								parent_node?.highest_unit_form?.distribution_unit ||
+								'--'}
+						{/await}
+					{:else}
+						--
+					{/if}
+				{/await}
 			</span>
 		</p>
 	</div>
@@ -58,21 +89,31 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched">
-			{#key loads}
-				<DataTable
-					data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-					columns={onePhaseMainOrWyeCols(
-						data.phase_main_load_form,
-						data.current_node as PhaseLoadSchedule,
-						root_node?.highest_unit_form,
-						loads && loads.length > 0 ? loads.at(-1) : undefined
-					)}
-					is_footer_shown={data.current_node?.node_type !== 'root'}
-				/>
+			{#key undo_redo_state.has_unsaved_actions}
+				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
+					<Skeletal options_count={10} />
+				{:then [current_node, loads]}
+					<DataTable
+						data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
+						columns={onePhaseMainOrWyeCols(
+							data.phase_main_load_form,
+							current_node as PhaseLoadSchedule,
+							root_node?.highest_unit_form,
+							loads && loads.length > 0 ? loads.at(-1) : undefined
+						)}
+						is_footer_shown={current_node?.node_type !== 'root'}
+					/>
+				{/await}
 			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop">
-			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+			{#key undo_redo_state.has_unsaved_actions}
+				{#await getComputedVoltageDrops()}
+					<Skeletal options_count={10} />
+				{:then voltage_drops}
+					<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+				{/await}
+			{/key}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>

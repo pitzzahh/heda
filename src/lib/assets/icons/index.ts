@@ -37,3 +37,8 @@ export { default as MonitorCog } from 'lucide-svelte/icons/monitor-cog';
 export { default as Rss } from 'lucide-svelte/icons/rss';
 export { default as Sliders } from 'lucide-svelte/icons/sliders';
 export { default as SearchX } from 'lucide-svelte/icons/search-x';
+export { default as ArrowRightFromLine } from 'lucide-svelte/icons/arrow-right-from-line';
+export { default as House } from 'lucide-svelte/icons/house';
+export { default as Undo } from 'lucide-svelte/icons/undo';
+export { default as Redo } from 'lucide-svelte/icons/redo';
+export { default as SquareCheck } from 'lucide-svelte/icons/square-check';

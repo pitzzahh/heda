@@ -9,3 +9,10 @@ export type FileExport = {
   project: Project;
   nodes: Node[]
 }
+
+export type RecentProject = {
+  id: string;
+  project_name: string;
+  project_path: string;
+  exists: boolean;
+}
