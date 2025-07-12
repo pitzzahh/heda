@@ -121,15 +121,15 @@ jobs:
         id: cache-ndk
         uses: actions/cache@v4
         with:
-          path: /usr/local/lib/android/sdk/ndk/27.0.11902837
-          key: ndk-${{ runner.os }}-27.0.11902837
+          path: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          key: ndk-${{ runner.os }}-27.2.12479018
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install NDK
         if: steps.cache-ndk.outputs.cache-hit != 'true'
-        run: sdkmanager "ndk;27.0.11902837"
+        run: sdkmanager "ndk;27.2.12479018"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -160,7 +160,7 @@ jobs:
       - name: Build app bundle (unsigned)
         run: bunx tauri android build -v
         env:
-          NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.11902837
+          NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
 
       - name: Extract Android signing key (if present)
         run: |
