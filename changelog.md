@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.91] - 2025-07-12
+
+### Added
+
+- Android build support in Tauri GitHub Actions workflow
+
 ## [2.6.90] - 2025-01-25
 
 ### Fixed
