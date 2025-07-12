@@ -160,20 +160,29 @@ jobs:
           NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.11902837
 
       - name: Extract Android signing key (if present)
-        if: ${{ secrets.ANDROID_RELEASE_KEYSTORE != '' }}
         run: |
-          echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
-          base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
+          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ]; then
+            echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
+            base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
+          else
+            echo "No ANDROID_RELEASE_KEYSTORE secret present, skipping."
+          fi
 
       - name: Sign APK (if secrets present)
-        if: ${{ secrets.ANDROID_RELEASE_KEYSTORE != '' && secrets.ANDROID_RELEASE_PASSWORD != '' && secrets.ANDROID_RELEASE_KEY != '' && secrets.ANDROID_RELEASE_KEY_PASSWORD != '' }}
         run: |
-          ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
-            --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
-            --ks-pass pass:${{ secrets.ANDROID_RELEASE_PASSWORD }} \
-            --key-pass pass:${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }} \
-            --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
-            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_KEY }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}" ]; then
+            ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
+              --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
+              --ks-pass pass:${{ secrets.ANDROID_RELEASE_PASSWORD }} \
+              --key-pass pass:${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }} \
+              --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
+              src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          else
+            echo "Some Android signing secrets are missing, skipping signing step."
+          fi
 
       - name: Get version from tag
         id: app-version
