@@ -160,13 +160,13 @@ jobs:
           NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.11902837
 
       - name: Extract Android signing key (if present)
-        if: secrets.ANDROID_RELEASE_KEYSTORE # Simplified check for secret existence
+        if: ${{ secrets.ANDROID_RELEASE_KEYSTORE != '' }}
         run: |
           echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
           base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
 
       - name: Sign APK (if secrets present)
-        if: secrets.ANDROID_RELEASE_KEYSTORE && secrets.ANDROID_RELEASE_PASSWORD && secrets.ANDROID_RELEASE_KEY && secrets.ANDROID_RELEASE_KEY_PASSWORD
+        if: ${{ secrets.ANDROID_RELEASE_KEYSTORE != '' && secrets.ANDROID_RELEASE_PASSWORD != '' && secrets.ANDROID_RELEASE_KEY != '' && secrets.ANDROID_RELEASE_KEY_PASSWORD != '' }}
         run: |
           ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
             --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
