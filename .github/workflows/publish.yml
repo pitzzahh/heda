@@ -191,15 +191,19 @@ jobs:
       - name: Rename APK file (signed or unsigned)
         run: |
           NORMALIZED_APP_NAME=$(echo "${{ env.APP_NAME }}" | tr ' ' '_')
+          echo "Renaming APK..."
+          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
           if [ -f ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ]; then
             mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
+            echo "Signed APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
           else
             mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
+            echo "Unsigned APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
           fi
+          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
 
       - name: Upload APK to existing release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          files: |
-            ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apks
+          files: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apk
