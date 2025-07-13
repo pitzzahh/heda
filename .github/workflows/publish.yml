@@ -18,12 +18,12 @@ jobs:
         include:
           - platform: "macos-latest" # for Arm based macs (M1 and above).
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
-            args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04"
-            args: ""
-          - platform: "windows-latest"
-            args: ""
+          # - platform: "macos-latest" # for Intel based macs.
+          #   args: "--target x86_64-apple-darwin"
+          # - platform: "ubuntu-22.04"
+          #   args: ""
+          # - platform: "windows-latest"
+          #   args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -203,9 +203,10 @@ jobs:
           ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
 
       - name: Upload APK to existing release
-        uses: softprops/action-gh-release@v1
+        uses: svenstaro/upload-release-action@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "${{ env.APP_NAME }} v${{ github.ref_name }}"
-          prerelease: true
-          files: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apk
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apk
+          file_glob: true
+          tag: ${{ github.ref }}
+          overwrite: true
