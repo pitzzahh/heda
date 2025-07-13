@@ -154,9 +154,6 @@ jobs:
           echo "APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE }}" >> .env
           echo "FILE_ENCRYPTION_SALT=${{ secrets.FILE_ENCRYPTION_SALT }}" >> .env
 
-      - name: Initialize Tauri Android project
-        run: bunx tauri android init
-
       - name: Build app bundle (unsigned)
         run: bunx tauri android build -v
         env:
@@ -193,10 +190,11 @@ jobs:
 
       - name: Rename APK file (signed or unsigned)
         run: |
+          NORMALIZED_APP_NAME=$(echo "${{ env.APP_NAME }}" | tr ' ' '_')
           if [ -f ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ]; then
-            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{ env.APP_NAME }}-${{ steps.app-version.outputs.version }}.apk
+            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
           else
-            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{ env.APP_NAME }}-${{ steps.app-version.outputs.version }}-unsigned.apk
+            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
           fi
 
       - name: Upload APK to existing release
@@ -204,4 +202,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{ env.APP_NAME }}-${{ steps.app-version.outputs.version }}*.apk
+            ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apks
