@@ -1,7 +1,7 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Hierarchical Electrical Design Analyzer",
-	"version": "2.6.90",
+	"version": "2.6.99",
 	"identifier": "me.araopj.heda",
 	"build": {
 		"frontendDist": "../build",
@@ -13,7 +13,7 @@
 		"windows": [
 			{
 				"center": true,
-				"title": "Hierarchical Electrical Design Analyzer v2.6.90",
+				"title": "Hierarchical Electrical Design Analyzer v2.6.99",
 				"width": 950,
 				"height": 650,
 				"minWidth": 950,
@@ -44,7 +44,12 @@
 			"icons/128x128.png",
 			"icons/128x128@2x.png",
 			"icons/icon.icns",
-			"icons/icon.ico"
+			"icons/icon.ico",
+			"icons/android/mipmap-mdpi/ic_launcher.png",
+			"icons/android/mipmap-hdpi/ic_launcher.png",
+			"icons/android/mipmap-xhdpi/ic_launcher.png",
+			"icons/android/mipmap-xxhdpi/ic_launcher.png",
+			"icons/android/mipmap-xxxhdpi/ic_launcher.png"
 		]
 	},
 	"plugins": {

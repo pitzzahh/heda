@@ -9,7 +9,7 @@ env:
   APP_NAME: "Hierarchical Electrical Design Analyzer"
 
 jobs:
-  release:
+  publish-desktop:
     permissions:
       contents: write
     strategy:
@@ -18,41 +18,34 @@ jobs:
         include:
           - platform: "macos-latest" # for Arm based macs (M1 and above).
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
-            args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04"
-            args: ""
-          - platform: "windows-latest"
-            args: ""
+          # - platform: "macos-latest" # for Intel based macs.
+          #   args: "--target x86_64-apple-darwin"
+          # - platform: "ubuntu-22.04"
+          #   args: ""
+          # - platform: "windows-latest"
+          #   args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      # build the changelog based on the commit messages between the versioned tags
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install npm as global
+      - name: Install npm globally
         run: bun install -g npm
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
@@ -60,40 +53,21 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Install frontend
+      - name: Install frontend dependencies
         run: bun install
 
-      - name: Create env
-        uses: SpicyPizza/create-envfile@v2.0
-        with:
-          envkey_APP_PASS_PHRASE: ${{ secrets.APP_PASS_PHRASE }}
-          envkey_FILE_ENCRYPTION_SALT: ${{ secrets.FILE_ENCRYPTION_SALT }}
+      - name: Create .env
+        run: |
+          echo "APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE }}" >> .env
+          echo "FILE_ENCRYPTION_SALT=${{ secrets.FILE_ENCRYPTION_SALT }}" >> .env
 
-      - name: Read created env file (Linux/Mac)
+      - name: Read .env file (Linux/Mac)
         if: matrix.platform != 'windows-latest'
         run: cat $GITHUB_WORKSPACE/.env
 
-      - name: Read created env file (Windows)
+      - name: Read .env file (Windows)
         if: matrix.platform == 'windows-latest'
         run: type $env:GITHUB_WORKSPACE\.env
-
-      # - name: Create env on Mac or Linux
-      #   if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
-      #   run: |
-      #     echo "${{ secrets.PROD_FULL_ENV }}" > $GITHUB_WORKSPACE/.env
-
-      # - name: Create env on Windows
-      #   if: matrix.platform == 'windows-latest'
-      #   run: |
-      #     echo "${{ secrets.PROD_FULL_ENV }}" | Out-File -FilePath $env:GITHUB_WORKSPACE\.env
-
-      # - name: Log the $GITHUB_WORKSPACE on Mac or linux
-      #   if: matrix.platform == 'macos-latest' || matrix.platform == 'ubuntu-22.04'
-      #   run: ls -la $GITHUB_WORKSPACE
-
-      # - name: Log the $GITHUB_WORKSPACE on Windows
-      #   if: matrix.platform == 'windows-latest'
-      #   run: dir $GITHUB_WORKSPACE
 
       - name: CI Upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
@@ -103,6 +77,7 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+
       - name: Get Changelog Entry
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
@@ -110,7 +85,8 @@ jobs:
           validation_level: warn
           version: ${{ github.ref_name }}
           path: ./changelog.md
-      - name: Build Tauri app
+
+      - name: Build Tauri app and create release
         uses: tauri-apps/tauri-action@v0
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -120,8 +96,117 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "${{ env.APP_NAME }} v__VERSION__"
+          releaseName: "${{ env.APP_NAME }} v${{ github.ref_name }}"
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  publish-android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: publish-desktop # Ensure desktop job creates release first
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Cache NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          key: ndk-${{ runner.os }}-27.2.12479018
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: sdkmanager "ndk;27.2.12479018"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Create .env
+        run: |
+          echo "APP_PASS_PHRASE=${{ secrets.APP_PASS_PHRASE }}" >> .env
+          echo "FILE_ENCRYPTION_SALT=${{ secrets.FILE_ENCRYPTION_SALT }}" >> .env
+
+      - name: Build app bundle (unsigned)
+        run: bunx tauri android build -v
+        env:
+          NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+
+      - name: Extract Android signing key (if present)
+        run: |
+          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ]; then
+            echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
+            base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
+          else
+            echo "No ANDROID_RELEASE_KEYSTORE secret present, skipping."
+          fi
+
+      - name: Sign APK (if secrets present)
+        run: |
+          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_KEY }}" ] && \
+             [ -n "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}" ]; then
+            ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
+              --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
+              --ks-pass pass:${{ secrets.ANDROID_RELEASE_PASSWORD }} \
+              --key-pass pass:${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }} \
+              --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
+              src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          else
+            echo "Some Android signing secrets are missing, skipping signing step."
+          fi
+
+      - name: Get version from tag
+        id: app-version
+        run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+      - name: Rename APK file (signed or unsigned)
+        run: |
+          NORMALIZED_APP_NAME=$(echo "${{ env.APP_NAME }}" | tr ' ' '_')
+          echo "Renaming APK..."
+          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
+          if [ -f ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ]; then
+            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
+            echo "Signed APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
+          else
+            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
+            echo "Unsigned APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
+          fi
+          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
+
+      - name: Upload APK to existing release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apk
+          file_glob: true
+          tag: ${{ github.ref }}
+          overwrite: true
