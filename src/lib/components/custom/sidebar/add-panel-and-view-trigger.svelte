@@ -1,53 +1,44 @@
-<script lang="ts">
+<script lang="ts" module>
 	import type { Snippet } from 'svelte';
-	import * as Dialog from '@/components/ui/dialog/index.js';
+	import type { Node } from '#lib/types/db';
+
+	interface Props {
+		children?: Snippet;
+		id: string;
+		panel_name: string;
+		highest_unit: NonNullable<Node['highest_unit_form']>;
+		parent_id: string;
+		open_dialog_state?: boolean;
+		latest_circuit_node?: Node;
+	}
+</script>
+
+<script lang="ts">
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { goto } from '$app/navigation';
-	import { Button } from '@/components/ui/button/index.js';
-	import type { GenericPhasePanelSchema } from '@/schema/panel';
-	import type { SuperValidated } from 'sveltekit-superforms';
-	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
-	import { Separator } from '@/components/ui/separator/index.js';
-	import type { Phase } from '@/types/phase';
-	import { cn } from '@/utils';
-	import type { Node } from '@/db/schema';
-	import { getNodeById } from '@/db/queries';
+	import { resolve } from '$app/paths';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import type { Phase } from '#lib/types/phase';
+	import { getNodeById } from '#lib/db/queries';
 
 	let {
 		children,
 		id,
-		generic_phase_panel_form,
 		parent_id,
 		highest_unit,
 		panel_name,
 		open_dialog_state = $bindable(false),
 		latest_circuit_node
-	}: {
-		children?: Snippet;
-		id: string;
-		panel_name: string;
-		highest_unit: NonNullable<Node['highest_unit_form']>;
-		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
-		parent_id: string;
-		open_dialog_state?: boolean;
-		latest_circuit_node?: Node;
-	} = $props();
+	}: Props = $props();
 
-	const { phase } = highest_unit;
-
-	let clickTimeout: number | null = null; // To store the timeout for single-click
+	const phase = $derived(highest_unit.phase);
 
 	function handleClick() {
-		// if (clickTimeout) {
-		// 	clearTimeout(clickTimeout);
-		// 	clickTimeout = null;
-		// 	open_dialog_state = true;
-		// } else {
-		// @ts-ignore
-		clickTimeout = setTimeout(() => {
-			clickTimeout = null;
-			goto(`/workspace/load-schedule/${panel_name + '_' + id}`);
+		setTimeout(() => {
+			goto(resolve('/(workspaces)/workspace/load-schedule/[id]', { id: panel_name + '_' + id }));
 		}, 300);
-		// }
 	}
 </script>
 
@@ -56,7 +47,7 @@
 </button>
 
 <Dialog.Root bind:open={open_dialog_state}>
-	<Dialog.Content class="max-w-[70%]">
+	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Add a Panel</Dialog.Title>
 			<div class="flex flex-col items-center justify-start">
@@ -69,9 +60,13 @@
 								<p></p>
 							{:then parent_node}
 								<p>
-									{parent_node?.highest_unit_form?.distribution_unit ||
-										parent_node?.panel_data?.name ||
-										'N/A'}
+									{#if parent_node?.highest_unit_form?.distribution_unit}
+										{parent_node.highest_unit_form.distribution_unit}
+									{:else if parent_node?.panel_data?.name}
+										{parent_node.panel_data.name}
+									{:else}
+										N/A
+									{/if}
 								</p>
 							{/await}
 						</div>
@@ -79,7 +74,13 @@
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{highest_unit.phase ?? 'N/A'}</p>
+							<p>
+								{#if highest_unit.phase == null}
+									N/A
+								{:else}
+									{highest_unit.phase}
+								{/if}
+							</p>
 						</div>
 					</div>
 				</div>
@@ -90,15 +91,15 @@
 			<GenericPhaseMainPanelForm
 				action="add"
 				{parent_id}
-				{generic_phase_panel_form}
 				main_phase={phase as Phase}
 				closeDialog={() => (open_dialog_state = false)}
 				{latest_circuit_node}
 			/>
 			{#snippet failed(error, reset)}
-				<p class="text-sm text-muted-foreground">{error}</p>
+				<p class="text-muted-foreground text-sm">{error}</p>
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>
