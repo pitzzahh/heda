@@ -11,18 +11,18 @@
 </script>
 
 <script lang="ts">
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import * as Alert from '@/components/ui/alert/index.js';
+	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import { copyAndAddNodeById } from '@/db/mutations';
-	import { getNumberOfChildren } from '@/db/queries';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { CircleAlert, Loader } from 'lucide-svelte';
-	import { Input } from '@/components/ui/input/index.js';
-	import { Label } from '@/components/ui/label/index.js';
-	import { cn } from '@/utils';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { copyAndAddNodeById } from '#lib/db/mutations';
+	import { getNumberOfChildren } from '#lib/db/queries';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { cn } from '#lib/utils';
 	import Button from '../ui/button/button.svelte';
 
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
@@ -38,7 +38,7 @@
 		if (!multi_copy.valid) {
 			return toast.warning('Invalid copy count, must be greater than 0');
 		}
-		toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
+		const toast_id = toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
 		multi_copy.processing = true;
 		const copy_count = Number(multi_copy.value);
 		let latest_node = await copyAndAddNodeById(node_id);
@@ -68,7 +68,7 @@
 
 				if (!latest_node) {
 					multi_copy.processing = false;
-					return toast.error('An error occurred while copying nodes.');
+					return toast.error('An error occurred while copying nodes.', { id: toast_id });
 				}
 
 				batch_data = [
@@ -85,12 +85,14 @@
 			return invalidate('app:workspace').then(() => {
 				multi_copy.processing = false;
 				open_dialog = false;
-				return toast.success(`[${copy_count}]: ${node_name} copied successfully`);
+				return toast.success(`[${copy_count}]: ${node_name} copied successfully`, {
+					id: toast_id
+				});
 			});
 		} else {
 			multi_copy.processing = false;
 			console.warn('Failed to copy the initial node.');
-			return toast.error('Failed to copy the initial node.');
+			return toast.error('Failed to copy the initial node.', { id: toast_id });
 		}
 	}
 </script>
@@ -103,7 +105,7 @@
 		</Dialog.Header>
 		{#if !multi_copy.valid}
 			<Alert.Root variant="warning">
-				<CircleAlert class="size-4" />
+				<WarningCircleIcon class="size-4" />
 				<Alert.Description
 					>{multi_copy.error ?? 'Invalid copy count, must be greater than 0'}.</Alert.Description
 				>
@@ -117,13 +119,13 @@
 				placeholder="Enter the circuit number"
 				bind:value={multi_copy.value}
 				class={cn('col-span-3', {
-					'border-red-600 outline-red-600 ring ring-red-600': !multi_copy.valid
+					'border-destructive ring-destructive outline-destructive ring-3': !multi_copy.valid
 				})}
 			/>
 		</div>
 		<Dialog.Footer>
 			<Button type="submit" onclick={() => handleMultiCopy(node_id)}>
-				<Loader
+				<CircleNotchIcon
 					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
 						block: multi_copy.processing
 					})}
@@ -131,5 +133,6 @@
 				<span>Copy</span>
 			</Button>
 		</Dialog.Footer>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>

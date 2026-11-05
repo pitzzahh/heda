@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
 
 	let { children } = $props();
 	let undo_redo_state = getUndoRedoState();
@@ -19,6 +19,7 @@
 		}
 	}
 
+	// Global undo/redo shortcuts; effect owns the listener lifecycle.
 	$effect(() => {
 		window.addEventListener('keydown', handleKeyDown);
 

@@ -1,20 +1,11 @@
-<script lang="ts">
+<script lang="ts" module>
+	import { CaretDownIcon, CaretUpIcon, XIcon } from '#lib/assets/icons';
 	import {
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
 		AMPERE_TRIP_TO_COPPER,
 		CONDUIT_TABLE
-	} from '@/constants';
-	import { ChevronUp, ChevronDown, X } from '@/assets/icons';
-	import { Button } from '@/components/ui/button/index.js';
-	import { overrideField, type FieldType } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
-	import * as Tooltip from '@/components/ui/tooltip';
-	import { toast } from 'svelte-sonner';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import Input from '@/components/ui/input/input.svelte';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	} from '#lib/constants';
 
 	interface Props {
 		node_id: string;
@@ -37,6 +28,34 @@
 		};
 		is_in_vd_table?: boolean;
 	}
+
+	const conductor_sizes = Object.values(AMPACITY_TO_CONDUCTOR_SIZE);
+	const conductor_size_last_index = conductor_sizes.length - 1;
+
+	const egc_sizes = Object.values(AMPERE_TRIP_TO_COPPER)
+		.map((el) => el.size)
+		.filter((el) => el !== 'error')
+		.sort((a, b) => a - b);
+	const egc_size_last_index = egc_sizes.length - 1;
+
+	const conduit_sizes = CONDUIT_TABLE.conduit_columns;
+	const conduit_size_last_index = conduit_sizes.length - 1;
+
+	const at_last_index = standard_ampere_ratings.length - 1;
+
+	const ampere_frames_ratings = ['50', '100', '125', '250', '400', '600', '800', '1000', '1200'];
+</script>
+
+<script lang="ts">
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { overrideField, type FieldType } from '#lib/db/mutations';
+	import { invalidate } from '$app/navigation';
+	import * as Tooltip from '#lib/components/ui/tooltip';
+	import { toast } from 'svelte-sonner';
+	import * as Select from '#lib/components/ui/select/index.js';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	let {
 		node_id,
 		closeDialog,
@@ -57,42 +76,37 @@
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);
 	let at_current_index = $state(at_default_index);
 	const selected_ampere_rating = $derived(standard_ampere_ratings.at(at_current_index));
-	const at_last_index = standard_ampere_ratings.length - 1;
 
 	// Conductor Size
-	const conductor_sizes = Object.values(AMPACITY_TO_CONDUCTOR_SIZE);
 	const conductor_size_default_index = conductor_sizes.findIndex(
 		(size) => current_conductor_size === size
 	);
 	let conductor_size_current_index = $state(conductor_size_default_index);
 	const selected_conductor_size = $derived(conductor_sizes.at(conductor_size_current_index));
-	const conductor_size_last_index = conductor_sizes.length - 1;
 
 	// EGC Size
-	const egc_sizes = Object.values(AMPERE_TRIP_TO_COPPER)
-		.map((el) => el.size)
-		.filter((el) => el !== 'error')
-		.sort((a, b) => a - b);
 	const egc_size_default_index = egc_sizes.findIndex((size) => current_egc_size === size);
 	let egc_size_current_index = $state(egc_size_default_index);
 	const selected_egc_size = $derived(egc_sizes.at(egc_size_current_index));
-	const egc_size_last_index = egc_sizes.length - 1;
 
 	// Conduit Size
-	const conduit_sizes = CONDUIT_TABLE.conduit_columns;
 	const conduit_size_default_index = conduit_sizes.findIndex(
 		(size) => current_conduit_size === size
 	);
 	let conduit_size_current_index = $state(conduit_size_default_index);
 	const selected_conduit_size = $derived(conduit_sizes.at(conduit_size_current_index));
-	const conduit_size_last_index = conduit_sizes.length - 1;
 
 	// Ampere Frames(AF)
-	let ampere_frames = $state(current_ampere_frames.toString());
-	const ampere_frames_ratings = ['50', '100', '125', '250', '400', '600', '800', '1000', '1200'];
+	// Snapshot at mount: local edit state, never tracks later prop changes.
+	const initial_override_inputs = (() => ({
+		ampere_frames: current_ampere_frames.toString(),
+		length: current_length || 0,
+		z: current_z || 0
+	}))();
+	let ampere_frames = $state(initial_override_inputs.ampere_frames);
 
-	let length = $state(current_length || 0);
-	let z = $state(current_z || 0);
+	let length = $state(initial_override_inputs.length);
+	let z = $state(initial_override_inputs.z);
 
 	function handleIncrement(currentIndex: number, lastIndex: number): number {
 		return currentIndex === lastIndex ? 0 : currentIndex + 1;
@@ -237,7 +251,9 @@
 
 	<!-- Conductor Size Selector -->
 	<div class="grid gap-2">
-		<p class="text-sm">{is_in_vd_table ? 'Cable' : 'Conductor'} Size</p>
+		<p class="text-sm">
+			{#if is_in_vd_table}Cable{:else}Conductor{/if} Size
+		</p>
 		{@render Selector({
 			selected_value: selected_conductor_size,
 			is_overridden: overridden_fields.conductor_size,
@@ -296,7 +312,7 @@
 			<div class="flex items-center gap-2">
 				<Input type="text" bind:value={ampere_frames} />
 				<Select.Root type="single" bind:value={ampere_frames}>
-					<Select.Trigger class="w-[40px] text-xs"></Select.Trigger>
+					<Select.Trigger class="w-10 text-xs"></Select.Trigger>
 					<Select.Content class="text-sm">
 						{#each ampere_frames_ratings as ampere_frame, i (i)}
 							<Select.Item value={ampere_frame} disabled={ampere_frames === ampere_frame}>
@@ -316,10 +332,12 @@
 									variant="destructive"
 									onclick={() => removeOverride('ampere_frames')}
 								>
-									<X class="size-4" />
+									<XIcon class="size-4" />
 								</Button>
 							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+							<Tooltip.Content class="bg-destructive text-destructive-foreground"
+								>Remove Override</Tooltip.Content
+							>
 						</Tooltip.Root>
 					</Tooltip.Provider>
 				{/if}
@@ -343,10 +361,12 @@
 									variant="destructive"
 									onclick={() => removeOverride('length')}
 								>
-									<X class="size-4" />
+									<XIcon class="size-4" />
 								</Button>
 							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+							<Tooltip.Content class="bg-destructive text-destructive-foreground"
+								>Remove Override</Tooltip.Content
+							>
 						</Tooltip.Root>
 					</Tooltip.Provider>
 				{/if}
@@ -367,10 +387,12 @@
 									variant="destructive"
 									onclick={() => removeOverride('z')}
 								>
-									<X class="size-4" />
+									<XIcon class="size-4" />
 								</Button>
 							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+							<Tooltip.Content class="bg-destructive text-destructive-foreground"
+								>Remove Override</Tooltip.Content
+							>
 						</Tooltip.Root>
 					</Tooltip.Provider>
 				{/if}
@@ -397,11 +419,11 @@
 	<div class="flex items-center gap-2">
 		<div class="flex w-full items-center justify-center gap-2">
 			<Button class="h-8 w-full max-w-8" size="icon" onclick={handleDecrement}>
-				<ChevronDown class="size-4" />
+				<CaretDownIcon class="size-4" />
 			</Button>
-			<p class="w-full min-w-12 border py-1 text-center">{selected_value}</p>
+			<p class="border-border w-full min-w-12 border py-1 text-center">{selected_value}</p>
 			<Button class="h-8 w-full max-w-8" size="sm" onclick={handleIncrement}>
-				<ChevronUp class="size-4" />
+				<CaretUpIcon class="size-4" />
 			</Button>
 		</div>
 		{#if is_overridden}
@@ -414,10 +436,12 @@
 							variant="destructive"
 							onclick={handleRemoveOverride}
 						>
-							<X class="size-4" />
+							<XIcon class="size-4" />
 						</Button>
 					</Tooltip.Trigger>
-					<Tooltip.Content class="bg-red-500 text-white">Remove Override</Tooltip.Content>
+					<Tooltip.Content class="bg-destructive text-destructive-foreground"
+						>Remove Override</Tooltip.Content
+					>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		{/if}

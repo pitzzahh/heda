@@ -1,17 +1,16 @@
 <script module lang="ts">
-	import { MonitorCog, Rss, WandSparkles, Sliders } from '@/assets/icons';
-
 	const navData = [
-		{ name: 'Project', icon: MonitorCog },
-		{ name: 'Preferences', icon: WandSparkles },
-		{ name: 'Updates', icon: Rss },
-		{ name: 'Advanced', icon: Sliders }
+		{ name: 'Project', icon: MonitorIcon },
+		{ name: 'Preferences', icon: MagicWandIcon },
+		{ name: 'Updates', icon: RssIcon }
 	] as const;
 
 	type NavName = (typeof navData)[number]['name'];
 
+	type NavIcon = typeof MonitorIcon | typeof RssIcon | typeof MagicWandIcon;
+
 	type NavData = {
-		nav: Readonly<{ name: NavName; icon: any }[]>;
+		nav: Readonly<{ name: NavName; icon: NavIcon }[]>;
 	};
 
 	const settings_links: NavData = {
@@ -27,52 +26,56 @@
 </script>
 
 <script lang="ts">
+	import {
+		CheckSquareIcon,
+		CircleHalfIcon,
+		CircleNotchIcon,
+		FileIcon,
+		GearIcon,
+		HouseIcon,
+		MagicWandIcon,
+		MonitorIcon,
+		MoonIcon,
+		PackageIcon,
+		RssIcon,
+		SunIcon,
+		WarningCircleIcon
+	} from '#lib/assets/icons';
 	import { slide } from 'svelte/transition';
 	import { PersistedState } from 'runed';
-	import * as Breadcrumb from '@/components/ui/breadcrumb/index.js';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import * as Sidebar from '@/components/ui/sidebar/index.js';
+	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import * as Alert from '@/components/ui/alert/index.js';
-	import * as RadioGroup from '@/components/ui/radio-group/index.js';
-	import * as Select from '@/components/ui/select';
-	import {
-		Cog,
-		Loader,
-		PackageCheck,
-		File,
-		House,
-		SquareCheck,
-		CircleAlert,
-		SunMoon,
-		Moon,
-		Sun
-	} from '@/assets/icons';
-	import { Label } from '@/components/ui/label/index.js';
-	import { getSettingsState, type Font } from '@/hooks/settings-state.svelte';
-	import { cn } from '@/utils';
-	import { ViewChangelog } from '.';
-	import { Separator } from '@/components/ui/separator/index.js';
-	import { Switch } from '@/components/ui/switch/index.js';
-	import { updateProjectSettings } from '@/db/mutations';
+	import * as Alert from '#lib/components/ui/alert/index.js';
+	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
+	import * as Select from '#lib/components/ui/select';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
+	import type { Font } from '#lib/types/settings';
+	import { cn } from '#lib/utils';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import { Switch } from '#lib/components/ui/switch/index.js';
+	import { updateProjectSettings } from '#lib/db/mutations';
 	import { toast } from 'svelte-sonner';
-	import { checkForUpdates, installUpdate } from '@/utils/update';
+	import { checkForUpdates, installUpdate } from '#lib/utils/update';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
 	import { userPrefersMode } from 'mode-watcher';
-	import type { Settings } from '@/types/settings';
-	import { DIALOG_STATE_CTX } from '@/state/constants';
-	import { getState } from '@/state/index.svelte';
-	import type { DialogState } from '@/state/types';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import { getProjectState } from '@/hooks/project-state.svelte';
-	import { resetData } from '@/db/mutations';
+	import type { Settings } from '#lib/types/settings';
+	import { DIALOG_STATE_CTX } from '#lib/state/constants';
+	import { getState } from '#lib/state/index.svelte';
+	import type { DialogState } from '#lib/state/types';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getProjectState } from '#lib/hooks/project-state.svelte';
+	import { resetData } from '#lib/db/mutations';
 
 	const themeColors = [
-		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#C72323]' },
-		{ name: 'Excel', value: 'excel', bg: 'bg-[#20B356]' }
+		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#BF2722]' },
+		{ name: 'Excel', value: 'excel', bg: 'bg-[#137C4D]' }
 	] as const;
 
 	const settingsState = getSettingsState();
@@ -105,7 +108,7 @@
 			settingsState.setThemeColor(
 				themeColor,
 				settingsState.themeMode === 'system'
-					? $userPrefersMode === 'dark'
+					? userPrefersMode.current === 'dark'
 						? 'dark'
 						: 'light'
 					: settingsState.themeMode
@@ -121,17 +124,28 @@
 </script>
 
 <Dialog.Root bind:open={component_state.current.settings_open}>
-	<Dialog.Trigger class={buttonVariants({ size: 'icon', variant: 'outline' })}>
-		<Cog class="size-4" />
-	</Dialog.Trigger>
-	<Dialog.Content class="overflow-hidden p-0 md:max-h-[500px] md:max-w-[700px] lg:max-w-[800px]">
+	<Tooltip.Provider>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					<Dialog.Trigger {...props} class={buttonVariants({ size: 'icon-sm', variant: 'ghost' })}>
+						<GearIcon class="size-4" />
+					</Dialog.Trigger>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content>Settings</Tooltip.Content>
+		</Tooltip.Root>
+	</Tooltip.Provider>
+	<Dialog.Content
+		class="w-full overflow-hidden p-0 md:max-h-125 md:max-w-175 lg:max-w-200"
+	>
 		<Dialog.Title class="sr-only">Settings</Dialog.Title>
 		<Dialog.Description class="sr-only">Customize your settings here.</Dialog.Description>
 		<Sidebar.Provider
-			class="items-start"
+			class="min-h-0"
 			style="--sidebar-width: 15rem; --sidebar-width-mobile: 15rem;"
 		>
-			<Sidebar.Root collapsible="none" class="hidden md:flex">
+			<Sidebar.Root collapsible="none" class="hidden h-auto md:flex">
 				<Sidebar.Content>
 					<Sidebar.Group>
 						<Sidebar.GroupContent>
@@ -159,9 +173,9 @@
 					</Sidebar.Group>
 				</Sidebar.Content>
 			</Sidebar.Root>
-			<main class="flex h-[480px] flex-1 flex-col overflow-hidden">
+			<main class="flex h-[min(480px,80vh)] flex-1 flex-col overflow-hidden">
 				<header
-					class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
+					class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 				>
 					<div class="flex items-center gap-2 px-4">
 						<Breadcrumb.Root>
@@ -191,19 +205,20 @@
 				</div>
 			</main>
 		</Sidebar.Provider>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>
 
 {#snippet project_settings()}
 	<div class="flex flex-col gap-2">
-		<p class="font-semibold">Project</p>
+		<p class="text-sm font-semibold tracking-tight">Project</p>
 		<div class="grid w-full grid-cols-2 gap-1.5">
 			<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
-				<House />
+				<HouseIcon />
 				Home
 			</Button>
 			<Button onclick={handleNewProject} class="w-full">
-				<File />
+				<FileIcon />
 				New Project
 			</Button>
 		</div>
@@ -212,7 +227,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="adjustment_factor">Adjustment Factor</Label>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					{settingsState.is_adjustment_factor_dynamic
 						? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
 						: 'The adjustment factor for all loads will be set to 100%.'}
@@ -230,7 +245,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="auto_save">Auto Save</Label>
-				<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
+				<p class="text-muted-foreground text-xs">Automatically save the changes in your project</p>
 			</div>
 			<Switch
 				disabled={!project_state.loaded}
@@ -244,11 +259,11 @@
 		</div>
 		<Separator class="my-1 w-full" />
 		<div class="flex flex-col gap-2">
-			<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'valid' : 'warning'}>
+			<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'success' : 'warning'}>
 				{#if settingsState.backup_project_file_if_exists}
-					<SquareCheck class="size-4" />
+					<CheckSquareIcon class="size-4" />
 				{:else}
-					<CircleAlert class="size-4" />
+					<WarningCircleIcon class="size-4" />
 				{/if}
 
 				<Alert.Description>
@@ -264,7 +279,7 @@
 			<div class="flex flex-row items-center justify-between gap-3">
 				<div class="space-y-0.5">
 					<Label for="backup_project_file">Backup old project file</Label>
-					<p class="text-xs text-muted-foreground">
+					<p class="text-muted-foreground text-xs">
 						Automatically backup old project file when creating new project and performing replacing
 						it upon project creation.
 					</p>
@@ -293,88 +308,53 @@
 {/snippet}
 
 {#snippet preferences_settings()}
-	<div class="flex items-center justify-between gap-2">
-		<div class="flex w-full flex-col items-center justify-center gap-2">
-			<Label for="colors">Theme</Label>
-			<RadioGroup.Root value="" class="grid grid-cols-3">
-				<Label
-					for="light"
-					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
-						{
-							'border-primary': settingsState.themeMode === 'light'
-						}
-					)}
+	<div class="flex flex-col gap-4">
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="flex flex-col items-center gap-2">
+				<Label class="text-muted-foreground text-[10px] font-semibold tracking-[0.2em] uppercase"
+					>Theme</Label
 				>
-					<RadioGroup.Item
-						value="light"
-						id="light"
-						class="sr-only"
-						aria-label="Light Theme"
-						onclick={() => settingsState.setThemeMode('light')}
-					/>
-					<Sun class="h-4 w-4" />
-				</Label>
-				<Label
-					for="dark"
-					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
-						{
-							'border-primary': settingsState.themeMode === 'dark'
-						}
-					)}
-				>
-					<RadioGroup.Item
-						value="dark"
-						id="dark"
-						class="sr-only"
-						aria-label="Dark Theme"
-						onclick={() => settingsState.setThemeMode('dark')}
-					/>
-					<Moon class="h-4 w-4" />
-				</Label>
-				<Label
-					for="system"
-					class={cn(
-						'flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground',
-						{
-							'border-primary': settingsState.themeMode === 'system'
-						}
-					)}
-				>
-					<RadioGroup.Item
-						value="system"
-						id="system"
-						class="sr-only"
-						aria-label="System default theme"
-						onclick={() => settingsState.setThemeMode('system')}
-					/>
-					<SunMoon class="h-4 w-4" />
-				</Label>
-			</RadioGroup.Root>
-		</div>
+				<RadioGroup.Root value="" class="grid w-full grid-cols-3 gap-2">
+					{@render theme_tile('light', 'Light', SunIcon)}
+					{@render theme_tile('dark', 'Dark', MoonIcon)}
+					{@render theme_tile('system', 'System', CircleHalfIcon)}
+				</RadioGroup.Root>
+			</div>
 
-		<div class="flex w-full flex-col items-center justify-center gap-2">
-			<Label for="colors">Theme Color</Label>
-			<div id="colors" class="flex items-center gap-2">
-				{#each themeColors as themeColor, index (index)}
-					<button
-						aria-label="color"
-						class={cn(themeColor.bg, 'size-8 rounded-full', {
-							'outline outline-2 outline-offset-1 outline-blue-500':
-								themeColor.value === settingsState.themeColor
-						})}
-						onclick={() => handleChangeThemeColor(themeColor.value)}
-					></button>
-				{/each}
+			<div class="flex flex-col items-center gap-2">
+				<Label class="text-muted-foreground text-[10px] font-semibold tracking-[0.2em] uppercase"
+					>Accent</Label
+				>
+				<div id="colors" class="flex h-full items-center gap-4">
+					{#each themeColors as themeColor (themeColor.value)}
+						<button
+							class="group focus-visible:ring-ring flex cursor-pointer flex-col items-center gap-1.5 rounded-xl p-1.5 outline-hidden transition-colors focus-visible:ring-2"
+							onclick={() => handleChangeThemeColor(themeColor.value)}
+							aria-label="Use {themeColor.name} accent"
+							aria-pressed={themeColor.value === settingsState.themeColor}
+						>
+							<span
+								class={cn(
+									themeColor.bg,
+									'size-9 rounded-full shadow-inner transition-transform duration-200 group-hover:scale-110',
+									{
+										'ring-primary ring-offset-background scale-110 ring-2 ring-offset-2':
+											themeColor.value === settingsState.themeColor
+									}
+								)}
+							></span>
+							<span class="text-muted-foreground text-[10px] font-medium">{themeColor.name}</span>
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</div>
 	<Separator class="my-1 w-full" />
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
-			<Label>Show loads in Unit Heirarchy</Label>
-			<p class="text-xs text-muted-foreground">
+			<Label>Show loads in Unit Hierarchy</Label>
+			<p class="text-muted-foreground text-xs">
 				Show or hide loads in the unit hierarchy, minimizing the hierarchy view.
 			</p>
 		</div>
@@ -388,7 +368,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label>Enable panel multi copy</Label>
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Enable this option to prompt for the number of panels to be copied when copying a panel.
 			</p>
 		</div>
@@ -402,7 +382,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label>Enable load multi copy</Label>
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Enable this option to prompt for the number of loads to be copied when copying a load.
 			</p>
 		</div>
@@ -420,7 +400,7 @@
 			value={selectedFont}
 			onValueChange={(value) => settingsState.setFont(value as Font)}
 		>
-			<Select.Trigger class="w-[180px]" id="font-trigger" placeholder="Select a font">
+			<Select.Trigger class="w-45" id="font-trigger" placeholder="Select a font">
 				{selectedFont.charAt(0).toUpperCase().concat(selectedFont.slice(1))}
 			</Select.Trigger>
 			<Select.Content>
@@ -438,7 +418,7 @@
 	<div class="flex flex-col gap-2">
 		{#if component_state.current.update_state === 'available'}
 			<Alert.Root>
-				<PackageCheck class="size-4" />
+				<PackageIcon class="size-4" />
 				<Alert.Description
 					>New version available: v{component_state.current.app_update?.version ??
 						'unknown'}</Alert.Description
@@ -448,7 +428,6 @@
 		<div>
 			<div class="flex items-center justify-between">
 				<p class="font-semibold">App Version</p>
-				<ViewChangelog />
 			</div>
 			<span class="text-sm tabular-nums">v{pj.version}</span>
 		</div>
@@ -456,7 +435,7 @@
 			<Button
 				variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
 				class={cn('relative w-full', {
-					'!cursor-not-allowed opacity-50':
+					'cursor-not-allowed! opacity-50':
 						component_state.current.update_state === 'processing' ||
 						component_state.current.update_state === 'no_updates',
 					'p-0': component_state.current.update_state === 'downloading'
@@ -496,7 +475,7 @@
 					}
 				}}
 			>
-				<Loader
+				<CircleNotchIcon
 					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
 						block: component_state.current.update_state === 'processing'
 					})}
@@ -511,15 +490,8 @@
 				{:else if component_state.current.update_state === 'downloading'}
 					<div class="m-0 h-full w-full overflow-hidden rounded-md">
 						<div
-							class={cn(
-								'flex h-full items-center justify-center transition-all duration-500 ease-in-out',
-								{
-									'bg-red-500': tween.target < 30,
-									'bg-yellow-500': tween.target >= 30 && tween.target < 70,
-									'bg-green-500': tween.target >= 70
-								}
-							)}
-							style="width: {tween.target}%"
+							class="from-primary to-primary/80 text-primary-foreground flex h-full items-center justify-center bg-linear-to-r text-[11px] font-semibold tabular-nums transition-all duration-500 ease-in-out"
+							style="width: {Math.max(tween.target, 12)}%"
 						>
 							{tween.target}%
 						</div>
@@ -531,9 +503,82 @@
 				{/if}
 			</Button>
 			{#snippet failed(error, reset)}
-				<p class="text-sm text-muted-foreground">{error}</p>
-				<Button onclick={reset}>oops! try again</Button>
+				<p class="text-muted-foreground text-sm">{error}</p>
+				<Button onclick={reset} variant="outline" size="sm">Try again</Button>
 			{/snippet}
 		</svelte:boundary>
 	</div>
+{/snippet}
+
+{#snippet theme_tile(mode: 'light' | 'dark' | 'system', name: string, Icon: typeof SunIcon)}
+	{@const active = settingsState.themeMode === mode}
+	{@const label =
+		mode === 'light' ? 'Light Theme' : mode === 'dark' ? 'Dark Theme' : 'System default theme'}
+	<Label
+		for={mode}
+		class={cn(
+			'group hover:border-border flex cursor-pointer flex-col gap-1.5 rounded-xl border border-transparent p-1.5 transition-all duration-150',
+			active && 'border-primary/40 bg-primary/6 shadow-(--surface-shadow)'
+		)}
+	>
+		<RadioGroup.Item
+			value={mode}
+			id={mode}
+			class="sr-only"
+			aria-label={label}
+			onclick={() => settingsState.setThemeMode(mode)}
+		/>
+		{#if mode === 'light'}
+			<span
+				class={cn(
+					'flex h-14 w-full flex-col gap-1 overflow-hidden rounded-lg border border-black/10 bg-[#fbfaf7] p-1.5'
+				)}
+				aria-hidden="true"
+			>
+				<span class="h-1.5 w-9 rounded-full bg-[#e3e1da]"></span>
+				<span class="flex flex-1 gap-1">
+					<span class="w-4 rounded-xs bg-[#eceae4]"></span>
+					<span class="flex-1 rounded-xs border border-[#e7e5de] bg-white"></span>
+				</span>
+			</span>
+		{:else if mode === 'dark'}
+			<span
+				class={cn(
+					'flex h-14 w-full flex-col gap-1 overflow-hidden rounded-lg border border-white/10 bg-[#101613] p-1.5'
+				)}
+				aria-hidden="true"
+			>
+				<span class="h-1.5 w-9 rounded-full bg-[#232d27]"></span>
+				<span class="flex flex-1 gap-1">
+					<span class="w-4 rounded-xs bg-[#1b241f]"></span>
+					<span class="flex-1 rounded-xs border border-white/5 bg-[#161e19]"></span>
+				</span>
+			</span>
+		{:else}
+			<span
+				class={cn(
+					'flex h-14 w-full overflow-hidden rounded-lg border border-black/10 dark:border-white/10'
+				)}
+				aria-hidden="true"
+			>
+				<span class="flex flex-1 flex-col gap-1 bg-[#fbfaf7] p-1.5">
+					<span class="h-1.5 w-6 rounded-full bg-[#e3e1da]"></span>
+					<span class="flex flex-1 rounded-xs border border-[#e7e5de] bg-white"></span>
+				</span>
+				<span class="flex flex-1 flex-col gap-1 bg-[#101613] p-1.5">
+					<span class="h-1.5 w-6 rounded-full bg-[#232d27]"></span>
+					<span class="flex flex-1 rounded-xs border border-white/5 bg-[#161e19]"></span>
+				</span>
+			</span>
+		{/if}
+		<span
+			class={cn(
+				'text-muted-foreground flex items-center justify-center gap-1.5 text-[11px] font-medium',
+				active && 'text-foreground'
+			)}
+		>
+			<Icon class="size-3.5" />
+			{name}
+		</span>
+	</Label>
 {/snippet}
