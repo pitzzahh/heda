@@ -27,8 +27,8 @@ export class FileLegacyError extends Error {
 	}
 }
 
-// 2 for a v2 envelope, else 1 (legacy bytes or garbage — both unreadable
-// without v1 support, but only legacy bytes deserve the legacy error).
+// 2 for a v2 envelope, else 1. Legacy bytes and garbage are both unreadable
+// without v1 support, but only legacy bytes deserve the legacy error.
 export function detectFileVersion(raw: string): 1 | 2 {
 	try {
 		const envelope = JSON.parse(raw) as Partial<FileEnvelopeV2>;
