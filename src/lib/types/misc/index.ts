@@ -1,9 +1,6 @@
-import type { default_terminal_temperatures } from "@/constants";
+import type * as v from 'valibot';
+import type { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from '#lib/validators/misc';
 
-export type Temperature = (typeof default_terminal_temperatures)[keyof typeof default_terminal_temperatures];
+export type ButtonState = v.InferOutput<typeof BUTTON_STATE_FIELD>;
 
-export type UpdateState = 'stale' | 'available' | 'no_updates' | 'processing';
-
-export type ButtonState = 'idle' | 'loading';
-
-export type ExcelExportType = "LOAD_SCHEDULE" | "VOLTAGE_DROP"
+export type ExcelExportType = v.InferOutput<typeof EXCEL_EXPORT_TYPE_FIELD>;
