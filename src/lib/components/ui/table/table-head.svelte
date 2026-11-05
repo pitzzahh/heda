@@ -1,23 +1,16 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { HTMLThAttributes } from 'svelte/elements';
-	import type { WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { table } from './variants';
+	import { getTableStyle } from './context';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLThAttributes> = $props();
+	let { children, class: className, ...rest }: { children?: Snippet } & HTMLThAttributes = $props();
+
+	const style = getTableStyle();
+	const classes = $derived(table(style()));
 </script>
 
-<th
-	bind:this={ref}
-	class={cn(
-		'h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-		className
-	)}
-	{...restProps}
->
+<th data-slot="table-head" class={cn(classes.head(), className)} {...rest}>
 	{@render children?.()}
 </th>

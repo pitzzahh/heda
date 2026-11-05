@@ -1,31 +1,18 @@
 <script lang="ts">
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
-	import type { WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
+	import { cn } from '#lib/utils';
+	import { breadcrumbStyles } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		href = undefined,
-		child,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAnchorAttributes> & {
-		child?: Snippet<[{ props: HTMLAnchorAttributes }]>;
-	} = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLAnchorAttributes = $props();
 
-	const attrs = $derived({
-		class: cn('hover:text-foreground transition-colors', className),
-		href,
-		...restProps
-	});
+	const s = $derived(breadcrumbStyles());
 </script>
 
-{#if child}
-	{@render child({ props: attrs })}
-{:else}
-	<a bind:this={ref} {...attrs}>
-		{@render children?.()}
-	</a>
-{/if}
+<a {...rest} data-slot="breadcrumb-link" class={cn(s.link(), classProp)}>
+	{@render children?.()}
+</a>

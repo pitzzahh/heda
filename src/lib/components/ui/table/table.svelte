@@ -1,18 +1,35 @@
 <script lang="ts">
-	import type { HTMLTableAttributes } from 'svelte/elements';
-	import type { WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import type { Snippet } from 'svelte';
+	import type { HTMLAttributes } from 'svelte/elements';
+	import { cn } from '#lib/utils';
+	import { type TableDensity, type TableVariant, table } from './variants';
+	import { setTableStyle } from './context';
 
 	let {
 		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLTableAttributes> = $props();
+		class: className,
+		containerClass,
+		variant = 'default',
+		density = 'comfortable',
+		...rest
+	}: {
+		/** Bindable: the `<table>` element. */
+		ref?: HTMLTableElement | null;
+		children?: Snippet;
+		class?: string;
+		containerClass?: string;
+		variant?: TableVariant;
+		density?: TableDensity;
+	} & HTMLAttributes<HTMLTableElement> = $props();
+
+	setTableStyle(() => ({ variant, density }));
+
+	const classes = $derived(table({ variant, density }));
 </script>
 
-<div class="relative w-full overflow-auto">
-	<table bind:this={ref} class={cn('w-full caption-bottom text-sm', className)} {...restProps}>
+<div data-slot="table-container" class={cn(classes.container(), containerClass)}>
+	<table bind:this={ref} data-slot="table" class={cn(classes.root(), className)} {...rest}>
 		{@render children?.()}
 	</table>
 </div>

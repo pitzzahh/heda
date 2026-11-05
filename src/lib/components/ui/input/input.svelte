@@ -1,23 +1,36 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
-	import type { WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { type InputSize, type InputVariant, input } from './variants';
+
+	type Props = {
+		// Deviation from upstream Baby UI: number fields pass numeric values.
+		value?: string | number;
+		class?: string;
+		size?: InputSize;
+		/** `outline` (default) shows focus as the border; `ring` adds a soft halo. */
+		variant?: InputVariant;
+		invalid?: boolean;
+		/** Bindable: the `<input>` element. */
+		ref?: HTMLInputElement | null;
+	} & Omit<HTMLInputAttributes, 'size' | 'value' | 'class'>;
 
 	let {
+		value = $bindable(''),
 		ref = $bindable(null),
-		value = $bindable(),
-		class: className,
-		...restProps
-	}: WithElementRef<HTMLInputAttributes> = $props();
+		class: classProp,
+		size = 'default',
+		variant = 'outline',
+		invalid = false,
+		...rest
+	}: Props = $props();
 </script>
 
 <input
 	bind:this={ref}
-	autocomplete="off"
-	class={cn(
-		'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-		className
-	)}
+	data-slot="input"
+	{...rest}
 	bind:value
-	{...restProps}
+	aria-invalid={invalid || rest['aria-invalid'] || undefined}
+	class={cn(input({ size, variant }), classProp)}
 />
