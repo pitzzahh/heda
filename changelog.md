@@ -171,7 +171,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved application update system issues.
 - Enhanced changelog history loading mechanism.
 
-
 ## [0.2.24] - 2024-12-27
 
 ### Fixed
