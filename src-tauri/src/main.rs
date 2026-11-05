@@ -6,11 +6,6 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 #[tauri::command]
-fn get_env_var(key: String) -> String {
-    std::env::var(String::from(key)).unwrap_or(String::from(""))
-}
-
-#[tauri::command]
 fn get_file_name(path: String) -> String {
     let path = Path::new(path.as_str());
     let filename = path.file_stem().unwrap_or_default();
@@ -36,9 +31,6 @@ fn get_exe_path() -> PathBuf {
 }
 
 fn main() {
-    dotenv::from_read(include_str!("../../.env").as_bytes())
-        .unwrap()
-        .load();
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -62,8 +54,18 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            use tauri::Manager;
+            let salt_path = app
+                .path()
+                .app_local_data_dir()
+                .expect("could not resolve app local data path")
+                .join("heda-k");
+            app.handle()
+                .plugin(tauri_plugin_stronghold::Builder::with_argon2(&salt_path).build())?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            get_env_var,
             get_file_name,
             get_file_metadata,
             get_exe_path
