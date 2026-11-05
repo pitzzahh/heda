@@ -1,30 +1,27 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
-/** Slides 250ms in, 200ms out; the scrim lands first (150ms) and leaves with the panel. */
+/** Slides in, out the way it came; the scrim lands first and leaves with the panel. Keyframes, never @starting-style: they apply on the mount frame in every engine. */
 export const sheet = tv({
 	slots: {
 		backdrop: [
-			'fixed inset-0 z-50 bg-black/50 opacity-0 backdrop-blur-[2px]',
-			'transition-opacity duration-[var(--duration-panel-exit)] ease-[var(--ease-drawer)]',
-			'data-[state=open]:opacity-100 data-[state=open]:duration-[var(--duration-backdrop)]',
-			'starting:data-[state=open]:opacity-0',
-			'motion-reduce:transition-none'
+			'fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]',
+			'data-[state=open]:animate-in data-[state=closed]:animate-out',
+			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			'data-[state=open]:duration-[var(--duration-backdrop)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
+			'ease-[var(--ease-drawer)]',
+			'motion-reduce:animate-none'
 		],
 		body: '',
-		// Only the closed state translates, so the open state needs no competing utility.
 		panel: [
 			'fixed z-50 flex flex-col shadow-(--overlay-shadow)',
-			'transition-transform duration-[var(--duration-overlay)] ease-[var(--ease-drawer)]',
-			'data-[state=closed]:duration-[var(--duration-panel-exit)]',
-			'data-[state=closed]:data-[side=left]:-translate-x-full',
-			'data-[state=closed]:data-[side=right]:translate-x-full',
-			'data-[state=closed]:data-[side=top]:-translate-y-full',
-			'data-[state=closed]:data-[side=bottom]:translate-y-full',
-			'starting:data-[state=open]:data-[side=left]:-translate-x-full',
-			'starting:data-[state=open]:data-[side=right]:translate-x-full',
-			'starting:data-[state=open]:data-[side=top]:-translate-y-full',
-			'starting:data-[state=open]:data-[side=bottom]:translate-y-full',
-			'motion-reduce:transition-none'
+			'data-[state=open]:animate-in data-[state=closed]:animate-out',
+			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
+			'ease-[var(--ease-drawer)]',
+			'data-[side=left]:slide-in-from-left data-[side=left]:slide-out-to-left',
+			'data-[side=right]:slide-in-from-right data-[side=right]:slide-out-to-right',
+			'data-[side=top]:slide-in-from-top data-[side=top]:slide-out-to-top',
+			'data-[side=bottom]:slide-in-from-bottom data-[side=bottom]:slide-out-to-bottom',
+			'motion-reduce:animate-none'
 		]
 	},
 	variants: {

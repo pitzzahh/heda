@@ -1,24 +1,26 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
 /**
- * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Base UI emits
- * `data-open`/`data-closed`, bits-ui `data-state`, so both are written out.
+ * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Enter/exit
+ * are keyframe animations (tw-animate-css): they apply on the mount frame in every
+ * engine, unlike @starting-style transitions. Centering lives on the `translate`
+ * property so keyframe `transform`s compose with it instead of overriding it.
  */
 export const dialogFrame = tv({
 	slots: {
 		// Fades in step with the panel; the primitive owns the top layer and inertness.
 		backdrop: [
-			'fixed inset-0 z-50 bg-black/50 opacity-0 backdrop-blur-[2px]',
-			'transition-opacity duration-[var(--duration-exit)] ease-[var(--ease-ui-out)]',
-			'data-[open]:opacity-100 data-[open]:duration-[var(--duration-dropdown)]',
-			'data-[state=open]:opacity-100 data-[state=open]:duration-[var(--duration-dropdown)]',
-			'motion-reduce:transition-none'
+			'fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]',
+			'data-[state=open]:animate-in data-[state=closed]:animate-out',
+			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			'data-[state=open]:duration-[var(--duration-dropdown)] data-[state=closed]:duration-[var(--duration-exit)]',
+			'ease-[var(--ease-ui-out)]',
+			'motion-reduce:animate-none'
 		],
 		// Motion is selected by the root; every path retraces itself on close.
 		popup: [
-			'fixed top-1/2 left-1/2 z-50 overflow-visible outline-hidden',
-			'[transform:translate(-50%,-50%)_translate(var(--dialog-x,0),var(--dialog-y,0))_scale(var(--dialog-scale,1))]',
-			'motion-reduce:transition-none'
+			'fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 overflow-visible outline-hidden',
+			'motion-reduce:animate-none'
 		],
 		panel: 'rounded-2xl border border-border/70 shadow-[var(--overlay-shadow)]',
 		// The icon-only close in the corner; a close with children styles itself.
@@ -31,50 +33,64 @@ export const dialogFrame = tv({
 		motion: {
 			zoom: {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-scale:var(--modal-enter-scale)] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
 			fade: {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-scale:0.99] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:0.99] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
 			'slide-up': {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-y:1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:slide-in-from-bottom-6 data-[state=closed]:slide-out-to-bottom-6',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
 			'slide-down': {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-y:-1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:slide-in-from-top-6 data-[state=closed]:slide-out-to-top-6',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
 			'slide-left': {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-x:1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:slide-in-from-end-6 data-[state=closed]:slide-out-to-end-6',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
 			'slide-right': {
 				popup: [
-					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-x:-1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:slide-in-from-start-6 data-[state=closed]:slide-out-to-start-6',
+					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'ease-[var(--ease-out-quad)]'
 				]
 			},
+			// Clip-path has no keyframe utility: the collapse stays a transition (exits
+			// never needed @starting-style), while the fade rides the keyframes.
 			morph: {
 				popup: [
+					'data-[state=open]:animate-in data-[state=closed]:animate-out',
+					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
 					'[clip-path:inset(0_0_0_0_round_var(--radius-2xl))] transition-[clip-path] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)] will-change-[clip-path]',
-					'data-[closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'data-[state=closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'motion-reduce:[clip-path:none] motion-reduce:will-change-auto'
 				]
