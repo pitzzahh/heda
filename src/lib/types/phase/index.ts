@@ -1,5 +1,10 @@
-import type { default_phases, default_three_phase_types } from "@/constants";
+import type * as v from 'valibot';
+import type { PHASE_FIELD } from '#lib/validators/shared';
+import type { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel';
 
-export type Phase = (typeof default_phases)[keyof typeof default_phases];
+export type Phase = v.InferOutput<typeof PHASE_FIELD>;
 
-export type PhaseType = (typeof default_three_phase_types)[keyof typeof default_three_phase_types];
+export type PhaseType = Exclude<
+	v.InferOutput<typeof GENERIC_PHASE_PANEL_SCHEMA>['type'],
+	null | undefined
+>;
