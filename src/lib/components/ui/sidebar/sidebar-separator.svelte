@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { cn } from '@/utils';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import { cn } from '#lib/utils';
 	import type { ComponentProps } from 'svelte';
 
 	let {
@@ -13,6 +13,6 @@
 <Separator
 	bind:ref
 	data-sidebar="separator"
-	class={cn('mx-2 w-auto bg-sidebar-border', className)}
+	class={cn('bg-sidebar-border mx-2 w-auto', className)}
 	{...restProps}
 />
