@@ -1,119 +1,118 @@
 <script lang="ts">
-	import { DataTable } from '@/components/custom/table';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { DataTable } from '#lib/components/custom/table';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	import { page } from '$app/state';
-	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
-	import {
-		getComputedLoads,
-		getComputedVoltageDrops,
-		getRootNode,
-		getNodeById
-	} from '@/db/queries/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
-	import { Skeletal } from '@/components/custom/index.js';
-	import { getProjectState } from '@/hooks/project-state.svelte';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
+	import { getRootNode, getNodeById } from '#lib/db/queries/index.js';
+	import * as Tabs from '#lib/components/ui/tabs/index.js';
+	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
+	import { LightningAIcon } from '#lib/assets/icons';
+	import { getProjectState } from '#lib/hooks/project-state.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
-	import { Skeleton } from '@/components/ui/skeleton';
+	import { resolve } from '$app/paths';
+	import { Skeleton } from '#lib/components/ui/skeleton';
 
 	let { data } = $props();
 
-	const { root_node } = data;
+	const root_node = $derived(data.root_node);
 	const params = $derived(page.params);
-	const node_id = $derived(params.id.split('_').at(-1) as string);
+	const node_id = $derived(params.id!.split('_').at(-1) as string);
 	const project_state = getProjectState();
-	const undo_redo_state = getUndoRedoState();
 
+	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
 		if (!project_state.loaded) {
 			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
 				description: 'Please create a project or load an existing one first.'
 			});
-			goto(`/`);
+			goto(resolve(`/`));
 		}
 	});
 </script>
 
-<div class="flex w-full flex-col gap-2">
-	<div class="grid grid-cols-2">
-		<div>
-			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal">
+<div class="flex min-h-0 w-full flex-1 flex-col gap-2">
+	<div
+		class="border-border bg-card flex flex-col gap-4 rounded-2xl border px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
+	>
+		<div class="flex items-center gap-3 border-b pb-4 lg:border-r lg:border-b-0 lg:pr-5 lg:pb-0">
+			<div
+				class="bg-primary/10 text-primary border-primary/15 grid size-11 shrink-0 place-items-center rounded-xl border"
+			>
+				<LightningAIcon class="size-5" />
+			</div>
+			<div class="grid gap-0.5">
+				<span class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase"
+					>Distribution Unit</span
+				>
+				<span class="text-base leading-5 font-bold tracking-tight">
 					{#await getNodeById(node_id)}
-						<Skeleton class="inline-block h-6 w-[200px]" />
+						<Skeleton class="h-5 w-36" />
 					{:then current_node}
 						{current_node?.panel_data?.name ??
 							current_node?.highest_unit_form?.distribution_unit ??
 							'NOT FOUND'}
 					{/await}
 				</span>
-			</p>
-			<p class="font-semibold">
-				Phase: <span class="font-normal">
-					{#await getRootNode()}
-						<Skeleton class="inline-block h-6 w-[200px]" />
-					{:then root_node}
-						{root_node?.highest_unit_form?.phase ?? ''}
-					{/await}</span
-				>
-			</p>
+			</div>
 		</div>
 
-		<p class="font-semibold">
-			Supply From:
-			<span class="font-normal">
-				{#await getNodeById(node_id)}
-					<Skeleton class="inline-block h-6 w-[200px]" />
-				{:then current_node}
-					{@const parent_id = current_node?.parent_id}
-					{#if parent_id}
-						{#await getNodeById(parent_id)}
-							<Skeleton class="inline-block h-6 w-[200px]" />
-						{:then parent_node}
-							{parent_node?.panel_data?.name ||
-								parent_node?.highest_unit_form?.distribution_unit ||
-								'--'}
-						{/await}
-					{:else}
-						--
-					{/if}
-				{/await}
-			</span>
-		</p>
+		<dl class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-0">
+			<div class="grid gap-0.5 lg:border-r lg:px-5">
+				<dt class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase">
+					Phase System
+				</dt>
+				<dd class="text-sm font-medium">
+					{#await getRootNode()}
+						<Skeleton class="h-5 w-24" />
+					{:then root_node}
+						{root_node?.highest_unit_form?.phase ?? '—'}
+					{/await}
+				</dd>
+			</div>
+
+			<div class="grid gap-0.5 lg:px-5">
+				<dt class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase">
+					Supply From
+				</dt>
+				<dd class="truncate text-sm font-medium">
+					{#await getNodeById(node_id)}
+						<Skeleton class="h-5 w-36" />
+					{:then current_node}
+						{@const parent_id = current_node?.parent_id}
+						{#if parent_id}
+							{#await getNodeById(parent_id)}
+								<Skeleton class="h-5 w-36" />
+							{:then parent_node}
+								{parent_node?.panel_data?.name ??
+									parent_node?.highest_unit_form?.distribution_unit ??
+									'—'}
+							{/await}
+						{:else}
+							—
+						{/if}
+					{/await}
+				</dd>
+			</div>
+		</dl>
 	</div>
-	<Tabs.Root value="load-sched" class="w-full">
+	<Tabs.Root value="load-sched" class="min-h-0 w-full flex-1">
 		<Tabs.List class="place-self-end">
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
-		<Tabs.Content value="load-sched">
-			{#key undo_redo_state.has_unsaved_actions}
-				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
-					<Skeletal options_count={10} />
-				{:then [current_node, loads]}
-					<DataTable
-						data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-						columns={onePhaseMainOrWyeCols(
-							data.phase_main_load_form,
-							current_node as PhaseLoadSchedule,
-							root_node?.highest_unit_form,
-							loads && loads.length > 0 ? loads.at(-1) : undefined
-						)}
-						is_footer_shown={current_node?.node_type !== 'root'}
-					/>
-				{/await}
-			{/key}
+		<Tabs.Content value="load-sched" class="flex min-h-0 flex-1 flex-col">
+			<DataTable
+				data={data.loads && data.loads.length > 0 ? data.loads : []}
+				columns={onePhaseMainOrWyeCols(
+					data.current_node as PhaseLoadSchedule,
+					root_node?.highest_unit_form
+				)}
+				is_footer_shown={data.current_node?.node_type !== 'root'}
+			/>
 		</Tabs.Content>
-		<Tabs.Content value="voltage-drop">
-			{#key undo_redo_state.has_unsaved_actions}
-				{#await getComputedVoltageDrops()}
-					<Skeletal options_count={10} />
-				{:then voltage_drops}
-					<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
-				{/await}
-			{/key}
+		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
+			<DataTable data={data.voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
