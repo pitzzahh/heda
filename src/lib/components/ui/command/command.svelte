@@ -1,21 +1,54 @@
 <script lang="ts">
-	import { Command as CommandPrimitive } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { Command as CommandPrimitive, computeCommandScore } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { rankCommandMatch } from './score';
+	import { type CommandVariant, commandFrame } from './variants';
+	import { getCommandDialogState, setCommand } from './context';
 
 	let {
+		children,
 		value = $bindable(''),
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: CommandPrimitive.RootProps = $props();
+		variant: variantProp,
+		filter = (item: string, search: string, keywords?: string[]) =>
+			rankCommandMatch(computeCommandScore(item, search, keywords), item, search),
+		class: classProp,
+		...rest
+	}: Omit<CommandPrimitive.RootProps, 'value' | 'onStateChange'> & {
+		value?: string;
+		variant?: CommandVariant;
+	} = $props();
+
+	let resultCount = $state(0);
+	const dialogState = getCommandDialogState();
+	const variant = $derived(variantProp ?? dialogState?.variant ?? 'default');
+	const styles = $derived(commandFrame({ variant }));
+
+	setCommand({
+		get resultCount() {
+			return resultCount;
+		},
+		get activeValue() {
+			return value;
+		},
+		get variant() {
+			return variant;
+		},
+		get styles() {
+			return styles;
+		}
+	});
 </script>
 
 <CommandPrimitive.Root
-	class={cn(
-		'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
-		className
-	)}
-	bind:ref
 	bind:value
-	{...restProps}
-/>
+	{filter}
+	onStateChange={(state) => {
+		resultCount = state.filtered.count;
+	}}
+	data-slot="command"
+	data-variant={variant}
+	class={cn(styles.body(), classProp)}
+	{...rest}
+>
+	{@render children?.()}
+</CommandPrimitive.Root>

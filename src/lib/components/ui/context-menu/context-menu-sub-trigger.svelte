@@ -1,28 +1,35 @@
 <script lang="ts">
-	import { ContextMenu as ContextMenuPrimitive, type WithoutChild } from 'bits-ui';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { cn } from '$lib/utils';
+	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
+		class: classProp,
+		inset = false,
 		children,
-		inset,
-		...restProps
-	}: WithoutChild<ContextMenuPrimitive.SubTriggerProps> & {
-		inset?: boolean;
-	} = $props();
+		...rest
+	}: ContextMenuPrimitive.SubTriggerProps & { inset?: boolean } = $props();
 </script>
 
 <ContextMenuPrimitive.SubTrigger
-	bind:ref
-	class={cn(
-		'flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[state=open]:bg-accent data-[highlighted]:text-accent-foreground data-[state=open]:text-accent-foreground',
-		inset && 'pl-8',
-		className
-	)}
-	{...restProps}
+	{...rest}
+	data-slot="context-menu-sub-trigger"
+	data-inset={inset || undefined}
+	class={cn(menu().item(), classProp)}
 >
-	{@render children?.()}
-	<ChevronRight class="ml-auto size-4" />
+	<span class="min-w-0 flex-1 truncate text-left">{@render children?.()}</span>
+	<svg
+		viewBox="0 0 16 16"
+		fill="none"
+		aria-hidden="true"
+		class="text-muted-foreground ml-2 size-3.5 shrink-0"
+	>
+		<path
+			d="m6 3.5 4.5 4.5L6 12.5"
+			stroke="currentColor"
+			stroke-width="1.5"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	</svg>
 </ContextMenuPrimitive.SubTrigger>

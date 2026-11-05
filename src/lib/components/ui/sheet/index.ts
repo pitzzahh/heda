@@ -1,37 +1,17 @@
-import { Dialog as SheetPrimitive } from "bits-ui";
-
-import Overlay from "./sheet-overlay.svelte";
-import Content from "./sheet-content.svelte";
-import Header from "./sheet-header.svelte";
-import Footer from "./sheet-footer.svelte";
-import Title from "./sheet-title.svelte";
-import Description from "./sheet-description.svelte";
-
-const Root = SheetPrimitive.Root;
-const Close = SheetPrimitive.Close;
-const Trigger = SheetPrimitive.Trigger;
-const Portal = SheetPrimitive.Portal;
-
-export {
-	Root,
-	Close,
-	Trigger,
-	Portal,
-	Overlay,
-	Content,
-	Header,
-	Footer,
-	Title,
-	Description,
-	//
-	Root as Sheet,
-	Close as SheetClose,
-	Trigger as SheetTrigger,
-	Portal as SheetPortal,
-	Overlay as SheetOverlay,
-	Content as SheetContent,
-	Header as SheetHeader,
-	Footer as SheetFooter,
-	Title as SheetTitle,
-	Description as SheetDescription,
-};
+export { default as Sheet } from './sheet.svelte';
+export { default as SheetClose } from './sheet-close.svelte';
+export { default as SheetContent } from './sheet-content.svelte';
+export { default as SheetDescription } from './sheet-description.svelte';
+export { default as SheetFooter } from './sheet-footer.svelte';
+export { default as SheetHeader } from './sheet-header.svelte';
+export { default as SheetTitle } from './sheet-title.svelte';
+export { default as SheetTrigger } from './sheet-trigger.svelte';
+export { sheet, type SheetVariant, type SheetSide } from './variants';
+export { default as Root } from './sheet.svelte';
+export { default as Close } from './sheet-close.svelte';
+export { default as Content } from './sheet-content.svelte';
+export { default as Description } from './sheet-description.svelte';
+export { default as Footer } from './sheet-footer.svelte';
+export { default as Header } from './sheet-header.svelte';
+export { default as Title } from './sheet-title.svelte';
+export { default as Trigger } from './sheet-trigger.svelte';

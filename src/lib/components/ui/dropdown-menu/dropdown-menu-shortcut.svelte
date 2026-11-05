@@ -1,20 +1,16 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { type WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLElement> = $props();
 </script>
 
-<span
-	bind:this={ref}
-	class={cn('ml-auto text-xs tracking-widest opacity-60', className)}
-	{...restProps}
->
+<kbd {...rest} data-slot="dropdown-menu-shortcut" class={cn(menu().shortcut(), classProp)}>
 	{@render children?.()}
-</span>
+</kbd>

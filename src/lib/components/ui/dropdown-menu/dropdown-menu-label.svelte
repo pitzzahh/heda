@@ -1,23 +1,19 @@
 <script lang="ts">
-	import { cn } from '@/utils';
-	import { type WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
+	import { cn } from '#lib/utils';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		inset,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
-		inset?: boolean;
-	} = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLDivElement> = $props();
 </script>
 
 <div
-	bind:this={ref}
-	class={cn('px-2 py-1.5 text-sm font-semibold', inset && 'pl-8', className)}
-	{...restProps}
+	{...rest}
+	data-slot="dropdown-menu-label"
+	class={cn('text-muted-foreground px-2.5 py-1.5 text-xs font-medium', classProp)}
 >
 	{@render children?.()}
 </div>

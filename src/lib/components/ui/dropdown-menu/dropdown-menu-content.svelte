@@ -1,22 +1,29 @@
 <script lang="ts">
-	import { cn } from '@/utils';
 	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { type MenuSize, menu } from '#lib/components/ui/shared/menu';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor';
+	import { dropdownMenuTrigger } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
+		class: classProp,
 		sideOffset = 4,
-		...restProps
-	}: DropdownMenuPrimitive.ContentProps = $props();
+		align = 'start',
+		size = 'default',
+		ref = $bindable(null),
+		...rest
+	}: DropdownMenuPrimitive.ContentProps & { size?: MenuSize } = $props();
 </script>
 
-<DropdownMenuPrimitive.Content
-	bind:ref
-	{sideOffset}
-	class={cn(
-		'z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
-		'outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-		className
-	)}
-	{...restProps}
-/>
+<DropdownMenuPrimitive.Portal>
+	<DropdownMenuPrimitive.Content
+		bind:ref
+		{sideOffset}
+		{align}
+		aria-labelledby={dropdownMenuTrigger()}
+		{...rest}
+		data-slot="dropdown-menu-content"
+		data-size={size}
+		class={cn(ANCHORED, 'static', menu({ size }).surface(), classProp)}
+	/>
+</DropdownMenuPrimitive.Portal>
