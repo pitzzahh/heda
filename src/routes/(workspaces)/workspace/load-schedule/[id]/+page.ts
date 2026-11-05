@@ -1,7 +1,6 @@
-import { generic_phase_main_load_schema } from '@/schema/load';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+import { getComputedLoads, getComputedVoltageDrops, getNodeById } from '#lib/db/queries/index.js';
 
 export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];
@@ -9,11 +8,21 @@ export const entries = () => {
 
 export const load = async ({ depends, params }) => {
 	depends('app:workspace/load-schedule');
-	if (!params.id.split('_').at(-1)) {
+
+	const node_id = params.id.split('_').at(-1);
+	if (!node_id) {
 		console.warn('Viewing workspace without node_id');
-		goto('/');
+		goto(resolve('/'));
+		return { current_node: null, loads: [], voltage_drops: [] };
 	}
-	return {
-		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema))
-	};
+
+	// Fetched in the load so mutations can refresh the tables in place via
+	// `invalidate('app:workspace/load-schedule')`, instead of remounting them.
+	const [current_node, loads, voltage_drops] = await Promise.all([
+		getNodeById(node_id),
+		getComputedLoads(node_id),
+		getComputedVoltageDrops()
+	]);
+
+	return { current_node, loads, voltage_drops };
 };
