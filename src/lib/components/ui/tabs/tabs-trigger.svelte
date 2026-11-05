@@ -1,21 +1,23 @@
 <script lang="ts">
-	import { Tabs as TabsPrimitive } from "bits-ui";
-	import { cn } from "@/utils";
+	import { Tabs as TabsPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { tabsFrame } from './variants';
+	import { getTabs } from './context';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		value,
-		...restProps
-	}: TabsPrimitive.TriggerProps = $props();
+	let { children, value, class: classProp, ...rest }: TabsPrimitive.TriggerProps = $props();
+
+	const tabs = getTabs();
+	const frame = $derived(
+		tabsFrame({ variant: tabs.variant, size: tabs.size, orientation: tabs.orientation })
+	);
 </script>
 
 <TabsPrimitive.Trigger
-	bind:ref
-	class={cn(
-		"ring-offset-background focus-visible:ring-ring data-[state=active]:bg-background data-[state=active]:text-foreground inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow",
-		className
-	)}
 	{value}
-	{...restProps}
-/>
+	data-slot="tabs-trigger"
+	data-tab={value}
+	class={cn(frame.trigger(), classProp)}
+	{...rest}
+>
+	{@render children?.()}
+</TabsPrimitive.Trigger>

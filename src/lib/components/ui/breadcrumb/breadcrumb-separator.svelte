@@ -1,27 +1,36 @@
 <script lang="ts">
-	import ChevronRight from 'svelte-radix/ChevronRight.svelte';
-	import type { WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLLiAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { breadcrumbStyles } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLLiAttributes> = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLLiAttributes = $props();
+
+	const s = $derived(breadcrumbStyles());
 </script>
 
 <li
+	{...rest}
 	role="presentation"
 	aria-hidden="true"
-	class={cn('[&>svg]:size-3.5', className)}
-	bind:this={ref}
-	{...restProps}
+	data-slot="breadcrumb-separator"
+	class={cn(s.separator(), classProp)}
 >
 	{#if children}
-		{@render children?.()}
+		{@render children()}
 	{:else}
-		<ChevronRight />
+		<svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+			<path
+				d="M5.5 3.5 9 7l-3.5 3.5"
+				stroke="currentColor"
+				stroke-width="1.4"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+		</svg>
 	{/if}
 </li>

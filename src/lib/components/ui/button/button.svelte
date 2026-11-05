@@ -1,72 +1,116 @@
 <script lang="ts" module>
-	import type { WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
-	import { type VariantProps, tv } from 'tailwind-variants';
+	import type { ButtonSize, ButtonVariant } from './variants';
 
-	export const buttonVariants = tv({
-		base: 'focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-		variants: {
-			variant: {
-				default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow',
-				destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm',
-				outline:
-					'border-input bg-background hover:bg-accent hover:text-accent-foreground border shadow-sm',
-				secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm',
-				ghost: 'hover:bg-accent hover:text-accent-foreground',
-				warning: 'text-yellow-600 border-yellow-600 bg-yellow-600/10',
-				link: 'text-primary underline-offset-4 hover:underline'
-			},
-			size: {
-				default: 'h-9 px-4 py-2',
-				sm: 'h-8 rounded-md px-3 text-xs',
-				lg: 'h-10 rounded-md px-8',
-				xl: 'h-12 rounded-md px-12 text-lg',
-				'2xl': 'h-16 rounded-md px-16 text-xl',
-				icon: 'h-9 w-9'
-			}
-		},
-		defaultVariants: {
-			variant: 'default',
-			size: 'default'
-		}
-	});
-
-	export type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
-	export type ButtonSize = VariantProps<typeof buttonVariants>['size'];
-
-	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
-		WithElementRef<HTMLAnchorAttributes> & {
-			variant?: ButtonVariant;
-			size?: ButtonSize;
-		};
+	export type ButtonProps = {
+		variant?: ButtonVariant;
+		size?: ButtonSize;
+		href?: string;
+		loading?: boolean;
+		loadingLabel?: string;
+		children?: Snippet;
+		class?: string;
+		/** Bindable: the rendered `<button>` or `<a>`. */
+		ref?: HTMLElement | null;
+	} & Omit<HTMLButtonAttributes & HTMLAnchorAttributes, 'class' | 'children'>;
 </script>
 
 <script lang="ts">
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { button, buttonFace, isIconSize } from './variants';
+
+	const faceStyles = buttonFace();
 
 	let {
-		class: className,
-		variant = 'default',
-		size = 'default',
 		ref = $bindable(null),
-		href = undefined,
-		type = 'button',
+		variant,
+		size,
+		href,
+		loading = false,
+		loadingLabel = 'Loading…',
 		children,
-		...restProps
+		class: classProp,
+		onclick,
+		...rest
 	}: ButtonProps = $props();
+
+	const classes = $derived(cn(button({ variant, size }), classProp));
+	const iconOnly = $derived(isIconSize(size));
+
+	function activate(event: MouseEvent) {
+		if (loading) {
+			event.preventDefault();
+			return;
+		}
+		(onclick as ((e: MouseEvent) => void) | undefined)?.(event);
+	}
 </script>
 
-{#if href}
-	<a bind:this={ref} class={cn(buttonVariants({ variant, size, className }))} {href} {...restProps}>
-		{@render children?.()}
+{#snippet faces()}
+	<span class={faceStyles.wrap()}>
+		<span class={faceStyles.face()} data-on={!loading} aria-hidden={loading}>
+			{@render children?.()}
+		</span>
+		<span class={faceStyles.face()} data-on={loading} aria-hidden={!loading}>
+			<svg
+				viewBox="0 0 12 12"
+				fill="none"
+				aria-hidden="true"
+				class="size-3.5 [animation:spin_850ms_linear_infinite] motion-reduce:animate-none"
+				style:animation-play-state={loading ? 'running' : 'paused'}
+			>
+				<circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5" opacity="0.22" />
+				<path
+					d="M10.5 6A4.5 4.5 0 0 0 6 1.5"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+				/>
+			</svg>
+			{#if iconOnly}<span class="sr-only">{loadingLabel}</span>{:else}{loadingLabel}{/if}
+		</span>
+	</span>
+{/snippet}
+
+{#if href !== undefined}
+	<!-- eslint-disable svelte/no-navigation-without-resolve -- generic pass-through, all callers navigate internally -->
+	<a
+		bind:this={ref}
+		data-slot="button"
+		{...rest as HTMLAnchorAttributes}
+		href={loading ? undefined : href}
+		role={loading ? 'link' : undefined}
+		class={classes}
+		aria-busy={loading || undefined}
+		aria-disabled={loading || undefined}
+		data-variant={variant}
+		data-size={size}
+		onclick={activate}
+		onkeydown={(e) => {
+			// Anchors don't activate on Space natively; the spec requires that they do.
+			if (e.key === ' ') {
+				e.preventDefault();
+				e.currentTarget.click();
+			}
+		}}
+	>
+		{@render faces()}
 	</a>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 {:else}
 	<button
 		bind:this={ref}
-		class={cn(buttonVariants({ variant, size, className }))}
-		{type}
-		{...restProps}
+		data-slot="button"
+		{...rest as HTMLButtonAttributes}
+		type={(rest as HTMLButtonAttributes).type ?? 'button'}
+		class={classes}
+		aria-busy={loading || undefined}
+		aria-disabled={loading || undefined}
+		data-variant={variant}
+		data-size={size}
+		onclick={activate}
 	>
-		{@render children?.()}
+		{@render faces()}
 	</button>
 {/if}
