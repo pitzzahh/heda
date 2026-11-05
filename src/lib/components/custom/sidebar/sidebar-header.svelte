@@ -1,38 +1,42 @@
+<script lang="ts" module>
+	import {
+		CheckIcon,
+		CircleNotchIcon,
+		ExportIcon,
+		FloppyDiskIcon,
+		TableIcon
+	} from '#lib/assets/icons';
+	import type { Node } from '#lib/types/db';
+
+	interface Props {
+		root_node: Node;
+	}
+</script>
+
 <script lang="ts">
-	import { Save, Loader, Sheet, ArrowRightFromLine } from '@/assets/icons';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Button, buttonVariants } from '@/components/ui/button';
+	import * as Tooltip from '#lib/components/ui/tooltip';
+	import { Button, buttonVariants } from '#lib/components/ui/button';
 	import { Settings } from '..';
 	import { toast } from 'svelte-sonner';
-	import type { Node } from '@/db/schema';
 	import { UndoRedoButtons } from './(components)';
-	import { exportToExcel } from '@/helpers/export';
-	import type { ButtonState } from '@/types/misc';
-	import type { FileExport } from '@/types/main';
-	import { generateKey, keyToString } from '@/helpers/security';
-	import { writeEncryptedFile } from '@/helpers/file';
-	import { getAllChildNodes, getCurrentProject } from '@/db/queries';
-	import { validateEnv } from '@/utils/validation';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import { getProjectState } from '@/hooks/project-state.svelte';
-	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
+	import { exportToExcel } from '#lib/helpers/export';
+	import type { ButtonState } from '#lib/types/misc';
+	import type { FileExport } from '#lib/types/main';
+	import { getSessionPassword } from '#lib/db/session';
+	import { writeEncryptedFile } from '#lib/helpers/file';
+	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
+	import { getProjectState } from '#lib/hooks/project-state.svelte';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { Portal } from 'bits-ui';
-	import { cn } from '@/utils';
-	let {
-		root_node,
-		app_pass_phrase,
-		file_encryption_salt
-	}: {
-		root_node: Node;
-		app_pass_phrase: string | null;
-		file_encryption_salt: string | null;
-	} = $props();
+	import { cn } from '#lib/utils';
+	let { root_node }: Props = $props();
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
-		status: 'idle' as 'idle' | 'processing',
-		can_save: true
+		can_save: true,
+		saving: false
 	});
 
 	const undo_redo_state = getUndoRedoState();
@@ -40,8 +44,9 @@
 	const project_state = getProjectState();
 
 	async function handleSave() {
+		if (component_state.saving) return;
+		component_state.saving = true;
 		try {
-			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 			if (!project_state.loaded) {
 				console.error('Failed to save, project not yet loaded');
 				return toast.warning('Failed to save, project not yet loaded', {
@@ -65,17 +70,22 @@
 
 			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
 
-			await writeEncryptedFile(
-				file_data,
-				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-				project_state.current_project_path
-			);
+			const session_password = getSessionPassword();
+			if (!session_password) {
+				console.error('Failed to save, no session password');
+				return toast.warning('Failed to save, no session password', {
+					description: 'Reload the file and try again.'
+				});
+			}
+			await writeEncryptedFile(file_data, session_password, project_state.current_project_path);
 			undo_redo_state.resetUnsavedActions();
 		} catch (err) {
 			console.error(`Failed to save file: ${JSON.stringify(err)}`);
-			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
+			toast.error(`Failed to save file: ${(err as Error)?.message ?? 'something went wrong'}`, {
 				description: 'An error occurred while saving the file.'
 			});
+		} finally {
+			component_state.saving = false;
 		}
 
 		if (!settings_state.auto_save_enabled) {
@@ -83,8 +93,8 @@
 		}
 	}
 
+	// Auto-saver: persists to disk whenever unsaved actions appear while enabled.
 	$effect(() => {
-		// auto saver
 		if (undo_redo_state.has_unsaved_actions && settings_state.auto_save_enabled) {
 			handleSave();
 		}
@@ -99,123 +109,134 @@
 	}}
 />
 
-<div class="flex w-full items-center justify-between p-2">
-	<div class="flex w-full items-center gap-2">
+<div
+	class="border-sidebar-border flex h-14 w-full shrink-0 items-center justify-between gap-2 border-b px-2"
+>
+	<div
+		class="border-sidebar-border/60 bg-sidebar-accent/40 flex items-center gap-0.5 rounded-lg border p-0.5"
+	>
 		{#if !settings_state.auto_save_enabled}
 			<Tooltip.Provider>
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						disabled={!project_state.loaded ||
 							!component_state.can_save ||
-							!undo_redo_state.has_unsaved_actions}
-						class={buttonVariants({ variant: 'default', size: 'sm' })}
-						onclick={handleSave}
+							!undo_redo_state.has_unsaved_actions ||
+							component_state.saving}
+						class={buttonVariants({
+							variant: undo_redo_state.has_unsaved_actions ? 'default' : 'ghost',
+							size: 'sm'
+						})}
+						onclick={() => handleSave()}
 					>
-						<Save class="h-4 w-4" />
-						Save
+						<CircleNotchIcon
+							class={cn('hidden size-4 animate-spin', { block: component_state.saving })}
+						/>
+						{#if undo_redo_state.has_unsaved_actions}
+							<FloppyDiskIcon class={cn('size-4', { hidden: component_state.saving })} />
+							Save
+						{:else}
+							<CheckIcon class={cn('size-4', { hidden: component_state.saving })} />
+							Saved
+						{/if}
 					</Tooltip.Trigger>
-					<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+					<Tooltip.Content>
+						{undo_redo_state.has_unsaved_actions ? 'Save changes (Ctrl+S)' : 'All changes saved'}
+					</Tooltip.Content>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		{/if}
 
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<Settings />
-				</Tooltip.Trigger>
-				<Tooltip.Content>Settings</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+		<Settings />
 		<UndoRedoButtons />
 	</div>
 	<svelte:boundary>
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger
-					disabled={!project_state.loaded}
-					class={cn({
-						'cursor-not-allowed': !project_state.loaded
-					})}
-				>
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger
-							disabled={!project_state.loaded}
-							class={buttonVariants({
-								variant: 'outline'
-							})}
-						>
-							<ArrowRightFromLine class="h-4 w-4" />
-						</DropdownMenu.Trigger>
+		<DropdownMenu.Root>
+			<Tooltip.Provider>
+				<Tooltip.Root>
+					<Tooltip.Trigger disabled={!project_state.loaded}>
+						{#snippet child({ props })}
+							<DropdownMenu.Trigger
+								{...props}
+								disabled={!project_state.loaded}
+								class={buttonVariants({
+									variant: 'outline',
+									size: 'icon-sm'
+								})}
+								aria-label="Export options"
+							>
+								<ExportIcon class="size-4" />
+							</DropdownMenu.Trigger>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Export</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
 
-						<Portal>
-							<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
-								<DropdownMenu.Group>
-									<DropdownMenu.GroupHeading class="text-center"
-										>Export options</DropdownMenu.GroupHeading
-									>
-									<DropdownMenu.Separator />
-									<DropdownMenu.Item
-										disabled={component_state.status === 'processing'}
-										onclick={async () => {
-											exportToExcel(
-												'LOAD_SCHEDULE',
-												root_node.id,
-												root_node?.highest_unit_form,
-												project_state.current_project_name,
-												() => (component_state.export_to_excel = 'idle'),
-												() => (component_state.export_to_excel = 'loading')
-											);
-										}}
-									>
-										<Loader
-											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-												block: component_state.status === 'processing'
-											})}
-										/>
-										<Sheet
-											class={cn('mr-0.5 block h-4 w-4', {
-												'opacity-50': component_state.export_to_excel === 'loading'
-											})}
-										/>
-										Export whole project load schedule</DropdownMenu.Item
-									>
-									<DropdownMenu.Item
-										disabled={component_state.status === 'processing'}
-										onclick={async () => {
-											exportToExcel(
-												'VOLTAGE_DROP',
-												root_node.id,
-												root_node?.highest_unit_form,
-												project_state.current_project_name,
-												() => (component_state.export_to_excel = 'idle'),
-												() => (component_state.export_to_excel = 'loading')
-											);
-										}}
-									>
-										<Loader
-											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-												block: component_state.status === 'processing'
-											})}
-										/>
-										<Sheet
-											class={cn('mr-0.5 block h-4 w-4', {
-												'opacity-50': component_state.export_to_excel === 'loading'
-											})}
-										/>
-										Export whole project voltage drop
-									</DropdownMenu.Item>
-								</DropdownMenu.Group>
-							</DropdownMenu.Content>
-						</Portal>
-					</DropdownMenu.Root>
-				</Tooltip.Trigger>
-				<Tooltip.Content>Export</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+			<Portal>
+				<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
+					<DropdownMenu.Group>
+						<DropdownMenu.Label class="text-center">Export options</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item
+							disabled={component_state.export_to_excel === 'loading'}
+							onclick={async () => {
+								exportToExcel(
+									'LOAD_SCHEDULE',
+									root_node.id,
+									root_node?.highest_unit_form,
+									project_state.current_project_name,
+									() => (component_state.export_to_excel = 'idle'),
+									() => (component_state.export_to_excel = 'loading')
+								);
+							}}
+						>
+							<CircleNotchIcon
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+									block: component_state.export_to_excel === 'loading'
+								})}
+							/>
+							<TableIcon
+								class={cn('mr-0.5 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project load schedule</DropdownMenu.Item
+						>
+						<DropdownMenu.Item
+							disabled={component_state.export_to_excel === 'loading'}
+							onclick={async () => {
+								exportToExcel(
+									'VOLTAGE_DROP',
+									root_node.id,
+									root_node?.highest_unit_form,
+									project_state.current_project_name,
+									() => (component_state.export_to_excel = 'idle'),
+									() => (component_state.export_to_excel = 'loading')
+								);
+							}}
+						>
+							<CircleNotchIcon
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+									block: component_state.export_to_excel === 'loading'
+								})}
+							/>
+							<TableIcon
+								class={cn('mr-0.5 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project voltage drop</DropdownMenu.Item
+						>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</Portal>
+		</DropdownMenu.Root>
 		{#snippet failed(error, reset)}
-			<p class="text-sm text-muted-foreground">{error}</p>
-			<Button onclick={reset}>oops! try again</Button>
+			<div class="grid w-full gap-2 rounded-xl border border-dashed p-3">
+				<p class="text-muted-foreground text-xs">{error}</p>
+				<Button onclick={reset} size="sm" variant="outline">Try again</Button>
+			</div>
 		{/snippet}
 	</svelte:boundary>
 </div>
