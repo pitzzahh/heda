@@ -2,8 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://"0.0.9"keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.7.0] - 2026-11-05
+
+### Added
+
+- Native desktop bundles on every release: macOS arm64 and Intel disk images,
+  Windows MSI and NSIS installers, Linux deb/rpm plus a plain tarball of the
+  native binary
+- Component and unit test suite for the UI layer: overlay primitives, animation
+  contracts, table columns, toast layout, and the page progress bar
+- Settings now previews appearance with light/dark/system theme tiles and named
+  accent swatches
+
+### Changed
+
+- Migrated the frontend to SvelteKit 3, Svelte 5 runes, Vite 8, Tailwind CSS 4,
+  bits-ui 2, and Formisch with Valibot schemas; domain types derive from validators
+- Replaced RxDB with SignalDB collections and a Stronghold-backed session store
+- Replaced crypto-js with WebCrypto: `.heda` files use a v2 envelope
+  (PBKDF2-SHA256 plus AES-256-GCM) sealed with a per-file password
+- Rebuilt the design system in oklch with Tailwind v4 canonical utilities;
+  dialogs, sheets, popovers, menus, and tooltips animate with keyframes so they
+  open cleanly in every webview
+- Redesigned the home page, workspace shell, sidebar, schedule tables, and dialogs
+- Pinned every Tauri plugin crate to its matching npm minor release
+
+### Removed
+
+- Android support: the APK job, generated Android project, and mobile capability
+  are gone; releases target desktop only
+- Legacy v1 `.heda` files are recognized but no longer openable
+
+### Fixed
+
+- Page progress bar no longer sticks on after SvelteKit 3 changed `navigating`
+  to an always-truthy object
+- Schedule tables refresh in place instead of remounting on every edit, ending
+  the dropdown flicker and making undo visible
+- Toast titles and descriptions wrap instead of clipping with an ellipsis
+- Sidebar toolbar aligns with the workspace header and uses single buttons
+- Tree collapse carets render bold, rotate, and no longer navigate on click
 
 ## [2.6.99] - 2025-07-12
 
