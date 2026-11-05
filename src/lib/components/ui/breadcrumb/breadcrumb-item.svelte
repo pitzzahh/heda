@@ -1,16 +1,18 @@
 <script lang="ts">
-	import type { WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLLiAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { breadcrumbStyles } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLLiAttributes> = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLLiAttributes = $props();
+
+	const s = $derived(breadcrumbStyles());
 </script>
 
-<li bind:this={ref} class={cn('inline-flex items-center gap-1.5', className)} {...restProps}>
+<li {...rest} data-slot="breadcrumb-item" class={cn(s.item(), classProp)}>
 	{@render children?.()}
 </li>

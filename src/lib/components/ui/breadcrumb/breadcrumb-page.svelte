@@ -1,23 +1,18 @@
 <script lang="ts">
-	import type { WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { breadcrumbStyles } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLSpanElement> = $props();
+
+	const s = $derived(breadcrumbStyles());
 </script>
 
-<span
-	bind:this={ref}
-	role="link"
-	aria-disabled="true"
-	aria-current="page"
-	class={cn('font-normal text-foreground', className)}
-	{...restProps}
->
+<span {...rest} data-slot="breadcrumb-page" aria-current="page" class={cn(s.page(), classProp)}>
 	{@render children?.()}
 </span>

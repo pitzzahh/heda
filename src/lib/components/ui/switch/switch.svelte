@@ -1,27 +1,58 @@
 <script lang="ts">
-	import { Switch as SwitchPrimitive, type WithoutChildrenOrChild } from "bits-ui";
-	import { cn } from "@/utils";
+	import { Switch as SwitchPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { type SwitchSize, type SwitchVariant, switchThumb, switchTrack } from './variants';
+
+	type Props = Omit<SwitchPrimitive.RootProps, 'checked' | 'disabled' | 'class' | 'children'> & {
+		checked?: boolean;
+		disabled?: boolean;
+		/** `default` pill thumb, `round` thumb, or `marked`: round with on/off marks. */
+		variant?: SwitchVariant;
+		size?: SwitchSize;
+		label?: string;
+		'aria-label'?: string;
+		class?: string;
+	};
 
 	let {
-		ref = $bindable(null),
 		checked = $bindable(false),
-		class: className,
-		...restProps
-	}: WithoutChildrenOrChild<SwitchPrimitive.RootProps> = $props();
+		disabled = false,
+		variant = 'default',
+		size = 'default',
+		label,
+		'aria-label': ariaLabel,
+		class: classProp,
+		id: idProp,
+		...rest
+	}: Props = $props();
+
+	const autoId = $props.id();
+	const id = $derived(idProp ?? autoId);
 </script>
 
-<SwitchPrimitive.Root
-	bind:ref
-	bind:checked
-	class={cn(
-		"focus-visible:ring-ring focus-visible:ring-offset-background data-[state=checked]:bg-primary data-[state=unchecked]:bg-input peer inline-flex h-7 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-		className
-	)}
-	{...restProps}
->
-	<SwitchPrimitive.Thumb
-		class={cn(
-			"bg-background pointer-events-none block size-6 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-		)}
-	/>
-</SwitchPrimitive.Root>
+{#snippet control()}
+	<SwitchPrimitive.Root
+		{...rest}
+		{id}
+		{disabled}
+		bind:checked
+		aria-label={label ? undefined : (ariaLabel ?? 'Toggle')}
+		data-slot="switch"
+		data-variant={variant}
+		class={cn(switchTrack({ variant, size }), !label && classProp)}
+	>
+		<SwitchPrimitive.Thumb class={switchThumb({ variant, size })} />
+	</SwitchPrimitive.Root>
+{/snippet}
+
+<!-- Bare, so this can replace a shadcn switch; the wrapper only appears with a label. -->
+{#if label}
+	<span class={cn('inline-flex items-center gap-2.5', classProp)}>
+		{@render control()}
+		<label for={id} class={cn('text-foreground text-sm', disabled && 'opacity-50')}>
+			{label}
+		</label>
+	</span>
+{:else}
+	{@render control()}
+{/if}

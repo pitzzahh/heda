@@ -1,7 +1,7 @@
 <script lang="ts" generics="TData, TValue">
 	import { type ColumnDef, getCoreRowModel } from '@tanstack/table-core';
-	import { createSvelteTable, FlexRender } from '$lib/components/ui/data-table/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
+	import { createSvelteTable, FlexRender } from '#lib/components/ui/data-table/index.js';
+	import * as Table from '#lib/components/ui/table/index.js';
 
 	type DateTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
@@ -14,12 +14,14 @@
 		get data() {
 			return data;
 		},
-		columns,
+		get columns() {
+			return columns;
+		},
 		getCoreRowModel: getCoreRowModel()
 	});
 </script>
 
-<div class="rounded-md border">
+<div class="border-border rounded-md border">
 	<Table.Root>
 		<Table.Header>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}

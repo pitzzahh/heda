@@ -1,20 +1,20 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import type { WithElementRef } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { table } from './variants';
+	import { getTableStyle } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLTableSectionElement>> = $props();
+		class: className,
+		...rest
+	}: { children?: Snippet } & HTMLAttributes<HTMLTableSectionElement> = $props();
+
+	const style = getTableStyle();
+	const classes = $derived(table(style()));
 </script>
 
-<tfoot
-	bind:this={ref}
-	class={cn('bg-primary font-medium text-primary-foreground', className)}
-	{...restProps}
->
+<tfoot data-slot="table-footer" class={cn(classes.footer(), className)} {...rest}>
 	{@render children?.()}
 </tfoot>

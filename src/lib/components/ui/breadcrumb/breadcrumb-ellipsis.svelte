@@ -1,23 +1,26 @@
 <script lang="ts">
-	import DotsHorizontal from 'svelte-radix/DotsHorizontal.svelte';
-	import type { WithElementRef, WithoutChildren } from 'bits-ui';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { breadcrumbStyles } from './context';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLSpanElement>>> = $props();
+	let { class: classProp, ...rest }: { class?: string } & HTMLAttributes<HTMLSpanElement> =
+		$props();
+
+	const s = $derived(breadcrumbStyles());
 </script>
 
+<!-- Put it inside a DropdownMenuTrigger to open the hidden levels, as shadcn-svelte does. -->
 <span
-	bind:this={ref}
+	{...rest}
 	role="presentation"
 	aria-hidden="true"
-	class={cn('flex size-9 items-center justify-center', className)}
-	{...restProps}
+	data-slot="breadcrumb-ellipsis"
+	class={cn(s.ellipsis(), classProp)}
 >
-	<DotsHorizontal class="size-4 outline-none" tabindex={-1} />
+	<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+		<circle cx="5" cy="12" r="1.75" />
+		<circle cx="12" cy="12" r="1.75" />
+		<circle cx="19" cy="12" r="1.75" />
+	</svg>
 	<span class="sr-only">More</span>
 </span>

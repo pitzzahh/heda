@@ -1,30 +1,45 @@
 <script lang="ts">
-	import { RadioGroup as RadioGroupPrimitive, type WithoutChildrenOrChild } from 'bits-ui';
-	import Check from 'svelte-radix/Check.svelte';
-	import { cn } from '@/utils';
+	import { RadioGroup as RadioGroupPrimitive } from 'bits-ui';
+	import type { Snippet } from 'svelte';
+	import { cn } from '#lib/utils';
+	import { radioGroup } from './variants';
+	import { getRadioGroupItemContext } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: WithoutChildrenOrChild<RadioGroupPrimitive.ItemProps> & {
+		children,
+		value,
+		label,
+		description,
+		disabled = false,
+		class: classProp,
+		...rest
+	}: Omit<RadioGroupPrimitive.ItemProps, 'value' | 'disabled' | 'class' | 'children'> & {
+		children?: Snippet;
 		value: string;
+		label?: string;
+		description?: string;
+		disabled?: boolean;
+		class?: string;
 	} = $props();
+
+	const group = getRadioGroupItemContext();
+	const frame = $derived(radioGroup({ variant: group.variant, size: group.size }));
 </script>
 
-<RadioGroupPrimitive.Item
-	bind:ref
-	class={cn(
-		'aspect-square size-4 rounded-full border border-primary text-primary shadow focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-		className
-	)}
-	{...restProps}
->
-	{#snippet children({ checked })}
-		<div class="flex items-center justify-center">
-			{#if checked}
-				<Check class="size-3.5 fill-primary" />
-			{/if}
-		</div>
-	{/snippet}
-</RadioGroupPrimitive.Item>
+<label data-slot="radio-group-item" class={cn(frame.label(), classProp)}>
+	<RadioGroupPrimitive.Item {...rest} {value} {disabled} class={frame.ring()}>
+		{#snippet children({ checked })}
+			<span data-on={checked} class={frame.dot()}></span>
+		{/snippet}
+	</RadioGroupPrimitive.Item>
+	<span class="min-w-0">
+		{#if children}
+			{@render children()}
+		{:else if label}
+			<span class="block">{label}</span>
+		{/if}
+		{#if description}
+			<span class="text-muted-foreground block text-xs leading-relaxed">{description}</span>
+		{/if}
+	</span>
+</label>
