@@ -1,34 +1,37 @@
 <script lang="ts">
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import { navigating } from '$app/stores';
+	import { navigating } from '$app/state';
 	import { fade } from 'svelte/transition';
-	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
+	// Only navigations slower than this surface the bar, so quick hops never flash it.
 	const TIME_TO_BE_VISIBLE = 2000;
 	const p = tweened(0, {
 		duration: 200,
 		easing: cubicOut
 	});
 
-	let timeout: number;
-	let isVisible = false;
+	// `$app/state`'s `navigating` object is always truthy; its fields are `null` when idle,
+	// so `type` is the signal that a navigation is actually in flight.
+	const is_navigating = $derived(navigating.type !== null);
+
+	let visible = $state(false);
 
 	function increase() {
-		if ($p >= 0 && $p < 0.2) {
+		if ($p < 0.2) {
 			p.update((_) => _ + 0.04);
-		} else if ($p >= 0.2 && $p < 0.5) {
+		} else if ($p < 0.5) {
 			p.update((_) => _ + 0.02);
-		} else if ($p >= 0.5 && $p < 0.8) {
+		} else if ($p < 0.8) {
 			p.update((_) => _ + 0.002);
-		} else if ($p >= 0.8 && $p < 0.99) {
+		} else if ($p < 0.99) {
 			p.update((_) => _ + 0.0005);
 		} else {
 			p.set(0);
 		}
 
-		if (isVisible && $navigating) {
+		if (visible && is_navigating) {
 			const rand = Math.round(Math.random() * (300 - 50)) + 50;
 			setTimeout(function () {
 				increase();
@@ -36,37 +39,37 @@
 		}
 	}
 
-	$: if (browser) {
-		if (isVisible && $navigating) {
-			increase();
+	// Syncs the bar with SvelteKit's navigation state; re-runs when a navigation starts or ends.
+	$effect(() => {
+		if (!browser) return;
+
+		if (is_navigating) {
+			if (visible) return;
+			const show = setTimeout(() => {
+				visible = true;
+				increase();
+			}, TIME_TO_BE_VISIBLE);
+			return () => clearTimeout(show);
 		}
-		if (!$navigating) {
-			p.update((_) => _ + 0.3);
-			setTimeout(function () {
-				p.set(1);
-				setTimeout(function () {
-					isVisible = false;
-					p.set(0);
-				}, 100);
+
+		if (!visible) return;
+		p.update((_) => _ + 0.3);
+		let hide: ReturnType<typeof setTimeout> | undefined;
+		const settle = setTimeout(() => {
+			p.set(1);
+			hide = setTimeout(() => {
+				visible = false;
+				p.set(0);
 			}, 100);
-		}
-	}
-
-	onMount(() => {
-		// @ts-ignore
-		timeout = setTimeout(() => {
-			isVisible = true;
-		}, TIME_TO_BE_VISIBLE);
-	});
-
-	onDestroy(() => {
-		isVisible = false;
-		p.set(0);
-		clearTimeout(timeout);
+		}, 100);
+		return () => {
+			clearTimeout(settle);
+			clearTimeout(hide);
+		};
 	});
 </script>
 
-{#if browser && isVisible && $navigating}
+{#if browser && visible}
 	<progress value={$p} transition:fade={{ duration: 300 }}></progress>
 {/if}
 
@@ -76,9 +79,10 @@
 		top: 0;
 		z-index: 999;
 		left: 0;
-		height: 4px;
+		height: 3px;
 		width: 100vw;
-		border-radius: 0;
+		border-radius: 9999px;
+		box-shadow: 0 0 12px 0 color-mix(in oklab, var(--primary) 45%, transparent);
 	}
 
 	progress::-webkit-progress-bar {
