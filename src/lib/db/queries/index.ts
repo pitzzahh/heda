@@ -5,53 +5,44 @@ import {
 	computeVoltAmpere,
 	getConduitSize,
 	getEgcSize
-} from '@/utils/computations';
+} from '#lib/utils/computations';
 import { databaseInstance } from '..';
-import type { LoadType } from '@/types/load';
-import type { Node, Project } from '@/db/schema';
-import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import type { VoltageDrop } from '@/types/voltage-drop';
-import { ALTERNATING_CURRENT_REACTANCE } from '@/constants';
-import type { ComputeCommonProperties, NodeByIdResult } from '@/types/db';
+import type { LoadType } from '#lib/types/load';
+import type { Node, Project } from '#lib/types/db';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+import type { VoltageDrop } from '#lib/types/voltage-drop';
+import { ALTERNATING_CURRENT_REACTANCE } from '#lib/constants';
+import type { ComputeCommonProperties, NodeByIdResult } from '#lib/types/db';
 
 export async function getCurrentProject(project_id?: string): Promise<Project | undefined> {
 	const db = await databaseInstance();
-	const query = db.projects.find({
-		selector: project_id
-			? {
-				id: project_id
-			}
-			: undefined
-	});
-	return (await query.exec()).at(0)?._data as Project | undefined;
+	return db.projects
+		.find(project_id ? { id: project_id } : {})
+		.fetch()
+		.at(0);
 }
 
 export async function getAllProjects(fields?: (keyof Project)[]): Promise<Project[] | undefined> {
 	const db = await databaseInstance();
-	const projects = await db.projects.find().exec();
+	const projects = db.projects.find().fetch();
 	if (fields?.length) {
 		return projects.map((project) => {
-			const data = project._data as Project;
+			const data = project as Project;
 			const filteredData = {} as Project;
 			fields.forEach((field) => {
 				if (data[field] !== undefined) {
-					(filteredData as any)[field] = data[field];
+					(filteredData as Record<typeof field, unknown>)[field] = data[field];
 				}
 			});
 			return filteredData;
 		});
 	}
 
-	return projects.map((project) => project._data as Project);
+	return projects.map((project) => project as Project);
 }
 export async function getRootNode(): Promise<Node | undefined> {
 	const db = await databaseInstance();
-	const query = db.nodes.find({
-		selector: {
-			node_type: 'root'
-		}
-	});
-	return (await query.exec()).at(0)?._data as Node | undefined;
+	return db.nodes.find({ node_type: 'root' }).fetch().at(0);
 }
 
 export async function checkNodeExists({
@@ -65,18 +56,11 @@ export async function checkNodeExists({
 }) {
 	const db = await databaseInstance();
 	try {
-		const node = await db.nodes
-			.findOne({
-				selector: {
-					parent_id,
-					circuit_number
-				}
-			})
-			.exec();
+		const node = db.nodes.findOne({ parent_id, circuit_number });
 
 		// prevent conflict check for the same node when editing
 		if (node_id && node) {
-			return node_id === node._data.id ? false : true;
+			return node_id === node.id ? false : true;
 		}
 
 		return node ? true : false;
@@ -86,30 +70,22 @@ export async function checkNodeExists({
 	}
 }
 
-
 export async function getNodeById(target_id: string): Promise<NodeByIdResult | null> {
 	const db = await databaseInstance();
 
 	const project = await getCurrentProject();
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
-	const node = await db.nodes
-		.findOne({
-			selector: {
-				id: target_id
-			}
-		})
-		.exec();
+	const node = db.nodes.findOne({ id: target_id });
 
 	if (!node) return null;
 
-	const data: Node = node._data;
+	const data: Node = node;
 	if (!data) return null;
 
 	const voltage = 230;
 
 	const computeCommonProperties = ({
-		va,
 		current,
 		conductor_set,
 		conductor_qty,
@@ -156,18 +132,12 @@ export async function getNodeById(target_id: string): Promise<NodeByIdResult | n
 
 	if (data.node_type === 'panel') {
 		// panel-specific logic
-		const child_nodes = await db.nodes
-			.find({
-				selector: {
-					parent_id: data.id
-				}
-			})
-			.exec();
+		const child_nodes = db.nodes.find({ parent_id: data.id }).fetch();
 
 		const total_values = { va: 0, current: 0 };
 
 		for (const child_node of child_nodes) {
-			const child_data = await getNodeById(child_node._data.id);
+			const child_data = await getNodeById(child_node.id);
 			if (child_data) {
 				total_values.va += child_data.va || 0;
 				total_values.current += child_data.current || 0;
@@ -233,26 +203,19 @@ export async function getNodeById(target_id: string): Promise<NodeByIdResult | n
 
 export async function getChildNodesByParentId(parent_id: string): Promise<Node[]> {
 	const db = await databaseInstance();
-	const query = db.nodes.find({
-		selector: {
-			parent_id
-		}
-	});
-	return (await query.sort({ circuit_number: 'asc' }).exec()).map((doc) => doc._data) as Node[];
+	return db.nodes.find({ parent_id }, { sort: { circuit_number: 1 } }).fetch() as Node[];
 }
 
 export async function getParentNodes(excluded_id?: string) {
 	const db = await databaseInstance();
-	const query = db.nodes.find({
-		selector: {
+	const parent_nodes = db.nodes
+		.find({
 			node_type: { $in: ['panel', 'root'] },
 			...(excluded_id && { id: { $ne: excluded_id } })
-		}
-	});
-
-	const parent_nodes = (await query.exec())
+		})
+		.fetch()
 		.map((doc) => {
-			const data = doc._data;
+			const data = doc;
 			if (data.panel_data) {
 				return { name: data.panel_data.name || '', id: data.id };
 			}
@@ -271,9 +234,7 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 	const is_adjustment_factor_dynamic = project?.settings.is_adjustment_factor_dynamic;
 
 	const db = await databaseInstance();
-	const child_nodes = (
-		await db.nodes.find({ selector: { parent_id } }).sort({ circuit_number: 'asc' }).exec()
-	).map((doc) => doc._data);
+	const child_nodes = db.nodes.find({ parent_id }, { sort: { circuit_number: 1 } }).fetch();
 
 	const loadsWithComputedFields = await Promise.all(
 		child_nodes.map(async (doc) => {
@@ -329,15 +290,17 @@ export async function getComputedLoads(parent_id: string): Promise<PhaseLoadSche
 				);
 				const main_at = data.overrided_at || computeAmpereTrip(total_loads.current);
 				const main_current = parseFloat(total_loads.current.toFixed(2));
-				const conductor_size = data.overrided_conductor_size || computeConductorSize({
-					set: conductor_set,
-					qty: conductor_qty,
-					current: main_current,
-					load_type: 'Main',
-					at: main_at,
-					ambient_temp: data.panel_data.ambient_temperature,
-					is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
-				});
+				const conductor_size =
+					data.overrided_conductor_size ||
+					computeConductorSize({
+						set: conductor_set,
+						qty: conductor_qty,
+						current: main_current,
+						load_type: 'Main',
+						at: main_at,
+						ambient_temp: data.panel_data.ambient_temperature,
+						is_adjustment_factor_dynamic: is_adjustment_factor_dynamic || false
+					});
 				const adjusted_current = computeAdjustedCurrent({
 					set: conductor_set as number,
 					qty: conductor_qty as number,
@@ -405,12 +368,12 @@ export async function getNumberOfChildren(nodeId: string): Promise<number> {
 	let count = 0;
 
 	async function countChildren(parentId: string) {
-		const childNodes = await db.nodes.find({ selector: { parent_id: parentId } }).exec();
+		const childNodes = db.nodes.find({ parent_id: parentId }).fetch();
 		count += childNodes.length;
 
 		for (const childNode of childNodes) {
-			if (childNode._data.node_type === 'panel') {
-				await countChildren(childNode._data.id);
+			if (childNode.node_type === 'panel') {
+				await countChildren(childNode.id);
 			}
 		}
 	}
@@ -419,20 +382,14 @@ export async function getNumberOfChildren(nodeId: string): Promise<number> {
 	return count;
 }
 
-export async function getComputedVoltageDrops(node_id?: string) {
+export async function getComputedVoltageDrops() {
 	const db = await databaseInstance();
 	let nodes = [] as PhaseLoadSchedule[];
 
-	const start_node = await db.nodes
-		.findOne({
-			selector: {
-				node_type: 'root'
-			}
-		})
-		.exec();
+	const start_node = db.nodes.findOne({ node_type: 'root' });
 
 	if (start_node) {
-		// const computed_root_node_load = await getNodeById(root_node._data.id) as PhaseLoadSchedule
+		// const computed_root_node_load = await getNodeById(root_node.id) as PhaseLoadSchedule
 
 		// if (computed_root_node_load) {
 		// 	nodes = [...nodes, computed_root_node_load];
@@ -447,7 +404,7 @@ export async function getComputedVoltageDrops(node_id?: string) {
 			}
 		}
 
-		await fetchChildNodes(start_node._data.id);
+		await fetchChildNodes(start_node.id);
 	}
 
 	const nodes_with_additional_fields: VoltageDrop[] = [];
@@ -463,7 +420,9 @@ export async function getComputedVoltageDrops(node_id?: string) {
 		const length = node.overrided_length || (node.length as number);
 		const z = node.overrided_z || ALTERNATING_CURRENT_REACTANCE[conductor_size];
 		const actual_z = Number(((length * z) / 305).toFixed(4));
-		const voltage_per_segment = Number((node.conductor_qty as number * node.current * actual_z).toFixed(4));
+		const voltage_per_segment = Number(
+			((node.conductor_qty as number) * node.current * actual_z).toFixed(4)
+		);
 		const voltage_at_end_circuit =
 			parent_node?.node_type === 'root'
 				? voltage_per_segment
@@ -491,13 +450,16 @@ export async function getComputedVoltageDrops(node_id?: string) {
 	return nodes_with_additional_fields;
 }
 
-export async function getAllChildNodes(root_node_id: string, include_parent?: boolean): Promise<Node[]> {
+export async function getAllChildNodes(
+	root_node_id: string,
+	include_parent?: boolean
+): Promise<Node[]> {
 	const db = await databaseInstance();
 	let allNodes: Node[] = [];
 
 	async function fetchChildNodes(parentId: string) {
-		const childNodes = await db.nodes.find({ selector: { parent_id: parentId } }).exec();
-		const childNodeData = childNodes.map((doc) => doc._data) as Node[];
+		const childNodes = db.nodes.find({ parent_id: parentId }).fetch();
+		const childNodeData = childNodes.map((doc) => doc) as Node[];
 		allNodes = [...allNodes, ...childNodeData];
 
 		for (const childNode of childNodeData) {
@@ -508,9 +470,9 @@ export async function getAllChildNodes(root_node_id: string, include_parent?: bo
 	await fetchChildNodes(root_node_id);
 
 	if (include_parent) {
-		const parentNode = await db.nodes.findOne({ selector: { id: root_node_id } }).exec();
+		const parentNode = db.nodes.findOne({ id: root_node_id });
 		if (parentNode) {
-			allNodes = [parentNode._data as Node, ...allNodes];
+			allNodes = [parentNode as Node, ...allNodes];
 		}
 	}
 
