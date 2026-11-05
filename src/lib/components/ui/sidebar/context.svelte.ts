@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
+import { IsMobile } from '#lib/hooks/is-mobile.svelte.js';
 import { getContext, setContext } from 'svelte';
 import {
 	SIDEBAR_KEYBOARD_SHORTCUT,
@@ -38,7 +38,9 @@ class SidebarState {
 	isResizing = $state(false);
 
 	constructor(props: SidebarStateProps) {
-		const localStorage = new PersistedState<{ sidebar_width: number }>('sidebar', { sidebar_width: SIDEBAR_DEFAULT_WIDTH });
+		const localStorage = new PersistedState<{ sidebar_width: number }>('sidebar', {
+			sidebar_width: SIDEBAR_DEFAULT_WIDTH
+		});
 
 		this.setOpen = props.setOpen;
 		this.#isMobile = new IsMobile();
