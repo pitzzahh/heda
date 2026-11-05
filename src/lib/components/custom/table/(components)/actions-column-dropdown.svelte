@@ -1,41 +1,42 @@
-<script lang="ts">
-	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { Button } from '@/components/ui/button';
-	import { Ellipsis, Pencil, Trash2, Copy } from '@/assets/icons';
-	import { copyAndAddNodeById, removeNode } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
-	import GenericPhaseMainLoadForm from '@/components/custom/load/generic-phase-main-load-form.svelte';
-	import type { Node } from '@/db/schema';
-	import { ConfirmationDialog, MultiCopyDialog } from '@/components/custom';
-	import type { SuperValidated } from 'sveltekit-superforms';
-	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { getNodeById } from '@/db/queries';
-	import ParentPanelPopover from '../../parent-panel-popover.svelte';
-	import { cn } from '@/utils';
-	import Separator from '@/components/ui/separator/separator.svelte';
-	import { toast } from 'svelte-sonner';
-	import { RefreshCcw } from 'lucide-svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import OverrideSelectors from '../../override-selectors.svelte';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { VoltageDrop } from '@/types/voltage-drop';
-	import { getSelectNodesToDeleteState } from '@/hooks/select-nodes-to-delete.svelte';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
+<script lang="ts" module>
+	import {
+		ArrowsCounterClockwiseIcon,
+		CopyIcon,
+		DotsThreeIcon,
+		PencilIcon,
+		TrashIcon
+	} from '#lib/assets/icons';
+	import type { Node } from '#lib/types/db';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import type { VoltageDrop } from '#lib/types/voltage-drop';
 
-	let {
-		node,
-		phase_main_load_form,
-		highest_unit,
-		is_in_vd_table,
-		...props
-	}: {
+	interface Props {
 		node: VoltageDrop | PhaseLoadSchedule;
-		phase_main_load_form?: SuperValidated<GenericPhaseMainLoadSchema>;
 		highest_unit?: NonNullable<Node['highest_unit_form']>;
 		is_in_vd_table?: boolean;
-	} = $props();
-	const phase = highest_unit?.phase;
+	}
+</script>
+
+<script lang="ts">
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { Button } from '#lib/components/ui/button';
+	import { copyAndAddNodeById, removeNode } from '#lib/db/mutations';
+	import { invalidate } from '$app/navigation';
+	import GenericPhaseMainLoadForm from '#lib/components/custom/load/generic-phase-main-load-form.svelte';
+	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom';
+	import { getNodeById } from '#lib/db/queries';
+	import ParentPanelPopover from '../../parent-panel-popover.svelte';
+	import { cn } from '#lib/utils';
+	import Separator from '#lib/components/ui/separator/separator.svelte';
+	import { toast } from 'svelte-sonner';
+	import OverrideSelectors from '../../override-selectors.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
+
+	let { node, highest_unit, is_in_vd_table }: Props = $props();
+	const phase = $derived(highest_unit?.phase);
 
 	let is_update_dialog_open = $state(false);
 	let is_override_dialog_open = $state(false);
@@ -49,6 +50,7 @@
 	let settings_state = getSettingsState();
 	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
+	// Loads the parent name for display whenever the row node changes.
 	$effect(() => {
 		if (node.parent_id) {
 			getNodeById(node.parent_id).then((node) => {
@@ -75,8 +77,8 @@
 		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 	}
 
-	function isVoltageDrop(data: any): data is VoltageDrop {
-		return typeof data.z !== undefined;
+	function isVoltageDrop(data: VoltageDrop | PhaseLoadSchedule): data is VoltageDrop {
+		return typeof (data as VoltageDrop).z !== 'undefined';
 	}
 
 	async function copyNodeById(node_id: string) {
@@ -98,17 +100,17 @@
 	<DropdownMenu.Root bind:open={open_dropdown_menu}>
 		<DropdownMenu.Trigger>
 			<Button size="icon" variant="outline">
-				<Ellipsis class="size-4" />
+				<DotsThreeIcon class="size-4" />
 			</Button>
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="end">
 			<DropdownMenu.Group>
-				<DropdownMenu.GroupHeading>Actions</DropdownMenu.GroupHeading>
+				<DropdownMenu.Label>Actions</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 
 				{#if node.node_type === 'load' && !is_in_vd_table}
 					<DropdownMenu.Item onclick={() => (is_update_dialog_open = true)}>
-						<Pencil class="ml-2 size-4" />
+						<PencilIcon class="ml-2 size-4" />
 						Update
 					</DropdownMenu.Item>
 					<DropdownMenu.Item
@@ -117,22 +119,22 @@
 							await copyNodeById(node.id);
 						}}
 					>
-						<Copy class="ml-2 size-4" />
+						<CopyIcon class="ml-2 size-4" />
 						Copy
 					</DropdownMenu.Item>
 				{/if}
 
 				<DropdownMenu.Item onclick={() => (is_override_dialog_open = true)}>
-					<RefreshCcw class="ml-2 size-4" />
+					<ArrowsCounterClockwiseIcon class="ml-2 size-4" />
 					Override
 				</DropdownMenu.Item>
 
 				{#if node.node_type === 'load' && !is_in_vd_table}
 					<DropdownMenu.Item
-						class="!text-red-600 hover:!bg-red-600/10"
+						class="text-destructive hover:bg-destructive/10!"
 						onclick={() => (is_confirmation_open = true)}
 					>
-						<Trash2 class="ml-2 size-4" />
+						<TrashIcon class="ml-2 size-4" />
 						Delete
 					</DropdownMenu.Item>
 				{/if}
@@ -149,8 +151,8 @@
 	onConfirm={handleRemoveLoad}
 />
 
-<Dialog.Root {...props} bind:open={is_update_dialog_open}>
-	<Dialog.Content class="max-w-[70%]">
+<Dialog.Root bind:open={is_update_dialog_open}>
+	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update load</Dialog.Title>
 			<Dialog.Description>Edit the load details.</Dialog.Description>
@@ -173,26 +175,30 @@
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{phase ?? 'N/A'}</p>
+							<p>
+								{#if phase == null}
+									N/A
+								{:else}
+									{phase}
+								{/if}
+							</p>
 						</div>
 					</div>
 				</div>
 			</div>
 		</Dialog.Header>
 		<Separator class="mt-0.5" />
-		{#if phase_main_load_form}
-			<GenericPhaseMainLoadForm
-				action="edit"
-				selected_parent_id={selected_parent?.id}
-				closeDialog={() => (is_update_dialog_open = false)}
-				{phase_main_load_form}
-				node_to_edit={node}
-			/>
-		{/if}
+		<GenericPhaseMainLoadForm
+			action="edit"
+			selected_parent_id={selected_parent?.id}
+			closeDialog={() => (is_update_dialog_open = false)}
+			node_to_edit={node}
+		/>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root {...props} bind:open={is_override_dialog_open}>
+<Dialog.Root bind:open={is_override_dialog_open}>
 	<Dialog.Content class="max-w-[450px]">
 		<Dialog.Header>
 			<Dialog.Title>Override</Dialog.Title>
@@ -222,6 +228,7 @@
 			}}
 			{is_in_vd_table}
 		/>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>
 

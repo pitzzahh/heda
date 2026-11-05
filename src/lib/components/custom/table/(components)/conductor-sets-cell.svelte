@@ -1,13 +1,26 @@
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+
+	interface Props {
+		sets: number;
+		node: PhaseLoadSchedule;
+	}
+</script>
+
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
-	import { updateConductorSets } from '@/db/mutations';
+	import { updateConductorSets } from '#lib/db/mutations';
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
 
-	let { sets, node }: { sets: number; node: PhaseLoadSchedule } = $props();
-	let sets_value = $state(sets);
+	let { sets, node }: Props = $props();
+	// Snapshot at mount: local edit state.
+	function initialSets() {
+		return sets;
+	}
+	let sets_value = $state(initialSets());
+	let last_sets_prop = initialSets();
 	let formElement = $state<HTMLFormElement>();
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
@@ -33,7 +46,15 @@
 		}
 	}
 
+	// Persists the edit on blur, or reverts the draft when cleared. External prop
+	// changes (undo/redo, refreshes) are adopted first so they aren't re-saved.
 	$effect(() => {
+		if (sets !== last_sets_prop) {
+			last_sets_prop = sets;
+			if (!focusWithinForm.current) sets_value = sets;
+			return;
+		}
+
 		if (!focusWithinForm.current && sets_value !== sets) {
 			if (sets_value && sets_value >= 1) {
 				saveSetsChanges();
@@ -48,6 +69,6 @@
 	<input
 		type="number"
 		bind:value={sets_value}
-		class="w-16 bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="outline-primary w-16 [appearance:textfield] bg-transparent p-2 text-center focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>
