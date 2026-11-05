@@ -8,6 +8,6 @@ export type VoltageDrop = {
 	actual_z: number;
 	voltage_per_segment: number;
 	voltage_at_end_circuit: number;
-	voltage_at_receiving_end: number
-	percent_voltage_drop: number
+	voltage_at_receiving_end: number;
+	percent_voltage_drop: number;
 } & PhaseLoadSchedule;

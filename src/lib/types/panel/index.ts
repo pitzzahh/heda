@@ -1,12 +1,8 @@
-import type { Node } from '@/db/schema';
+import type { Node } from '#lib/types/db';
+import type * as v from 'valibot';
+import type { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel';
+
+export type GenericPhasePanelSchema = v.InferOutput<typeof GENERIC_PHASE_PANEL_SCHEMA>;
 
 // has to put required since panel_data in NodeDocType is optional
-export type Panel = Required<NonNullable<Node["panel_data"]>>;
-
-// ini pete su gagamiton tang type duman sa mga panel na hali sa db
-export type PanelLatest = {
-	name: string;
-	circuit_number: number;
-	terminal_temperature: string;
-	phase: string;
-};
+export type Panel = Required<NonNullable<Node['panel_data']>>;

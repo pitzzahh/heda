@@ -1,12 +1,12 @@
-import type { Font, ThemeMode } from '@/hooks/settings-state.svelte';
-export type Settings = {
-	color: 'autocad' | 'excel';
-	font: Font;
-	theme_mode: ThemeMode;
-	show_loads_on_unit_hierarchy: boolean;
-	is_adjustment_factor_dynamic: boolean;
-	is_panel_multi_copy: boolean;
-	is_load_multi_copy: boolean;
-	auto_save_enabled: boolean;
-	backup_project_file_if_exists: boolean;
-};
+import type * as v from 'valibot';
+import type {
+	FONT_FIELD,
+	SETTINGS_SCHEMA,
+	THEME_COLOR_FIELD,
+	THEME_MODE_FIELD
+} from '#lib/validators/settings';
+
+export type ThemeColor = v.InferOutput<typeof THEME_COLOR_FIELD>;
+export type Font = v.InferOutput<typeof FONT_FIELD>;
+export type ThemeMode = v.InferOutput<typeof THEME_MODE_FIELD>;
+export type Settings = v.InferOutput<typeof SETTINGS_SCHEMA>;
