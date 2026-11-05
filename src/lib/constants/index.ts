@@ -1,6 +1,6 @@
-import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '@/types/load';
-import { getEnumValues, getEnumKeys } from '@/utils/enum';
-import { toLabelKeyArray, toLabelValueArray } from '@/utils/mapper';
+import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load';
+import { getEnumValues, getEnumKeys } from '#lib/utils/enum';
+import { toLabelKeyArray, toLabelValueArray } from '#lib/utils/mapper';
 
 export const default_terminal_temperatures = {
 	60: '60',
@@ -12,79 +12,79 @@ export const default_terminal_temperatures = {
 export const DEFAULT_LOADS = [
 	{
 		description: 'Lighting Outlet (50W)',
-		varies: "50",
+		varies: '50',
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
 		description: 'Lighting Outlet (100W)',
-		varies: "100",
+		varies: '100',
 		continuous: true,
 		type: 'Lighting Load'
 	},
 	{
-		description: "Small Appliance Load",
-		varies: "1500",
+		description: 'Small Appliance Load',
+		varies: '1500',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Laundry Circuit Load",
-		varies: "1500",
+		description: 'Laundry Circuit Load',
+		varies: '1500',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Bathroom Branch Circuit",
-		varies: "1500",
+		description: 'Bathroom Branch Circuit',
+		varies: '1500',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Garage Branch Circuit",
-		varies: "1500",
+		description: 'Garage Branch Circuit',
+		varies: '1500',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet (Simplex)",
-		varies: "180",
+		description: 'Convenience Outlet (Simplex)',
+		varies: '180',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet (Duplex)",
-		varies: "180",
+		description: 'Convenience Outlet (Duplex)',
+		varies: '180',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Convenience Outlet (Triplex)",
-		varies: "180",
+		description: 'Convenience Outlet (Triplex)',
+		varies: '180',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "4-Gang Convenience Outlet",
-		varies: "360",
+		description: '4-Gang Convenience Outlet',
+		varies: '360',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "5-Gang Convenience Outlet",
-		varies: "450",
+		description: '5-Gang Convenience Outlet',
+		varies: '450',
 		continuous: true,
 		type: 'Convenience Outlet'
 	},
 	{
-		description: "Dwelling Unit",
-		varies: "24",
+		description: 'Dwelling Unit',
+		varies: '24',
 		continuous: true,
 		type: 'General Lighting'
 	},
 	{
-		description: "Office Buildings",
-		varies: "28",
+		description: 'Office Buildings',
+		varies: '28',
 		continuous: true,
 		type: 'General Lighting'
 	}
@@ -121,12 +121,12 @@ export const load_type_to_varies_label = {
 } as const satisfies Record<LoadType, VariesLabel>;
 
 export const load_type_to_quantity_label = {
-	[default_load_types.GENERAL_LIGHTING]: 'Floor area',
+	[default_load_types.GENERAL_LIGHTING]: 'Floor area'
 } as const as Record<LoadType, QuantityLabel>;
 
 export const standard_ampere_ratings = [
-	15, 20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500, 600, 700, 800,
-	1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
+	15, 20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500, 600, 700,
+	800, 1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
 ] as const;
 
 export const load_type_z_value = {
@@ -179,42 +179,42 @@ export const AMPACITY_RANGES = [
 ];
 
 export const AMBIENT_TEMP_RATINGS = [
-    { max_temp: 10, factor: 1.20 },    // 10 or less
-    { max_temp: 15, factor: 1.15 },    // 11-15
-    { max_temp: 20, factor: 1.11 },    // 16-20
-    { max_temp: 25, factor: 1.05 },    // 21-25
-    { max_temp: 30, factor: 1.00 },    // 26-30
-    { max_temp: 35, factor: 0.94 },    // 31-35
-    { max_temp: 40, factor: 0.88 },    // 36-40
-    { max_temp: 45, factor: 0.82 },    // 41-45
-    { max_temp: 50, factor: 0.75 },    // 46-50
-    { max_temp: 55, factor: 0.67 },    // 51-55
-    { max_temp: 60, factor: 0.58 },    // 56-60
-    { max_temp: 65, factor: 0.47 },    // 61-65
-    { max_temp: 70, factor: 0.33 }     // 66-70
-]
+	{ max_temp: 10, factor: 1.2 }, // 10 or less
+	{ max_temp: 15, factor: 1.15 }, // 11-15
+	{ max_temp: 20, factor: 1.11 }, // 16-20
+	{ max_temp: 25, factor: 1.05 }, // 21-25
+	{ max_temp: 30, factor: 1.0 }, // 26-30
+	{ max_temp: 35, factor: 0.94 }, // 31-35
+	{ max_temp: 40, factor: 0.88 }, // 36-40
+	{ max_temp: 45, factor: 0.82 }, // 41-45
+	{ max_temp: 50, factor: 0.75 }, // 46-50
+	{ max_temp: 55, factor: 0.67 }, // 51-55
+	{ max_temp: 60, factor: 0.58 }, // 56-60
+	{ max_temp: 65, factor: 0.47 }, // 61-65
+	{ max_temp: 70, factor: 0.33 } // 66-70
+];
 
 // FOR EGC SIZING
 export const AMPERE_TRIP_TO_COPPER = [
-    { at_threshold: 6000, size: "error" },
-    { at_threshold: 5000, size: 400 },
-    { at_threshold: 4000, size: 375 },
-    { at_threshold: 3000, size: 250 },
-    { at_threshold: 2500, size: 200 },
-    { at_threshold: 2000, size: 175 },
-    { at_threshold: 1600, size: 125 },
-    { at_threshold: 1200, size: 100 },
-    { at_threshold: 1000, size: 80 },
-    { at_threshold: 800, size: 60 },
-    { at_threshold: 600, size: 50 },
-    { at_threshold: 500, size: 38 },
-    { at_threshold: 300, size: 30 },
-    { at_threshold: 200, size: 22 },
-    { at_threshold: 100, size: 14 },
-    { at_threshold: 60, size: 8 },
-    { at_threshold: 20, size: 5.5 },
-    { at_threshold: 15, size: 3.5 },
-    { at_threshold: 0, size: 2 }
+	{ at_threshold: 6000, size: 'error' },
+	{ at_threshold: 5000, size: 400 },
+	{ at_threshold: 4000, size: 375 },
+	{ at_threshold: 3000, size: 250 },
+	{ at_threshold: 2500, size: 200 },
+	{ at_threshold: 2000, size: 175 },
+	{ at_threshold: 1600, size: 125 },
+	{ at_threshold: 1200, size: 100 },
+	{ at_threshold: 1000, size: 80 },
+	{ at_threshold: 800, size: 60 },
+	{ at_threshold: 600, size: 50 },
+	{ at_threshold: 500, size: 38 },
+	{ at_threshold: 300, size: 30 },
+	{ at_threshold: 200, size: 22 },
+	{ at_threshold: 100, size: 14 },
+	{ at_threshold: 60, size: 8 },
+	{ at_threshold: 20, size: 5.5 },
+	{ at_threshold: 15, size: 3.5 },
+	{ at_threshold: 0, size: 2 }
 ] as const;
 
 export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
@@ -262,9 +262,8 @@ export const ALTERNATING_CURRENT_REACTANCE: Record<number, number> = {
 	325: 0.04,
 	375: 0.036,
 	400: 0.036,
-	500: 0.032,
-} 
-
+	500: 0.032
+};
 
 export const CONDUIT_TABLE = {
 	conduit_columns: [16, 21, 27, 35, 41, 53, 63, 78, 91, 103, 128, 155],
@@ -294,7 +293,6 @@ export const CONDUIT_TABLE = {
 	]
 };
 
-
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(
 	default_hp_current_relationship
 ).map(([hp, current]) => ({ hp, current }));
@@ -319,16 +317,22 @@ export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_ty
 
 export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
 
-export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_ENUMS = toLabelValueArray(load_type_to_quantity_label);
+export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_ENUMS = toLabelValueArray(
+	load_type_to_quantity_label
+);
 
-export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_OPTIONS = getEnumValues(load_type_to_quantity_label);
+export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_OPTIONS = getEnumValues(
+	load_type_to_quantity_label
+);
 
-export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(default_hp_current_relationship);
+export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(
+	default_hp_current_relationship
+);
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 
 export const FIELD_VALIDATION = {
 	TEST: {
-		SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/.test(value),
+		SPECIAL_CHAR: (value: string) => /[-._!"`'#%&,:;<>=@{}~$()*+/\\?[\]^|]+/.test(value),
 		LOWERCASE: (value: string) => /[a-z]/.test(value),
 		UPPERCASE: (value: string) => /[A-Z]/.test(value),
 		NUMBER: (value: string) => value && /.*[0-9].*/.test(value),
