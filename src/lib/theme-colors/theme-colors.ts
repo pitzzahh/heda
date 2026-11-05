@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const themes: Record<string, any> = {
-	// Excel is the default theme — these values mirror :root / .dark in app.css.
+	// Excel is the default theme; these values mirror :root / .dark in app.css.
 	excel: {
 		light: {
 			background: 'oklch(97.8% 0.0035 87.4)',
@@ -63,7 +63,7 @@ const themes: Record<string, any> = {
 			sidebarRing: 'oklch(70% 0.1483 157.9)'
 		}
 	},
-	// Autocad — same neutrals, safety-red primary.
+	// Autocad: same neutrals, safety-red primary.
 	autocad: {
 		light: {
 			background: 'oklch(97.8% 0.0035 87.4)',

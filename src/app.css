@@ -57,7 +57,7 @@
 
 @layer base {
 	:root {
-		/* Warm paper + deep emerald — an editorial take on the engineering palette. */
+		/* Warm paper and deep emerald, an editorial take on the engineering palette. */
 		--background: oklch(97.8% 0.0035 87.4);
 		--foreground: oklch(23.5% 0.012 178.3);
 		--card: oklch(100% 0 0);
@@ -206,7 +206,7 @@
 	}
 
 	.dark {
-		/* Deep evergreen charcoal — same hue family as the light theme, inverted. */
+		/* Deep evergreen charcoal, same hue family as the light theme, inverted. */
 		--background: oklch(19.3% 0.0079 182);
 		--foreground: oklch(94.2% 0.0072 164.9);
 		--card: oklch(22.7% 0.0091 179.8);

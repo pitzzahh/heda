@@ -97,7 +97,7 @@
 		{
 			icon: CertificateIcon,
 			label: 'Standard',
-			value: 'PEC 2017 — Philippine Electrical Code'
+			value: 'PEC 2017: Philippine Electrical Code'
 		},
 		{
 			icon: LightningAIcon,
@@ -173,8 +173,8 @@
 			</h1>
 
 			<p class="text-muted-foreground mt-7 max-w-xl text-lg leading-8">
-				Design hierarchical electrical systems — connected load, demand factors, conductor sizing
-				and voltage drop — in one code-compliant
+				Design hierarchical electrical systems: connected load, demand factors, conductor sizing and
+				voltage drop, in one code-compliant
 				<span class="text-foreground font-medium"> load schedule workspace</span>.
 			</p>
 
@@ -306,7 +306,7 @@
 				<LockKeyIcon class="size-4 shrink-0" />
 				<span>
 					Every <span class="text-foreground font-mono">.heda</span> file is sealed with your password
-					— AES-256-GCM, nothing leaves your machine.
+					with AES-256-GCM. Nothing leaves your machine.
 				</span>
 			</p>
 		</div>

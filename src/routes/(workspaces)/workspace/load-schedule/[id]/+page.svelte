@@ -66,7 +66,7 @@
 					{#await getRootNode()}
 						<Skeleton class="h-5 w-24" />
 					{:then root_node}
-						{root_node?.highest_unit_form?.phase ?? '—'}
+						{root_node?.highest_unit_form?.phase ?? '-'}
 					{/await}
 				</dd>
 			</div>
@@ -86,10 +86,10 @@
 							{:then parent_node}
 								{parent_node?.panel_data?.name ??
 									parent_node?.highest_unit_form?.distribution_unit ??
-									'—'}
+									'-'}
 							{/await}
 						{:else}
-							—
+							-
 						{/if}
 					{/await}
 				</dd>
