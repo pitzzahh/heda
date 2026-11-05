@@ -200,9 +200,6 @@
 		--hover-scale: 1.02;
 		--enter-scale: 0.95;
 		--enter-lift: 8px;
-		--popover-enter-scale: 0.97;
-		--popover-exit-scale: 0.98;
-		--modal-enter-scale: 1.02;
 		--primary-hover: color-mix(in oklab, var(--primary) 85%, black);
 	}
 

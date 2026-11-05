@@ -5,13 +5,13 @@ export const commandFrame = tv({
 		// Command shares Dialog's modal scale/fade contract; its top offset is the only layout difference.
 		popup: [
 			'fixed top-[14vh] left-1/2 z-50 -translate-x-1/2 outline-hidden',
-			'transition-[opacity,scale] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-			'data-[closed]:opacity-0 data-[closed]:scale-[var(--popover-exit-scale)] data-[closed]:duration-[var(--duration-exit)]',
-			'data-[state=closed]:opacity-0 data-[state=closed]:scale-[var(--popover-exit-scale)] data-[state=closed]:duration-[var(--duration-exit)]',
-			'starting:data-[open]:opacity-0 starting:data-[open]:scale-[var(--modal-enter-scale)]',
-			'starting:data-[state=open]:opacity-0 starting:data-[state=open]:scale-[var(--modal-enter-scale)]',
+			'data-[state=open]:animate-in data-[state=closed]:animate-out',
+			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
+			'ease-[var(--ease-out-quad)]',
 			'flex max-h-[min(30rem,70dvh)] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden',
-			'motion-reduce:transition-none'
+			'motion-reduce:animate-none'
 		],
 		panel: '',
 		body: 'relative flex min-h-0 flex-col overflow-hidden text-foreground',
