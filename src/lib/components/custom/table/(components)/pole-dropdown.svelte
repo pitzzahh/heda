@@ -1,18 +1,34 @@
-<script lang="ts">
-	import { invalidate } from '$app/navigation';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import { changePole } from '@/db/mutations';
-	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 
 	interface Props {
 		current_pole: '1' | '2';
 		node: PhaseLoadSchedule;
 	}
+</script>
+
+<script lang="ts">
+	import { invalidate } from '$app/navigation';
+	import * as Select from '#lib/components/ui/select/index.js';
+	import { changePole } from '#lib/db/mutations';
+	import { toast } from 'svelte-sonner';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
 
 	let { node, current_pole }: Props = $props();
-	let selected_pole = $state<'1' | '2'>(current_pole);
+	// Snapshot at mount: local edit state.
+	function initialPole() {
+		return current_pole;
+	}
+	let selected_pole = $state<'1' | '2'>(initialPole());
+	let last_pole_prop = initialPole();
+
+	// The table refreshes in place, so adopt external prop changes (undo/redo, refreshes).
+	$effect(() => {
+		if (current_pole !== last_pole_prop) {
+			last_pole_prop = current_pole;
+			selected_pole = current_pole;
+		}
+	});
 
 	let undo_redo_state = getUndoRedoState();
 
@@ -37,9 +53,13 @@
 		}
 	}}
 >
-	<Select.Trigger class="w-[50px] text-xs"
-		>{selected_pole ? selected_pole : 'Select a pole'}</Select.Trigger
-	>
+	<Select.Trigger class="w-12.5 text-xs">
+		{#if selected_pole}
+			{selected_pole}
+		{:else}
+			Select a pole
+		{/if}
+	</Select.Trigger>
 	<Select.Content class="text-sm">
 		{#each ['1', '2'] as pole, i (i)}
 			<Select.Item value={pole} disabled={selected_pole === pole}>

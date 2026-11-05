@@ -1,9 +1,7 @@
-import { renderComponent } from '@/components/ui/data-table/index.js';
+import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-import type { SuperValidated } from 'sveltekit-superforms';
-import type { Node } from '@/db/schema';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+import type { Node } from '#lib/types/db';
 import {
 	PoleDropdown,
 	LoadDescriptionCell,
@@ -14,18 +12,12 @@ import {
 } from './(components)';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
-	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
-	current_node: PhaseLoadSchedule,
-	highest_unit?: NonNullable<Node['highest_unit_form']>,
-	latest_circuit_node?: Node
+	current_node: PhaseLoadSchedule
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
 		// header: () =>
 		// 	renderComponent(AddLoadDialog, {
-		// 		phase_main_load_form,
-		// 		highest_unit,
-		// 		latest_circuit_node,
 		// 		'aria-label': 'Select row',
 		// 		class: 'translate-y-[2px]'
 		// 	}),
@@ -62,7 +54,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'va',
 		header: 'APPARENT POWER (VA)',
-		footer: (props) => {
+		footer: () => {
 			// return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
 			return current_node.va;
 		}
@@ -70,7 +62,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'current',
 		header: 'CURRENT (A)',
-		footer: (props) => {
+		footer: () => {
 			return current_node.current.toFixed(2);
 		}
 	},
@@ -163,7 +155,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'ampere_frames',
 				cell: (info) => info.getValue(),
 				header: () => 'AF',
-				footer: (props) => current_node.ampere_frames
+				footer: () => current_node.ampere_frames
 			},
 			{
 				accessorKey: 'pole',
@@ -176,7 +168,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 
 				header: () => 'Pole',
-				footer: (props) => {
+				footer: () => {
 					return renderComponent(PoleDropdown, {
 						current_pole: current_node.pole as '1' | '2',
 						node: current_node
@@ -187,14 +179,13 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'kaic',
 				cell: (info) => info.getValue(),
 				header: () => 'kAIC',
-				footer: (props) => current_node.kaic || ''
+				footer: () => current_node.kaic || ''
 			}
 		]
 	}
 ];
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
-	phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>,
 	current_node: PhaseLoadSchedule,
 	highest_unit?: NonNullable<Node['highest_unit_form']>
 ): ColumnDef<T>[] => [
@@ -214,7 +205,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 					return info.getValue();
 				},
 				header: () => 'SIZE',
-				footer: (props) => {
+				footer: () => {
 					if (current_node.egc_size === -1) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
@@ -237,7 +228,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 					});
 				},
 				header: () => 'INSULATION',
-				footer: (props) =>
+				footer: () =>
 					renderComponent(InsulationsDropdown, {
 						adjusted_current: current_node.adjusted_current,
 						type: 'egc',
@@ -271,7 +262,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 					return info.getValue();
 				},
 				header: () => 'SIZE',
-				footer: (props) => {
+				footer: () => {
 					if (current_node.adjusted_current > 530 && !current_node.overrided_conduit_size) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
@@ -293,7 +284,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_type',
 				cell: (info) => info.getValue(),
 				header: () => 'TYPE',
-				footer: (props) => current_node.conduit_type
+				footer: () => current_node.conduit_type
 			}
 		]
 	},
@@ -302,15 +293,13 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 		cell: ({ row }) => {
 			return renderComponent(ActionsColumnDropdown, {
 				node: row.original,
-				phase_main_load_form,
 				highest_unit
 			});
 		},
 
-		footer: (props) => {
+		footer: () => {
 			return renderComponent(ActionsColumnDropdown, {
 				node: current_node as PhaseLoadSchedule,
-				phase_main_load_form,
 				highest_unit
 			});
 		}
