@@ -1,23 +1,29 @@
 <script lang="ts">
-	import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { type MenuItemVariant, menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		inset,
-		...restProps
+		class: classProp,
+		variant: variantProp,
+		destructive = false,
+		inset = false,
+		...rest
 	}: ContextMenuPrimitive.ItemProps & {
+		variant?: MenuItemVariant;
+		/** Alias for `variant="destructive"`. */
+		destructive?: boolean;
 		inset?: boolean;
 	} = $props();
+
+	const variant = $derived<MenuItemVariant>(
+		variantProp ?? (destructive ? 'destructive' : 'default')
+	);
 </script>
 
 <ContextMenuPrimitive.Item
-	class={cn(
-		"data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-		inset && "pl-8",
-		className
-	)}
-	bind:ref
-	{...restProps}
+	{...rest}
+	data-slot="context-menu-item"
+	data-inset={inset || undefined}
+	class={cn(menu({ variant }).item(), classProp)}
 />

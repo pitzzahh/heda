@@ -1,19 +1,32 @@
 <script lang="ts">
-	import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
+	import { getContext } from 'svelte';
+	import { cn } from '#lib/utils';
+	import { type MenuSize, menu } from '#lib/components/ui/shared/menu';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: ContextMenuPrimitive.SubContentProps = $props();
+		class: classProp,
+		size = 'default',
+		...rest
+	}: ContextMenuPrimitive.SubContentProps & { size?: MenuSize } = $props();
+
+	const sub = getContext<{ close: () => void } | undefined>('context-menu-sub');
 </script>
 
-<ContextMenuPrimitive.SubContent
-	bind:ref
-	class={cn(
-		"bg-popover text-popover-foreground z-50 min-w-[8rem] rounded-md border p-1 shadow-lg focus:outline-none",
-		className
-	)}
-	{...restProps}
-/>
+<ContextMenuPrimitive.Portal>
+	<ContextMenuPrimitive.SubContent
+		escapeKeydownBehavior={sub ? 'ignore' : 'close'}
+		onkeydown={(event: KeyboardEvent) => {
+			if (event.key !== 'Escape' || !sub) return;
+			event.stopPropagation();
+			const id = (event.currentTarget as HTMLElement).id;
+			sub.close();
+			document.querySelector<HTMLElement>(`[aria-controls="${id}"]`)?.focus();
+		}}
+		{...rest}
+		data-slot="context-menu-sub-content"
+		data-size={size}
+		class={cn(ANCHORED, 'static min-w-40', menu({ size }).surface(), classProp)}
+	/>
+</ContextMenuPrimitive.Portal>

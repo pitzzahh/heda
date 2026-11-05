@@ -1,28 +1,35 @@
 <script lang="ts">
-	import { DropdownMenu as DropdownMenuPrimitive, type WithoutChild } from 'bits-ui';
-	import ChevronRight from 'svelte-radix/ChevronRight.svelte';
-	import { cn } from '@/utils';
+	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		inset,
+		class: classProp,
+		inset = false,
 		children,
-		...restProps
-	}: WithoutChild<DropdownMenuPrimitive.SubTriggerProps> & {
-		inset?: boolean;
-	} = $props();
+		...rest
+	}: DropdownMenuPrimitive.SubTriggerProps & { inset?: boolean } = $props();
 </script>
 
 <DropdownMenuPrimitive.SubTrigger
-	bind:ref
-	class={cn(
-		'flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-		inset && 'pl-8',
-		className
-	)}
-	{...restProps}
+	{...rest}
+	data-slot="dropdown-menu-sub-trigger"
+	data-inset={inset || undefined}
+	class={cn(menu().item(), classProp)}
 >
-	{@render children?.()}
-	<ChevronRight class="ml-auto" />
+	<span class="min-w-0 flex-1 truncate text-left">{@render children?.()}</span>
+	<svg
+		viewBox="0 0 16 16"
+		fill="none"
+		aria-hidden="true"
+		class="text-muted-foreground ml-2 size-3.5 shrink-0"
+	>
+		<path
+			d="m6 3.5 4.5 4.5L6 12.5"
+			stroke="currentColor"
+			stroke-width="1.5"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	</svg>
 </DropdownMenuPrimitive.SubTrigger>

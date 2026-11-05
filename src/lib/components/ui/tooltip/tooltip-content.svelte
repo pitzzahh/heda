@@ -1,21 +1,30 @@
 <script lang="ts">
 	import { Tooltip as TooltipPrimitive } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		sideOffset = 4,
-		...restProps
+		class: classProp,
+		side = 'top',
+		sideOffset = 6,
+		...rest
 	}: TooltipPrimitive.ContentProps = $props();
 </script>
 
-<TooltipPrimitive.Content
-	bind:ref
-	{sideOffset}
-	class={cn(
-		'z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground',
-		className
-	)}
-	{...restProps}
-/>
+<TooltipPrimitive.Portal>
+	<TooltipPrimitive.Content
+		{side}
+		{sideOffset}
+		{...rest}
+		data-slot="tooltip-content"
+		class={cn(
+			ANCHORED,
+			'bg-foreground text-background static z-50 rounded-md px-2 py-1 text-xs shadow-[var(--overlay-shadow)]',
+			'data-[state=open]:pointer-events-none',
+			// Tooltips report delayed-open/instant-open, never open. Once one is open, the next skips motion.
+			'data-[state=delayed-open]:scale-100 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:duration-[var(--duration-tooltip)]',
+			'data-[state=instant-open]:scale-100 data-[state=instant-open]:opacity-100 data-[state=instant-open]:duration-0',
+			classProp
+		)}
+	/>
+</TooltipPrimitive.Portal>

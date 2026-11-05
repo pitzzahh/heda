@@ -1,37 +1,44 @@
 <script lang="ts">
-	import { DropdownMenu as DropdownMenuPrimitive, type WithoutChild } from 'bits-ui';
-	import Check from 'svelte-radix/Check.svelte';
-	import Minus from 'svelte-radix/Minus.svelte';
-	import { cn } from '@/utils';
+	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+	import type { Snippet } from 'svelte';
+	import { cn } from '#lib/utils';
+	import { menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		children: childrenProp,
+		class: classProp,
 		checked = $bindable(false),
-		...restProps
-	}: WithoutChild<DropdownMenuPrimitive.CheckboxItemProps> = $props();
+		children: label,
+		closeOnSelect = false,
+		...rest
+	}: Omit<DropdownMenuPrimitive.CheckboxItemProps, 'children'> & {
+		children?: Snippet;
+	} = $props();
 
-	export { className as class };
+	const styles = menu();
 </script>
 
 <DropdownMenuPrimitive.CheckboxItem
-	bind:ref
 	bind:checked
-	class={cn(
-		'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50',
-		className
-	)}
-	{...restProps}
+	{closeOnSelect}
+	{...rest}
+	data-slot="dropdown-menu-checkbox-item"
+	data-inset=""
+	class={cn(styles.item(), classProp)}
 >
-	{#snippet children({ checked })}
-		<span class="absolute left-2 flex size-3.5 items-center justify-center">
-			{#if checked === 'indeterminate'}
-				<Minus class="size-3.5" />
-			{:else}
-				<Check class={cn('size-3.5', !checked && 'text-transparent')} />
-			{/if}
+	{#snippet children({ checked: on })}
+		<span class={styles.indicator()}>
+			<!-- Always mounted so the tick can draw in and back out. -->
+			<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" data-on={on} class={styles.check()}>
+				<path
+					d="m3.5 8.5 3 3 6-7"
+					pathLength="1"
+					stroke="currentColor"
+					stroke-width="1.6"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
 		</span>
-		{@render childrenProp?.({ checked })}
+		{@render label?.()}
 	{/snippet}
 </DropdownMenuPrimitive.CheckboxItem>

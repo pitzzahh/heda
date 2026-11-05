@@ -1,24 +1,23 @@
 <script lang="ts">
-	import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { type MenuSize, menu } from '#lib/components/ui/shared/menu';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor';
 
 	let {
+		class: classProp,
+		size = 'default',
 		ref = $bindable(null),
-		class: className,
-		portalProps,
-		...restProps
-	}: ContextMenuPrimitive.ContentProps & {
-		portalProps?: ContextMenuPrimitive.PortalProps;
-	} = $props();
+		...rest
+	}: ContextMenuPrimitive.ContentProps & { size?: MenuSize } = $props();
 </script>
 
-<ContextMenuPrimitive.Portal {...portalProps}>
+<ContextMenuPrimitive.Portal>
 	<ContextMenuPrimitive.Content
-		class={cn(
-			"bg-popover text-popover-foreground z-50 min-w-[8rem] rounded-md border p-1 shadow-md focus:outline-none",
-			className
-		)}
-		{...restProps}
 		bind:ref
+		{...rest}
+		data-slot="context-menu-content"
+		data-size={size}
+		class={cn(ANCHORED, 'static', menu({ size }).surface(), classProp)}
 	/>
 </ContextMenuPrimitive.Portal>

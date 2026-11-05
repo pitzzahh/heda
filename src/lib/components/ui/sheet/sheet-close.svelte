@@ -1,0 +1,34 @@
+<script lang="ts">
+	import { Dialog as SheetPrimitive } from 'bits-ui';
+	import type { Snippet } from 'svelte';
+	import { cn } from '#lib/utils';
+
+	let {
+		children,
+		class: classProp,
+		...rest
+	}: SheetPrimitive.CloseProps & { children?: Snippet } = $props();
+</script>
+
+<SheetPrimitive.Close
+	{...rest}
+	data-slot="sheet-close"
+	aria-label={children ? undefined : 'Close'}
+	class={cn(
+		'text-muted-foreground hover:bg-accent hover:text-accent-foreground grid size-8 place-items-center rounded-lg transition-colors',
+		classProp
+	)}
+>
+	{#if children}
+		{@render children()}
+	{:else}
+		<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="size-4">
+			<path
+				d="m4 4 8 8M12 4l-8 8"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+			/>
+		</svg>
+	{/if}
+</SheetPrimitive.Close>

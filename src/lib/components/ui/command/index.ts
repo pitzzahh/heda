@@ -1,40 +1,30 @@
-import { Command as CommandPrimitive } from "bits-ui";
-
-import Root from "./command.svelte";
-import Dialog from "./command-dialog.svelte";
-import Empty from "./command-empty.svelte";
-import Group from "./command-group.svelte";
-import Item from "./command-item.svelte";
-import Input from "./command-input.svelte";
-import List from "./command-list.svelte";
-import Separator from "./command-separator.svelte";
-import Shortcut from "./command-shortcut.svelte";
-import LinkItem from "./command-link-item.svelte";
-
-const Loading: typeof CommandPrimitive.Loading = CommandPrimitive.Loading;
-
+export { default as Command } from './command.svelte';
+export { default as CommandBar } from './command-bar.svelte';
+export { default as CommandEmpty, default as ComboboxEmpty } from './command-empty.svelte';
+export { default as CommandFooter } from './command-footer.svelte';
+export { default as CommandGroup, default as ComboboxGroup } from './command-group.svelte';
+export { default as CommandHeader } from './command-header.svelte';
+export { default as CommandHint } from './command-hint.svelte';
+export { default as CommandInput, default as ComboboxInput } from './command-input.svelte';
+export { default as CommandItem, default as ComboboxItem } from './command-item.svelte';
+export { default as CommandSeparator } from './command-separator.svelte';
+export { default as CommandShortcut } from './command-shortcut.svelte';
 export {
-	Root,
-	Dialog,
-	Empty,
-	Group,
-	Item,
-	LinkItem,
-	Input,
-	List,
-	Separator,
-	Shortcut,
-	Loading,
-	//
-	Root as Command,
-	Dialog as CommandDialog,
-	Empty as CommandEmpty,
-	Group as CommandGroup,
-	Item as CommandItem,
-	LinkItem as CommandLinkItem,
-	Input as CommandInput,
-	List as CommandList,
-	Separator as CommandSeparator,
-	Shortcut as CommandShortcut,
-	Loading as CommandLoading,
-};
+	type CommandContext,
+	type CommandDialogState,
+	setCommandDialogState,
+	getCommandDialogState
+} from './context';
+export { rankCommandMatch } from './score';
+export { commandFrame, type CommandVariant } from './variants';
+export { default as Root } from './command.svelte';
+export { default as Bar } from './command-bar.svelte';
+export { default as Empty } from './command-empty.svelte';
+export { default as Footer } from './command-footer.svelte';
+export { default as Group } from './command-group.svelte';
+export { default as Header } from './command-header.svelte';
+export { default as Hint } from './command-hint.svelte';
+export { default as Input } from './command-input.svelte';
+export { default as Item } from './command-item.svelte';
+export { default as Separator } from './command-separator.svelte';
+export { default as Shortcut } from './command-shortcut.svelte';

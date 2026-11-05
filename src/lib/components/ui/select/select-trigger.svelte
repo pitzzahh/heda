@@ -1,24 +1,46 @@
 <script lang="ts">
-	import { Select as SelectPrimitive, type WithoutChild } from "bits-ui";
-	import ChevronDown from "lucide-svelte/icons/chevron-down";
-	import { cn } from '@/utils';
+	import { Select as SelectPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { type SelectTriggerSize, type SelectTriggerVariant, selectTrigger } from './variants';
+	import { getSelectSize } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
+		class: classProp,
 		children,
-		...restProps
-	}: WithoutChild<SelectPrimitive.TriggerProps> = $props();
+		variant = 'default',
+		size: sizeProp,
+		...rest
+	}: SelectPrimitive.TriggerProps & {
+		variant?: SelectTriggerVariant;
+		size?: SelectTriggerSize;
+	} = $props();
+
+	const rootSize = getSelectSize();
+	const size = $derived(sizeProp ?? rootSize());
 </script>
 
 <SelectPrimitive.Trigger
-	bind:ref
-	class={cn(
-		"border-input ring-offset-background data-[placeholder]:text-muted-foreground focus:ring-ring flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-		className
-	)}
-	{...restProps}
+	{...rest}
+	data-slot="select-trigger"
+	data-variant={variant}
+	data-size={size}
+	class={cn(selectTrigger({ variant, size }), 'group/select-trigger', classProp)}
 >
 	{@render children?.()}
-	<ChevronDown class="size-4 opacity-50" />
+	<!-- Only the chevron turns; a leading icon passed as children stays put. -->
+	<svg
+		viewBox="0 0 16 16"
+		fill="none"
+		aria-hidden="true"
+		data-slot="select-icon"
+		class="text-muted-foreground ms-auto size-3.5 shrink-0 transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:duration-(--duration-dropdown) motion-reduce:transition-none"
+	>
+		<path
+			d="m4 6 4 4 4-4"
+			stroke="currentColor"
+			stroke-width="1.4"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	</svg>
 </SelectPrimitive.Trigger>

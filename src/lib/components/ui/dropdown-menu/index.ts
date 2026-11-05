@@ -1,50 +1,27 @@
-import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
-import CheckboxItem from "./dropdown-menu-checkbox-item.svelte";
-import Content from "./dropdown-menu-content.svelte";
-import GroupHeading from "./dropdown-menu-group-heading.svelte";
-import Item from "./dropdown-menu-item.svelte";
-import Label from "./dropdown-menu-label.svelte";
-import RadioItem from "./dropdown-menu-radio-item.svelte";
-import Separator from "./dropdown-menu-separator.svelte";
-import Shortcut from "./dropdown-menu-shortcut.svelte";
-import SubContent from "./dropdown-menu-sub-content.svelte";
-import SubTrigger from "./dropdown-menu-sub-trigger.svelte";
-
-const Sub = DropdownMenuPrimitive.Sub;
-const Root = DropdownMenuPrimitive.Root;
-const Trigger = DropdownMenuPrimitive.Trigger;
+export { default as DropdownMenu } from './dropdown-menu.svelte';
+export { default as DropdownMenuCheckboxItem } from './dropdown-menu-checkbox-item.svelte';
+export { default as DropdownMenuContent } from './dropdown-menu-content.svelte';
+export { default as DropdownMenuItem } from './dropdown-menu-item.svelte';
+export { default as DropdownMenuLabel } from './dropdown-menu-label.svelte';
+export { default as DropdownMenuSeparator } from './dropdown-menu-separator.svelte';
+export { default as DropdownMenuShortcut } from './dropdown-menu-shortcut.svelte';
+export { default as DropdownMenuSubContent } from './dropdown-menu-sub-content.svelte';
+export { default as DropdownMenuSubTrigger } from './dropdown-menu-sub-trigger.svelte';
+export { default as DropdownMenuSub } from './dropdown-menu-sub.svelte';
+export { default as DropdownMenuTrigger } from './dropdown-menu-trigger.svelte';
+export { setDropdownMenu, dropdownMenuTrigger } from './context';
+import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+// Baby ships no Group part; re-export the bits primitive (same as before).
 const Group = DropdownMenuPrimitive.Group;
-const RadioGroup = DropdownMenuPrimitive.RadioGroup;
-
-export {
-	CheckboxItem,
-	Content,
-	Root as DropdownMenu,
-	CheckboxItem as DropdownMenuCheckboxItem,
-	Content as DropdownMenuContent,
-	Group as DropdownMenuGroup,
-	GroupHeading as DropdownMenuGroupHeading,
-	Item as DropdownMenuItem,
-	Label as DropdownMenuLabel,
-	RadioGroup as DropdownMenuRadioGroup,
-	RadioItem as DropdownMenuRadioItem,
-	Separator as DropdownMenuSeparator,
-	Shortcut as DropdownMenuShortcut,
-	Sub as DropdownMenuSub,
-	SubContent as DropdownMenuSubContent,
-	SubTrigger as DropdownMenuSubTrigger,
-	Trigger as DropdownMenuTrigger,
-	Group,
-	GroupHeading,
-	Item,
-	Label,
-	RadioGroup,
-	RadioItem,
-	Root,
-	Separator,
-	Shortcut,
-	Sub,
-	SubContent,
-	SubTrigger,
-	Trigger,
-};
+export { Group, Group as DropdownMenuGroup };
+export { default as Root } from './dropdown-menu.svelte';
+export { default as CheckboxItem } from './dropdown-menu-checkbox-item.svelte';
+export { default as Content } from './dropdown-menu-content.svelte';
+export { default as Item } from './dropdown-menu-item.svelte';
+export { default as Label } from './dropdown-menu-label.svelte';
+export { default as Separator } from './dropdown-menu-separator.svelte';
+export { default as Shortcut } from './dropdown-menu-shortcut.svelte';
+export { default as SubContent } from './dropdown-menu-sub-content.svelte';
+export { default as SubTrigger } from './dropdown-menu-sub-trigger.svelte';
+export { default as Sub } from './dropdown-menu-sub.svelte';
+export { default as Trigger } from './dropdown-menu-trigger.svelte';
