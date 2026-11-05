@@ -1,10 +1,10 @@
 [package]
-name = "app"
+name = "heda"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "An intuitive and powerful tool designed for electrical engineers to streamline crucial design and analysis processes. Whether you're planning loads, analyzing circuits, or ensuring system safety, HEDA has you covered."
+authors = ["pitzzahh", "isipisii"]
 license = ""
-repository = ""
+repository = "https://github.com/pitzzahh/heda"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -25,9 +25,9 @@ tauri = { version = "2.0.6", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
-dotenvs = "0.1.0"
 tauri-plugin-dialog = "2"
 dirs = "6.0.0"
+tauri-plugin-stronghold = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
