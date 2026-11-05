@@ -1,18 +1,28 @@
+<script lang="ts" module>
+	import type { Node } from '#lib/types/db';
+
+	interface Props {
+		highest_unit: NonNullable<Node['highest_unit_form']>;
+		parent_id: string;
+		open_panel_dialog?: boolean;
+		some_open_state?: boolean;
+		trigger_text?: string;
+		show_trigger?: boolean;
+		panel_to_edit: Node;
+	}
+</script>
+
 <script lang="ts">
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import type { GenericPhasePanelSchema } from '@/schema/panel';
-	import type { SuperValidated } from 'sveltekit-superforms';
-	import { GenericPhaseMainPanelForm } from '@/components/custom/panel';
-	import { Separator } from '@/components/ui/separator/index.js';
-	import type { Phase } from '@/types/phase';
-	import { cn } from '@/utils';
-	import type { Node } from '@/db/schema';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import type { Phase } from '#lib/types/phase';
+	import { cn } from '#lib/utils';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
-	import { getNodeById } from '@/db/queries';
+	import { getNodeById } from '#lib/db/queries';
 
 	let {
-		generic_phase_panel_form,
 		parent_id,
 		highest_unit,
 		open_panel_dialog = $bindable(false),
@@ -20,21 +30,13 @@
 		trigger_text = 'Update Panel',
 		show_trigger = false,
 		panel_to_edit
-	}: {
-		highest_unit: NonNullable<Node['highest_unit_form']>;
-		generic_phase_panel_form: SuperValidated<GenericPhasePanelSchema>;
-		parent_id: string;
-		open_panel_dialog?: boolean;
-		some_open_state?: boolean;
-		trigger_text?: string;
-		show_trigger?: boolean;
-		panel_to_edit: Node;
-	} = $props();
+	}: Props = $props();
 
-	const { phase } = highest_unit;
+	const phase = $derived(highest_unit.phase);
 
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 
+	// Loads the parent name for display whenever the edited panel changes.
 	$effect(() => {
 		if (panel_to_edit.parent_id) {
 			getNodeById(panel_to_edit.parent_id).then((node) => {
@@ -53,7 +55,7 @@
 			>{trigger_text}</Dialog.Trigger
 		>
 	{/if}
-	<Dialog.Content class="max-w-[70%]">
+	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>
 			<div class={cn('flex flex-col items-center justify-start')}>
@@ -74,7 +76,13 @@
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{phase ?? 'N/A'}</p>
+							<p>
+								{#if phase == null}
+									N/A
+								{:else}
+									{phase}
+								{/if}
+							</p>
 						</div>
 					</div>
 				</div>
@@ -85,16 +93,16 @@
 			<GenericPhaseMainPanelForm
 				action="edit"
 				{parent_id}
-				{generic_phase_panel_form}
 				main_phase={phase as Phase}
 				selected_parent_id={selected_parent?.id}
 				closeDialog={() => (open_panel_dialog = false)}
 				node_to_edit={panel_to_edit}
 			/>
 			{#snippet failed(error, reset)}
-				<p class="text-sm text-muted-foreground">{error}</p>
+				<p class="text-muted-foreground text-sm">{error}</p>
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>
