@@ -1,6 +1,6 @@
 # heda AGENTS.md
 
-SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop + Android) + SignalDB + Valibot + Formisch. Package manager: `bun`.
+SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formisch. Package manager: `bun`.
 
 ## Commands
 

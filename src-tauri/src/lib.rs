@@ -27,7 +27,6 @@ fn get_exe_path() -> PathBuf {
         .to_path_buf()
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // WebKitGTK's Wayland path flickers on some Mesa setups where the X11
     // (XWayland) path does not, so the app prefers X11 when an X server is
@@ -44,7 +43,6 @@ pub fn run() {
         }
     }
 
-    #[cfg(desktop)]
     let log_plugin = tauri_plugin_log::Builder::new()
         .target(tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::Folder {
@@ -62,26 +60,18 @@ pub fn run() {
         })
         .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
         .build();
-    #[cfg(mobile)]
-    let log_plugin = tauri_plugin_log::Builder::new().build();
 
-    let builder = tauri::Builder::default()
+    tauri::Builder::default()
         .plugin(log_plugin)
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             get_file_name,
             get_file_metadata,
             get_exe_path
-        ]);
-
-    // In-app updating and relaunching exist on desktop only; Android installs the APK by hand.
-    #[cfg(desktop)]
-    let builder = builder
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init());
-
-    builder
+        ])
         .setup(|app| {
             use tauri::Manager;
             let salt_path = app

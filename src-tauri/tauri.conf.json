@@ -42,12 +42,7 @@
 			"icons/128x128.png",
 			"icons/128x128@2x.png",
 			"icons/icon.icns",
-			"icons/icon.ico",
-			"icons/android/mipmap-mdpi/ic_launcher.png",
-			"icons/android/mipmap-hdpi/ic_launcher.png",
-			"icons/android/mipmap-xhdpi/ic_launcher.png",
-			"icons/android/mipmap-xxhdpi/ic_launcher.png",
-			"icons/android/mipmap-xxxhdpi/ic_launcher.png"
+			"icons/icon.ico"
 		]
 	},
 	"plugins": {
