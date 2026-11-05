@@ -1,5 +1,5 @@
 import { setContext, getContext } from 'svelte';
-import type { State } from '@/state/types';
+import type { State } from '#lib/state/types';
 
 /**
  * setState function creates a state rune store with initial data and sets it in the specified context.
