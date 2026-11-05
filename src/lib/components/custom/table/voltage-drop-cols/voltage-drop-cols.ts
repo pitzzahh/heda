@@ -1,6 +1,6 @@
-import type { VoltageDrop } from '@/types/voltage-drop';
+import type { VoltageDrop } from '#lib/types/voltage-drop';
 import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent } from '@/components/ui/data-table';
+import { renderComponent } from '#lib/components/ui/data-table';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';
 import { ActionsColumnDropdown } from '../(components)';
 

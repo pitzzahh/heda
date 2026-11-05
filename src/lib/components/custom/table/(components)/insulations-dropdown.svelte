@@ -1,10 +1,5 @@
-<script lang="ts">
-	import { invalidate } from '$app/navigation';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import { changeInsulation } from '@/db/mutations';
-	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 
 	interface Props {
 		adjusted_current: number;
@@ -12,20 +7,45 @@
 		current_insulation: string;
 		node: PhaseLoadSchedule;
 	}
-	type Insulations = (typeof insulations)[number];
-
-	let { adjusted_current, type, current_insulation, node }: Props = $props();
-	let selected_insulation = $state<Insulations>(current_insulation as Insulations);
-	let undo_redo_state = getUndoRedoState();
 
 	const insulations = ['TW-Cu', 'THWN-Cu', 'THWN-2-Cu', 'THHN-Cu'] as const;
-	const insulations_to_map =
+
+	type Insulations = (typeof insulations)[number];
+</script>
+
+<script lang="ts">
+	import { invalidate } from '$app/navigation';
+	import * as Select from '#lib/components/ui/select/index.js';
+	import { changeInsulation } from '#lib/db/mutations';
+	import { toast } from 'svelte-sonner';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+
+	let { adjusted_current, type, current_insulation, node }: Props = $props();
+	// Snapshot at mount: local edit state.
+	function initialInsulation() {
+		return current_insulation as Insulations;
+	}
+	let selected_insulation = $state<Insulations>(initialInsulation());
+	let last_insulation_prop: string = initialInsulation();
+	let undo_redo_state = getUndoRedoState();
+
+	// The table refreshes in place, so adopt external prop changes (undo/redo, auto-upgrade).
+	$effect(() => {
+		if (current_insulation !== last_insulation_prop) {
+			last_insulation_prop = current_insulation;
+			selected_insulation = current_insulation as Insulations;
+		}
+	});
+
+	const insulations_to_map = $derived(
 		type === 'egc'
 			? insulations
 			: adjusted_current > 100
 				? insulations.filter((i) => i !== 'TW-Cu')
-				: insulations;
+				: insulations
+	);
 
+	// Auto-upgrades TW-Cu once the adjusted current exceeds its rating.
 	$effect(() => {
 		if (adjusted_current > 100 && current_insulation === 'TW-Cu') {
 			handleChangeInsulation('THHN-Cu');
@@ -55,9 +75,13 @@
 		}
 	}}
 >
-	<Select.Trigger class="w-[105px] text-xs"
-		>{selected_insulation ? selected_insulation : 'Select an insulation'}</Select.Trigger
-	>
+	<Select.Trigger class="w-26.25 text-xs">
+		{#if selected_insulation}
+			{selected_insulation}
+		{:else}
+			Select an insulation
+		{/if}
+	</Select.Trigger>
 	<Select.Content class="text-sm">
 		{#each insulations_to_map as insulation, i (i)}
 			<Select.Item value={insulation} disabled={selected_insulation === insulation}>
