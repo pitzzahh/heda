@@ -1,7 +1,9 @@
-import { getState, setState } from '@/state/index.svelte';
-import { UNDO_REDO_STATE_CTX } from '@/state/constants';
-import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-import { addNode, overrideField, removeNode, updateNode, type FieldType } from '@/db/mutations';
+import { getState, setState } from '#lib/state/index.svelte';
+import { UNDO_REDO_STATE_CTX } from '#lib/state/constants';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+import type { GenericPhasePanelSchema } from '#lib/types/panel';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load';
+import { addNode, overrideField, removeNode, updateNode, type FieldType } from '#lib/db/mutations';
 import { invalidate } from '$app/navigation';
 
 type BatchData = {
@@ -14,19 +16,19 @@ type Action<T extends PhaseLoadSchedule> = {
 	data?: T;
 	batch_data?: BatchData[];
 	action:
-	| 'create_node'
-	| 'update_node'
-	| 'delete_node'
-	| 'copy_node'
-	| 'batch_delete'
-	| 'batch_copy_node'
-	| 'override_at'
-	| 'override_af'
-	| 'override_conduit_size'
-	| 'override_conductor_size'
-	| 'override_egc_size'
-	| 'override_z'
-	| 'override_length';
+		| 'create_node'
+		| 'update_node'
+		| 'delete_node'
+		| 'copy_node'
+		| 'batch_delete'
+		| 'batch_copy_node'
+		| 'override_at'
+		| 'override_af'
+		| 'override_conduit_size'
+		| 'override_conductor_size'
+		| 'override_egc_size'
+		| 'override_z'
+		| 'override_length';
 	children_nodes?: T[];
 };
 export class UndoRedoState {
@@ -35,7 +37,7 @@ export class UndoRedoState {
 
 	has_unsaved_actions = $state(false);
 
-	constructor() { }
+	constructor() {}
 
 	resetUnsavedActions() {
 		this.has_unsaved_actions = false;
@@ -71,13 +73,13 @@ export class UndoRedoState {
 				panel_data: {
 					...node_data.panel_data,
 					circuit_number: node_data.circuit_number
-				} as any
+				} as GenericPhasePanelSchema
 			}),
 			...(node_data.load_data && {
 				load_data: {
 					...node_data.load_data,
 					circuit_number: node_data.circuit_number
-				} as any
+				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' }
 			})
 		});
 
@@ -147,9 +149,11 @@ export class UndoRedoState {
 			field_data
 		});
 
-		is_undo
-			? (this.redo_stack = [...this.redo_stack, action])
-			: (this.undo_stack = [...this.undo_stack, action]);
+		if (is_undo) {
+			this.redo_stack = [...this.redo_stack, action];
+		} else {
+			this.undo_stack = [...this.undo_stack, action];
+		}
 	}
 
 	async undo() {
@@ -158,7 +162,7 @@ export class UndoRedoState {
 
 		if (last_action) {
 			switch (last_action.action) {
-				case 'create_node':
+				case 'create_node': {
 					if (!last_action.data) return;
 
 					const result_in_create_node = await removeNode(last_action.data.id);
@@ -173,8 +177,9 @@ export class UndoRedoState {
 					}
 
 					break;
+				}
 
-				case 'update_node':
+				case 'update_node': {
 					const previous_data = last_action.previous_data;
 					const current_data = last_action.data;
 
@@ -196,8 +201,9 @@ export class UndoRedoState {
 					}
 
 					break;
+				}
 
-				case 'delete_node':
+				case 'delete_node': {
 					if (!last_action.data) return;
 
 					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
@@ -210,8 +216,9 @@ export class UndoRedoState {
 					];
 
 					break;
+				}
 
-				case 'batch_delete':
+				case 'batch_delete': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
 						const batch_data = await this.handleBatchOperation(last_action, 'add');
 
@@ -225,8 +232,9 @@ export class UndoRedoState {
 					}
 
 					break;
+				}
 
-				case 'batch_copy_node':
+				case 'batch_copy_node': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
 						const batch_data = await this.handleBatchOperation(last_action, 'remove');
 
@@ -239,8 +247,9 @@ export class UndoRedoState {
 						];
 					}
 					break;
+				}
 
-				case 'copy_node':
+				case 'copy_node': {
 					if (!last_action.data) return;
 
 					const result_in_copy_node = await removeNode(last_action.data.id);
@@ -255,8 +264,9 @@ export class UndoRedoState {
 					}
 
 					break;
+				}
 
-				case 'override_at':
+				case 'override_at': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -267,7 +277,8 @@ export class UndoRedoState {
 					});
 
 					break;
-				case 'override_af':
+				}
+				case 'override_af': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -277,8 +288,9 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 
-				case 'override_conductor_size':
+				case 'override_conductor_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -288,7 +300,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_conduit_size':
+				}
+				case 'override_conduit_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -298,7 +311,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_egc_size':
+				}
+				case 'override_egc_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -308,8 +322,9 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 
-				case 'override_z':
+				case 'override_z': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -319,8 +334,9 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 
-				case 'override_length':
+				case 'override_length': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -330,6 +346,7 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 			}
 			await invalidate('app:workspace');
 			await invalidate('app:workspace/load-schedule');
@@ -342,7 +359,7 @@ export class UndoRedoState {
 
 		if (last_action) {
 			switch (last_action.action) {
-				case 'create_node':
+				case 'create_node': {
 					if (!last_action.data) return;
 
 					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
@@ -351,8 +368,9 @@ export class UndoRedoState {
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
 					];
 					break;
+				}
 
-				case 'update_node':
+				case 'update_node': {
 					const previous_data = last_action.previous_data;
 					const current_data = last_action.data;
 
@@ -373,8 +391,9 @@ export class UndoRedoState {
 						];
 					}
 					break;
+				}
 
-				case 'delete_node':
+				case 'delete_node': {
 					if (!last_action.data) return;
 
 					const result = await removeNode(last_action.data.id);
@@ -385,8 +404,9 @@ export class UndoRedoState {
 						];
 					}
 					break;
+				}
 
-				case 'batch_delete':
+				case 'batch_delete': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
 						const batch_data = await this.handleBatchOperation(last_action, 'remove');
 
@@ -399,8 +419,9 @@ export class UndoRedoState {
 						];
 					}
 					break;
+				}
 
-				case 'copy_node':
+				case 'copy_node': {
 					if (!last_action.data) return;
 
 					const added_copied_node = await this.addNewNode(
@@ -412,8 +433,9 @@ export class UndoRedoState {
 						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
 					];
 					break;
+				}
 
-				case 'batch_copy_node':
+				case 'batch_copy_node': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
 						const batch_data = await this.handleBatchOperation(last_action, 'add');
 
@@ -426,7 +448,8 @@ export class UndoRedoState {
 						];
 					}
 					break;
-				case 'override_at':
+				}
+				case 'override_at': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -436,7 +459,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_af':
+				}
+				case 'override_af': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -446,8 +470,9 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 
-				case 'override_conductor_size':
+				case 'override_conductor_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -457,7 +482,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_conduit_size':
+				}
+				case 'override_conduit_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -467,7 +493,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_egc_size':
+				}
+				case 'override_egc_size': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -477,7 +504,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_z':
+				}
+				case 'override_z': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -487,7 +515,8 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
-				case 'override_length':
+				}
+				case 'override_length': {
 					if (!last_action.data) return;
 
 					await this.handleFieldOverride({
@@ -497,6 +526,7 @@ export class UndoRedoState {
 						node_id: last_action.data.id
 					});
 					break;
+				}
 			}
 			await invalidate('app:workspace');
 			await invalidate('app:workspace/load-schedule');

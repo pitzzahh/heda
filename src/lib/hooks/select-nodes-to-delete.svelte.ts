@@ -1,10 +1,10 @@
-import { setState, getState } from '@/state/index.svelte';
-import { SELECT_NODES_TO_DELETE_CTX } from '@/state/constants';
+import { setState, getState } from '#lib/state/index.svelte';
+import { SELECT_NODES_TO_DELETE_CTX } from '#lib/state/constants';
 
 export class SelectNodesToDelete {
 	selected_nodes_id = $state<string[]>([]);
 
-	constructor() { }
+	constructor() {}
 
 	addOrRemoveNodeId(id: string) {
 		if (this.checkIsIdSelected(id)) {
@@ -21,7 +21,7 @@ export class SelectNodesToDelete {
 	}
 
 	getSelectedNodeIdsCount() {
-		return this.selected_nodes_id.length
+		return this.selected_nodes_id.length;
 	}
 
 	removeAllNodeIds() {

@@ -1,13 +1,9 @@
 import { PersistedState } from 'runed';
-import type { Settings } from '@/types/settings';
-import setGlobalColorTheme from '@/theme-colors/theme-colors';
-import { setState, getState } from '@/state/index.svelte';
-import { THEME_COLOR_STATE_CTX } from '@/state/constants';
+import type { Font, Settings, ThemeColor, ThemeMode } from '#lib/types/settings';
+import setGlobalColorTheme from '#lib/theme-colors/theme-colors';
+import { setState, getState } from '#lib/state/index.svelte';
+import { THEME_COLOR_STATE_CTX } from '#lib/state/constants';
 import { setMode } from 'mode-watcher';
-
-export type Font = 'isocpeur' | 'verdana' | 'default';
-type ThemeColor = 'autocad' | 'excel';
-export type ThemeMode = 'dark' | 'light' | 'system';
 
 export class SettingsState {
 	private persisted_state: PersistedState<Settings>;
