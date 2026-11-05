@@ -1,73 +1,108 @@
-import { invoke } from "@tauri-apps/api/core";
-import CryptoJS from "crypto-js";
+// PBKDF2 iteration count for file passwords.
+export const FILE_KEY_ITERATIONS = 100_000;
 
-// Encrypt data
-export function encryptData<T>(data: T, secret_key: string): string {
-  // Generate a random IV
-  const iv = CryptoJS.lib.WordArray.random(16);
-
-  // Encrypt the data with the IV
-  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), CryptoJS.enc.Utf8.parse(secret_key), { iv }).toString();
-
-  // Generate an HMAC for integrity
-  const hmac = CryptoJS.HmacSHA256(iv.toString(CryptoJS.enc.Base64) + encrypted, secret_key);
-
-  // Encode IV, HMAC, and encrypted data with custom gibberish encoding
-  const ivEncoded = iv.toString(CryptoJS.enc.Base64);
-  const hmacEncoded = hmac.toString(CryptoJS.enc.Base64);
-  const encryptedEncoded = encrypted;
-
-  return `${ivEncoded}:${hmacEncoded}:${encryptedEncoded}`;
+export function randomHex(bytes: number = 16): string {
+	return bytesToHex(crypto.getRandomValues(new Uint8Array(bytes)));
 }
 
-// Decrypt data
-export function decryptData<T>(encryptedData: string, secret_key: string): T {
-  const [ivGibberish, hmacGibberish, encryptedGibberish] = encryptedData.split(":");
-
-  if (!ivGibberish || !hmacGibberish || !encryptedGibberish) {
-    throw new Error("Invalid encrypted data format");
-  }
-
-  // Parse the IV and HMAC
-  const iv = CryptoJS.enc.Base64.parse(ivGibberish);
-  const hmac = CryptoJS.enc.Base64.parse(hmacGibberish);
-
-  // Verify the HMAC
-  const computedHmac = CryptoJS.HmacSHA256(ivGibberish + encryptedGibberish, secret_key);
-  if (CryptoJS.enc.Hex.stringify(hmac) !== CryptoJS.enc.Hex.stringify(computedHmac)) {
-    throw new Error("Data integrity check failed");
-  }
-
-  // Decrypt the data
-  const decryptedBytes = CryptoJS.AES.decrypt(encryptedGibberish, CryptoJS.enc.Utf8.parse(secret_key), { iv });
-  const decryptedData = decryptedBytes.toString(CryptoJS.enc.Utf8);
-
-  if (!decryptedData) {
-    throw new Error("Decryption failed");
-  }
-
-  return JSON.parse(decryptedData) as T;
+export function hexToBytes(hex: string): Uint8Array {
+	const out = new Uint8Array(hex.length / 2);
+	for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+	return out;
 }
 
-export async function getEnv(key: string): Promise<string | null> {
-  return await invoke("get_env_var", { key });
+export function bytesToHex(bytes: Uint8Array): string {
+	return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function generateKey(passphrase: string, salt: string): CryptoJS.lib.WordArray {
-  return CryptoJS.PBKDF2(passphrase, CryptoJS.enc.Hex.parse(salt), {
-    keySize: 256 / 32,
-    iterations: 1000
-  });
+// Chunked so multi-megabyte project files don't blow the call stack.
+function bytesToBase64(bytes: Uint8Array): string {
+	let binary = '';
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(binary);
 }
 
-export function generateRandomSalt(length: number = 16): string {
-  return CryptoJS.lib.WordArray.random(length).toString(CryptoJS.enc.Hex);
+function base64ToBytes(base64: string): Uint8Array {
+	const binary = atob(base64);
+	const out = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+	return out;
 }
 
-export function keyToString(key: CryptoJS.lib.WordArray): string {
-  return key.toString(CryptoJS.enc.Hex);
+// PBKDF2-SHA256 -> 32 raw key bytes. Memoized: autosave re-derives the same
+// key every tick, and the KDF is the slowest step by far.
+const derived_cache = new Map<string, Promise<Uint8Array>>();
+
+export function deriveKey(
+	passphrase: string,
+	salt_hex: string,
+	iterations: number
+): Promise<Uint8Array> {
+	const cache_key = `${iterations}:${salt_hex}:${passphrase}`;
+	const cached = derived_cache.get(cache_key);
+	if (cached) return cached;
+	if (derived_cache.size > 16) derived_cache.clear();
+	const derived = (async () => {
+		const base = await crypto.subtle.importKey(
+			'raw',
+			new TextEncoder().encode(passphrase),
+			'PBKDF2',
+			false,
+			['deriveBits']
+		);
+		const bits = await crypto.subtle.deriveBits(
+			{
+				name: 'PBKDF2',
+				hash: 'SHA-256',
+				salt: hexToBytes(salt_hex) as BufferSource,
+				iterations
+			},
+			base,
+			256
+		);
+		return new Uint8Array(bits);
+	})();
+	derived_cache.set(cache_key, derived);
+	return derived;
 }
 
-export function stringToKey(keyString: string): CryptoJS.lib.WordArray {
-  return CryptoJS.enc.Hex.parse(keyString);
+// AES-256-GCM with a random 12-byte nonce per call. Packed form is
+// "nonce_b64:ciphertext_b64" (auth tag included in the ciphertext).
+export async function encryptGcm(plaintext: string, key: Uint8Array): Promise<string> {
+	const nonce = crypto.getRandomValues(new Uint8Array(12));
+	const crypto_key = await crypto.subtle.importKey('raw', key as BufferSource, 'AES-GCM', false, [
+		'encrypt'
+	]);
+	const ciphertext = await crypto.subtle.encrypt(
+		{ name: 'AES-GCM', iv: nonce as BufferSource },
+		crypto_key,
+		new TextEncoder().encode(plaintext)
+	);
+	return `${bytesToBase64(nonce)}:${bytesToBase64(new Uint8Array(ciphertext))}`;
+}
+
+export async function decryptGcm(packed: string, key: Uint8Array): Promise<string> {
+	const separator = packed.indexOf(':');
+	if (separator === -1) throw new Error('Invalid encrypted data format');
+	try {
+		const crypto_key = await crypto.subtle.importKey('raw', key as BufferSource, 'AES-GCM', false, [
+			'decrypt'
+		]);
+		const plaintext = await crypto.subtle.decrypt(
+			{ name: 'AES-GCM', iv: base64ToBytes(packed.slice(0, separator)) as BufferSource },
+			crypto_key,
+			base64ToBytes(packed.slice(separator + 1)) as BufferSource
+		);
+		return new TextDecoder().decode(plaintext);
+	} catch {
+		throw new Error('Decryption failed');
+	}
+}
+
+// Raw session-store key from the Stronghold passphrase (already 32 uniform
+// random bytes, base64). No KDF needed: only files stretch user passwords.
+export function sessionStoreKey(passphrase: string): Uint8Array {
+	return base64ToBytes(passphrase);
 }
