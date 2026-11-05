@@ -1,37 +1,51 @@
 <script lang="ts">
-	import { Select as SelectPrimitive, type WithoutChild } from "bits-ui";
-	import Check from "lucide-svelte/icons/check";
-	import { cn } from '@/utils';
+	import { Select as SelectPrimitive } from 'bits-ui';
+	import { cn } from '#lib/utils';
+	import { menu } from '#lib/components/ui/shared/menu';
 
 	let {
-		ref = $bindable(null),
-		class: className,
+		class: classProp,
 		value,
 		label,
 		children: childrenProp,
-		...restProps
-	}: WithoutChild<SelectPrimitive.ItemProps> = $props();
+		...rest
+	}: SelectPrimitive.ItemProps = $props();
+
+	const styles = menu();
 </script>
 
 <SelectPrimitive.Item
-	bind:ref
 	{value}
-	class={cn(
-		"data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-		className
-	)}
-	{...restProps}
+	{label}
+	{...rest}
+	data-slot="select-item"
+	class={cn(styles.item(), classProp)}
 >
 	{#snippet children({ selected, highlighted })}
-		<span class="absolute right-2 flex size-3.5 items-center justify-center">
-			{#if selected}
-				<Check class="size-4" />
+		<!-- One wrapper, so a leading icon sits beside its label instead of spreading with the tick. -->
+		<span class="flex min-w-0 items-center gap-2">
+			{#if childrenProp}
+				{@render childrenProp({ selected, highlighted })}
+			{:else}
+				{label || value}
 			{/if}
 		</span>
-		{#if childrenProp}
-			{@render childrenProp({ selected, highlighted })}
-		{:else}
-			{label || value}
-		{/if}
+		<!-- Always mounted so the tick draws in when the row is chosen. -->
+		<svg
+			viewBox="0 0 14 14"
+			fill="none"
+			aria-hidden="true"
+			data-on={selected}
+			class={styles.check()}
+		>
+			<path
+				d="M3 7.4 5.6 10 11 4.2"
+				pathLength="1"
+				stroke="currentColor"
+				stroke-width="1.6"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+		</svg>
 	{/snippet}
 </SelectPrimitive.Item>

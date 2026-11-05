@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { Separator as SeparatorPrimitive } from "bits-ui";
-	import { Separator } from "$lib/components/ui/separator/index.js";
-	import { cn } from '@/utils';
+	import type { HTMLAttributes } from 'svelte/elements';
+	import { cn } from '#lib/utils';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: SeparatorPrimitive.RootProps = $props();
+	let { class: classProp, ...rest }: { class?: string } & HTMLAttributes<HTMLHRElement> = $props();
 </script>
 
-<Separator bind:ref class={cn("bg-muted -mx-1 my-1 h-px", className)} {...restProps} />
+<hr
+	{...rest}
+	data-slot="select-separator"
+	class={cn('bg-border -mx-1 my-1 h-px border-0', classProp)}
+/>

@@ -1,20 +1,16 @@
 <script lang="ts">
-	import type { WithElementRef } from 'bits-ui';
-	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import type { Snippet } from 'svelte';
+	import { getAlertDialog } from './context';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+	let { children, class: classProp }: { children?: Snippet; class?: string } = $props();
+
+	const dialog = getAlertDialog();
+
+	// Rendered by AlertDialogContent in the frame rim, so nothing is emitted here.
+	$effect(() => {
+		dialog.footer = { children, class: classProp };
+		return () => {
+			dialog.footer = undefined;
+		};
+	});
 </script>
-
-<div
-	bind:this={ref}
-	class={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
-	{...restProps}
->
-	{@render children?.()}
-</div>

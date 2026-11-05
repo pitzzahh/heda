@@ -1,19 +1,34 @@
 <script lang="ts">
 	import { Command as CommandPrimitive } from 'bits-ui';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { getCommand } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: CommandPrimitive.ItemProps = $props();
+		children,
+		value,
+		keywords = '',
+		class: classProp,
+		onSelect,
+		onclick,
+		...rest
+	}: Omit<CommandPrimitive.ItemProps, 'keywords' | 'onSelect' | 'value'> & {
+		value: string;
+		keywords?: string;
+		/** Fires on click or Enter, like cmdk. `onclick` is an alias. */
+		onSelect?: () => void;
+		onclick?: () => void;
+	} = $props();
+
+	const command = getCommand();
 </script>
 
 <CommandPrimitive.Item
-	class={cn(
-		'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-		className
-	)}
-	bind:ref
-	{...restProps}
-/>
+	{value}
+	keywords={keywords ? keywords.split(/\s+/) : undefined}
+	onSelect={onSelect ?? onclick}
+	data-slot="command-item"
+	class={cn(command.styles.item(), classProp)}
+	{...rest}
+>
+	{@render children?.()}
+</CommandPrimitive.Item>

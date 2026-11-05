@@ -1,36 +1,60 @@
 <script lang="ts">
-	import { Dialog as DialogPrimitive, type WithoutChildrenOrChild } from 'bits-ui';
-	import Cross2 from 'svelte-radix/Cross2.svelte';
+	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import * as Dialog from './index.js';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { dialogFrame, dialogWidth } from './variants';
+	import { getDialog } from './context';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
-		children: Snippet;
-	} = $props();
+	let { children, class: classProp }: { children?: Snippet; class?: string } = $props();
+
+	const dialog = getDialog();
+	const styles = $derived(dialogFrame({ motion: dialog.motion, variant: dialog.variant }));
 </script>
 
-<Dialog.Portal>
-	<Dialog.Overlay />
+<DialogPrimitive.Portal>
+	<DialogPrimitive.Overlay
+		data-slot="dialog-backdrop"
+		aria-hidden="true"
+		class={styles.backdrop()}
+	/>
 	<DialogPrimitive.Content
-		bind:ref
+		data-slot="dialog-content"
+		data-motion={dialog.motion}
+		data-variant={dialog.variant}
+		onInteractOutside={(event) => {
+			if (!dialog.dismissOnBackdrop) event.preventDefault();
+		}}
 		class={cn(
-			'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg',
-			className
+			styles.popup(),
+			styles.panel(),
+			'w-[min(32rem,calc(100vw-2rem))]',
+			dialogWidth({ size: dialog.size }),
+			classProp
 		)}
-		{...restProps}
 	>
-		{@render children?.()}
-		<DialogPrimitive.Close
-			class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-		>
-			<Cross2 class="size-4" />
-			<span class="sr-only">Close</span>
-		</DialogPrimitive.Close>
+		{#if dialog.variant === 'framed'}
+			<!-- Inset frame: the body sits on a lighter surface, the footer in the rim below it. -->
+			<div class={styles.body()}>
+				{@render children?.()}
+			</div>
+			{#if dialog.footer}
+				<div
+					data-slot="dialog-footer"
+					class={cn(dialogFrame({ variant: dialog.variant }).footer(), dialog.footer.class)}
+				>
+					{@render dialog.footer.children?.()}
+				</div>
+			{/if}
+		{:else}
+			{@render children?.()}
+			{#if dialog.footer}
+				<div
+					data-slot="dialog-footer"
+					class={cn(dialogFrame({ variant: dialog.variant }).footer(), dialog.footer.class)}
+				>
+					{@render dialog.footer.children?.()}
+				</div>
+			{/if}
+		{/if}
 	</DialogPrimitive.Content>
-</Dialog.Portal>
+</DialogPrimitive.Portal>

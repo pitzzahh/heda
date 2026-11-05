@@ -1,20 +1,17 @@
 <script lang="ts">
-	import type { WithElementRef } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '@/utils';
+	import { cn } from '#lib/utils';
+	import { getCommand } from './context';
 
 	let {
-		ref = $bindable(null),
-		class: className,
 		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
+		class: classProp,
+		...rest
+	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLSpanElement> = $props();
+	const command = getCommand();
 </script>
 
-<span
-	class={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)}
-	{...restProps}
-	bind:this={ref}
->
+<span {...rest} data-slot="command-shortcut" class={cn(command.styles.shortcut(), classProp)}>
 	{@render children?.()}
 </span>
