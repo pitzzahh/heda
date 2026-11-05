@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { cn } from '@/utils';
-	import PanelLeft from 'lucide-svelte/icons/panel-left';
+	import { SidebarIcon } from '#lib/assets/icons';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { cn } from '#lib/utils';
 	import type { ComponentProps } from 'svelte';
 	import { useSidebar } from './context.svelte.js';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '#lib/components/ui/tooltip';
 
 	let {
 		ref = $bindable(null),
@@ -32,7 +32,7 @@
 			class={cn('h-7 w-7', className)}
 			{...restProps}
 		>
-			<PanelLeft />
+			<SidebarIcon />
 			<span class="sr-only">Toggle Sidebar</span>
 		</Button>
 	</TooltipTrigger>

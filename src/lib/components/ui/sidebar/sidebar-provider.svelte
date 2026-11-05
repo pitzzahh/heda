@@ -1,14 +1,9 @@
 <script lang="ts">
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import { cn } from '@/utils';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { cn } from '#lib/utils';
 	import type { WithElementRef } from 'bits-ui';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import {
-		SIDEBAR_COOKIE_MAX_AGE,
-		SIDEBAR_COOKIE_NAME,
-		SIDEBAR_WIDTH,
-		SIDEBAR_WIDTH_ICON
-	} from './constants.js';
+	import { SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_WIDTH_ICON } from './constants.js';
 	import { setSidebar } from './context.svelte.js';
 
 	let {
@@ -48,7 +43,7 @@
 	<div
 		style="--sidebar-width: {`${sidebar.sidebarWidth}px`}; --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}; {style}"
 		class={cn(
-			'group/sidebar-wrapper flex min-h-svh w-full select-none has-[[data-variant=inset]]:bg-sidebar',
+			'group/sidebar-wrapper has-[[data-variant=inset]]:bg-sidebar flex min-h-svh w-full select-none',
 			className
 		)}
 		bind:this={ref}
