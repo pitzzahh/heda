@@ -14,11 +14,11 @@
 </script>
 
 <script lang="ts">
+	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons';
 	import type { Snippet } from 'svelte';
-	import { cn } from '@/utils';
-	import { Loader } from '@/assets/icons';
-	import * as AlertDialog from '@/components/ui/alert-dialog/index.js';
-	import { buttonVariants, type ButtonVariant } from '@/components/ui/button/index.js';
+	import { cn } from '#lib/utils';
+	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
+	import { buttonVariants, type ButtonVariant } from '#lib/components/ui/button/index.js';
 
 	let {
 		title = 'Are you absolutely sure?',
@@ -30,13 +30,11 @@
 		button_state = $bindable('stale'),
 		show_trigger = $bindable(false),
 		open_dialog_state = $bindable(false),
-		some_open_state = $bindable(),
-		...rest
+		some_open_state = $bindable()
 	}: Props = $props();
 </script>
 
 <AlertDialog.Root
-	{...rest}
 	bind:open={open_dialog_state}
 	onOpenChange={(o) => (some_open_state = o === true)}
 >
@@ -54,10 +52,22 @@
 	{/if}
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>{title}</AlertDialog.Title>
-			<AlertDialog.Description>
-				{description}
-			</AlertDialog.Description>
+			<div class="flex items-center gap-3">
+				{#if trigger_variant === 'destructive'}
+					<div
+						class="bg-destructive/10 text-destructive grid size-10 shrink-0 place-items-center rounded-xl"
+						aria-hidden="true"
+					>
+						<WarningCircleIcon class="size-5" />
+					</div>
+				{/if}
+				<div class="grid gap-1">
+					<AlertDialog.Title>{title}</AlertDialog.Title>
+					<AlertDialog.Description>
+						{description}
+					</AlertDialog.Description>
+				</div>
+			</div>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
@@ -67,7 +77,7 @@
 					'disabled opacity-50 hover:cursor-not-allowed': button_state === 'processing'
 				})}
 			>
-				<Loader
+				<CircleNotchIcon
 					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
 						block: button_state === 'processing'
 					})}
