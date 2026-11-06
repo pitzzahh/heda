@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import SheetFixture from './sheet.fixture.svelte';
 
 afterEach(() => {
@@ -40,10 +40,11 @@ describe('Sheet', () => {
 		});
 		flushSync();
 		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-		await new Promise((r) => setTimeout(r, 50));
-		flushSync();
-		const content = document.querySelector('[data-slot="sheet-content"]');
-		expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		await vi.waitFor(() => {
+			flushSync();
+			const content = document.querySelector('[data-slot="sheet-content"]');
+			expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		});
 		unmount(component);
 	});
 });

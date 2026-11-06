@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import AlertDialogFixture from './alert-dialog.fixture.svelte';
 
 afterEach(() => {
@@ -33,10 +33,11 @@ describe('AlertDialog', () => {
 		document
 			.querySelector('[data-slot="alert-dialog-cancel"]')
 			?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		await new Promise((r) => setTimeout(r, 50));
-		flushSync();
-		const content = document.querySelector('[data-slot="alert-dialog-content"]');
-		expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		await vi.waitFor(() => {
+			flushSync();
+			const content = document.querySelector('[data-slot="alert-dialog-content"]');
+			expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		});
 		unmount(component);
 	});
 });
