@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import TooltipFixture from './tooltip.fixture.svelte';
 
 afterEach(() => {
@@ -24,9 +24,13 @@ describe('Tooltip', () => {
 	test('opens on focus', async () => {
 		const component = mount(TooltipFixture, { target: document.body });
 		(document.querySelector('[data-slot="tooltip-trigger"]') as HTMLElement)?.focus();
-		await new Promise((r) => setTimeout(r, 500));
-		flushSync();
-		expect(document.querySelector('[data-slot="tooltip-content"]')).not.toBeNull();
+		await vi.waitFor(
+			() => {
+				flushSync();
+				expect(document.querySelector('[data-slot="tooltip-content"]')).not.toBeNull();
+			},
+			{ timeout: 2000 }
+		);
 		unmount(component);
 	});
 });

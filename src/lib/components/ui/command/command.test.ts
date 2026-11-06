@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { flushSync, mount, tick, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { flushSync, mount, unmount } from 'svelte';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import CommandFixture from './command.fixture.svelte';
 
 // jsdom has no scrollIntoView; bits-ui calls it when highlighting an item.
@@ -28,11 +28,11 @@ describe('Command', () => {
 		input.value = 'alp';
 		input.dispatchEvent(new InputEvent('input', { bubbles: true }));
 		// The search → filter cascade settles asynchronously; non-matches unmount.
-		await tick();
-		await new Promise((r) => setTimeout(r, 100));
-		flushSync();
-		const items = [...document.querySelectorAll('[data-slot="command-item"]')];
-		expect(items.map((item) => item.textContent?.trim())).toEqual(['Alpha']);
+		await vi.waitFor(() => {
+			flushSync();
+			const items = [...document.querySelectorAll('[data-slot="command-item"]')];
+			expect(items.map((item) => item.textContent?.trim())).toEqual(['Alpha']);
+		});
 		unmount(component);
 	});
 });

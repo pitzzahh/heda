@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import DialogFixture from './dialog.fixture.svelte';
 
 afterEach(() => {
@@ -32,10 +32,11 @@ describe('Dialog', () => {
 		const component = openViaTrigger();
 		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 		// jsdom runs no CSS animations, so bits-ui may leave the closed frame mounted.
-		await new Promise((r) => setTimeout(r, 50));
-		flushSync();
-		const content = document.querySelector('[data-slot="dialog-content"]');
-		expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		await vi.waitFor(() => {
+			flushSync();
+			const content = document.querySelector('[data-slot="dialog-content"]');
+			expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		});
 		unmount(component);
 	});
 

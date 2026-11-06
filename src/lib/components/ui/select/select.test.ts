@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import SelectFixture from './select.fixture.svelte';
 
 afterEach(() => {
@@ -32,11 +32,12 @@ describe('Select', () => {
 		const items = document.querySelectorAll('[data-slot="select-item"]');
 		items[1]?.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 		items[1]?.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-		await new Promise((r) => setTimeout(r, 50));
-		flushSync();
-		expect(document.querySelector('[data-testid="value"]')?.textContent).toBe('b');
-		const content = document.querySelector('[data-slot="select-content"]');
-		expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		await vi.waitFor(() => {
+			flushSync();
+			expect(document.querySelector('[data-testid="value"]')?.textContent).toBe('b');
+			const content = document.querySelector('[data-slot="select-content"]');
+			expect(content === null || content.getAttribute('data-state') === 'closed').toBe(true);
+		});
 		unmount(component);
 	});
 });
