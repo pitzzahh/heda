@@ -9,9 +9,14 @@ describe('ANCHORED', () => {
 		expect(ANCHORED).toContain('data-[state=open]:animate-in');
 		expect(ANCHORED).toContain('data-[state=closed]:animate-out');
 		expect(ANCHORED).toContain('data-[state=open]:fade-in-0');
-		expect(ANCHORED).toContain('data-[state=closed]:fade-out-0');
 		expect(ANCHORED).toContain('data-[state=open]:zoom-in-95');
-		expect(ANCHORED).toContain('data-[state=closed]:zoom-out-95');
+		// Exit values must not be scoped to the close flip: WebKitGTK can resolve
+		// keyframes from the pre-flip style when the animation starts in the same
+		// recalc, which left the surface opaque on close.
+		expect(ANCHORED).toContain('fade-out-0');
+		expect(ANCHORED).not.toContain('data-[state=closed]:fade-out-0');
+		expect(ANCHORED).toContain('zoom-out-95');
+		expect(ANCHORED).not.toContain('data-[state=closed]:zoom-out-95');
 	});
 
 	test('leans toward the trigger per side', () => {

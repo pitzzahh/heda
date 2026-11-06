@@ -9,7 +9,10 @@ export const sheet = tv({
 			// never flashes the full-strength backdrop.
 			'data-starting-style:opacity-0',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			// The exit value sits outside `data-state=closed`: the flip and the exit
+			// animation share one style recalc, and WebKitGTK can resolve keyframe
+			// custom properties from the pre-flip style, leaving the scrim opaque.
+			'data-[state=open]:fade-in-0 fade-out-0',
 			// Hold the faded-out scrim through bits-ui's unmount gap, or it flashes
 			// back to full strength for a frame before the element is removed.
 			'data-[state=closed]:fill-mode-forwards',
@@ -28,6 +31,7 @@ export const sheet = tv({
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
 			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
 			'ease-[var(--ease-drawer)]',
+			// Slide values are `data-side` scoped, so they are stable from mount.
 			'data-[side=left]:slide-in-from-left data-[side=left]:slide-out-to-left',
 			'data-[side=right]:slide-in-from-right data-[side=right]:slide-out-to-right',
 			'data-[side=top]:slide-in-from-top data-[side=top]:slide-out-to-top',

@@ -17,7 +17,10 @@ describe('dialogFrame', () => {
 		expect(backdrop).toContain('data-[state=open]:animate-in');
 		expect(backdrop).toContain('data-[state=closed]:animate-out');
 		expect(backdrop).toContain('data-[state=open]:fade-in-0');
-		expect(backdrop).toContain('data-[state=closed]:fade-out-0');
+		// The exit value must not be scoped to the close flip, or WebKitGTK can
+		// resolve the keyframes from the pre-flip style and the scrim stays opaque.
+		expect(backdrop).toContain('fade-out-0');
+		expect(backdrop).not.toContain('data-[state=closed]:fade-out-0');
 		expect(backdrop).not.toContain('starting:');
 	});
 
@@ -27,21 +30,33 @@ describe('dialogFrame', () => {
 			expect(popup, motion).toContain('data-[state=open]:animate-in');
 			expect(popup, motion).toContain('data-[state=closed]:animate-out');
 			expect(popup, motion).toContain('data-[state=open]:fade-in-0');
-			expect(popup, motion).toContain('data-[state=closed]:fade-out-0');
+			// Exit values must not be scoped to the close flip: WebKitGTK can resolve
+			// keyframes from the pre-flip style when the animation starts in the same
+			// recalc, which left the panel opaque on close.
+			expect(popup, motion).toContain('fade-out-0');
+			expect(popup, motion).not.toContain('data-[state=closed]:fade-out-0');
 		}
 	});
 
 	test('zoom scales like upstream', () => {
 		const popup = dialogFrame({ motion: 'zoom' }).popup();
 		expect(popup).toContain('data-[state=open]:zoom-in-95');
-		expect(popup).toContain('data-[state=closed]:zoom-out-95');
+		expect(popup).toContain('zoom-out-95');
+		expect(popup).not.toContain('data-[state=closed]:zoom-out-95');
 	});
 
 	test('slides retrace their direction', () => {
 		expect(dialogFrame({ motion: 'slide-up' }).popup()).toContain('slide-in-from-bottom-6');
+		expect(dialogFrame({ motion: 'slide-up' }).popup()).toContain('slide-out-to-bottom-6');
 		expect(dialogFrame({ motion: 'slide-down' }).popup()).toContain('slide-in-from-top-6');
+		expect(dialogFrame({ motion: 'slide-down' }).popup()).toContain('slide-out-to-top-6');
 		expect(dialogFrame({ motion: 'slide-left' }).popup()).toContain('slide-in-from-end-6');
+		expect(dialogFrame({ motion: 'slide-left' }).popup()).toContain('slide-out-to-end-6');
 		expect(dialogFrame({ motion: 'slide-right' }).popup()).toContain('slide-in-from-start-6');
+		expect(dialogFrame({ motion: 'slide-right' }).popup()).toContain('slide-out-to-start-6');
+		expect(dialogFrame({ motion: 'slide-up' }).popup()).not.toContain(
+			'data-[state=closed]:slide-out-to-bottom-6'
+		);
 	});
 
 	test('centers with the translate property so keyframe transforms compose', () => {
