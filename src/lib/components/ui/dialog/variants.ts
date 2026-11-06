@@ -1,23 +1,30 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
 /**
- * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Base UI emits
- * `data-open`/`data-closed`, bits-ui `data-state`, so both are written out.
+ * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Motion is
+ * plain state transitions with @starting-style enter levers, like upstream Baby UI:
+ * regular declarations resolve before the flip in every engine, unlike keyframe custom
+ * properties, which WebKitGTK intermittently resolved from the pre-flip style (surfaces
+ * closed without fading). Centering composes through the transform var so every motion
+ * lever retraces itself.
  */
 export const dialogFrame = tv({
 	slots: {
 		// Fades in step with the panel; the primitive owns the top layer and inertness.
+		// No backdrop blur: a full-viewport filter re-rendered every frame is the one
+		// genuinely expensive effect an overlay can carry.
 		backdrop: [
-			'fixed inset-0 z-50 bg-black/50 opacity-0 backdrop-blur-[2px]',
+			'fixed inset-0 z-50 bg-black/50 opacity-0',
 			'transition-opacity duration-[var(--duration-exit)] ease-[var(--ease-ui-out)]',
-			'data-[open]:opacity-100 data-[open]:duration-[var(--duration-dropdown)]',
 			'data-[state=open]:opacity-100 data-[state=open]:duration-[var(--duration-dropdown)]',
+			'starting:data-[state=open]:opacity-0',
 			'motion-reduce:transition-none'
 		],
 		// Motion is selected by the root; every path retraces itself on close.
 		popup: [
 			'fixed top-1/2 left-1/2 z-50 overflow-visible outline-hidden',
 			'[transform:translate(-50%,-50%)_translate(var(--dialog-x,0),var(--dialog-y,0))_scale(var(--dialog-scale,1))]',
+			'data-starting-style:opacity-0',
 			'motion-reduce:transition-none'
 		],
 		panel: 'rounded-2xl border border-border/70 shadow-[var(--overlay-shadow)]',
@@ -32,50 +39,52 @@ export const dialogFrame = tv({
 			zoom: {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-scale:var(--modal-enter-scale)] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-scale:var(--modal-enter-scale)]'
 				]
 			},
 			fade: {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-scale:0.99] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:0.99] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:0.99] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-scale:0.99]'
 				]
 			},
 			'slide-up': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-y:1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-y:1.5rem]'
 				]
 			},
 			'slide-down': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-y:-1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-y:-1.5rem]'
 				]
 			},
 			'slide-left': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-x:1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-x:1.5rem]'
 				]
 			},
 			'slide-right': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[closed]:opacity-0 data-[closed]:[--dialog-x:-1.5rem] data-[closed]:duration-[var(--duration-exit)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]'
+					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-x:-1.5rem]'
 				]
 			},
+			// Clip-path has no interpolable state lever that reads well, so the collapse
+			// stays a transition and the panel stays opaque while folding to its centre.
 			morph: {
 				popup: [
 					'[clip-path:inset(0_0_0_0_round_var(--radius-2xl))] transition-[clip-path] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)] will-change-[clip-path]',
-					'data-[closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'data-[state=closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
+					'starting:data-[state=open]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'motion-reduce:[clip-path:none] motion-reduce:will-change-auto'
 				]
 			}

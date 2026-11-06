@@ -1,10 +1,12 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
-/** Slides 250ms in, 200ms out; the scrim lands first (150ms) and leaves with the panel. */
+/** Slides 250ms in, 200ms out; the scrim lands first (150ms) and leaves with the panel. Plain state transitions, no keyframes. */
 export const sheet = tv({
 	slots: {
+		// No backdrop blur: a full-viewport filter re-rendered every frame is the one
+		// genuinely expensive effect an overlay can carry.
 		backdrop: [
-			'fixed inset-0 z-50 bg-black/50 opacity-0 backdrop-blur-[2px]',
+			'fixed inset-0 z-50 bg-black/50 opacity-0',
 			'transition-opacity duration-[var(--duration-panel-exit)] ease-[var(--ease-drawer)]',
 			'data-[state=open]:opacity-100 data-[state=open]:duration-[var(--duration-backdrop)]',
 			'starting:data-[state=open]:opacity-0',

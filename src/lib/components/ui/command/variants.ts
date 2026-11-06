@@ -6,9 +6,7 @@ export const commandFrame = tv({
 		popup: [
 			'fixed top-[14vh] left-1/2 z-50 -translate-x-1/2 outline-hidden',
 			'transition-[opacity,scale] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-			'data-[closed]:opacity-0 data-[closed]:scale-[var(--popover-exit-scale)] data-[closed]:duration-[var(--duration-exit)]',
 			'data-[state=closed]:opacity-0 data-[state=closed]:scale-[var(--popover-exit-scale)] data-[state=closed]:duration-[var(--duration-exit)]',
-			'starting:data-[open]:opacity-0 starting:data-[open]:scale-[var(--modal-enter-scale)]',
 			'starting:data-[state=open]:opacity-0 starting:data-[state=open]:scale-[var(--modal-enter-scale)]',
 			'flex max-h-[min(30rem,70dvh)] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden',
 			'motion-reduce:transition-none'

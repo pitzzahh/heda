@@ -1,14 +1,19 @@
 import { tv } from 'tailwind-variants';
 
-// `fixed top-0 left-0` needs a Base UI/bits-ui Positioner wrapper's content back to
-// `static`, or it can't measure it.
+// Plain state transitions, never keyframes or animation custom properties: every value
+// below is a regular declaration, so every engine resolves it before the state flip
+// (WebKitGTK intermittently resolved keyframe custom properties from the pre-flip
+// style, which closed overlays without fading) and the compositor only animates
+// opacity, scale and translate.
+
 const ANCHORED_BASE = [
 	'fixed top-0 left-0 z-50 pointer-events-none opacity-0',
 	// Plain `ease`: 150ms in, 100ms out.
 	'duration-[var(--duration-exit)] ease-[var(--ease-smooth)]',
 	'data-[state=open]:pointer-events-auto data-[state=open]:opacity-100',
 	'data-[state=open]:duration-[var(--duration-dropdown)]',
-	// The first open mounts the element already open, so only @starting-style can animate it.
+	// The first open mounts the element already open, so only @starting-style can
+	// animate it.
 	'starting:data-[state=open]:opacity-0',
 	'motion-reduce:transition-none'
 ];
