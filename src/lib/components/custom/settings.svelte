@@ -85,9 +85,6 @@
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const tween = new Tween(0, { duration: 500, easing: cubicOut });
 
-	// In-app updating is desktop only; Android installs the APK from the releases page.
-	const is_android = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
-
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
 		active_setting: 'Project',
 		settings_open: false,
@@ -432,89 +429,82 @@
 			</div>
 			<span class="text-sm tabular-nums">v{pj.version}</span>
 		</div>
-		{#if is_android}
-			<p class="text-muted-foreground text-xs leading-5">
-				Updates are installed by downloading the newest APK from the releases page. In-app updating
-				is desktop only.
-			</p>
-		{:else}
-			<svelte:boundary>
-				<Button
-					variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
-					class={cn('relative w-full', {
-						'cursor-not-allowed! opacity-50':
-							component_state.current.update_state === 'processing' ||
-							component_state.current.update_state === 'no_updates',
-						'p-0': component_state.current.update_state === 'downloading'
+		<svelte:boundary>
+			<Button
+				variant={component_state.current.update_state === 'available' ? 'default' : 'outline'}
+				class={cn('relative w-full', {
+					'cursor-not-allowed! opacity-50':
+						component_state.current.update_state === 'processing' ||
+						component_state.current.update_state === 'no_updates',
+					'p-0': component_state.current.update_state === 'downloading'
+				})}
+				onclick={async () => {
+					if (
+						component_state.current.update_state === 'available' &&
+						component_state.current.app_update
+					) {
+						tween.target = 0;
+						component_state.current.update_state = 'downloading';
+						return installUpdate(component_state.current.app_update, true, (progress) => {
+							tween.target = Math.round(progress);
+						});
+					}
+					if (
+						component_state.current.update_state === 'processing' ||
+						component_state.current.update_state === 'no_updates'
+					)
+						return;
+					component_state.current.update_state = 'processing';
+					try {
+						component_state.current.app_update = await checkForUpdates();
+						component_state.current.update_state = component_state.current.app_update
+							? 'available'
+							: 'no_updates';
+						if (!component_state.current.app_update) {
+							toast.info('No updates available');
+						} else {
+							toast.success(
+								`New version available: v${component_state.current.app_update.version}`
+							);
+						}
+					} catch (error) {
+						component_state.current.update_state = 'error';
+						toast.warning(`Failed to check for updates: ${error}`);
+					}
+				}}
+			>
+				<CircleNotchIcon
+					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
+						block: component_state.current.update_state === 'processing'
 					})}
-					onclick={async () => {
-						if (
-							component_state.current.update_state === 'available' &&
-							component_state.current.app_update
-						) {
-							tween.target = 0;
-							component_state.current.update_state = 'downloading';
-							return installUpdate(component_state.current.app_update, true, (progress) => {
-								tween.target = Math.round(progress);
-							});
-						}
-						if (
-							component_state.current.update_state === 'processing' ||
-							component_state.current.update_state === 'no_updates'
-						)
-							return;
-						component_state.current.update_state = 'processing';
-						try {
-							component_state.current.app_update = await checkForUpdates();
-							component_state.current.update_state = component_state.current.app_update
-								? 'available'
-								: 'no_updates';
-							if (!component_state.current.app_update) {
-								toast.info('No updates available');
-							} else {
-								toast.success(
-									`New version available: v${component_state.current.app_update.version}`
-								);
-							}
-						} catch (error) {
-							component_state.current.update_state = 'error';
-							toast.warning(`Failed to check for updates: ${error}`);
-						}
-					}}
-				>
-					<CircleNotchIcon
-						class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-							block: component_state.current.update_state === 'processing'
-						})}
-					/>
+				/>
 
-					{#if component_state.current.update_state === 'processing'}
-						Checking
-					{:else if component_state.current.update_state === 'available'}
-						Download and install v{component_state.current.app_update?.version}
-					{:else if component_state.current.update_state === 'no_updates'}
-						No updates available
-					{:else if component_state.current.update_state === 'downloading'}
-						<div class="m-0 h-full w-full overflow-hidden rounded-md">
-							<div
-								class="from-primary to-primary/80 text-primary-foreground flex h-full items-center justify-center bg-linear-to-r text-[11px] font-semibold tabular-nums transition-all duration-500 ease-in-out"
-								style="width: {Math.max(tween.target, 12)}%"
-							>
-								{tween.target}%
-							</div>
+				{#if component_state.current.update_state === 'processing'}
+					Checking
+				{:else if component_state.current.update_state === 'available'}
+					Download and install v{component_state.current.app_update?.version}
+				{:else if component_state.current.update_state === 'no_updates'}
+					No updates available
+				{:else if component_state.current.update_state === 'downloading'}
+					<div class="m-0 h-full w-full overflow-hidden rounded-md">
+						<div
+							class="from-primary to-primary/80 text-primary-foreground flex h-full items-center justify-center bg-linear-to-r text-[11px] font-semibold tabular-nums transition-all duration-500 ease-in-out"
+							style="width: {Math.max(tween.target, 12)}%"
+						>
+							{tween.target}%
 						</div>
-					{:else if component_state.current.update_state === 'error'}
-						Something went wrong while checking for updates
-					{:else}
-						Check for updates
-					{/if}
-				</Button>
-				{#snippet failed(error, reset)}
-					<p class="text-muted-foreground text-sm">{error}</p>
-					<Button onclick={reset} variant="outline" size="sm">Try again</Button>
-				{/snippet}
-			</svelte:boundary>
-		{/if}
+					</div>
+				{:else if component_state.current.update_state === 'error'}
+					Something went wrong while checking for updates
+				{:else}
+					Check for updates
+				{/if}
+			</Button>
+			{#snippet failed(error, reset)}
+				<p class="text-muted-foreground text-sm">{error}</p>
+				<Button onclick={reset} variant="outline" size="sm">Try again</Button>
+			{/snippet}
+		</svelte:boundary>
 	</div>
 {/snippet}
 
