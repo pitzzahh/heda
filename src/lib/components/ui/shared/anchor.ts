@@ -20,8 +20,12 @@ export const ANCHORED = tv({
 		'data-[state=open]:pointer-events-auto',
 		// Plain `ease`: fast in, instant out.
 		'data-[state=open]:animate-in data-[state=closed]:animate-out',
-		'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-		'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+		// Exit values (fade/zoom out) sit outside `data-state=closed`: the flip and
+		// the exit animation share one style recalc, and WebKitGTK can resolve
+		// keyframe custom properties from the pre-flip style, which left the surface
+		// opaque on close. They only ever feed the exit animation.
+		'data-[state=open]:fade-in-0 fade-out-0',
+		'data-[state=open]:zoom-in-95 zoom-out-95',
 		// Hold the exit end state through bits-ui's unmount gap; with the default
 		// `none` the surface snaps back to full opacity for a frame or two.
 		'data-[state=closed]:fill-mode-forwards',

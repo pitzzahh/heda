@@ -11,8 +11,11 @@ export const commandFrame = tv({
 			// Hold the exit end state through bits-ui's unmount gap.
 			'data-[state=closed]:fill-mode-forwards',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-			'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+			// Exit values sit outside `data-state=closed`: the flip and the exit
+			// animation share one style recalc, and WebKitGTK can resolve keyframe
+			// custom properties from the pre-flip style, leaving the panel opaque.
+			'data-[state=open]:fade-in-0 fade-out-0',
+			'data-[state=open]:zoom-in-95 zoom-out-95',
 			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 			'ease-[var(--ease-out-quad)]',
 			'flex max-h-[min(30rem,70dvh)] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden',

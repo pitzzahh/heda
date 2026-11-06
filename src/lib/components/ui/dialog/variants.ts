@@ -4,7 +4,10 @@ import { tv, type VariantProps } from 'tailwind-variants';
  * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Enter/exit
  * are keyframe animations (tw-animate-css): they apply on the mount frame in every
  * engine, unlike @starting-style transitions. Centering lives on the `translate`
- * property so keyframe `transform`s compose with it instead of overriding it.
+ * property so keyframe `transform`s compose with it instead of overriding it. Enter
+ * values stay scoped to `data-state=open`; exit values sit on the element always,
+ * because the close flip and the exit animation share one style recalc and WebKitGTK
+ * can resolve keyframe custom properties from the pre-flip style.
  */
 export const dialogFrame = tv({
 	slots: {
@@ -15,7 +18,7 @@ export const dialogFrame = tv({
 			// never flashes the full-strength backdrop.
 			'data-starting-style:opacity-0',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			'data-[state=open]:fade-in-0 fade-out-0',
 			// Hold the faded-out scrim through bits-ui's unmount gap, or it flashes
 			// back to full strength for a frame before the element is removed.
 			'data-[state=closed]:fill-mode-forwards',
@@ -45,8 +48,8 @@ export const dialogFrame = tv({
 			zoom: {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-					'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+					'data-[state=open]:fade-in-0 fade-out-0',
+					'data-[state=open]:zoom-in-95 zoom-out-95',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -54,7 +57,7 @@ export const dialogFrame = tv({
 			fade: {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:fade-in-0 fade-out-0',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -62,8 +65,8 @@ export const dialogFrame = tv({
 			'slide-up': {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-					'data-[state=open]:slide-in-from-bottom-6 data-[state=closed]:slide-out-to-bottom-6',
+					'data-[state=open]:fade-in-0 fade-out-0',
+					'data-[state=open]:slide-in-from-bottom-6 slide-out-to-bottom-6',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -71,8 +74,8 @@ export const dialogFrame = tv({
 			'slide-down': {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-					'data-[state=open]:slide-in-from-top-6 data-[state=closed]:slide-out-to-top-6',
+					'data-[state=open]:fade-in-0 fade-out-0',
+					'data-[state=open]:slide-in-from-top-6 slide-out-to-top-6',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -80,8 +83,8 @@ export const dialogFrame = tv({
 			'slide-left': {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-					'data-[state=open]:slide-in-from-end-6 data-[state=closed]:slide-out-to-end-6',
+					'data-[state=open]:fade-in-0 fade-out-0',
+					'data-[state=open]:slide-in-from-end-6 slide-out-to-end-6',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -89,8 +92,8 @@ export const dialogFrame = tv({
 			'slide-right': {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-					'data-[state=open]:slide-in-from-start-6 data-[state=closed]:slide-out-to-start-6',
+					'data-[state=open]:fade-in-0 fade-out-0',
+					'data-[state=open]:slide-in-from-start-6 slide-out-to-start-6',
 					'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
 					'ease-[var(--ease-out-quad)]'
 				]
@@ -100,7 +103,7 @@ export const dialogFrame = tv({
 			morph: {
 				popup: [
 					'data-[state=open]:animate-in data-[state=closed]:animate-out',
-					'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+					'data-[state=open]:fade-in-0 fade-out-0',
 					'[clip-path:inset(0_0_0_0_round_var(--radius-2xl))] transition-[clip-path] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)] will-change-[clip-path]',
 					'data-[state=closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'motion-reduce:[clip-path:none] motion-reduce:will-change-auto'

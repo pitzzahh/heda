@@ -9,7 +9,10 @@ describe('sheet', () => {
 		expect(backdrop).toContain('data-[state=open]:animate-in');
 		expect(backdrop).toContain('data-[state=closed]:animate-out');
 		expect(backdrop).toContain('data-[state=open]:fade-in-0');
-		expect(backdrop).toContain('data-[state=closed]:fade-out-0');
+		// The exit value must not be scoped to the close flip, or WebKitGTK can
+		// resolve the keyframes from the pre-flip style and the scrim stays opaque.
+		expect(backdrop).toContain('fade-out-0');
+		expect(backdrop).not.toContain('data-[state=closed]:fade-out-0');
 		expect(backdrop).not.toContain('starting:');
 	});
 
