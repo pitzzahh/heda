@@ -21,9 +21,9 @@
 			ANCHORED,
 			'bg-foreground text-background static z-50 rounded-md px-2 py-1 text-xs shadow-[var(--overlay-shadow)]',
 			'data-[state=open]:pointer-events-none',
-			// Tooltips report delayed-open/instant-open, never open. The delayed one fades in;
-			// an instant one carries no animation and pops, so rapid hovers skip motion.
-			'data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-[state=delayed-open]:duration-[var(--duration-tooltip)]',
+			// Tooltips report delayed-open/instant-open, never open. Once one is open, the next skips motion.
+			'data-[state=delayed-open]:scale-100 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:duration-[var(--duration-tooltip)]',
+			'data-[state=instant-open]:scale-100 data-[state=instant-open]:opacity-100 data-[state=instant-open]:duration-0',
 			classProp
 		)}
 	/>

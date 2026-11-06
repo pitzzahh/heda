@@ -1,43 +1,45 @@
 import { tv } from 'tailwind-variants';
 
-// Keyframe animations (tw-animate-css), never @starting-style transitions: keyframes
-// apply on the mount frame in every engine, so floating content never flashes
-// unpositioned while bits-ui measures it. Content stays `static` inside bits-ui's
-// fixed Positioner wrapper, which owns the placement transform.
+// Plain state transitions, never keyframes or animation custom properties: every value
+// below is a regular declaration, so every engine resolves it before the state flip
+// (WebKitGTK intermittently resolved keyframe custom properties from the pre-flip
+// style, which closed overlays without fading) and the compositor only animates
+// opacity, scale and translate.
+
+const ANCHORED_BASE = [
+	'fixed top-0 left-0 z-50 pointer-events-none opacity-0',
+	// Plain `ease`: 150ms in, 100ms out.
+	'duration-[var(--duration-exit)] ease-[var(--ease-smooth)]',
+	'data-[state=open]:pointer-events-auto data-[state=open]:opacity-100',
+	'data-[state=open]:duration-[var(--duration-dropdown)]',
+	// The first open mounts the element already open, so only @starting-style can
+	// animate it.
+	'starting:data-[state=open]:opacity-0',
+	'motion-reduce:transition-none'
+];
 
 /**
- * Class contract every anchored surface shares, so a popover, a menu, a select and a
- * tooltip open and close identically. bits-ui only sets the origin variable, so apply it here.
+ * Class contract every anchored surface shares, so a popover, a menu and a select
+ * open and close identically. bits-ui only sets the origin variable, so apply it here.
  */
 export const ANCHORED = tv({
 	base: [
-		'z-50 pointer-events-none',
-		// bits-ui sets data-starting-style for the mount frame only: hide it so a
-		// late animation start or an unmeasured position can never flash. Keep the
-		// `data-starting-style:` variant: the bare `[data-starting-style]:` form
-		// compiles to a no-op `:is()` selector.
-		'data-starting-style:opacity-0',
-		'data-[state=open]:pointer-events-auto',
-		// Plain `ease`: fast in, instant out.
-		'data-[state=open]:animate-in data-[state=closed]:animate-out',
-		// Exit values (fade/zoom out) sit outside `data-state=closed`: the flip and
-		// the exit animation share one style recalc, and WebKitGTK can resolve
-		// keyframe custom properties from the pre-flip style, which left the surface
-		// opaque on close. They only ever feed the exit animation.
-		'data-[state=open]:fade-in-0 fade-out-0',
-		'data-[state=open]:zoom-in-95 zoom-out-95',
-		// Hold the exit end state through bits-ui's unmount gap; with the default
-		// `none` the surface snaps back to full opacity for a frame or two.
-		'data-[state=closed]:fill-mode-forwards',
-		'data-[state=open]:duration-[var(--duration-dropdown)] data-[state=closed]:duration-[var(--duration-exit)]',
-		'ease-[var(--ease-smooth)]',
+		...ANCHORED_BASE,
+		'origin-(--bits-floating-transform-origin) scale-[var(--popover-exit-scale)] transition-[opacity,scale,translate]',
 		// The closed state leans toward its trigger, so opening reads as unfolding from it.
 		// `side` is bits-ui's own popper attribute.
-		'data-[side=bottom]:slide-in-from-top-2',
-		'data-[side=top]:slide-in-from-bottom-2',
-		'data-[side=left]:slide-in-from-end-2',
-		'data-[side=right]:slide-in-from-start-2',
-		'origin-(--bits-floating-transform-origin)',
-		'motion-reduce:animate-none'
+		'data-[state=closed]:data-[placement^=bottom]:-translate-y-1',
+		'data-[state=closed]:data-[placement^=top]:translate-y-1',
+		'data-[state=closed]:data-[side=bottom]:-translate-y-1',
+		'data-[state=closed]:data-[side=top]:translate-y-1',
+		'data-[state=open]:scale-100',
+		'starting:data-[state=open]:scale-[var(--popover-enter-scale)]',
+		'starting:data-[state=open]:data-[placement^=bottom]:-translate-y-1',
+		'starting:data-[state=open]:data-[placement^=top]:translate-y-1',
+		'starting:data-[state=open]:data-[side=bottom]:-translate-y-1',
+		'starting:data-[state=open]:data-[side=top]:translate-y-1',
+		// Side placements lean toward the trigger too.
+		'data-[state=closed]:data-[side=left]:translate-x-1 data-[state=closed]:data-[side=right]:-translate-x-1',
+		'starting:data-[state=open]:data-[side=left]:translate-x-1 starting:data-[state=open]:data-[side=right]:-translate-x-1'
 	]
 })();

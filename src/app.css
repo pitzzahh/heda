@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -200,6 +199,9 @@
 		--hover-scale: 1.02;
 		--enter-scale: 0.95;
 		--enter-lift: 8px;
+		--popover-enter-scale: 0.97;
+		--popover-exit-scale: 0.98;
+		--modal-enter-scale: 1.02;
 		--primary-hover: color-mix(in oklab, var(--primary) 85%, black);
 	}
 
@@ -460,37 +462,4 @@
 
 .default {
 	font-family: sans-serif;
-}
-
-/* tw-animate-css drives enter/exit through --animate-in/--animate-out and Tailwind
-re-emits its @keyframes after plain CSS, so overriding `enter`/`exit` with the same
-names loses. Re-point the theme at renamed keyframes without the `filter` frame:
-animating `filter` at all, even at blur(0), makes WebKitGTK rasterize the overlay in
-software every frame and it flickers. Nothing here uses blur-in/blur-out, so no
-motion is lost. */
-@theme inline {
-	--animate-in: overlay-enter var(--tw-animation-duration, var(--tw-duration, 0.15s))
-		var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
-		var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
-	--animate-out: overlay-exit var(--tw-animation-duration, var(--tw-duration, 0.15s))
-		var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
-		var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
-}
-
-@keyframes overlay-enter {
-	from {
-		opacity: var(--tw-enter-opacity, 1);
-		transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
-			scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1))
-			rotate(var(--tw-enter-rotate, 0));
-	}
-}
-
-@keyframes overlay-exit {
-	to {
-		opacity: var(--tw-exit-opacity, 1);
-		transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
-			scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1))
-			rotate(var(--tw-exit-rotate, 0));
-	}
 }

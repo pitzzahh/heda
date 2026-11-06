@@ -12,88 +12,67 @@ const MOTIONS: DialogMotion[] = [
 ];
 
 describe('dialogFrame', () => {
-	test('backdrop fades with keyframes', () => {
+	test('backdrop fades through a state transition', () => {
 		const backdrop = dialogFrame().backdrop();
-		expect(backdrop).toContain('data-[state=open]:animate-in');
-		expect(backdrop).toContain('data-[state=closed]:animate-out');
-		expect(backdrop).toContain('data-[state=open]:fade-in-0');
-		// The exit value must not be scoped to the close flip, or WebKitGTK can
-		// resolve the keyframes from the pre-flip style and the scrim stays opaque.
-		expect(backdrop).toContain('fade-out-0');
-		expect(backdrop).not.toContain('data-[state=closed]:fade-out-0');
-		expect(backdrop).not.toContain('starting:');
+		expect(backdrop).toContain('opacity-0');
+		expect(backdrop).toContain('data-[state=open]:opacity-100');
+		expect(backdrop).toContain('transition-opacity');
+		expect(backdrop).toContain('starting:data-[state=open]:opacity-0');
+		// A full-viewport backdrop filter is the one genuinely expensive overlay effect.
+		expect(backdrop).not.toContain('backdrop-blur');
 	});
 
-	test('every motion animates both ways', () => {
+	test('every motion retraces itself', () => {
 		for (const motion of MOTIONS) {
 			const popup = dialogFrame({ motion }).popup();
-			expect(popup, motion).toContain('data-[state=open]:animate-in');
-			expect(popup, motion).toContain('data-[state=closed]:animate-out');
-			expect(popup, motion).toContain('data-[state=open]:fade-in-0');
-			// Exit values must not be scoped to the close flip: WebKitGTK can resolve
-			// keyframes from the pre-flip style when the animation starts in the same
-			// recalc, which left the panel opaque on close.
-			expect(popup, motion).toContain('fade-out-0');
-			expect(popup, motion).not.toContain('data-[state=closed]:fade-out-0');
+			expect(popup, motion).toContain('transition-');
+			expect(popup, motion).toContain('starting:data-[state=open]');
+			expect(popup, motion).toContain('data-[state=closed]');
+			expect(popup, motion).not.toContain('data-[closed]');
+			expect(popup, motion).not.toContain('animate-in');
+			expect(popup, motion).not.toContain('animate-out');
 		}
 	});
 
 	test('zoom scales like upstream', () => {
 		const popup = dialogFrame({ motion: 'zoom' }).popup();
-		expect(popup).toContain('data-[state=open]:zoom-in-95');
-		expect(popup).toContain('zoom-out-95');
-		expect(popup).not.toContain('data-[state=closed]:zoom-out-95');
+		expect(popup).toContain('data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)]');
+		expect(popup).toContain('starting:data-[state=open]:[--dialog-scale:var(--modal-enter-scale)]');
 	});
 
 	test('slides retrace their direction', () => {
-		expect(dialogFrame({ motion: 'slide-up' }).popup()).toContain('slide-in-from-bottom-6');
-		expect(dialogFrame({ motion: 'slide-up' }).popup()).toContain('slide-out-to-bottom-6');
-		expect(dialogFrame({ motion: 'slide-down' }).popup()).toContain('slide-in-from-top-6');
-		expect(dialogFrame({ motion: 'slide-down' }).popup()).toContain('slide-out-to-top-6');
-		expect(dialogFrame({ motion: 'slide-left' }).popup()).toContain('slide-in-from-end-6');
-		expect(dialogFrame({ motion: 'slide-left' }).popup()).toContain('slide-out-to-end-6');
-		expect(dialogFrame({ motion: 'slide-right' }).popup()).toContain('slide-in-from-start-6');
-		expect(dialogFrame({ motion: 'slide-right' }).popup()).toContain('slide-out-to-start-6');
-		expect(dialogFrame({ motion: 'slide-up' }).popup()).not.toContain(
-			'data-[state=closed]:slide-out-to-bottom-6'
+		expect(dialogFrame({ motion: 'slide-up' }).popup()).toContain(
+			'data-[state=closed]:[--dialog-y:1.5rem]'
+		);
+		expect(dialogFrame({ motion: 'slide-down' }).popup()).toContain(
+			'data-[state=closed]:[--dialog-y:-1.5rem]'
+		);
+		expect(dialogFrame({ motion: 'slide-left' }).popup()).toContain(
+			'data-[state=closed]:[--dialog-x:1.5rem]'
+		);
+		expect(dialogFrame({ motion: 'slide-right' }).popup()).toContain(
+			'data-[state=closed]:[--dialog-x:-1.5rem]'
 		);
 	});
 
-	test('centers with the translate property so keyframe transforms compose', () => {
-		// tw-animate keyframes write `transform`; the -50% centering must live on the
-		// separate `translate` property (Tailwind v4 translate-*), never in `transform`.
+	test('centers inside the transform var compose', () => {
+		// Motion levers write transform vars; the -50% centering must compose with
+		// them, never be hardcoded off or moved to a competing transform.
 		const popup = dialogFrame({ motion: 'zoom' }).popup();
-		expect(popup).toContain('-translate-x-1/2');
-		expect(popup).toContain('-translate-y-1/2');
-		expect(popup).not.toContain('translate(-50%,-50%)');
-		expect(popup).not.toContain('--dialog-');
+		expect(popup).toContain('translate(-50%,-50%)');
+		expect(popup).toContain('var(--dialog-x,0)');
+		expect(popup).toContain('var(--dialog-scale,1)');
 	});
 
 	test('uses only the data-state bits-ui emits', () => {
 		for (const motion of MOTIONS) {
 			const popup = dialogFrame({ motion }).popup();
 			expect(popup, motion).not.toContain('data-[closed]');
-			expect(popup, motion).not.toContain('starting:');
+			expect(popup, motion).not.toContain('data-[open]');
+			expect(popup, motion).not.toContain('starting:data-[closed]');
+			expect(popup, motion).not.toContain('starting:data-[open]');
 		}
 		expect(dialogFrame().backdrop()).not.toContain('data-[open]');
-	});
-
-	test('hides the mount frame bits-ui flags with data-starting-style', () => {
-		for (const motion of MOTIONS) {
-			const popup = dialogFrame({ motion }).popup();
-			expect(popup, motion).toContain('data-starting-style:opacity-0');
-			// The bare bracket form compiles to a no-op `:is()` selector.
-			expect(popup, motion).not.toContain('[data-starting-style]');
-		}
-		expect(dialogFrame().backdrop()).toContain('data-starting-style:opacity-0');
-	});
-
-	test('holds the exit state through the unmount gap', () => {
-		for (const motion of MOTIONS) {
-			expect(dialogFrame({ motion }).popup(), motion).toContain(
-				'data-[state=closed]:fill-mode-forwards'
-			);
-		}
-		expect(dialogFrame().backdrop()).toContain('data-[state=closed]:fill-mode-forwards');
+		expect(dialogFrame().backdrop()).not.toContain('data-[closed]');
 	});
 });

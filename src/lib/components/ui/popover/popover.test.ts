@@ -17,7 +17,7 @@ describe('Popover', () => {
 		flushSync();
 		const content = document.querySelector('[data-slot="popover-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
-		expect(content?.getAttribute('class')).toContain('data-[state=open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('data-[state=open]:opacity-100');
 		expect(content?.textContent).toContain('Popover body');
 		unmount(component);
 	});

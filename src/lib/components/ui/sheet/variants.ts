@@ -1,42 +1,32 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
-/** Slides in, out the way it came; the scrim lands first and leaves with the panel. Keyframes, never @starting-style: they apply on the mount frame in every engine. */
+/** Slides 250ms in, 200ms out; the scrim lands first (150ms) and leaves with the panel. Plain state transitions, no keyframes. */
 export const sheet = tv({
 	slots: {
+		// No backdrop blur: a full-viewport filter re-rendered every frame is the one
+		// genuinely expensive effect an overlay can carry.
 		backdrop: [
-			'fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]',
-			// The mount frame is hidden for the scrim too, so a late animation start
-			// never flashes the full-strength backdrop.
-			'data-starting-style:opacity-0',
-			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			// The exit value sits outside `data-state=closed`: the flip and the exit
-			// animation share one style recalc, and WebKitGTK can resolve keyframe
-			// custom properties from the pre-flip style, leaving the scrim opaque.
-			'data-[state=open]:fade-in-0 fade-out-0',
-			// Hold the faded-out scrim through bits-ui's unmount gap, or it flashes
-			// back to full strength for a frame before the element is removed.
-			'data-[state=closed]:fill-mode-forwards',
-			'data-[state=open]:duration-[var(--duration-backdrop)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
-			'ease-[var(--ease-drawer)]',
-			'motion-reduce:animate-none'
+			'fixed inset-0 z-50 bg-black/50 opacity-0',
+			'transition-opacity duration-[var(--duration-panel-exit)] ease-[var(--ease-drawer)]',
+			'data-[state=open]:opacity-100 data-[state=open]:duration-[var(--duration-backdrop)]',
+			'starting:data-[state=open]:opacity-0',
+			'motion-reduce:transition-none'
 		],
 		body: '',
+		// Only the closed state translates, so the open state needs no competing utility.
 		panel: [
 			'fixed z-50 flex flex-col shadow-(--overlay-shadow)',
-			// bits-ui sets data-starting-style for the mount frame only: hide it so a
-			// late animation start can never flash the panel at full opacity.
-			'data-starting-style:opacity-0',
-			// Hold the exit end state through bits-ui's unmount gap.
-			'data-[state=closed]:fill-mode-forwards',
-			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
-			'ease-[var(--ease-drawer)]',
-			// Slide values are `data-side` scoped, so they are stable from mount.
-			'data-[side=left]:slide-in-from-left data-[side=left]:slide-out-to-left',
-			'data-[side=right]:slide-in-from-right data-[side=right]:slide-out-to-right',
-			'data-[side=top]:slide-in-from-top data-[side=top]:slide-out-to-top',
-			'data-[side=bottom]:slide-in-from-bottom data-[side=bottom]:slide-out-to-bottom',
-			'motion-reduce:animate-none'
+			'transition-transform duration-[var(--duration-overlay)] ease-[var(--ease-drawer)]',
+			'data-[state=closed]:duration-[var(--duration-panel-exit)]',
+			'data-[state=closed]:data-[side=left]:-translate-x-full',
+			'data-[state=closed]:data-[side=right]:translate-x-full',
+			'data-[state=closed]:data-[side=top]:-translate-y-full',
+			'data-[state=closed]:data-[side=bottom]:translate-y-full',
+			'starting:data-[state=open]:data-[side=left]:-translate-x-full',
+			'starting:data-[state=open]:data-[side=right]:translate-x-full',
+			'starting:data-[state=open]:data-[side=top]:-translate-y-full',
+			'starting:data-[state=open]:data-[side=bottom]:translate-y-full',
+			'motion-reduce:transition-none'
 		]
 	},
 	variants: {

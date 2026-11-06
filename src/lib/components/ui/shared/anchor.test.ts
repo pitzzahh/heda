@@ -1,50 +1,39 @@
 import { describe, expect, test } from 'vitest';
 import { ANCHORED } from './anchor';
 
-// Enter/exit must be keyframe animations (tw-animate-css), never @starting-style
-// transitions: keyframes apply on the mount frame in every engine, so there is no
-// first-frame flash of unpositioned content in webviews without @starting-style.
+// Motion is plain state transitions, never keyframes or animation custom properties:
+// WebKitGTK resolved keyframe custom properties from the pre-flip style and closed
+// surfaces without fading.
 describe('ANCHORED', () => {
-	test('animates with keyframes on both states', () => {
-		expect(ANCHORED).toContain('data-[state=open]:animate-in');
-		expect(ANCHORED).toContain('data-[state=closed]:animate-out');
-		expect(ANCHORED).toContain('data-[state=open]:fade-in-0');
-		expect(ANCHORED).toContain('data-[state=open]:zoom-in-95');
-		// Exit values must not be scoped to the close flip: WebKitGTK can resolve
-		// keyframes from the pre-flip style when the animation starts in the same
-		// recalc, which left the surface opaque on close.
-		expect(ANCHORED).toContain('fade-out-0');
-		expect(ANCHORED).not.toContain('data-[state=closed]:fade-out-0');
-		expect(ANCHORED).toContain('zoom-out-95');
-		expect(ANCHORED).not.toContain('data-[state=closed]:zoom-out-95');
+	test('fades through state transitions', () => {
+		expect(ANCHORED).toContain('opacity-0');
+		expect(ANCHORED).toContain('data-[state=open]:opacity-100');
+		expect(ANCHORED).toContain('transition-[opacity,scale,translate]');
+		expect(ANCHORED).toContain('duration-[var(--duration-dropdown)]');
+		expect(ANCHORED).toContain('duration-[var(--duration-exit)]');
+	});
+
+	test('animates the first open frame', () => {
+		expect(ANCHORED).toContain('starting:data-[state=open]:opacity-0');
 	});
 
 	test('leans toward the trigger per side', () => {
-		expect(ANCHORED).toContain('data-[side=bottom]:slide-in-from-top-2');
-		expect(ANCHORED).toContain('data-[side=top]:slide-in-from-bottom-2');
-		expect(ANCHORED).toContain('data-[side=left]:slide-in-from-end-2');
-		expect(ANCHORED).toContain('data-[side=right]:slide-in-from-start-2');
+		expect(ANCHORED).toContain('data-[state=closed]:data-[side=bottom]:-translate-y-1');
+		expect(ANCHORED).toContain('data-[state=closed]:data-[side=top]:translate-y-1');
+		expect(ANCHORED).toContain('data-[state=closed]:data-[side=left]:translate-x-1');
+		expect(ANCHORED).toContain('data-[state=closed]:data-[side=right]:-translate-x-1');
 	});
 
 	test('keeps the floating origin and motion tokens', () => {
 		expect(ANCHORED).toContain('origin-(--bits-floating-transform-origin)');
-		expect(ANCHORED).toContain('duration-[var(--duration-dropdown)]');
-		expect(ANCHORED).toContain('duration-[var(--duration-exit)]');
-		expect(ANCHORED).toContain('motion-reduce:animate-none');
+		expect(ANCHORED).toContain('scale-[var(--popover-exit-scale)]');
+		expect(ANCHORED).toContain('starting:data-[state=open]:scale-[var(--popover-enter-scale)]');
+		expect(ANCHORED).toContain('motion-reduce:transition-none');
 	});
 
-	test('uses no mount transitions', () => {
-		expect(ANCHORED).not.toContain('starting:');
-		expect(ANCHORED).not.toContain('transition-[');
-	});
-
-	test('hides the mount frame bits-ui flags with data-starting-style', () => {
-		expect(ANCHORED).toContain('data-starting-style:opacity-0');
-		// The bare bracket form compiles to a no-op `:is()` selector.
-		expect(ANCHORED).not.toContain('[data-starting-style]');
-	});
-
-	test('holds the exit state through the unmount gap', () => {
-		expect(ANCHORED).toContain('data-[state=closed]:fill-mode-forwards');
+	test('uses no keyframe machinery', () => {
+		expect(ANCHORED).not.toContain('animate-in');
+		expect(ANCHORED).not.toContain('animate-out');
+		expect(ANCHORED).not.toContain('fill-mode-forwards');
 	});
 });

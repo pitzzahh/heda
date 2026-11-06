@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe('Tooltip', () => {
-	test('renders content with the delayed-open keyframes', () => {
+	test('renders content with the delayed-open contract', () => {
 		const component = mount(TooltipFixture, {
 			target: document.body,
 			props: { open: true }
@@ -17,7 +17,7 @@ describe('Tooltip', () => {
 		const content = document.querySelector('[data-slot="tooltip-content"]');
 		expect(content).not.toBeNull();
 		expect(content?.textContent).toContain('Tooltip body');
-		expect(content?.getAttribute('class')).toContain('data-[state=delayed-open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('data-[state=delayed-open]:opacity-100');
 		unmount(component);
 	});
 
