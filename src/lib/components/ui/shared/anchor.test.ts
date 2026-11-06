@@ -32,4 +32,14 @@ describe('ANCHORED', () => {
 		expect(ANCHORED).not.toContain('starting:');
 		expect(ANCHORED).not.toContain('transition-[');
 	});
+
+	test('hides the mount frame bits-ui flags with data-starting-style', () => {
+		expect(ANCHORED).toContain('data-starting-style:opacity-0');
+		// The bare bracket form compiles to a no-op `:is()` selector.
+		expect(ANCHORED).not.toContain('[data-starting-style]');
+	});
+
+	test('holds the exit state through the unmount gap', () => {
+		expect(ANCHORED).toContain('data-[state=closed]:fill-mode-forwards');
+	});
 });

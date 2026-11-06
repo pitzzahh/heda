@@ -33,4 +33,21 @@ describe('sheet', () => {
 		expect(sheet({ side: 'bottom' }).panel()).toContain('slide-in-from-bottom');
 		expect(sheet({ side: 'bottom' }).panel()).toContain('slide-out-to-bottom');
 	});
+
+	test('hides the mount frame bits-ui flags with data-starting-style', () => {
+		for (const side of SIDES) {
+			const panel = sheet({ side }).panel();
+			expect(panel, side).toContain('data-starting-style:opacity-0');
+			// The bare bracket form compiles to a no-op `:is()` selector.
+			expect(panel, side).not.toContain('[data-starting-style]');
+		}
+		expect(sheet().backdrop()).toContain('data-starting-style:opacity-0');
+	});
+
+	test('holds the exit state through the unmount gap', () => {
+		for (const side of SIDES) {
+			expect(sheet({ side }).panel(), side).toContain('data-[state=closed]:fill-mode-forwards');
+		}
+		expect(sheet().backdrop()).toContain('data-[state=closed]:fill-mode-forwards');
+	});
 });
