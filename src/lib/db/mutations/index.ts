@@ -5,8 +5,8 @@ import type { Project, Node } from '#lib/types/db';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 import type { FileExport } from '#lib/types/main';
 
-// Defaults previously applied by the RxDB schema on insert. Every insertion
-// path merges these so stored documents look exactly like before.
+// The store applies no defaults itself, so every insertion path merges these
+// to keep stored documents complete.
 const NODE_DEFAULTS = {
 	conductor_sets: 1,
 	conductor_qty: 2,
