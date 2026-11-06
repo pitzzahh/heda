@@ -20,4 +20,14 @@ describe('commandFrame popup', () => {
 		expect(popup).not.toContain('data-[closed]');
 		expect(popup).not.toContain('data-[open]');
 	});
+
+	test('hides the mount frame bits-ui flags with data-starting-style', () => {
+		expect(commandFrame().popup()).toContain('data-starting-style:opacity-0');
+		// The bare bracket form compiles to a no-op `:is()` selector.
+		expect(commandFrame().popup()).not.toContain('[data-starting-style]');
+	});
+
+	test('holds the exit state through the unmount gap', () => {
+		expect(commandFrame().popup()).toContain('data-[state=closed]:fill-mode-forwards');
+	});
 });

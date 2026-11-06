@@ -5,6 +5,11 @@ export const commandFrame = tv({
 		// Command shares Dialog's modal scale/fade contract; its top offset is the only layout difference.
 		popup: [
 			'fixed top-[14vh] left-1/2 z-50 -translate-x-1/2 outline-hidden',
+			// bits-ui sets data-starting-style for the mount frame only: hide it so a
+			// late animation start can never flash the panel at full opacity.
+			'data-starting-style:opacity-0',
+			// Hold the exit end state through bits-ui's unmount gap.
+			'data-[state=closed]:fill-mode-forwards',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
 			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
 			'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',

@@ -12,11 +12,19 @@ import { tv } from 'tailwind-variants';
 export const ANCHORED = tv({
 	base: [
 		'z-50 pointer-events-none',
+		// bits-ui sets data-starting-style for the mount frame only: hide it so a
+		// late animation start or an unmeasured position can never flash. Keep the
+		// `data-starting-style:` variant: the bare `[data-starting-style]:` form
+		// compiles to a no-op `:is()` selector.
+		'data-starting-style:opacity-0',
 		'data-[state=open]:pointer-events-auto',
 		// Plain `ease`: fast in, instant out.
 		'data-[state=open]:animate-in data-[state=closed]:animate-out',
 		'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
 		'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+		// Hold the exit end state through bits-ui's unmount gap; with the default
+		// `none` the surface snaps back to full opacity for a frame or two.
+		'data-[state=closed]:fill-mode-forwards',
 		'data-[state=open]:duration-[var(--duration-dropdown)] data-[state=closed]:duration-[var(--duration-exit)]',
 		'ease-[var(--ease-smooth)]',
 		// The closed state leans toward its trigger, so opening reads as unfolding from it.

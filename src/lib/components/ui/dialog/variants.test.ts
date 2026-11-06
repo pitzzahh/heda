@@ -62,4 +62,23 @@ describe('dialogFrame', () => {
 		}
 		expect(dialogFrame().backdrop()).not.toContain('data-[open]');
 	});
+
+	test('hides the mount frame bits-ui flags with data-starting-style', () => {
+		for (const motion of MOTIONS) {
+			const popup = dialogFrame({ motion }).popup();
+			expect(popup, motion).toContain('data-starting-style:opacity-0');
+			// The bare bracket form compiles to a no-op `:is()` selector.
+			expect(popup, motion).not.toContain('[data-starting-style]');
+		}
+		expect(dialogFrame().backdrop()).toContain('data-starting-style:opacity-0');
+	});
+
+	test('holds the exit state through the unmount gap', () => {
+		for (const motion of MOTIONS) {
+			expect(dialogFrame({ motion }).popup(), motion).toContain(
+				'data-[state=closed]:fill-mode-forwards'
+			);
+		}
+		expect(dialogFrame().backdrop()).toContain('data-[state=closed]:fill-mode-forwards');
+	});
 });

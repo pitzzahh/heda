@@ -5,8 +5,14 @@ export const sheet = tv({
 	slots: {
 		backdrop: [
 			'fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]',
+			// The mount frame is hidden for the scrim too, so a late animation start
+			// never flashes the full-strength backdrop.
+			'data-starting-style:opacity-0',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
 			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			// Hold the faded-out scrim through bits-ui's unmount gap, or it flashes
+			// back to full strength for a frame before the element is removed.
+			'data-[state=closed]:fill-mode-forwards',
 			'data-[state=open]:duration-[var(--duration-backdrop)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
 			'ease-[var(--ease-drawer)]',
 			'motion-reduce:animate-none'
@@ -14,6 +20,11 @@ export const sheet = tv({
 		body: '',
 		panel: [
 			'fixed z-50 flex flex-col shadow-(--overlay-shadow)',
+			// bits-ui sets data-starting-style for the mount frame only: hide it so a
+			// late animation start can never flash the panel at full opacity.
+			'data-starting-style:opacity-0',
+			// Hold the exit end state through bits-ui's unmount gap.
+			'data-[state=closed]:fill-mode-forwards',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
 			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-panel-exit)]',
 			'ease-[var(--ease-drawer)]',

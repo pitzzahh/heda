@@ -11,8 +11,14 @@ export const dialogFrame = tv({
 		// Fades in step with the panel; the primitive owns the top layer and inertness.
 		backdrop: [
 			'fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]',
+			// The mount frame is hidden for the scrim too, so a late animation start
+			// never flashes the full-strength backdrop.
+			'data-starting-style:opacity-0',
 			'data-[state=open]:animate-in data-[state=closed]:animate-out',
 			'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+			// Hold the faded-out scrim through bits-ui's unmount gap, or it flashes
+			// back to full strength for a frame before the element is removed.
+			'data-[state=closed]:fill-mode-forwards',
 			'data-[state=open]:duration-[var(--duration-dropdown)] data-[state=closed]:duration-[var(--duration-exit)]',
 			'ease-[var(--ease-ui-out)]',
 			'motion-reduce:animate-none'
@@ -20,6 +26,11 @@ export const dialogFrame = tv({
 		// Motion is selected by the root; every path retraces itself on close.
 		popup: [
 			'fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 overflow-visible outline-hidden',
+			// bits-ui sets data-starting-style for the mount frame only: hide it so a
+			// late animation start can never flash the panel at full opacity.
+			'data-starting-style:opacity-0',
+			// Hold the exit end state through bits-ui's unmount gap.
+			'data-[state=closed]:fill-mode-forwards',
 			'motion-reduce:animate-none'
 		],
 		panel: 'rounded-2xl border border-border/70 shadow-[var(--overlay-shadow)]',
