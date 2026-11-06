@@ -5,21 +5,11 @@ export const commandFrame = tv({
 		// Command shares Dialog's modal scale/fade contract; its top offset is the only layout difference.
 		popup: [
 			'fixed top-[14vh] left-1/2 z-50 -translate-x-1/2 outline-hidden',
-			// bits-ui sets data-starting-style for the mount frame only: hide it so a
-			// late animation start can never flash the panel at full opacity.
-			'data-starting-style:opacity-0',
-			// Hold the exit end state through bits-ui's unmount gap.
-			'data-[state=closed]:fill-mode-forwards',
-			'data-[state=open]:animate-in data-[state=closed]:animate-out',
-			// Exit values sit outside `data-state=closed`: the flip and the exit
-			// animation share one style recalc, and WebKitGTK can resolve keyframe
-			// custom properties from the pre-flip style, leaving the panel opaque.
-			'data-[state=open]:fade-in-0 fade-out-0',
-			'data-[state=open]:zoom-in-95 zoom-out-95',
-			'duration-[var(--duration-overlay)] data-[state=closed]:duration-[var(--duration-exit)]',
-			'ease-[var(--ease-out-quad)]',
+			'transition-[opacity,scale] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
+			'data-[state=closed]:opacity-0 data-[state=closed]:scale-[var(--popover-exit-scale)] data-[state=closed]:duration-[var(--duration-exit)]',
+			'starting:data-[state=open]:opacity-0 starting:data-[state=open]:scale-[var(--modal-enter-scale)]',
 			'flex max-h-[min(30rem,70dvh)] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden',
-			'motion-reduce:animate-none'
+			'motion-reduce:transition-none'
 		],
 		panel: '',
 		body: 'relative flex min-h-0 flex-col overflow-hidden text-foreground',

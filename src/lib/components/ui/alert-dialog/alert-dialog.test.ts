@@ -17,7 +17,7 @@ describe('AlertDialog', () => {
 		flushSync();
 		const content = document.querySelector('[data-slot="alert-dialog-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
-		expect(content?.getAttribute('class')).toContain('data-[state=open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('transition-[opacity,transform]');
 		expect(content?.textContent).toContain('Confirm delete');
 		expect(document.querySelector('[data-slot="alert-dialog-cancel"]')).not.toBeNull();
 		expect(document.querySelector('[data-slot="alert-dialog-action"]')).not.toBeNull();

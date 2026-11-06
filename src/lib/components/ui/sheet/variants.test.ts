@@ -4,53 +4,38 @@ import { sheet, type SheetSide } from './variants';
 const SIDES: SheetSide[] = ['left', 'right', 'top', 'bottom'];
 
 describe('sheet', () => {
-	test('backdrop fades with keyframes', () => {
+	test('backdrop fades through a state transition', () => {
 		const backdrop = sheet().backdrop();
-		expect(backdrop).toContain('data-[state=open]:animate-in');
-		expect(backdrop).toContain('data-[state=closed]:animate-out');
-		expect(backdrop).toContain('data-[state=open]:fade-in-0');
-		// The exit value must not be scoped to the close flip, or WebKitGTK can
-		// resolve the keyframes from the pre-flip style and the scrim stays opaque.
-		expect(backdrop).toContain('fade-out-0');
-		expect(backdrop).not.toContain('data-[state=closed]:fade-out-0');
-		expect(backdrop).not.toContain('starting:');
+		expect(backdrop).toContain('opacity-0');
+		expect(backdrop).toContain('data-[state=open]:opacity-100');
+		expect(backdrop).toContain('transition-opacity');
+		expect(backdrop).toContain('starting:data-[state=open]:opacity-0');
+		// A full-viewport backdrop filter is the one genuinely expensive overlay effect.
+		expect(backdrop).not.toContain('backdrop-blur');
 	});
 
-	test('panel slides with keyframes on every side', () => {
+	test('panel slides with a state transition on every side', () => {
 		for (const side of SIDES) {
 			const panel = sheet({ side }).panel();
-			expect(panel, side).toContain('data-[state=open]:animate-in');
-			expect(panel, side).toContain('data-[state=closed]:animate-out');
-			expect(panel, side).not.toContain('starting:');
-			expect(panel, side).not.toContain('transition-[');
+			expect(panel, side).toContain('transition-transform');
+			expect(panel, side).toContain(`starting:data-[state=open]:data-[side=${side}]`);
+			expect(panel, side).not.toContain('animate-in');
+			expect(panel, side).not.toContain('animate-out');
 		}
 	});
 
 	test('each side slides the full panel off', () => {
-		expect(sheet({ side: 'right' }).panel()).toContain('slide-in-from-right');
-		expect(sheet({ side: 'right' }).panel()).toContain('slide-out-to-right');
-		expect(sheet({ side: 'left' }).panel()).toContain('slide-in-from-left');
-		expect(sheet({ side: 'left' }).panel()).toContain('slide-out-to-left');
-		expect(sheet({ side: 'top' }).panel()).toContain('slide-in-from-top');
-		expect(sheet({ side: 'top' }).panel()).toContain('slide-out-to-top');
-		expect(sheet({ side: 'bottom' }).panel()).toContain('slide-in-from-bottom');
-		expect(sheet({ side: 'bottom' }).panel()).toContain('slide-out-to-bottom');
-	});
-
-	test('hides the mount frame bits-ui flags with data-starting-style', () => {
-		for (const side of SIDES) {
-			const panel = sheet({ side }).panel();
-			expect(panel, side).toContain('data-starting-style:opacity-0');
-			// The bare bracket form compiles to a no-op `:is()` selector.
-			expect(panel, side).not.toContain('[data-starting-style]');
-		}
-		expect(sheet().backdrop()).toContain('data-starting-style:opacity-0');
-	});
-
-	test('holds the exit state through the unmount gap', () => {
-		for (const side of SIDES) {
-			expect(sheet({ side }).panel(), side).toContain('data-[state=closed]:fill-mode-forwards');
-		}
-		expect(sheet().backdrop()).toContain('data-[state=closed]:fill-mode-forwards');
+		expect(sheet({ side: 'right' }).panel()).toContain(
+			'data-[state=closed]:data-[side=right]:translate-x-full'
+		);
+		expect(sheet({ side: 'left' }).panel()).toContain(
+			'data-[state=closed]:data-[side=left]:-translate-x-full'
+		);
+		expect(sheet({ side: 'top' }).panel()).toContain(
+			'data-[state=closed]:data-[side=top]:-translate-y-full'
+		);
+		expect(sheet({ side: 'bottom' }).panel()).toContain(
+			'data-[state=closed]:data-[side=bottom]:translate-y-full'
+		);
 	});
 });

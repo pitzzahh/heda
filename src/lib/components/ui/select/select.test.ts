@@ -17,7 +17,7 @@ describe('Select', () => {
 		flushSync();
 		const content = document.querySelector('[data-slot="select-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
-		expect(content?.getAttribute('class')).toContain('data-[state=open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('data-[state=open]:opacity-100');
 		expect(content?.querySelectorAll('[data-slot="select-item"]')).toHaveLength(2);
 		unmount(component);
 	});

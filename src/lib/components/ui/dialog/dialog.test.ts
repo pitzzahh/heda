@@ -18,11 +18,11 @@ function openViaTrigger() {
 }
 
 describe('Dialog', () => {
-	test('opens from the trigger with the keyframe contract', () => {
+	test('opens from the trigger with the state transition contract', () => {
 		const component = openViaTrigger();
 		const content = document.querySelector('[data-slot="dialog-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
-		expect(content?.getAttribute('class')).toContain('data-[state=open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('transition-[opacity,transform]');
 		expect(content?.textContent).toContain('Fixture body');
 		expect(document.querySelector('[data-slot="dialog-backdrop"]')).not.toBeNull();
 		unmount(component);

@@ -17,7 +17,7 @@ describe('ContextMenu', () => {
 		flushSync();
 		const content = document.querySelector('[data-slot="context-menu-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
-		expect(content?.getAttribute('class')).toContain('data-[state=open]:animate-in');
+		expect(content?.getAttribute('class')).toContain('data-[state=open]:opacity-100');
 		unmount(component);
 	});
 

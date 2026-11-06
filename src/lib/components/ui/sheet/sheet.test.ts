@@ -17,7 +17,9 @@ describe('Sheet', () => {
 		const content = document.querySelector('[data-slot="sheet-content"]');
 		expect(content?.getAttribute('data-state')).toBe('open');
 		expect(content?.getAttribute('data-side')).toBe('right');
-		expect(content?.getAttribute('class')).toContain('slide-in-from-right');
+		expect(content?.getAttribute('class')).toContain(
+			'starting:data-[state=open]:data-[side=right]:translate-x-full'
+		);
 		unmount(component);
 	});
 
@@ -29,7 +31,9 @@ describe('Sheet', () => {
 		flushSync();
 		const content = document.querySelector('[data-slot="sheet-content"]');
 		expect(content?.getAttribute('data-side')).toBe('left');
-		expect(content?.getAttribute('class')).toContain('slide-in-from-left');
+		expect(content?.getAttribute('class')).toContain(
+			'starting:data-[state=open]:data-[side=left]:-translate-x-full'
+		);
 		unmount(component);
 	});
 
