@@ -29,6 +29,21 @@ fn get_exe_path() -> PathBuf {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebKitGTK's Wayland path flickers on some Mesa setups where the X11
+    // (XWayland) path does not, so the app prefers X11 when an X server is
+    // present. A deliberate GDK_BACKEND wins; the generic `wayland,x11,*`
+    // fallback some sessions export counts as no choice. Disabling the DMA-BUF
+    // renderer also removes the flicker but collapses rendering performance,
+    // so it is deliberately left alone.
+    #[cfg(target_os = "linux")]
+    {
+        let backend = std::env::var("GDK_BACKEND").ok();
+        let no_choice = matches!(backend.as_deref(), None | Some("wayland,x11,*"));
+        if no_choice && std::env::var_os("DISPLAY").is_some() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
+    }
+
     #[cfg(desktop)]
     let log_plugin = tauri_plugin_log::Builder::new()
         .target(tauri_plugin_log::Target::new(
