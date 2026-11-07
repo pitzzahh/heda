@@ -111,10 +111,8 @@
 			{#if current_node}
 				<DataTable
 					data={loads}
-					columns={onePhaseMainOrWyeCols(
-						current_node as PhaseLoadSchedule,
-						root_node?.highest_unit_form
-					)}
+					columns={onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule)}
+					highest_unit={root_node?.highest_unit_form}
 					is_footer_shown={current_node.node_type !== 'root'}
 				/>
 			{:else}
@@ -124,7 +122,12 @@
 			{/if}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
-			<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+			<DataTable
+				data={voltage_drops}
+				is_footer_shown={false}
+				columns={voltageDropColumns()}
+				is_in_vd_table
+			/>
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
