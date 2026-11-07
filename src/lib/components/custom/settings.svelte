@@ -61,7 +61,7 @@
 	import { Switch } from '#lib/components/ui/switch/index.js';
 	import { updateProjectSettings } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
-	import { checkForUpdates, installUpdate } from '#lib/utils/update/index.js';
+	import { checkForUpdates, installUpdate } from '#lib/helpers/update/index.js';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
 	import { userPrefersMode } from 'mode-watcher';

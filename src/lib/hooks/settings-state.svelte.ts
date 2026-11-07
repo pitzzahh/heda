@@ -1,6 +1,6 @@
 import { PersistedState } from 'runed';
 import type { Font, Settings, ThemeColor, ThemeMode } from '#lib/types/settings/index.js';
-import setGlobalColorTheme from '#lib/theme-colors/theme-colors.js';
+import { setGlobalColorTheme } from '#lib/theme-colors/index.js';
 import { setState, getState } from '#lib/state/index.svelte.js';
 import { THEME_COLOR_STATE_CTX } from '#lib/state/constants.js';
 import { setMode } from 'mode-watcher';

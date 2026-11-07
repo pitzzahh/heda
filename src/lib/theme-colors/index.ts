@@ -130,7 +130,7 @@ const themes: Record<string, any> = {
 
 const toKebab = (key: string) => key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 
-export default function setGlobalColorTheme(themeMode: 'light' | 'dark' | 'system', color: string) {
+export function setGlobalColorTheme(themeMode: 'light' | 'dark' | 'system', color: string) {
 	if (themeMode === 'system') {
 		themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 	}

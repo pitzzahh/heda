@@ -34,3 +34,20 @@ export function getOrdinalSuffix(n: number): string {
 	const v = n % 100;
 	return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
+
+export function convertToNormalText(
+	text: unknown,
+	include_separators: boolean = false,
+	separators: string[] = ['|', '_', '-']
+): string {
+	const textStr = String(text);
+	let trimmedText = textStr.trim().replaceAll('_', ' ').replaceAll('-', ' ');
+
+	if (include_separators && separators.length > 0) {
+		for (const separator of separators) {
+			trimmedText = trimmedText.replaceAll(separator, ' ');
+		}
+	}
+
+	return trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1).toLowerCase();
+}
