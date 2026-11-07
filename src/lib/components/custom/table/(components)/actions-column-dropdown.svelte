@@ -21,7 +21,7 @@
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { copyAndAddNodeById, removeNode } from '#lib/db/mutations/index.js';
+	import { removeNode } from '#lib/db/mutations/index.js';
 	import GenericPhaseMainLoadForm from '#lib/components/custom/load/generic-phase-main-load-form.svelte';
 	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
@@ -86,11 +86,7 @@
 	function copyNodeById(node_id: string) {
 		node_name = node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (open_copy_dialog) return;
-		const copied_node = copyAndAddNodeById(node_id);
-		undo_redo_state.setActionToUndo({
-			action: 'copy_node',
-			data: copied_node as unknown as PhaseLoadSchedule
-		});
+		undo_redo_state.copyNodeById(node_id);
 	}
 </script>
 

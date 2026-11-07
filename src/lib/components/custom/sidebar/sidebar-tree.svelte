@@ -63,12 +63,7 @@
 	import { ConfirmationDialog } from '#lib/components/custom/index.js';
 	import { SidebarTree, AddPanelAndViewTrigger } from './index.js';
 	import { getChildNodesByParentId } from '#lib/db/queries/index.js';
-	import {
-		copyAndAddNodeById,
-		deleteProject,
-		removeNode,
-		updateNodeParentById
-	} from '#lib/db/mutations/index.js';
+	import { deleteProject, removeNode, updateNodeParentById } from '#lib/db/mutations/index.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -117,11 +112,7 @@
 		component_state.node_name =
 			node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (component_state.open_copy_dialog) return;
-		const copied_node = copyAndAddNodeById(node_id);
-		undo_redo_state.setActionToUndo({
-			action: 'copy_node',
-			data: copied_node as unknown as PhaseLoadSchedule
-		});
+		undo_redo_state.copyNodeById(node_id);
 	}
 
 	// Handle drops between containers
