@@ -5,11 +5,6 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE
 } from '#lib/constants/index.js';
 
-// TODO: May issue, need to fix, unused function
-export function createEnumPicklist<T extends Record<string, string>>(enumObj: T) {
-	return v.picklist(Object.values(enumObj));
-}
-
 export const PHASE_FIELD = v.picklist(
 	DEFAULT_PHASES.map((option) => option.value),
 	'You need to select a phase'

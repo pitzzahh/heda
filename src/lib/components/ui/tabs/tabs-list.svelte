@@ -62,7 +62,7 @@
 		};
 	});
 
-	/** Keep the selected tab clear of the arrows that overlay the faded edges. */
+	// Keep the selected tab clear of the overlay arrows.
 	$effect(() => {
 		const el = list?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(tabs.value)}"]`);
 		if (!el || !viewport || !edges.overflow) return;

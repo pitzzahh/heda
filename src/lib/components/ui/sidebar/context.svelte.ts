@@ -11,18 +11,8 @@ import { PersistedState } from 'runed';
 type Getter<T> = () => T;
 
 export type SidebarStateProps = {
-	/**
-	 * A getter function that returns the current open state of the sidebar.
-	 * We use a getter function here to support `bind:open` on the `Sidebar.Provider`
-	 * component.
-	 */
+	/** Getter/setter pair (not plain fields) so `bind:open` stays synced. */
 	open: Getter<boolean>;
-
-	/**
-	 * A function that sets the open state of the sidebar. To support `bind:open`, we need
-	 * a source of truth for changing the open state to ensure it will be synced throughout
-	 * the sub-components and any `bind:` references.
-	 */
 	setOpen: (open: boolean) => void;
 };
 
@@ -49,13 +39,10 @@ class SidebarState {
 		this.sidebarWidth = localStorage?.current?.sidebar_width || SIDEBAR_DEFAULT_WIDTH;
 	}
 
-	// Convenience getter for checking if the sidebar is mobile
-	// without this, we would need to use `sidebar.isMobile.current` everywhere
 	get isMobile() {
 		return this.#isMobile.current;
 	}
 
-	// Event handler to apply to the `<svelte:window>`
 	handleShortcutKeydown = (e: KeyboardEvent) => {
 		if (e.key === SIDEBAR_KEYBOARD_SHORTCUT && (e.metaKey || e.ctrlKey)) {
 			e.preventDefault();
@@ -88,7 +75,6 @@ class SidebarState {
 		const onMouseUp = () => {
 			this.isResizing = false;
 
-			// Reset the cursor to default after resizing
 			document.body.style.cursor = 'default';
 
 			window.removeEventListener('mousemove', onMouseMove);
@@ -117,21 +103,11 @@ class SidebarState {
 
 const SYMBOL_KEY = 'scn-sidebar';
 
-/**
- * Instantiates a new `SidebarState` instance and sets it in the context.
- *
- * @param props The constructor props for the `SidebarState` class.
- * @returns  The `SidebarState` instance.
- */
 export function setSidebar(props: SidebarStateProps): SidebarState {
 	return setContext(Symbol.for(SYMBOL_KEY), new SidebarState(props));
 }
 
-/**
- * Retrieves the `SidebarState` instance from the context. This is a class instance,
- * so you cannot destructure it.
- * @returns The `SidebarState` instance.
- */
+/** Class instance: do not destructure. */
 export function useSidebar(): SidebarState {
 	return getContext(Symbol.for(SYMBOL_KEY));
 }

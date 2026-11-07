@@ -1,12 +1,8 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
 /**
- * Shared modal contract: Dialog, AlertDialog and Command frame the same way. Motion is
- * plain state transitions with @starting-style enter levers, like upstream Baby UI:
- * regular declarations resolve before the flip in every engine, unlike keyframe custom
- * properties, which WebKitGTK intermittently resolved from the pre-flip style (surfaces
- * closed without fading). Centering composes through the transform var so every motion
- * lever retraces itself.
+ * Shared modal contract, no keyframes: WebKitGTK intermittently resolved keyframe
+ * custom properties from the pre-flip style, closing surfaces without fading.
  */
 export const dialogFrame = tv({
 	slots: {
@@ -90,7 +86,6 @@ export const dialogFrame = tv({
 			}
 		},
 		variant: {
-			// The rim is the card surface; a hairline, not a lighter shade, lifts the body off it.
 			framed: {
 				panel: 'bg-card p-1',
 				footer: 'px-2 pt-2 pb-1',

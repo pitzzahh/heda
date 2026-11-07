@@ -1,17 +1,16 @@
 export type LetterMorphOptions = {
-	/** Classes for the glyphs the engine creates, from the tv slot. */
 	glyph: string;
 };
 
 const NBSP = String.fromCharCode(0xa0);
-/** Leaving letters start to clear before the first new letter sharpens in their place. */
+
 const HANDOFF = 50;
 const STAGGER = 24;
 const MOVE = 'translate var(--duration-spring-snappy) var(--ease-spring-snappy)';
 const FADE =
 	'opacity 280ms var(--ease-ui-out), scale 280ms var(--ease-ui-out), filter 280ms var(--ease-ui-out)';
 
-/** Letters match by character and occurrence, so the second "i" pairs with the second "i". */
+/** Letters pair by character and occurrence. */
 function glyphs(text: string) {
 	const seen = new Map<string, number>();
 	return Array.from(text).map((char) => {
@@ -21,10 +20,7 @@ function glyphs(text: string) {
 	});
 }
 
-/**
- * Morphs `track`'s label into the next in place: shared letters glide to their new spots, new
- * ones sharpen in, removed ones blur away, and `frame`'s width follows.
- */
+/** Morphs `track`'s label into the next in place. */
 export function createLetterMorph(
 	frame: HTMLElement,
 	track: HTMLElement,
@@ -68,7 +64,6 @@ export function createLetterMorph(
 			const keep = new Set(next.map((glyph) => glyph.key));
 			const animate = !reduced.matches;
 
-			// Leaving letters step out of flow exactly where they were, then blur away.
 			for (const [key, el] of nodes) {
 				if (keep.has(key)) continue;
 				nodes.delete(key);
@@ -94,7 +89,7 @@ export function createLetterMorph(
 				fresh.push(el);
 				return el;
 			});
-			// Place letters in reading order ahead of any leaving ones.
+
 			let anchor: ChildNode | null = track.firstChild;
 			for (const el of order) {
 				while (

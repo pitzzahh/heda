@@ -1,12 +1,6 @@
-/**
- * Formats mixed fractions like "1 1/2" into an HTML-rendered fraction.
- *
- * @param input - The string containing fractions to be formatted.
- * @returns A string with fractions replaced by HTML markup.
- */
+/** Formats "1 1/2" into an HTML-rendered fraction. */
 export function formatFraction(input: string): string {
-	// Escape first so only matched digits reach the markup below; fraction
-	// rendering of plain numeric input is unchanged.
+	// Escape first so only matched digits reach the markup below.
 	return (
 		input
 			.replace(/&/g, '&amp;')
@@ -27,14 +21,7 @@ export function formatFraction(input: string): string {
 	);
 }
 
-/**
- * Resolves the display label for an option value. Falls back to the raw value
- * so data written by older app versions still renders.
- *
- * @param options - Options carrying canonical values and display labels.
- * @param value - The stored value to resolve.
- * @returns The display label, the raw value, or an empty string.
- */
+/** Display label for a stored value; raw value if an older app version wrote it. */
 export function getOptionLabel(
 	options: readonly { value: string; label: string }[],
 	value: string | null | undefined
@@ -42,12 +29,6 @@ export function getOptionLabel(
 	return options.find((option) => option.value === value)?.label ?? value ?? '';
 }
 
-/**
- * Formats a number into an ordinal suffix.
- *
- * @param n - The number to be formatted.
- * @returns The number with an ordinal suffix.
- */
 export function getOrdinalSuffix(n: number): string {
 	const s = ['th', 'st', 'nd', 'rd'];
 	const v = n % 100;

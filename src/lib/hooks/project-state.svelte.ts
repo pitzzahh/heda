@@ -121,7 +121,6 @@ export class ProjectState {
 	}
 
 	geCurrentProject(project_id?: string): RecentProject | undefined {
-		// if project id, get from the recent_projects, else get the current fields
 		if (project_id) {
 			return this.persisted_state.current.recent_projects?.find(
 				(project) => project.id === project_id

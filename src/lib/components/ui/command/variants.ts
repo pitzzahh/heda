@@ -2,7 +2,6 @@ import { tv, type VariantProps } from 'tailwind-variants';
 
 export const commandFrame = tv({
 	slots: {
-		// Command shares Dialog's modal scale/fade contract; its top offset is the only layout difference.
 		popup: [
 			'fixed top-[14vh] left-1/2 z-50 -translate-x-1/2 outline-hidden',
 			'transition-[opacity,scale] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
@@ -13,7 +12,6 @@ export const commandFrame = tv({
 		],
 		panel: '',
 		body: 'relative flex min-h-0 flex-col overflow-hidden text-foreground',
-		// The framed rim: a title and the Escape hint above the card.
 		header: 'flex items-center justify-between gap-3 px-3.5',
 		bar: 'flex shrink-0 items-center gap-2',
 		inputWrap: 'flex shrink-0 items-center gap-2',
@@ -21,9 +19,7 @@ export const commandFrame = tv({
 		input:
 			'w-full min-w-0 bg-transparent text-foreground outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
 		count: 'hidden',
-		// Caps in a hint depress while their key is held, so the footer answers the keyboard.
 		kbd: 'inline-flex h-5 min-w-5 shrink-0 items-center justify-center gap-0.5 rounded-md bg-foreground/6 px-1.5 font-medium font-sans text-muted-foreground text-xs transition-[translate,background-color,color] duration-(--duration-instant) ease-[var(--ease-ui-out)] data-[pressed]:translate-y-px data-[pressed]:bg-foreground/8 data-[pressed]:text-foreground motion-reduce:transition-none',
-		// ToggleGroup brings a rim and a pressed fill; the sliding pill replaces both.
 		filters: 'relative flex shrink-0 items-center border-0 bg-transparent p-0',
 		pill: 'pointer-events-none absolute top-0 left-0 data-[ready]:transition-[translate,width,height] data-[ready]:duration-(--duration-slow) data-[ready]:ease-[var(--ease-ui-out)] motion-reduce:transition-none',
 		filter: [
@@ -53,10 +49,7 @@ export const commandFrame = tv({
 		hint: 'flex items-center gap-1.5'
 	},
 	variants: {
-		/**
-		 * `default` is plain shadcn. `framed` adds a titled rim around an inset card. `launcher`
-		 * pairs a pill search with an icon filter tray and key hints. `spotlight` is a large input under scope chips.
-		 */
+		/** `framed` adds a rim; `launcher` pairs pill search with filters; `spotlight` is input under chips. */
 		variant: {
 			default: {
 				panel: 'rounded-xl border border-border bg-popover shadow-(--overlay-shadow)',
@@ -64,7 +57,6 @@ export const commandFrame = tv({
 				inputWrap: 'mx-1 mt-1 h-8 rounded-lg bg-foreground/4 px-2',
 				inputIcon: 'opacity-50',
 				input: 'h-8 text-sm',
-				// The primitive measures its rows into a height var, so filtering eases instead of snapping.
 				list: 'h-[var(--cmdk-list-height,var(--bits-command-list-height,auto))] max-h-72 flex-none scroll-py-1 transition-[height] duration-(--duration-base) ease-(--ease-ui-out) motion-reduce:transition-none',
 				group: 'p-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5',
 				groupHeading: 'px-2 py-1.5',
@@ -100,7 +92,6 @@ export const commandFrame = tv({
 			},
 			launcher: {
 				popup: 'w-[min(42rem,calc(100vw-2rem))]',
-				// The card-toned shell separates the white input, tray and result islands in light mode.
 				panel: 'rounded-3xl border border-border bg-card p-3 shadow-(--overlay-shadow)',
 				body: 'gap-3',
 				bar: 'flex-wrap sm:flex-nowrap',
@@ -112,7 +103,6 @@ export const commandFrame = tv({
 				filter:
 					'size-9 rounded-full data-[pressed]:text-foreground data-[state=on]:text-foreground',
 				list: 'rounded-2xl border border-border bg-background p-1.5',
-				// Hints read as plain text on the frame; a held key still darkens.
 				kbd: 'h-auto min-w-0 bg-transparent px-0',
 				group:
 					'[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1.5',

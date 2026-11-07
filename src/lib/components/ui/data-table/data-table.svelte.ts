@@ -6,32 +6,7 @@ import {
 	createTable
 } from '@tanstack/table-core';
 
-/**
- * Creates a reactive TanStack table object for Svelte.
- * @param options Table options to create the table with.
- * @returns A reactive table object.
- * @example
- * ```svelte
- * <script>
- *   const table = createSvelteTable({ ... })
- * </script>
- *
- * <table>
- *   <thead>
- *     {#each table.getHeaderGroups() as headerGroup}
- *       <tr>
- *         {#each headerGroup.headers as header}
- *           <th colspan={header.colSpan}>
- *         	   <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
- *         	 </th>
- *         {/each}
- *       </tr>
- *     {/each}
- *   </thead>
- * 	 <!-- ... -->
- * </table>
- * ```
- */
+/** Creates a reactive TanStack table object for Svelte. */
 export function createSvelteTable<TData extends RowData>(options: TableOptions<TData>) {
 	const resolvedOptions: TableOptionsResolved<TData> = mergeObjects(
 		{

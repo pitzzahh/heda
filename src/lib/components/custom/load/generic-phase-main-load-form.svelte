@@ -72,7 +72,6 @@
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 
-	// Snapshot of props at mount: initial form values never track later prop changes.
 	function buildInitialInput() {
 		if (action !== 'edit')
 			return { circuit_number: (latest_circuit_node?.circuit_number ?? 0) + 1 };
@@ -120,7 +119,6 @@
 		if (panel_id_from_params || panel_id_from_tree) {
 			taken_circuit_number = checkNodeExists({
 				circuit_number: data.circuit_number,
-				//we want to check if the circuit number is alrdy existing in the parent we want to move in
 				parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
 				node_id: node_to_edit?.id
 			})
@@ -140,7 +138,6 @@
 					load_description,
 					config_preference: load_type,
 
-					// should only append when the load type is rated hp
 					...(data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER && {
 						varies:
 							default_hp_current_relationship[
@@ -209,15 +206,13 @@
 	const load_type_trigger_id = useId();
 	const load_description_trigger_id = useId();
 	const horsepower_rating_trigger_id = useId();
-	// Snapshot at mount: the DEFAULT/CUSTOM toggle never tracks later prop changes.
+
 	function initialLoadType() {
 		return node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined;
 	}
 	let load_type = $state<FormLoadTypeOption | undefined>(initialLoadType());
 
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
+	// Refocus the trigger so keyboard users can keep tabbing through the form.
 	function closeAndFocusTrigger(trigger_id: string) {
 		open_horsepower_rating = false;
 		open_terminal_temp = false;
