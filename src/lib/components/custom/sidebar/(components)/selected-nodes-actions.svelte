@@ -4,7 +4,7 @@
 	import { removeNode } from '#lib/db/mutations/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-	import { ConfirmationDialog } from '../../index.js';
+	import ConfirmationDialog from '../../confirmation-dialog.svelte';
 	import { fly } from 'svelte/transition';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
@@ -21,7 +21,7 @@
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 		component_state.button_state = 'processing';
 		const toast_id = toast.loading(
-			`Removing ${select_nodes_to_delete_state.selected_nodes_id.length} items`
+			`Removing ${select_nodes_to_delete_state.selected_nodes_id.size} items`
 		);
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
 			const result = removeNode(node_id);
@@ -42,7 +42,7 @@
 		is_confirmation_dialog_open = false;
 		component_state.button_state = 'stale';
 		toast.success(
-			`${select_nodes_to_delete_state.selected_nodes_id.length} items removed successfully`,
+			`${select_nodes_to_delete_state.selected_nodes_id.size} items removed successfully`,
 			{ id: toast_id }
 		);
 
@@ -50,7 +50,7 @@
 	}
 </script>
 
-{#if select_nodes_to_delete_state.selected_nodes_id.length > 0}
+{#if select_nodes_to_delete_state.selected_nodes_id.size > 0}
 	{@const count = select_nodes_to_delete_state.getSelectedNodeIdsCount()}
 	<div
 		out:fly={{ y: 50, duration: 300 }}
