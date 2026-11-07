@@ -8,7 +8,7 @@ import {
 } from '#lib/db/queries/index.js';
 import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
 import { toast } from 'svelte-sonner';
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import type { ExcelExportType } from '#lib/types/misc/index.js';
 import { convertToNormalText } from '#lib/utils/text/index.js';
 
@@ -336,7 +336,10 @@ export async function exportToExcel(
 		position: 'bottom-center'
 	});
 
-	const workbook = new ExcelJS.Workbook();
+	// Loaded on demand: parsing exceljs at startup costs every launch for a
+	// feature that runs only when the user exports.
+	const { default: excel } = await import('exceljs');
+	const workbook = new excel.Workbook();
 	workbook.title = `Exported ${file_name} ${convertToNormalText(type, true)}`;
 	workbook.creator = 'HEDA(Desktop App)';
 

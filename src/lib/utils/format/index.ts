@@ -24,8 +24,6 @@ export function formatFraction(input: string): string {
 				(_, numerator: string, denominator: string) =>
 					`<sup>${numerator}</sup>&frasl;<sub>${denominator}</sub>`
 			)
-			// Match single digits (if specific formatting is needed)
-			.replace(/\b(\d+)\b/g, '$1')
 	);
 }
 

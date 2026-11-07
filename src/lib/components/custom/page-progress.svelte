@@ -41,8 +41,6 @@
 
 	// Syncs the bar with SvelteKit's navigation state; re-runs when a navigation starts or ends.
 	$effect(() => {
-		if (!browser) return;
-
 		if (is_navigating) {
 			if (visible) return;
 			const show = setTimeout(() => {
