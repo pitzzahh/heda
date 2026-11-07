@@ -5,6 +5,7 @@ import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import {
 	addNode,
+	copyAndAddNodeById,
 	overrideField,
 	removeNode,
 	updateNode,
@@ -60,6 +61,15 @@ export class UndoRedoState {
 		this.setHasUnsavedActions();
 	}
 
+	copyNodeById(node_id: string) {
+		const copied_node = copyAndAddNodeById(node_id);
+		this.setActionToUndo({
+			action: 'copy_node',
+			data: copied_node as unknown as PhaseLoadSchedule
+		});
+		return copied_node;
+	}
+
 	hasRedoActions() {
 		return this.redo_stack.length > 0;
 	}
@@ -86,7 +96,6 @@ export class UndoRedoState {
 			})
 		});
 
-		//we want to revert the deleted node's children as well
 		if (children_nodes && children_nodes.length > 0) {
 			for (const child_node of children_nodes) {
 				this.addNewNode(child_node);
