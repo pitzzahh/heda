@@ -11,36 +11,28 @@
 </script>
 
 <script lang="ts">
-	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
-	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import * as Popover from '#lib/components/ui/popover/index.js';
-	import * as Command from '#lib/components/ui/command/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
-	import { useId } from 'bits-ui';
-	import { tick } from 'svelte';
 	import { cn } from '#lib/utils/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { default_phases } from '#lib/constants/index.js';
 	import {
-		AMBIENT_TEMPERATURES,
-		DEFAULT_TERMINAL_TEMPERATURES,
-		STANDARD_TERMINAL_TEMPERATURE,
-		DEFAULT_PHASES,
-		DEFAULT_THREE_PHASE_TYPES_OPTIONS,
-		default_phases
-	} from '#lib/constants/index.js';
+		AmbientTempField,
+		NumberField,
+		TerminalTempField
+	} from '#lib/components/custom/fields/index.js';
+	import { PanelPhaseField, PanelTypeField } from './(components)/index.js';
 	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
 	import type { Phase } from '#lib/types/phase/index.js';
-	import { convertToNormalText } from '#lib/utils/format/index.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
 	import type { Node } from '#lib/types/db/index.js';
 	import type { TerminalTemperature } from '#lib/types/load/index.js';
-	import ScrollArea from '#lib/components/ui/scroll-area/scroll-area.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
@@ -153,29 +145,6 @@
 		}
 		submitting = false;
 	}
-
-	let open_panel_phase_popover = $state(false);
-	let open_terminal_temp = $state(false);
-	let open_phase_type = $state(false);
-	let open_ambient_temp = $state(false);
-
-	const phase_trigger_id = useId();
-	const panel_phase_type_trigger_id = useId();
-	const terminal_temp_trigger_id = useId();
-	const ambient_temp_trigger_id = useId();
-
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_terminal_temp = false;
-		open_panel_phase_popover = false;
-		open_phase_type = false;
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
 </script>
 
 <form
@@ -204,276 +173,36 @@
 					</div>
 				{/snippet}
 			</Field>
-			<Field of={form} path={['circuit_number']}>
-				{#snippet children(field)}
-					<div class="space-y-2">
-						<Label class={cn(field.errors && 'text-destructive')}>Circuit number</Label>
-						<Input
-							{...field.props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							value={field.input ?? ''}
-							oninput={(e) => field.onInput(e.currentTarget.valueAsNumber)}
-							placeholder="Enter the circuit number"
-						/>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the circuit number that will determine the circuit number of the wire to the
-							main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-			<Field of={form} path={['terminal_temperature']}>
-				{#snippet children(field)}
-					<div class="flex flex-col space-y-2">
-						<Popover.Root bind:open={open_terminal_temp}>
-							<Label class={cn(field.errors && 'text-destructive')}>Terminal Temperature</Label>
-							<Popover.Trigger
-								id={terminal_temp_trigger_id}
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!field.input && 'text-muted-foreground'
-								)}
-								role="combobox"
-							>
-								{field.input
-									? getOptionLabel(DEFAULT_TERMINAL_TEMPERATURES, field.input)
-									: 'Select a terminal temperature'}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-									<Command.Empty>No terminal temp found.</Command.Empty>
-									<Command.Group>
-										{#each DEFAULT_TERMINAL_TEMPERATURES as terminal_temp (terminal_temp.value)}
-											<Command.Item
-												value={terminal_temp.value}
-												onSelect={() => {
-													field.onInput(terminal_temp.value as TerminalTemperature);
-													closeAndFocusTrigger(terminal_temp_trigger_id);
-												}}
-												disabled={terminal_temp.value !== STANDARD_TERMINAL_TEMPERATURE}
-											>
-												{terminal_temp.label}
-												<CheckIcon
-													class={cn(
-														'ml-auto size-4',
-														terminal_temp.value !== field.input && 'text-transparent'
-													)}
-												/>
-											</Command.Item>
-										{/each}
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the terminal temp that will determine the terminal temp of the panel wire to
-							the main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<NumberField
+				{form}
+				path={['circuit_number']}
+				label="Circuit number"
+				hint="This is the circuit number that will determine the circuit number of the wire to the main."
+				placeholder="Enter the circuit number"
+			/>
+			<TerminalTempField
+				{form}
+				hint="This is the terminal temp that will determine the terminal temp of the panel wire to the main."
+			/>
 		</div>
 
 		<div class="flex flex-col gap-2.5">
 			{#if main_phase !== default_phases.ONE_PHASE}
-				{@render PanelType()}
-				{@render PanelPhase()}
+				<PanelTypeField {form} />
+				<PanelPhaseField {form} {main_phase} />
 			{:else}
-				{@render PanelPhase()}
+				<PanelPhaseField {form} {main_phase} />
 			{/if}
-			<Field of={form} path={['ambient_temperature']}>
-				{#snippet children(field)}
-					<div class="flex flex-col space-y-2">
-						<Popover.Root bind:open={open_ambient_temp}>
-							<Label class={cn(field.errors && 'text-destructive')}>Ambient Temperature</Label>
-							<Popover.Trigger
-								id={ambient_temp_trigger_id}
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!field.input && 'text-muted-foreground'
-								)}
-								role="combobox"
-							>
-								{field.input ? field.input : 'Select an ambient temperature'}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-									<Command.Empty>No terminal temp found.</Command.Empty>
-									<Command.Group>
-										<ScrollArea class="h-64 pr-2.5">
-											{#each AMBIENT_TEMPERATURES as ambient_temp (ambient_temp)}
-												<Command.Item
-													value={ambient_temp.toString()}
-													onSelect={() => {
-														field.onInput(ambient_temp);
-														closeAndFocusTrigger(ambient_temp_trigger_id);
-													}}
-													disabled={ambient_temp !== 30}
-												>
-													{ambient_temp}
-													<CheckIcon
-														class={cn(
-															'ml-auto size-4',
-															ambient_temp !== field.input && 'text-transparent'
-														)}
-													/>
-												</Command.Item>
-											{/each}
-										</ScrollArea>
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the ambient temp that will determine the ambient temp of the panel wire to the
-							main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<AmbientTempField {form} />
 
-			<Field of={form} path={['length']}>
-				{#snippet children(field)}
-					<div class="flex flex-col space-y-2">
-						<Label class={cn(field.errors && 'text-destructive')}>Length</Label>
-						<Input
-							{...field.props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							value={field.input ?? ''}
-							oninput={(e) => field.onInput(e.currentTarget.valueAsNumber)}
-							placeholder="Enter the length"
-						/>
-						<p class="text-muted-foreground text-[0.8rem]">This is the length of the panel</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<NumberField
+				{form}
+				path={['length']}
+				label="Length"
+				hint="This is the length of the panel"
+				placeholder="Enter the length"
+			/>
 		</div>
 	</div>
 	<Button type="submit" class="w-full" loading={submitting}>Save</Button>
 </form>
-
-{#snippet PanelType()}
-	<Field of={form} path={['type']}>
-		{#snippet children(field)}
-			<div class="flex flex-col space-y-2">
-				<Popover.Root bind:open={open_phase_type}>
-					<Label class={cn(field.errors && 'text-destructive')}>Type</Label>
-					<Popover.Trigger
-						id="phase_trigger_id"
-						class={cn(
-							buttonVariants({ variant: 'outline' }),
-							'justify-between',
-							!field.input && 'text-muted-foreground'
-						)}
-						role="combobox"
-					>
-						{field.input
-							? convertToNormalText(
-									DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === field.input)
-								)
-							: 'Select a panel phase type'}
-						<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-					</Popover.Trigger>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search panel phase type..." class="h-9" />
-							<Command.Empty>No panel phase type found.</Command.Empty>
-							<Command.Group>
-								{#each DEFAULT_THREE_PHASE_TYPES_OPTIONS as phase_type_option (phase_type_option)}
-									<Command.Item
-										value={phase_type_option}
-										onSelect={() => {
-											field.onInput(phase_type_option as 'WYE' | 'DELTA' | 'ALGO');
-											closeAndFocusTrigger(panel_phase_type_trigger_id);
-										}}
-									>
-										{convertToNormalText(phase_type_option)}
-										<CheckIcon
-											class={cn(
-												'ml-auto size-4',
-												phase_type_option !== field.input && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-				<p class="text-muted-foreground text-[0.8rem]">This is the type for the panel.</p>
-				<FieldErrors errors={field.errors} />
-			</div>
-		{/snippet}
-	</Field>
-{/snippet}
-
-{#snippet PanelPhase()}
-	{@const is_one_phase = main_phase === default_phases.ONE_PHASE}
-	<Field of={form} path={['phase']}>
-		{#snippet children(field)}
-			<div
-				class={cn('flex flex-col space-y-2', {
-					'cursor-not-allowed': is_one_phase
-				})}
-			>
-				<Popover.Root bind:open={open_panel_phase_popover}>
-					<Label class={cn(field.errors && 'text-destructive')}>Phase</Label>
-					<Popover.Trigger
-						id="panel_phase_trigger_id"
-						disabled={is_one_phase}
-						class={cn(
-							buttonVariants({ variant: 'outline' }),
-							'justify-between',
-							!field.input && 'text-muted-foreground'
-						)}
-						role="combobox"
-					>
-						{field.input ? getOptionLabel(DEFAULT_PHASES, field.input) : 'Select a phase'}
-						<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-					</Popover.Trigger>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
-							<Command.Empty>No panel phase found.</Command.Empty>
-							<Command.Group>
-								{#each DEFAULT_PHASES as phase_option (phase_option.value)}
-									<Command.Item
-										value={phase_option.value}
-										onSelect={() => {
-											field.onInput(phase_option.value as Phase);
-											closeAndFocusTrigger(phase_trigger_id);
-										}}
-									>
-										{phase_option.label}
-										<CheckIcon
-											class={cn(
-												'ml-auto size-4',
-												phase_option.value !== field.input && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-				<p class="text-muted-foreground text-[0.8rem]">This is the phase for the panel.</p>
-				<FieldErrors errors={field.errors} />
-			</div>
-		{/snippet}
-	</Field>
-{/snippet}

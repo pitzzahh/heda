@@ -31,7 +31,7 @@
 	import { cn } from '#lib/utils/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
 	import { toast } from 'svelte-sonner';
-	import OverrideSelectors from '../../override-selectors.svelte';
+	import OverrideSelectors from '../../override/override-selectors.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
