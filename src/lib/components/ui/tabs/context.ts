@@ -1,5 +1,5 @@
 import { createContext } from 'svelte';
-import type { TabsOrientation, TabsSize, TabsVariant } from './variants';
+import type { TabsOrientation, TabsSize, TabsVariant } from './variants.js';
 
 export type { TabsOrientation, TabsSize, TabsVariant };
 

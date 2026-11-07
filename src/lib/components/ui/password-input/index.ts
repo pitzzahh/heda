@@ -9,6 +9,6 @@ export {
 	passwordRules,
 	measurePassword,
 	strengthLabel
-} from './strength';
-export { passwordInput, type PasswordStrengthStep } from './variants';
+} from './strength.js';
+export { passwordInput, type PasswordStrengthStep } from './variants.js';
 export { default as Root } from './password-input.svelte';

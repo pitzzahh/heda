@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Select as SelectPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 
 	let { class: classProp, ...rest }: SelectPrimitive.GroupProps = $props();
 </script>

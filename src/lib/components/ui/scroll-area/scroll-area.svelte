@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ScrollArea as ScrollAreaPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import { cn } from '#lib/utils';
-	import { type ScrollAreaScrollbar, scrollArea } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type ScrollAreaScrollbar, scrollArea } from './variants.js';
 
 	let {
 		children,

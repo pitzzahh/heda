@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { DEFAULT_LOAD_TYPES_ENUMS, FIELD_VALIDATION } from '#lib/constants';
+import { DEFAULT_LOAD_TYPES, default_load_types, FIELD_VALIDATION } from '#lib/constants/index.js';
 import type { ObjectPathItem } from 'valibot';
 import {
 	AMBIENT_TEMPERATURE_FIELD,
@@ -9,7 +9,7 @@ import {
 	LOAD_DESCRIPTION_FIELD,
 	QUANTITY_FIELD,
 	TERMINAL_TEMPERATURE_FIELD
-} from '../shared';
+} from '../shared.js';
 
 export const VARIES_LABEL_FIELD = v.picklist([
 	'Unit Wattage',
@@ -31,14 +31,14 @@ export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
 		varies: v.string('This field is required'),
 		continuous: CONTINUOUS_FIELD,
 		load_type: v.picklist(
-			DEFAULT_LOAD_TYPES_ENUMS.map((f) => f.value),
+			DEFAULT_LOAD_TYPES.map((option) => option.value),
 			'Please select a valid load type.'
 		)
 	}),
 	v.rawCheck(({ dataset, addIssue }) => {
 		if (!dataset.typed) return;
 		const data = dataset.value;
-		if (!data || data.load_type === '1P Motor - Rated Horse Power') return;
+		if (!data || data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER) return;
 		const path = (key: 'varies'): [ObjectPathItem] => [
 			{ type: 'object', origin: 'value', input: data, key, value: data[key] }
 		];

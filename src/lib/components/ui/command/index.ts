@@ -14,9 +14,9 @@ export {
 	type CommandDialogState,
 	setCommandDialogState,
 	getCommandDialogState
-} from './context';
-export { rankCommandMatch } from './score';
-export { commandFrame, type CommandVariant } from './variants';
+} from './context.js';
+export { rankCommandMatch } from './score.js';
+export { commandFrame, type CommandVariant } from './variants.js';
 export { default as Root } from './command.svelte';
 export { default as Bar } from './command-bar.svelte';
 export { default as Empty } from './command-empty.svelte';

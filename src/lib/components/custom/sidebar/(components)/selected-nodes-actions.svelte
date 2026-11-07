@@ -1,33 +1,30 @@
 <script lang="ts">
-	import { TrashIcon, XCircleIcon } from '#lib/assets/icons';
-	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
-	import { removeNode } from '#lib/db/mutations';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-	import { ConfirmationDialog } from '../..';
+	import { TrashIcon, XCircleIcon } from '#lib/assets/icons/index.js';
+	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
+	import { removeNode } from '#lib/db/mutations/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import ConfirmationDialog from '../../confirmation-dialog.svelte';
 	import { fly } from 'svelte/transition';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let is_confirmation_dialog_open = $state(false);
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
-	const db_revisions = getDbRevisionsState();
 	const undo_redo_state = getUndoRedoState();
 
 	const component_state = $state({
-		is_confirmation_dialog_open: false,
 		button_state: 'stale' as 'stale' | 'processing'
 	});
 
-	async function handleRemoveSelectedItems() {
+	function handleRemoveSelectedItems() {
 		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 		component_state.button_state = 'processing';
 		const toast_id = toast.loading(
-			`Removing ${select_nodes_to_delete_state.selected_nodes_id.length} items`
+			`Removing ${select_nodes_to_delete_state.selected_nodes_id.size} items`
 		);
 		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
-			const result = await removeNode(node_id);
+			const result = removeNode(node_id);
 
 			if (result) {
 				results = [
@@ -45,16 +42,15 @@
 		is_confirmation_dialog_open = false;
 		component_state.button_state = 'stale';
 		toast.success(
-			`${select_nodes_to_delete_state.selected_nodes_id.length} items removed successfully`,
+			`${select_nodes_to_delete_state.selected_nodes_id.size} items removed successfully`,
 			{ id: toast_id }
 		);
 
-		db_revisions.bumpWorkspaceAndSchedule();
 		select_nodes_to_delete_state.removeAllNodeIds();
 	}
 </script>
 
-{#if select_nodes_to_delete_state.selected_nodes_id.length > 0}
+{#if select_nodes_to_delete_state.selected_nodes_id.size > 0}
 	{@const count = select_nodes_to_delete_state.getSelectedNodeIdsCount()}
 	<div
 		out:fly={{ y: 50, duration: 300 }}

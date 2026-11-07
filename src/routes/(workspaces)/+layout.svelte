@@ -1,19 +1,18 @@
 <script lang="ts">
-	import { AppSidebar } from '#lib/components/custom/sidebar';
+	import { AppSidebar } from '#lib/components/custom/sidebar/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import { buttonVariants, Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
-	import { HighestUnitForm, PageProgress } from '#lib/components/custom';
-	import { getState } from '#lib/state/index.svelte';
+	import { HighestUnitForm, PageProgress } from '#lib/components/custom/index.js';
+	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import type { Node } from '#lib/types/db';
+	import type { Node } from '#lib/types/db/index.js';
 	import UndoRedoWrapper from '#lib/components/custom/undo-redo-wrapper.svelte';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getCurrentProject, getRootNode } from '#lib/db/queries/index.js';
 	import { page } from '$app/state';
 	import {
@@ -21,8 +20,8 @@
 		CheckCircleIcon,
 		LightningAIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons';
-	import { cn } from '#lib/utils';
+	} from '#lib/assets/icons/index.js';
+	import { cn } from '#lib/utils/index.js';
 
 	let { data, children } = $props();
 
@@ -31,17 +30,15 @@
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
 	const on_load_schedule = $derived(page.url.pathname.includes('load-schedule'));
 	const project_id = $derived(page.url.searchParams.get('project_id') ?? undefined);
 
-	// Live workspace rows: recomputes only when `dbRevisions.workspace` changes
-	// or the route's project id changes. No `$effect`, no `depends`, no invalidate.
-	const workspace = $derived.by(async () => {
-		void db_revisions.workspace;
-		const [project, root_node] = await Promise.all([getCurrentProject(project_id), getRootNode()]);
-		return { project, root_node };
+	// Live workspace rows: the SignalDB cursor subscribes to collection changes
+	// inside this derived, so a mutation recomputes only this layout.
+	const workspace = $derived({
+		project: getCurrentProject(project_id),
+		root_node: getRootNode()
 	});
 
 	// Reacts to navigation: opens the new-file dialog. (Project loads announce
@@ -54,15 +51,7 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider class="h-svh overflow-hidden">
-		{#await workspace}
-			<aside class="flex h-full w-64 shrink-0 flex-col gap-2 border-r p-3">
-				<div class="bg-muted h-8 w-full rounded-md"></div>
-				<div class="bg-muted h-8 w-full rounded-md"></div>
-				<div class="bg-muted h-8 w-full rounded-md"></div>
-			</aside>
-		{:then workspace_data}
-			<AppSidebar project={workspace_data.project} root_node={workspace_data.root_node as Node} />
-		{/await}
+		<AppSidebar project={workspace.project} root_node={workspace.root_node as Node} />
 		<Sidebar.Inset class="overflow-y-auto">
 			<header
 				class="bg-background/80 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl backdrop-saturate-150 sm:px-4"

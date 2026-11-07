@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { menu } from '#lib/components/ui/shared/menu';
+	import { cn } from '#lib/utils/index.js';
+	import { menu } from '#lib/components/ui/shared/menu.js';
 
 	let {
 		children,

@@ -1,4 +1,4 @@
-import { offsetBox, pillStyle } from '#lib/components/ui/shared/pill';
+import { offsetBox, pillStyle } from '#lib/components/ui/shared/pill.js';
 
 const CHECKED = '[data-checked], [data-state="checked"]';
 

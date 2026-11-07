@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { SheetSide } from './variants';
+	import type { SheetSide } from './variants.js';
 
 	interface Props {
 		open?: boolean;

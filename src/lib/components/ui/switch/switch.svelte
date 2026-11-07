@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Switch as SwitchPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { type SwitchSize, type SwitchVariant, switchThumb, switchTrack } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type SwitchSize, type SwitchVariant, switchThumb, switchTrack } from './variants.js';
 
 	type Props = Omit<SwitchPrimitive.RootProps, 'checked' | 'disabled' | 'class' | 'children'> & {
 		checked?: boolean;

@@ -10,7 +10,7 @@ export {
 	type SelectTriggerVariant,
 	type SelectTriggerSize,
 	type SelectContentSize
-} from './variants';
+} from './variants.js';
 export { default as Root } from './select.svelte';
 export { default as Content } from './select-content.svelte';
 export { default as Group } from './select-group.svelte';

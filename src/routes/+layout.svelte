@@ -2,22 +2,20 @@
 	import '../app.css';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { Toaster } from '#lib/components/ui/toast/index.js';
-	import { setState } from '#lib/state/index.svelte';
-	import type { DialogState } from '#lib/state/types';
-	import { DIALOG_STATE_CTX } from '#lib/state/constants';
-	import { setSettingsState } from '#lib/hooks/settings-state.svelte';
-	import { setDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
-	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
-	import { setProjectState } from '#lib/hooks/project-state.svelte';
+	import { setState } from '#lib/state/index.svelte.js';
+	import type { DialogState } from '#lib/state/types.js';
+	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
+	import { setSettingsState } from '#lib/hooks/settings-state.svelte.js';
+	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
+	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
+	import { setProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
 	import { toast } from 'svelte-sonner';
 
 	let { children } = $props();
 
 	// INIT GLOBAL STATES
-	setDbRevisionsState();
 	setSettingsState(mode.current === 'light' ? 'light' : 'dark');
 	setUndoRedoState();
 	setSelectNodesToDeleteState();

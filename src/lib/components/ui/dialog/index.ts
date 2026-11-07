@@ -6,14 +6,14 @@ export { default as DialogFooter } from './dialog-footer.svelte';
 export { default as DialogHeader } from './dialog-header.svelte';
 export { default as DialogTitle } from './dialog-title.svelte';
 export { default as DialogTrigger } from './dialog-trigger.svelte';
-export { type DialogContext } from './context';
+export { type DialogContext } from './context.js';
 export {
 	dialogFrame,
 	type DialogVariant,
 	type DialogMotion,
 	dialogWidth,
 	type DialogSize
-} from './variants';
+} from './variants.js';
 export { default as Root } from './dialog.svelte';
 export { default as Close } from './dialog-close.svelte';
 export { default as Content } from './dialog-content.svelte';

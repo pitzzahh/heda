@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatFraction } from './index';
+import { formatFraction, getOptionLabel } from './index.js';
 
 describe('formatFraction', () => {
 	it('renders mixed fractions', () => {
@@ -20,5 +20,25 @@ describe('formatFraction', () => {
 			'&lt;img src=x onerror=alert(1)&gt;'
 		);
 		expect(formatFraction('a&b')).toBe('a&amp;b');
+	});
+});
+
+describe('getOptionLabel', () => {
+	const options = [
+		{ value: 'one_phase', label: '1P' },
+		{ value: 'three_phase_wye', label: '3P-Y' }
+	] as const;
+
+	it('resolves a label from a canonical value', () => {
+		expect(getOptionLabel(options, 'one_phase')).toBe('1P');
+	});
+
+	it('falls back to the raw value for legacy data', () => {
+		expect(getOptionLabel(options, '1P')).toBe('1P');
+	});
+
+	it('renders an empty string for missing values', () => {
+		expect(getOptionLabel(options, null)).toBe('');
+		expect(getOptionLabel(options, undefined)).toBe('');
 	});
 });

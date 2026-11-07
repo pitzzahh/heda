@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytesToHex, decryptGcm, deriveKey, encryptGcm, randomHex } from './index';
+import { bytesToHex, decryptGcm, deriveKey, encryptGcm, randomHex } from './index.js';
 
 const SALT = '00112233445566778899aabbccddeeff';
 const PASSPHRASE = 'test-passphrase';
