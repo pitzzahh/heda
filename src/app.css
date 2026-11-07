@@ -57,7 +57,6 @@
 
 @layer base {
 	:root {
-		/* Warm paper and deep emerald, an editorial take on the engineering palette. */
 		--background: oklch(97.8% 0.0035 87.4);
 		--foreground: oklch(23.5% 0.012 178.3);
 		--card: oklch(100% 0 0);
@@ -206,7 +205,6 @@
 	}
 
 	.dark {
-		/* Deep evergreen charcoal, same hue family as the light theme, inverted. */
 		--background: oklch(19.3% 0.0079 182);
 		--foreground: oklch(94.2% 0.0072 164.9);
 		--card: oklch(22.7% 0.0091 179.8);
@@ -271,7 +269,6 @@
 		text-rendering: optimizeLegibility;
 	}
 
-	/* Quiet, modern scrollbars: a slim rounded thumb inset over a transparent track. */
 	::-webkit-scrollbar {
 		width: 12px;
 		height: 12px;
@@ -329,7 +326,6 @@
 		scale: 1;
 		opacity: 1;
 	}
-	/* Radio dot pop-in. */
 	.radio-dot {
 		transform: scale(0.7);
 		opacity: 0;
@@ -387,7 +383,6 @@
 	}
 }
 
-/* Blueprint grid backdrop for the hero: faint hairlines over paper, masked to fade at the edges. */
 .blueprint-grid {
 	background-image:
 		linear-gradient(
@@ -420,14 +415,6 @@
 	mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 30%, transparent 75%);
 	-webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 30%, transparent 75%);
 }
-
-/* @font-face {
-	font-display: swap; 
-	font-family: 'ISOCPEUR';
-	font-style: normal;
-	font-weight: normal;
-	src: url('./lib/fonts/isocpeur.ttf') format('ttf');
-} */
 
 @font-face {
 	font-family: 'ISOCPEUR';

@@ -1,4 +1,3 @@
-// PBKDF2 iteration count for file passwords.
 export const FILE_KEY_ITERATIONS = 100_000;
 
 export function randomHex(bytes: number = 16): string {
@@ -31,8 +30,7 @@ function base64ToBytes(base64: string): Uint8Array {
 	return out;
 }
 
-// PBKDF2-SHA256 -> 32 raw key bytes. Memoized: autosave re-derives the same
-// key every tick, and the KDF is the slowest step by far.
+// Memoized: autosave re-derives the same key every tick, and the KDF is the slowest step.
 const derived_cache = new Map<string, Promise<Uint8Array>>();
 
 export function deriveKey(

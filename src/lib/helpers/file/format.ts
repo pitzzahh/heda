@@ -1,6 +1,4 @@
-// .heda file format. Every file is one JSON envelope sealed with the file
-// password (PBKDF2 100k + AES-256-GCM, random salt per file). Pure module: no
-// Tauri, no toasts, so it's safe to unit test.
+// One JSON envelope sealed with the file password. Pure module: safe to unit test.
 import {
 	FILE_KEY_ITERATIONS,
 	deriveKey,
@@ -25,16 +23,14 @@ export class FilePasswordError extends Error {
 	}
 }
 
-// v1 files (pre-envelope `h:c:s` bytes, or anything unparseable) can be
-// recognized but no longer opened: their cipher is CryptoJS-proprietary.
+// v1 bytes are recognized but never opened: CryptoJS-proprietary cipher.
 export class FileLegacyError extends Error {
 	constructor() {
 		super('This file uses the legacy v1 format, which is no longer supported.');
 	}
 }
 
-// 2 for a v2 envelope, else 1. Legacy bytes and garbage are both unreadable
-// without v1 support, but only legacy bytes deserve the legacy error.
+// Garbage is unreadable too, but only legacy bytes deserve the legacy error.
 export function detectFileVersion(raw: string): 1 | 2 {
 	try {
 		const envelope = JSON.parse(raw) as Partial<FileEnvelopeV2>;
