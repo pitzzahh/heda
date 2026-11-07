@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { describe, expect, test } from 'vitest';
-import { voltageDropColumns } from './voltage-drop-cols';
-import type { VoltageDrop } from '#lib/types/voltage-drop';
+import { voltageDropColumns } from './voltage-drop-cols.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 
 function keysOf(columns: ColumnDef<VoltageDrop>[]): unknown[] {
 	return columns.map((column) => ('accessorKey' in column ? column.accessorKey : undefined));

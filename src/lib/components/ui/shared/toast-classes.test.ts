@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { TOAST_CLASSES } from './toast-classes';
+import { TOAST_CLASSES } from './toast-classes.js';
 
 // Regression: the title used `truncate` and the description `line-clamp-2`, cutting
 // toast content off with an ellipsis. Both wrap now.

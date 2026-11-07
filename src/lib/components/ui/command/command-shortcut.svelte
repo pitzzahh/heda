@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { getCommand } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { getCommand } from './context.js';
 
 	let {
 		children,

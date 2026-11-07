@@ -1,9 +1,11 @@
-import { databaseInstance } from '..';
-import type { GenericPhasePanelSchema } from '#lib/types/panel';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load';
-import type { Project, Node } from '#lib/types/db';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-import type { FileExport } from '#lib/types/main';
+import { getDatabase, initializeDatabase } from '../index.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
+import type { Project, Node } from '#lib/types/db/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { FileExport } from '#lib/types/main/index.js';
+import { clearQueryCache } from '../queries/index.js';
+import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 
 // The store applies no defaults itself, so every insertion path merges these
 // to keep stored documents complete.
@@ -35,7 +37,8 @@ export async function createProject(
 	project_name: string,
 	highest_unit_form: Node['highest_unit_form']
 ) {
-	const database = await databaseInstance();
+	await initializeDatabase();
+	const database = getDatabase();
 
 	try {
 		// creation of root node first to be referenced in project data
@@ -67,11 +70,8 @@ export async function createProject(
 	}
 }
 
-export async function updateProjectSettings(
-	project_id: string,
-	settings: Partial<Project['settings']>
-) {
-	const database = await databaseInstance();
+export function updateProjectSettings(project_id: string, settings: Partial<Project['settings']>) {
+	const database = getDatabase();
 
 	try {
 		database.projects.updateOne({ id: project_id }, { $set: { settings } });
@@ -81,8 +81,8 @@ export async function updateProjectSettings(
 	}
 }
 
-export async function updateProjectTitle(id: string, project_name: string) {
-	const database = await databaseInstance();
+export function updateProjectTitle(id: string, project_name: string) {
+	const database = getDatabase();
 
 	try {
 		// Use $set to update the project_name field
@@ -93,7 +93,7 @@ export async function updateProjectTitle(id: string, project_name: string) {
 	}
 }
 
-export async function addNode({
+export function addNode({
 	load_data,
 	panel_data,
 	parent_id,
@@ -104,7 +104,7 @@ export async function addNode({
 	panel_data?: GenericPhasePanelSchema;
 	existing_id?: string;
 }) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	try {
 		const parent_node_data = database.nodes.findOne({ id: parent_id });
@@ -137,8 +137,8 @@ export async function addNode({
 	}
 }
 
-export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
-	const database = await databaseInstance();
+export function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
+	const database = getDatabase();
 
 	try {
 		const existing_node = database.nodes.findOne({ id: node_id });
@@ -219,7 +219,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 
 			// Sequentially copy children to prevent race conditions
 			for (const child of children) {
-				await copyAndAddNodeById(child.id, created_node.id);
+				copyAndAddNodeById(child.id, created_node.id);
 			}
 		}
 
@@ -241,7 +241,7 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 	}
 }
 
-export async function updateNode({
+export function updateNode({
 	load_data,
 	panel_data,
 	parent_id,
@@ -254,7 +254,7 @@ export async function updateNode({
 	panel_data?: GenericPhasePanelSchema;
 	whole_data?: Node;
 }) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	try {
 		const existing_node = database.nodes.findOne({ id });
@@ -298,7 +298,7 @@ export async function updateNode({
 		const is_changing_parent = parent_id !== existing_node.parent_id;
 
 		if (is_changing_parent) {
-			await updateNodeParentById(
+			updateNodeParentById(
 				{
 					id,
 					parent_id: existing_node.parent_id
@@ -336,23 +336,23 @@ export async function updateNode({
 	}
 }
 
-export async function removeNode(
+export function removeNode(
 	id: string,
 	visited: Set<string> = new Set()
-): Promise<{ removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined> {
+): { removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined {
 	if (visited.has(id)) {
 		throw Error(`Circular reference detected at node ${id}`);
 	}
 	visited.add(id);
 
-	const database = await databaseInstance();
+	const database = getDatabase();
 	const children_nodes: PhaseLoadSchedule[] = [];
 
 	try {
 		const children = database.nodes.find({ parent_id: id }).fetch();
 
 		for (const child of children) {
-			const result = await removeNode(child.id, visited);
+			const result = removeNode(child.id, visited);
 			if (result) {
 				const { removed_node, children_nodes: grand_children } = result;
 				children_nodes.push(removed_node, ...grand_children);
@@ -376,8 +376,8 @@ export async function removeNode(
 	}
 }
 
-export async function deleteProject(project_id: string) {
-	const database = await databaseInstance();
+export function deleteProject(project_id: string) {
+	const database = getDatabase();
 
 	try {
 		const project = database.projects.findOne({ id: project_id });
@@ -388,7 +388,7 @@ export async function deleteProject(project_id: string) {
 
 		const root_node_id = project.root_node_id;
 		if (root_node_id) {
-			await removeNode(root_node_id);
+			removeNode(root_node_id);
 		}
 
 		database.projects.removeOne({ id: project_id });
@@ -411,7 +411,7 @@ const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	z: 'overrided_z'
 };
 
-export async function overrideField({
+export function overrideField({
 	node_id,
 	field_data,
 	unoverride = false,
@@ -422,7 +422,7 @@ export async function overrideField({
 	unoverride?: boolean;
 	field_type: FieldType;
 }) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	try {
 		const data = unoverride && !field_data ? undefined : field_data;
@@ -436,8 +436,8 @@ export async function overrideField({
 	}
 }
 
-export async function updateConductorSets({ node_id, sets }: { node_id: string; sets: number }) {
-	const database = await databaseInstance();
+export function updateConductorSets({ node_id, sets }: { node_id: string; sets: number }) {
+	const database = getDatabase();
 
 	try {
 		database.nodes.updateOne({ id: node_id }, { $set: { conductor_sets: sets } });
@@ -448,7 +448,7 @@ export async function updateConductorSets({ node_id, sets }: { node_id: string; 
 	}
 }
 
-export async function updateLoadDescription({
+export function updateLoadDescription({
 	node_id,
 	load_description,
 	node_type
@@ -457,7 +457,7 @@ export async function updateLoadDescription({
 	load_description: string;
 	node_type: 'panel' | 'load';
 }) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	try {
 		const node_data = database.nodes.findOne({ id: node_id });
@@ -490,7 +490,7 @@ export async function updateLoadDescription({
 	}
 }
 
-export async function changeInsulation({
+export function changeInsulation({
 	node_id,
 	insulation,
 	type
@@ -499,7 +499,7 @@ export async function changeInsulation({
 	insulation: string;
 	type: 'egc' | 'conductor';
 }) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	try {
 		database.nodes.updateOne(
@@ -518,8 +518,8 @@ export async function changeInsulation({
 	}
 }
 
-export async function changePole(node_id: string, pole: string) {
-	const database = await databaseInstance();
+export function changePole(node_id: string, pole: string) {
+	const database = getDatabase();
 
 	try {
 		database.nodes.updateOne({ id: node_id }, { $set: { pole } });
@@ -530,8 +530,8 @@ export async function changePole(node_id: string, pole: string) {
 	}
 }
 
-export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
-	const database = await databaseInstance();
+export function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
+	const database = getDatabase();
 
 	try {
 		database.nodes.updateOne({ id: node_id }, { $set: { is_at_used_as_currents_value: is_use } });
@@ -542,14 +542,14 @@ export async function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 	}
 }
 
-export async function updateNodeParentById(
+export function updateNodeParentById(
 	node_to_update: {
 		id: string;
 		parent_id?: string;
 	},
 	new_parent: string
 ) {
-	const database = await databaseInstance();
+	const database = getDatabase();
 
 	const current_parent = database.nodes.findOne({ id: node_to_update.parent_id });
 
@@ -582,17 +582,19 @@ export async function updateNodeParentById(
 	}
 }
 
-export async function resetData(minimumDeletedTime: number = 0) {
+export function resetData(minimumDeletedTime: number = 0) {
 	void minimumDeletedTime;
-	const db = await databaseInstance();
+	const db = getDatabase();
 	db.projects.removeMany({});
 	db.nodes.removeMany({});
+	clearQueryCache();
 }
 
 export async function loadCurrentProject(file_export: FileExport): Promise<Project> {
-	await resetData(0);
-	const db = await databaseInstance();
-	const { project, nodes } = file_export;
+	await initializeDatabase();
+	resetData(0);
+	const db = getDatabase();
+	const { project, nodes } = migrateFileExport(file_export);
 
 	const reconstructed_project = {
 		...project,

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { type SkeletonShape, skeleton, skeletonReveal } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type SkeletonShape, skeleton, skeletonReveal } from './variants.js';
 
 	let {
 		width,

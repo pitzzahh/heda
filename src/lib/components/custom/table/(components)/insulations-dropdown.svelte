@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
 	interface Props {
 		adjusted_current: number;
@@ -15,28 +15,15 @@
 
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
-	import { changeInsulation } from '#lib/db/mutations';
+	import { changeInsulation } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { adjusted_current, type, current_insulation, node }: Props = $props();
-	// Snapshot at mount: local edit state.
-	function initialInsulation() {
-		return current_insulation as Insulations;
-	}
-	let selected_insulation = $state<Insulations>(initialInsulation());
-	let last_insulation_prop: string = initialInsulation();
+	// Writable derived: user picks override it until the next external prop change
+	// (undo/redo, auto-upgrade) recomputes it, so no effect is needed to adopt those.
+	let selected_insulation = $derived(current_insulation as Insulations);
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
-
-	// The table refreshes in place, so adopt external prop changes (undo/redo, auto-upgrade).
-	$effect(() => {
-		if (current_insulation !== last_insulation_prop) {
-			last_insulation_prop = current_insulation;
-			selected_insulation = current_insulation as Insulations;
-		}
-	});
 
 	const insulations_to_map = $derived(
 		type === 'egc'
@@ -53,23 +40,22 @@
 		}
 	});
 
-	async function handleChangeInsulation(insulation: Insulations) {
-		const updated_node = await changeInsulation({ node_id: node.id, insulation, type });
+	function handleChangeInsulation(insulation: Insulations) {
+		const updated_node = changeInsulation({ node_id: node.id, insulation, type });
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			data: updated_node as unknown as PhaseLoadSchedule,
 			previous_data: node
 		});
-		db_revisions.bumpWorkspaceAndSchedule();
 	}
 </script>
 
 <Select.Root
 	type="single"
 	bind:value={selected_insulation}
-	onOpenChange={async (value) => {
+	onOpenChange={(value) => {
 		if (!value && current_insulation !== selected_insulation) {
-			await handleChangeInsulation(selected_insulation);
+			handleChangeInsulation(selected_insulation);
 			toast.success(
 				`${type === 'conductor' ? "Conductor's" : "EGC's"} insulation changed from ${current_insulation} to ${selected_insulation}`
 			);
@@ -84,7 +70,7 @@
 		{/if}
 	</Select.Trigger>
 	<Select.Content class="text-sm">
-		{#each insulations_to_map as insulation, i (i)}
+		{#each insulations_to_map as insulation (insulation)}
 			<Select.Item value={insulation} disabled={selected_insulation === insulation}>
 				{insulation}
 			</Select.Item>

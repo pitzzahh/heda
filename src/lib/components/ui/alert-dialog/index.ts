@@ -7,7 +7,7 @@ export { default as AlertDialogFooter } from './alert-dialog-footer.svelte';
 export { default as AlertDialogHeader } from './alert-dialog-header.svelte';
 export { default as AlertDialogTitle } from './alert-dialog-title.svelte';
 export { default as AlertDialogTrigger } from './alert-dialog-trigger.svelte';
-export { type AlertDialogContext } from './context';
+export { type AlertDialogContext } from './context.js';
 export { default as Root } from './alert-dialog.svelte';
 export { default as Action } from './alert-dialog-action.svelte';
 export { default as Cancel } from './alert-dialog-cancel.svelte';

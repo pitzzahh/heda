@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { getCommand } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { getCommand } from './context.js';
 
 	let { class: classProp, children, ...rest }: HTMLAttributes<HTMLDivElement> = $props();
 	const command = getCommand();

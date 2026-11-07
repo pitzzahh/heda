@@ -5,7 +5,7 @@ import {
 	decryptFilePayload,
 	detectFileVersion,
 	packFileV2
-} from './format';
+} from './format.js';
 
 // Sample v1 bytes (kept only so the refusal path tests the real shape).
 const GOLDEN =

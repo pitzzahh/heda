@@ -1,11 +1,11 @@
-import type { Node } from '#lib/types/db';
+import type { Node } from '#lib/types/db/index.js';
 import type * as v from 'valibot';
 import type {
 	GENERIC_PHASE_MAIN_LOAD_SCHEMA,
 	QUANTITY_LABEL_FIELD,
 	VARIES_LABEL_FIELD
-} from '#lib/validators/load';
-import type { TERMINAL_TEMPERATURE_FIELD } from '#lib/validators/shared';
+} from '#lib/validators/load/index.js';
+import type { TERMINAL_TEMPERATURE_FIELD } from '#lib/validators/shared.js';
 
 export type GenericPhaseMainLoadSchema = v.InferOutput<typeof GENERIC_PHASE_MAIN_LOAD_SCHEMA>;
 

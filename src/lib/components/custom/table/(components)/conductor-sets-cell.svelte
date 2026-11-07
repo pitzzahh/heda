@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
 	interface Props {
 		sets: number;
@@ -9,10 +9,9 @@
 
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
-	import { updateConductorSets } from '#lib/db/mutations';
+	import { updateConductorSets } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { sets, node }: Props = $props();
 	// Snapshot at mount: local edit state.
@@ -25,11 +24,10 @@
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
-	async function saveSetsChanges() {
+	function saveSetsChanges() {
 		try {
-			const updated_set = await updateConductorSets({
+			const updated_set = updateConductorSets({
 				node_id: node.id,
 				sets: !sets_value ? 1 : sets_value
 			});
@@ -40,7 +38,6 @@
 				data: updated_set as unknown as PhaseLoadSchedule,
 				previous_data: node
 			});
-			db_revisions.bumpWorkspaceAndSchedule();
 			toast.success('Sets updated successfully');
 		} catch (err) {
 			console.error(`An error occured while updating the sets: ${JSON.stringify(err)}`);

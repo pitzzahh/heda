@@ -15,33 +15,31 @@
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import { cn } from '#lib/utils';
-	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators';
-	import type { Phase } from '#lib/types/phase';
-	import { DEFAULT_PHASES_OPTIONS } from '#lib/constants';
-	import { createProject, updateProjectTitle } from '#lib/db/mutations/index';
-	import { getAllChildNodes } from '#lib/db/queries';
-	import { setSessionPassword } from '#lib/db/session';
+	import { cn } from '#lib/utils/index.js';
+	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
+	import type { Phase } from '#lib/types/phase/index.js';
+	import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
+	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
+	import { getAllChildNodes } from '#lib/db/queries/index.js';
+	import { setSessionPassword } from '#lib/db/session.js';
 	import {
 		getFileName,
 		writeEncryptedFile,
 		EXTENSION,
 		doesFileExists,
 		generateUniqueFileName
-	} from '#lib/helpers/file';
-	import { LockKeyIcon } from '#lib/assets/icons';
-	import { getProjectState } from '#lib/hooks/project-state.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	} from '#lib/helpers/file/index.js';
+	import { LockKeyIcon } from '#lib/assets/icons/index.js';
+	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { remove, copyFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-	import type { FileExport } from '#lib/types/main';
+	import type { FileExport } from '#lib/types/main/index.js';
 
 	let { closeDialog }: Props = $props();
 
 	const project_state = getProjectState();
-	const db_revisions = getDbRevisionsState();
 	const settings_state = getSettingsState();
 	const undo_redo_state = getUndoRedoState();
 
@@ -107,7 +105,7 @@
 
 			if (!project_name) {
 				project_name = await generateUniqueFileName('Untitled Project');
-				await updateProjectTitle(project.id, project_name);
+				updateProjectTitle(project.id, project_name);
 				toast.warning('Project title not fetched from file name.', {
 					description: 'The project title is changed to untitled to avoid conflicts.'
 				});
@@ -136,7 +134,7 @@
 
 			const file_data: FileExport = {
 				project,
-				nodes: await getAllChildNodes(project.root_node_id, true)
+				nodes: getAllChildNodes(project.root_node_id, true)
 			};
 
 			console.log(`File data to be writted: ${JSON.stringify(file_data, null, 2)}`);
@@ -161,7 +159,6 @@
 				})
 			)
 				.then(() => {
-					db_revisions.bumpWorkspace();
 					console.log(`${project_state.current_project_name} created successfully`);
 					toast.success(`${project_state.current_project_name} created successfully`);
 				})
@@ -226,7 +223,7 @@
 						class="flex flex-col gap-2"
 						name={field.props.name}
 					>
-						{#each DEFAULT_PHASES_OPTIONS as phase_option (phase_option)}
+						{#each DEFAULT_PHASES as phase_option (phase_option.value)}
 							<Label
 								class={cn(
 									buttonVariants({
@@ -235,18 +232,18 @@
 											'hover:border-primary/40 hover:bg-accent [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/10 [&:has([data-state=checked])]:text-primary h-11 w-full justify-between px-4 font-medium'
 									}),
 									{
-										'cursor-not-allowed opacity-60': phase_option !== '1P'
+										'cursor-not-allowed opacity-60': phase_option.value !== default_phases.ONE_PHASE
 									}
 								)}
 							>
-								<!-- Currently disable other phases except 1P -->
+								<!-- Currently only single-phase supply is supported -->
 								<RadioGroup.Item
-									value={phase_option}
-									disabled={phase_option !== '1P'}
+									value={phase_option.value}
+									disabled={phase_option.value !== default_phases.ONE_PHASE}
 									class="sr-only"
 								/>
-								<span>{phase_option}</span>
-								{#if phase_option !== '1P'}
+								<span>{phase_option.label}</span>
+								{#if phase_option.value !== default_phases.ONE_PHASE}
 									<span
 										class="text-muted-foreground text-[9px] font-bold tracking-[0.2em] uppercase"
 										>Soon</span

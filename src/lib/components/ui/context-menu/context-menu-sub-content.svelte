@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
 	import { getContext } from 'svelte';
-	import { cn } from '#lib/utils';
-	import { type MenuSize, menu } from '#lib/components/ui/shared/menu';
-	import { ANCHORED } from '#lib/components/ui/shared/anchor';
+	import { cn } from '#lib/utils/index.js';
+	import { type MenuSize, menu } from '#lib/components/ui/shared/menu.js';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
 
 	let {
 		class: classProp,

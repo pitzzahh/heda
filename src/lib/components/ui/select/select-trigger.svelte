@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Select as SelectPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { type SelectTriggerSize, type SelectTriggerVariant, selectTrigger } from './variants';
-	import { getSelectSize } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { type SelectTriggerSize, type SelectTriggerVariant, selectTrigger } from './variants.js';
+	import { getSelectSize } from './context.js';
 
 	let {
 		class: classProp,

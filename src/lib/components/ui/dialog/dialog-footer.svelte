@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { getDialog } from './context';
+	import { getDialog } from './context.js';
 
 	let { children, class: classProp }: { children?: Snippet; class?: string } = $props();
 

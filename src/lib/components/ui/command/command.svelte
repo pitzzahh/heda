@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Command as CommandPrimitive, computeCommandScore } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { rankCommandMatch } from './score';
-	import { type CommandVariant, commandFrame } from './variants';
-	import { getCommandDialogState, setCommand } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { rankCommandMatch } from './score.js';
+	import { type CommandVariant, commandFrame } from './variants.js';
+	import { getCommandDialogState, setCommand } from './context.js';
 
 	let {
 		children,

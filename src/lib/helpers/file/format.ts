@@ -1,7 +1,13 @@
 // .heda file format. Every file is one JSON envelope sealed with the file
 // password (PBKDF2 100k + AES-256-GCM, random salt per file). Pure module: no
 // Tauri, no toasts, so it's safe to unit test.
-import { FILE_KEY_ITERATIONS, deriveKey, decryptGcm, encryptGcm, randomHex } from '../security';
+import {
+	FILE_KEY_ITERATIONS,
+	deriveKey,
+	decryptGcm,
+	encryptGcm,
+	randomHex
+} from '../security/index.js';
 
 export const FILE_FORMAT_VERSION = 2;
 

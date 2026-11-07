@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Tooltip as TooltipPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { ANCHORED } from '#lib/components/ui/shared/anchor';
+	import { cn } from '#lib/utils/index.js';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
 
 	let {
 		class: classProp,

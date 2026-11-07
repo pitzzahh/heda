@@ -1,7 +1,7 @@
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-import type { Node } from '#lib/types/db';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { Node } from '#lib/types/db/index.js';
 import {
 	PoleDropdown,
 	LoadDescriptionCell,
@@ -9,7 +9,7 @@ import {
 	AtFooterCell,
 	InsulationsDropdown,
 	ActionsColumnDropdown
-} from './(components)';
+} from './(components)/index.js';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	current_node: PhaseLoadSchedule

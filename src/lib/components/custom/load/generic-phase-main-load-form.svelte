@@ -12,7 +12,7 @@
 </script>
 
 <script lang="ts">
-	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '#lib/components/ui/separator/index.js';
@@ -29,29 +29,36 @@
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import {
-		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
+		AMBIENT_TEMPERATURES,
+		DEFAULT_TERMINAL_TEMPERATURES,
+		STANDARD_TERMINAL_TEMPERATURE,
 		DEFAULT_LOADS,
-		DEFAULT_LOAD_TYPES_OPTIONS,
+		DEFAULT_LOAD_TYPES,
+		default_load_types,
 		load_type_to_varies_label,
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
 		default_hp_current_relationship,
 		load_type_to_quantity_label
-	} from '#lib/constants';
-	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load';
-	import type { GenericPhaseMainLoadSchema } from '#lib/types/load';
+	} from '#lib/constants/index.js';
+	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load/index.js';
+	import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 	import { page } from '$app/state';
-	import { addNode, updateNode } from '#lib/db/mutations';
-	import { checkNodeExists } from '#lib/db/queries';
-	import { convertToNormalText } from '#lib/utils/text';
-	import type { Node } from '#lib/types/db';
-	import type { LoadType, QuantityLabel, TerminalTemperature, VariesLabel } from '#lib/types/load';
-	import { formatFraction } from '#lib/utils/format';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
+	import { addNode, updateNode } from '#lib/db/mutations/index.js';
+	import { checkNodeExists } from '#lib/db/queries/index.js';
+	import { convertToNormalText } from '#lib/utils/text/index.js';
+	import type { Node } from '#lib/types/db/index.js';
+	import type {
+		LoadType,
+		QuantityLabel,
+		TerminalTemperature,
+		VariesLabel
+	} from '#lib/types/load/index.js';
+	import { formatFraction, getOptionLabel } from '#lib/utils/format/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
 		closeDialog,
@@ -63,7 +70,6 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 	let collapsibles = getCollapsiblesState();
 
 	// Snapshot of props at mount: initial form values never track later prop changes.
@@ -112,12 +118,12 @@
 		submitting = true;
 
 		if (panel_id_from_params || panel_id_from_tree) {
-			taken_circuit_number = (await checkNodeExists({
+			taken_circuit_number = checkNodeExists({
 				circuit_number: data.circuit_number,
 				//we want to check if the circuit number is alrdy existing in the parent we want to move in
 				parent_id: selected_parent_id || panel_id_from_tree || panel_id_from_params || '',
 				node_id: node_to_edit?.id
-			}))
+			})
 				? data.circuit_number
 				: 0;
 
@@ -135,7 +141,7 @@
 					config_preference: load_type,
 
 					// should only append when the load type is rated hp
-					...(data.load_type === '1P Motor - Rated Horse Power' && {
+					...(data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER && {
 						varies:
 							default_hp_current_relationship[
 								data.varies as keyof typeof default_hp_current_relationship
@@ -145,7 +151,7 @@
 				switch (action) {
 					case 'add': {
 						const parent_id = panel_id_from_tree as string;
-						const added_node = await addNode({
+						const added_node = addNode({
 							load_data,
 							parent_id
 						});
@@ -159,7 +165,7 @@
 					}
 					case 'edit':
 						if (node_to_edit && selected_parent_id) {
-							const updated_node = await updateNode({
+							const updated_node = updateNode({
 								load_data,
 								id: node_to_edit.id,
 								parent_id: selected_parent_id
@@ -174,7 +180,6 @@
 						break;
 				}
 			}
-			db_revisions.bumpWorkspaceAndSchedule();
 			closeDialog();
 		}
 		submitting = false;
@@ -304,7 +309,7 @@
 									<Command.Empty>No terminal temp found.</Command.Empty>
 									<Command.Group>
 										<ScrollArea class="h-64 pr-2.5">
-											{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp (ambient_temp)}
+											{#each AMBIENT_TEMPERATURES as ambient_temp (ambient_temp)}
 												<Command.Item
 													value={ambient_temp.toString()}
 													onSelect={() => {
@@ -355,9 +360,7 @@
 								role="combobox"
 							>
 								{field.input
-									? convertToNormalText(
-											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find((f) => f === field.input)
-										)
+									? getOptionLabel(DEFAULT_TERMINAL_TEMPERATURES, field.input)
 									: 'Select a terminal temperature'}
 								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
@@ -366,20 +369,20 @@
 									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 									<Command.Empty>No terminal temp found.</Command.Empty>
 									<Command.Group>
-										{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp (terminal_temp)}
+										{#each DEFAULT_TERMINAL_TEMPERATURES as terminal_temp (terminal_temp.value)}
 											<Command.Item
-												value={terminal_temp}
+												value={terminal_temp.value}
 												onSelect={() => {
-													field.onInput(terminal_temp as TerminalTemperature);
+													field.onInput(terminal_temp.value as TerminalTemperature);
 													closeAndFocusTrigger(terminal_temp_trigger_id);
 												}}
-												disabled={terminal_temp !== 'Standard Temperature'}
+												disabled={terminal_temp.value !== STANDARD_TERMINAL_TEMPERATURE}
 											>
-												{convertToNormalText(terminal_temp)}
+												{terminal_temp.label}
 												<CheckIcon
 													class={cn(
 														'ml-auto size-4',
-														terminal_temp !== field.input && 'text-transparent'
+														terminal_temp.value !== field.input && 'text-transparent'
 													)}
 												/>
 											</Command.Item>
@@ -670,9 +673,7 @@
 							disabled={load_type === 'DEFAULT'}
 							role="combobox"
 						>
-							{field.input
-								? DEFAULT_LOAD_TYPES_OPTIONS.find((s) => s === field.input)
-								: 'Select a load type'}
+							{field.input ? getOptionLabel(DEFAULT_LOAD_TYPES, field.input) : 'Select a load type'}
 							<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 						</Popover.Trigger>
 						<Popover.Content class="w-auto p-0">
@@ -680,19 +681,19 @@
 								<Command.Input autofocus placeholder="Search a load type..." class="h-9" />
 								<Command.Empty>No load type found.</Command.Empty>
 								<Command.Group>
-									{#each DEFAULT_LOAD_TYPES_OPTIONS as load_type_option (load_type_option)}
+									{#each DEFAULT_LOAD_TYPES as load_type_option (load_type_option.value)}
 										<Command.Item
-											value={load_type_option}
+											value={load_type_option.value}
 											onSelect={() => {
-												field.onInput(load_type_option as LoadType);
+												field.onInput(load_type_option.value as LoadType);
 												closeAndFocusTrigger(load_type_trigger_id);
 											}}
 										>
-											{load_type_option}
+											{load_type_option.label}
 											<CheckIcon
 												class={cn(
 													'ml-auto size-4',
-													load_type_option !== field.input && 'text-transparent'
+													load_type_option.value !== field.input && 'text-transparent'
 												)}
 											/>
 										</Command.Item>

@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import { RepeatIcon } from '#lib/assets/icons';
-	import type { VoltageDrop } from '#lib/types/voltage-drop';
+	import { RepeatIcon } from '#lib/assets/icons/index.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 
 	interface Props {
 		current: number;
@@ -10,27 +10,24 @@
 </script>
 
 <script lang="ts">
-	import * as Tooltip from '#lib/components/ui/tooltip';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import Button from '#lib/components/ui/button/button.svelte';
-	import { useAtAsCurrentsValue } from '#lib/db/mutations';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { useAtAsCurrentsValue } from '#lib/db/mutations/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { current, is_at_used, node }: Props = $props();
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
-	async function handleChangeCurrentsValue() {
-		const updated_data = (await useAtAsCurrentsValue(
+	function handleChangeCurrentsValue() {
+		const updated_data = useAtAsCurrentsValue(
 			node.id,
 			is_at_used ? false : true
-		)) as unknown as VoltageDrop;
+		) as unknown as VoltageDrop;
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			previous_data: node,
 			data: updated_data
 		});
-		db_revisions.bumpSchedule();
 	}
 </script>
 

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Select as SelectPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { menu } from '#lib/components/ui/shared/menu';
-	import { ANCHORED } from '#lib/components/ui/shared/anchor';
-	import type { SelectContentSize } from './variants';
-	import { getSelectSize } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { menu } from '#lib/components/ui/shared/menu.js';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
+	import type { SelectContentSize } from './variants.js';
+	import { getSelectSize } from './context.js';
 
 	let {
 		class: classProp,

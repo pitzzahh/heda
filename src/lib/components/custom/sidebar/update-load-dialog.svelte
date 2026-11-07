@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db';
+	import type { Node } from '#lib/types/db/index.js';
 
 	interface Props {
 		some_open_state?: boolean;
@@ -13,11 +13,13 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
-	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load';
+	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import { getNodeById } from '#lib/db/queries';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 
 	let {
 		open_load_dialog = $bindable(false),
@@ -29,19 +31,22 @@
 
 	const phase = $derived(highest_unit.phase);
 
+	const parent_node = $derived(
+		load_to_edit.parent_id ? getNode(load_to_edit.parent_id) : undefined
+	);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
-
-	// Loads the parent name for display whenever the edited load changes.
-	$effect(() => {
-		if (load_to_edit.parent_id) {
-			getNodeById(load_to_edit.parent_id).then((node) => {
-				selected_parent = {
-					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
-					id: node?.id || ''
-				};
-			});
-		}
-	});
+	const parent_display = $derived(
+		selected_parent ??
+			(parent_node
+				? {
+						name:
+							parent_node.highest_unit_form?.distribution_unit ||
+							parent_node.panel_data?.name ||
+							'',
+						id: parent_node.id
+					}
+				: null)
+	);
 </script>
 
 <Dialog.Root bind:open={open_load_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
@@ -59,10 +64,11 @@
 					<div>
 						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
-							{#if selected_parent}
+							{#if parent_display}
 								<ParentPanelPopover
 									current_parent_id={load_to_edit.parent_id || ''}
-									bind:selected_parent
+									selected_parent={parent_display}
+									onselect={(parent) => (selected_parent = parent)}
 									excluded_node_id={load_to_edit.id}
 								/>
 							{/if}
@@ -72,11 +78,7 @@
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
 							<p>
-								{#if phase == null}
-									N/A
-								{:else}
-									{phase}
-								{/if}
+								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}
 							</p>
 						</div>
 					</div>
@@ -86,7 +88,7 @@
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
 			<GenericPhaseMainLoadForm
-				selected_parent_id={selected_parent?.id}
+				selected_parent_id={parent_display?.id}
 				closeDialog={() => (open_load_dialog = false)}
 				node_to_edit={load_to_edit}
 				action="edit"

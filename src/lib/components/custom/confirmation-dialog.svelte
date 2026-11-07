@@ -14,9 +14,9 @@
 </script>
 
 <script lang="ts">
-	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import type { Snippet } from 'svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants, type ButtonVariant } from '#lib/components/ui/button/index.js';
 

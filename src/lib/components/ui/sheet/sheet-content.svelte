@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Dialog as SheetPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { type SheetSide, type SheetVariant, sheet } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type SheetSide, type SheetVariant, sheet } from './variants.js';
 
 	let {
 		class: classProp,

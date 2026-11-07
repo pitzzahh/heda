@@ -1,20 +1,21 @@
 import {
 	standard_ampere_ratings,
 	load_type_z_value,
+	default_load_types,
 	AMPACITY_RANGES,
 	AMPACITY_TO_CONDUCTOR_SIZE,
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
 	CONDUIT_TABLE
-} from '#lib/constants';
-import type { LoadType } from '#lib/types/load';
+} from '#lib/constants/index.js';
+import type { LoadType } from '#lib/types/load/index.js';
 
 // load types with the same formula or value
 const common_load_types = [
-	'Lighting Load',
-	'Convenience Outlet',
-	'General Lighting',
-	'Heating Equipment'
+	default_load_types.LIGHTING_LOAD,
+	default_load_types.CONVENIENCE_OUTLET,
+	default_load_types.GENERAL_LIGHTING,
+	default_load_types.HEATING_EQUIPMENT
 ] as const;
 
 type CommonLoadTypes = (typeof common_load_types)[number];
@@ -48,7 +49,11 @@ export function computeAmpereTrip(current: number, load_type?: LoadType) {
 	if (!load_type && calculated_at < 30) return 30; //for panels
 
 	// for all load types except lighting and general
-	if (load_type !== 'Lighting Load' && load_type !== 'General Lighting' && calculated_at < 20)
+	if (
+		load_type !== default_load_types.LIGHTING_LOAD &&
+		load_type !== default_load_types.GENERAL_LIGHTING &&
+		calculated_at < 20
+	)
 		return 20;
 
 	for (const rating of standard_ampere_ratings) {
@@ -75,7 +80,9 @@ export function computeConductorSize({
 	current: number;
 	is_adjustment_factor_dynamic: boolean;
 }) {
-	const motor_loads = ['1P Motor - Rated Horse Power', '1P Motor - Rated Current'];
+	const is_motor_load =
+		load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER ||
+		load_type === default_load_types.ONE_P_MOTOR__RATED_CURRENT;
 	const adjusted_current = computeAdjustedCurrent({
 		set,
 		ambient_temp,
@@ -94,7 +101,7 @@ export function computeConductorSize({
 	const final_ampacity = range ? range.value : AMPACITY_RANGES[0].value;
 	const conductor_size = AMPACITY_TO_CONDUCTOR_SIZE[final_ampacity];
 
-	return load_type && motor_loads.includes(load_type) && conductor_size <= 2 ? 3.5 : conductor_size;
+	return is_motor_load && conductor_size <= 2 ? 3.5 : conductor_size;
 }
 
 export function computeAdjustedCurrent({

@@ -1,5 +1,5 @@
 import { tv, type VariantProps } from 'tailwind-variants';
-import { fieldText } from '#lib/components/ui/shared/control';
+import { fieldText } from '#lib/components/ui/shared/control.js';
 
 export const inputGroup = tv({
 	slots: {

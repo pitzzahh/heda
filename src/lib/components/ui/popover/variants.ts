@@ -1,5 +1,5 @@
 import { tv, type VariantProps } from 'tailwind-variants';
-import { anchoredSurface } from '#lib/components/ui/shared/anchored-surface';
+import { anchoredSurface } from '#lib/components/ui/shared/anchored-surface.js';
 
 /** The popover look; NavigationMenu's panel reads `surface` too, so both change together. */
 export const popover = tv({

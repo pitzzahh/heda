@@ -11,18 +11,17 @@
 </script>
 
 <script lang="ts">
-	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import { copyAndAddNodeById } from '#lib/db/mutations';
-	import { getNumberOfChildren } from '#lib/db/queries';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { copyAndAddNodeById } from '#lib/db/mutations/index.js';
+	import { getNumberOfChildren } from '#lib/db/queries/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import Button from '../ui/button/button.svelte';
 
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
@@ -33,21 +32,20 @@
 		might_take_long: false
 	});
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
-	async function handleMultiCopy(node_id: string) {
+	function handleMultiCopy(node_id: string) {
 		if (!multi_copy.valid) {
 			return toast.warning('Invalid copy count, must be greater than 0');
 		}
 		const toast_id = toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
 		multi_copy.processing = true;
 		const copy_count = Number(multi_copy.value);
-		let latest_node = await copyAndAddNodeById(node_id);
+		let latest_node = copyAndAddNodeById(node_id);
 
 		if (latest_node) {
 			if (latest_node.node_type === 'panel') {
 				// check if might_take_some_time
-				const child_count = await getNumberOfChildren(node_id);
+				const child_count = getNumberOfChildren(node_id);
 				multi_copy.might_take_long = child_count >= 15;
 			} else if (latest_node.node_type === 'load') {
 				// check if might_take_some_time
@@ -65,7 +63,7 @@
 			];
 
 			for (let i = 1; i < copy_count; i++) {
-				latest_node = await copyAndAddNodeById(latest_node.id);
+				latest_node = copyAndAddNodeById(latest_node.id);
 
 				if (!latest_node) {
 					multi_copy.processing = false;
@@ -83,7 +81,6 @@
 				batch_data
 			});
 
-			db_revisions.bumpWorkspaceAndSchedule();
 			multi_copy.processing = false;
 			open_dialog = false;
 			toast.success(`[${copy_count}]: ${node_name} copied successfully`, {

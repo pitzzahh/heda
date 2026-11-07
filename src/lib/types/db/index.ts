@@ -1,7 +1,7 @@
 import type * as v from 'valibot';
-import type { PROJECT_DOC_SCHEMA, NODE_DOC_SCHEMA } from '#lib/validators/db';
+import type { PROJECT_DOC_SCHEMA, NODE_DOC_SCHEMA } from '#lib/validators/db.js';
 import type { Collection } from '@signaldb/core';
-import type { LoadType } from '#lib/types/load';
+import type { LoadType } from '#lib/types/load/index.js';
 
 export type Project = v.InferOutput<typeof PROJECT_DOC_SCHEMA>;
 export type Node = v.InferOutput<typeof NODE_DOC_SCHEMA>;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { type InputSize, type InputVariant, input } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type InputSize, type InputVariant, input } from './variants.js';
 
 	type Props = {
 		// Deviation from upstream Baby UI: number fields pass numeric values.

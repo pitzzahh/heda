@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import type { TableDensity, TableVariant } from './variants';
+import type { TableDensity, TableVariant } from './variants.js';
 
 export type TableStyle = { variant: TableVariant; density: TableDensity };
 

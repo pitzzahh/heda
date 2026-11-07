@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
 	interface Props {
 		current_pole: '1' | '2';
@@ -9,47 +9,33 @@
 
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
-	import { changePole } from '#lib/db/mutations';
+	import { changePole } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { node, current_pole }: Props = $props();
-	// Snapshot at mount: local edit state.
-	function initialPole() {
-		return current_pole;
-	}
-	let selected_pole = $state<'1' | '2'>(initialPole());
-	let last_pole_prop = initialPole();
-
-	// The table refreshes in place, so adopt external prop changes (undo/redo, refreshes).
-	$effect(() => {
-		if (current_pole !== last_pole_prop) {
-			last_pole_prop = current_pole;
-			selected_pole = current_pole;
-		}
-	});
+	// Writable derived: user picks override it until the next external prop change
+	// (undo/redo, refresh) recomputes it, so no effect is needed to adopt those.
+	let selected_pole = $derived(current_pole);
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
-	async function handleChangeInsulation(pole: '1' | '2') {
-		const updated_node = await changePole(node.id, pole);
+	function handleChangePole(pole: '1' | '2') {
+		const updated_node = changePole(node.id, pole);
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			data: updated_node as unknown as PhaseLoadSchedule,
 			previous_data: node
 		});
-		db_revisions.bumpWorkspaceAndSchedule();
 	}
 </script>
 
 <Select.Root
 	type="single"
 	bind:value={selected_pole}
-	onOpenChange={async (value) => {
+	onOpenChange={(value) => {
 		if (!value && current_pole !== selected_pole) {
-			await handleChangeInsulation(selected_pole);
+			handleChangePole(selected_pole);
 			toast.success(`Pole changed from ${current_pole} to ${selected_pole}`);
 		}
 	}}
@@ -62,7 +48,7 @@
 		{/if}
 	</Select.Trigger>
 	<Select.Content class="text-sm">
-		{#each ['1', '2'] as pole, i (i)}
+		{#each ['1', '2'] as pole (pole)}
 			<Select.Item value={pole} disabled={selected_pole === pole}>
 				{pole}
 			</Select.Item>

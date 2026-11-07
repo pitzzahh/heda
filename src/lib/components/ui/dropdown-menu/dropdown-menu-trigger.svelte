@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { dropdownMenuTrigger } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { dropdownMenuTrigger } from './context.js';
 
 	let { class: classProp, ...rest }: DropdownMenuPrimitive.TriggerProps = $props();
 </script>

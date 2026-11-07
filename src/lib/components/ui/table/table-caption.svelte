@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { table } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { table } from './variants.js';
 
 	let {
 		children,

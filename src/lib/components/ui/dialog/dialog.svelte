@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import { type DialogMotion, type DialogSize, type DialogVariant, setDialog } from './context';
+	import { type DialogMotion, type DialogSize, type DialogVariant, setDialog } from './context.js';
 
 	let {
 		children,

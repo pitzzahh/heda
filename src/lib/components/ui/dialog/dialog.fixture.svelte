@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { DialogMotion } from './variants';
+	import type { DialogMotion } from './variants.js';
 
 	interface Props {
 		open?: boolean;

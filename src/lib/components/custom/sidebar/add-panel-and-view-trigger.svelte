@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
-	import type { Node } from '#lib/types/db';
+	import type { Node } from '#lib/types/db/index.js';
 
 	interface Props {
 		children?: Snippet;
@@ -18,10 +18,12 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel';
+	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import type { Phase } from '#lib/types/phase';
-	import { getNodeById } from '#lib/db/queries';
+	import type { Phase } from '#lib/types/phase/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 
 	let {
 		children,
@@ -34,6 +36,7 @@
 	}: Props = $props();
 
 	const phase = $derived(highest_unit.phase);
+	const parent_node = $derived(getNode(parent_id));
 
 	function handleClick() {
 		setTimeout(() => {
@@ -56,30 +59,20 @@
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
-							{#await getNodeById(parent_id)}
-								<p></p>
-							{:then parent_node}
-								<p>
-									{#if parent_node?.highest_unit_form?.distribution_unit}
-										{parent_node.highest_unit_form.distribution_unit}
-									{:else if parent_node?.panel_data?.name}
-										{parent_node.panel_data.name}
-									{:else}
-										N/A
-									{/if}
-								</p>
-							{/await}
+							{#if parent_node?.highest_unit_form?.distribution_unit}
+								<p>{parent_node.highest_unit_form.distribution_unit}</p>
+							{:else if parent_node?.panel_data?.name}
+								<p>{parent_node.panel_data.name}</p>
+							{:else}
+								<p>N/A</p>
+							{/if}
 						</div>
 					</div>
 					<div>
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
 							<p>
-								{#if highest_unit.phase == null}
-									N/A
-								{:else}
-									{highest_unit.phase}
-								{/if}
+								{getOptionLabel(DEFAULT_PHASES, highest_unit.phase) || 'N/A'}
 							</p>
 						</div>
 					</div>

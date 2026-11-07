@@ -1,6 +1,6 @@
-import type { Project, Node } from '#lib/types/db';
+import type { Project, Node } from '#lib/types/db/index.js';
 import type * as v from 'valibot';
-import type { HIGHEST_UNIT_SCHEMA } from '#lib/validators';
+import type { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
 
 export type HighestUnitSchema = v.InferOutput<typeof HIGHEST_UNIT_SCHEMA>;
 

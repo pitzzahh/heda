@@ -1,8 +1,8 @@
-import type { VoltageDrop } from '#lib/types/voltage-drop';
+import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent } from '#lib/components/ui/data-table';
+import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';
-import { ActionsColumnDropdown } from '../(components)';
+import { ActionsColumnDropdown } from '../(components)/index.js';
 
 export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{

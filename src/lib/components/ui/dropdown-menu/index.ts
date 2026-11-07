@@ -9,7 +9,7 @@ export { default as DropdownMenuSubContent } from './dropdown-menu-sub-content.s
 export { default as DropdownMenuSubTrigger } from './dropdown-menu-sub-trigger.svelte';
 export { default as DropdownMenuSub } from './dropdown-menu-sub.svelte';
 export { default as DropdownMenuTrigger } from './dropdown-menu-trigger.svelte';
-export { setDropdownMenu, dropdownMenuTrigger } from './context';
+export { setDropdownMenu, dropdownMenuTrigger } from './context.js';
 import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 // Baby ships no Group part; re-export the bits primitive (same as before).
 const Group = DropdownMenuPrimitive.Group;

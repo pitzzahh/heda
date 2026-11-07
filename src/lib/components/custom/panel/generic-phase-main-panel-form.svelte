@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
@@ -23,24 +23,27 @@
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 	import {
-		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
-		DEFAULT_PHASES_OPTIONS,
-		DEFAULT_THREE_PHASE_TYPES_OPTIONS
-	} from '#lib/constants';
-	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel';
-	import type { Phase } from '#lib/types/phase';
-	import { convertToNormalText } from '#lib/utils/text';
-	import { addNode, updateNode } from '#lib/db/mutations';
-	import { checkNodeExists } from '#lib/db/queries';
-	import type { Node } from '#lib/types/db';
-	import type { TerminalTemperature } from '#lib/types/load';
+		AMBIENT_TEMPERATURES,
+		DEFAULT_TERMINAL_TEMPERATURES,
+		STANDARD_TERMINAL_TEMPERATURE,
+		DEFAULT_PHASES,
+		DEFAULT_THREE_PHASE_TYPES_OPTIONS,
+		default_phases
+	} from '#lib/constants/index.js';
+	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
+	import type { Phase } from '#lib/types/phase/index.js';
+	import { convertToNormalText } from '#lib/utils/text/index.js';
+	import { addNode, updateNode } from '#lib/db/mutations/index.js';
+	import { checkNodeExists } from '#lib/db/queries/index.js';
+	import type { Node } from '#lib/types/db/index.js';
+	import type { TerminalTemperature } from '#lib/types/load/index.js';
 	import ScrollArea from '#lib/components/ui/scroll-area/scroll-area.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
 		main_phase,
@@ -53,7 +56,6 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 	let collapsibles = getCollapsiblesState();
 
 	// Snapshot of props at mount: initial form values never track later prop changes.
@@ -62,7 +64,7 @@
 			// A 1P supply can only feed 1P panels: preselect it since the trigger is locked.
 			return {
 				circuit_number: (latest_circuit_node?.circuit_number ?? 0) + 1,
-				...(main_phase === '1P' ? { phase: '1P' as Phase } : {})
+				...(main_phase === default_phases.ONE_PHASE ? { phase: default_phases.ONE_PHASE } : {})
 			};
 		if (!node_to_edit || !node_to_edit.panel_data) {
 			// TODO: Log system error
@@ -104,12 +106,12 @@
 		submitting = true;
 
 		if (parent_id) {
-			taken_circuit_number = (await checkNodeExists({
+			taken_circuit_number = checkNodeExists({
 				circuit_number: data.circuit_number,
 				//we want to check if the circuit number is alrdy existing in the parent we want to move in
 				parent_id: selected_parent_id || parent_id,
 				node_id: node_to_edit?.id
-			}))
+			})
 				? data.circuit_number
 				: 0;
 
@@ -121,7 +123,7 @@
 
 			switch (action) {
 				case 'add': {
-					const added_node = await addNode({ parent_id, panel_data: data });
+					const added_node = addNode({ parent_id, panel_data: data });
 					toast.success(`${data.name} added successfully`);
 					collapsibles.addNodeId(parent_id);
 					undo_redo_state.setActionToUndo({
@@ -132,7 +134,7 @@
 				}
 				case 'edit':
 					if (node_to_edit && selected_parent_id) {
-						const updated_node = await updateNode({
+						const updated_node = updateNode({
 							panel_data: data,
 							id: node_to_edit.id,
 							parent_id: selected_parent_id
@@ -147,7 +149,6 @@
 					break;
 			}
 
-			db_revisions.bumpWorkspaceAndSchedule();
 			closeDialog();
 		}
 		submitting = false;
@@ -239,9 +240,7 @@
 								role="combobox"
 							>
 								{field.input
-									? convertToNormalText(
-											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find((f) => f === field.input)
-										)
+									? getOptionLabel(DEFAULT_TERMINAL_TEMPERATURES, field.input)
 									: 'Select a terminal temperature'}
 								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 							</Popover.Trigger>
@@ -250,20 +249,20 @@
 									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
 									<Command.Empty>No terminal temp found.</Command.Empty>
 									<Command.Group>
-										{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp (terminal_temp)}
+										{#each DEFAULT_TERMINAL_TEMPERATURES as terminal_temp (terminal_temp.value)}
 											<Command.Item
-												value={terminal_temp}
+												value={terminal_temp.value}
 												onSelect={() => {
-													field.onInput(terminal_temp as TerminalTemperature);
+													field.onInput(terminal_temp.value as TerminalTemperature);
 													closeAndFocusTrigger(terminal_temp_trigger_id);
 												}}
-												disabled={terminal_temp !== 'Standard Temperature'}
+												disabled={terminal_temp.value !== STANDARD_TERMINAL_TEMPERATURE}
 											>
-												{convertToNormalText(terminal_temp)}
+												{terminal_temp.label}
 												<CheckIcon
 													class={cn(
 														'ml-auto size-4',
-														terminal_temp !== field.input && 'text-transparent'
+														terminal_temp.value !== field.input && 'text-transparent'
 													)}
 												/>
 											</Command.Item>
@@ -283,7 +282,7 @@
 		</div>
 
 		<div class="flex flex-col gap-2.5">
-			{#if main_phase !== '1P'}
+			{#if main_phase !== default_phases.ONE_PHASE}
 				{@render PanelType()}
 				{@render PanelPhase()}
 			{:else}
@@ -312,7 +311,7 @@
 									<Command.Empty>No terminal temp found.</Command.Empty>
 									<Command.Group>
 										<ScrollArea class="h-64 pr-2.5">
-											{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp (ambient_temp)}
+											{#each AMBIENT_TEMPERATURES as ambient_temp (ambient_temp)}
 												<Command.Item
 													value={ambient_temp.toString()}
 													onSelect={() => {
@@ -423,7 +422,7 @@
 {/snippet}
 
 {#snippet PanelPhase()}
-	{@const is_one_phase = main_phase === '1P'}
+	{@const is_one_phase = main_phase === default_phases.ONE_PHASE}
 	<Field of={form} path={['phase']}>
 		{#snippet children(field)}
 			<div
@@ -443,7 +442,7 @@
 						)}
 						role="combobox"
 					>
-						{field.input ? DEFAULT_PHASES_OPTIONS.find((f) => f === field.input) : 'Select a phase'}
+						{field.input ? getOptionLabel(DEFAULT_PHASES, field.input) : 'Select a phase'}
 						<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<Popover.Content class="w-auto p-0">
@@ -451,19 +450,19 @@
 							<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
 							<Command.Empty>No panel phase found.</Command.Empty>
 							<Command.Group>
-								{#each DEFAULT_PHASES_OPTIONS as phase_option (phase_option)}
+								{#each DEFAULT_PHASES as phase_option (phase_option.value)}
 									<Command.Item
-										value={phase_option}
+										value={phase_option.value}
 										onSelect={() => {
-											field.onInput(phase_option as Phase);
+											field.onInput(phase_option.value as Phase);
 											closeAndFocusTrigger(phase_trigger_id);
 										}}
 									>
-										{phase_option}
+										{phase_option.label}
 										<CheckIcon
 											class={cn(
 												'ml-auto size-4',
-												phase_option !== field.input && 'text-transparent'
+												phase_option.value !== field.input && 'text-transparent'
 											)}
 										/>
 									</Command.Item>

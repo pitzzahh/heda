@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Command as CommandPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { getCommand } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { getCommand } from './context.js';
 
 	let { class: classProp, ...rest }: CommandPrimitive.SeparatorProps = $props();
 	const command = getCommand();

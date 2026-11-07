@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Popover as PopoverPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { ANCHORED } from '#lib/components/ui/shared/anchor';
-	import { type PopoverSize, popover } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
+	import { type PopoverSize, popover } from './variants.js';
 
 	let {
 		class: classProp,

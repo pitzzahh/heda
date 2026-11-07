@@ -1,4 +1,4 @@
-import type { LabelValuePair, LabelKeyPair } from '#lib/types/generic';
+import type { LabelValuePair, LabelKeyPair } from '#lib/types/generic/index.js';
 
 /**
  * A generic function to convert an object to a label-value pair array.

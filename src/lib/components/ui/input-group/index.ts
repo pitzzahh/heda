@@ -9,7 +9,7 @@ export {
 	type InputGroupSize,
 	type InputGroupAddonAlign,
 	focusGroupControl
-} from './variants';
+} from './variants.js';
 export { default as Root } from './input-group.svelte';
 export { default as Addon } from './input-group-addon.svelte';
 export { default as Button } from './input-group-button.svelte';

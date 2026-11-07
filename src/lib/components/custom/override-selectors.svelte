@@ -1,11 +1,11 @@
 <script lang="ts" module>
-	import { CaretDownIcon, CaretUpIcon, XIcon } from '#lib/assets/icons';
+	import { CaretDownIcon, CaretUpIcon, XIcon } from '#lib/assets/icons/index.js';
 	import {
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
 		AMPERE_TRIP_TO_COPPER,
 		CONDUIT_TABLE
-	} from '#lib/constants';
+	} from '#lib/constants/index.js';
 
 	interface Props {
 		node_id: string;
@@ -48,14 +48,13 @@
 
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { overrideField, type FieldType } from '#lib/db/mutations';
-	import * as Tooltip from '#lib/components/ui/tooltip';
+	import { overrideField, type FieldType } from '#lib/db/mutations/index.js';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	let {
 		node_id,
 		closeDialog,
@@ -71,7 +70,6 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
 	// AT
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);
@@ -117,12 +115,12 @@
 		return currentIndex === 0 ? lastIndex : currentIndex - 1;
 	}
 
-	async function handleOverride() {
+	function handleOverride() {
 		const overridden_fields: string[] = [];
 
 		if (selected_ampere_rating) {
 			if (selected_ampere_rating !== current_at) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: selected_ampere_rating,
 					field_type: 'at'
@@ -135,7 +133,7 @@
 			}
 
 			if (selected_conductor_size !== current_conductor_size) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: selected_conductor_size,
 					field_type: 'conductor_size'
@@ -148,7 +146,7 @@
 			}
 
 			if (selected_egc_size !== current_egc_size) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: selected_egc_size,
 					field_type: 'egc_size'
@@ -161,7 +159,7 @@
 			}
 
 			if (selected_conduit_size !== current_conduit_size) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: selected_conduit_size,
 					field_type: 'conduit_size'
@@ -174,7 +172,7 @@
 			}
 
 			if (ampere_frames !== current_ampere_frames.toString()) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: Number(ampere_frames),
 					field_type: 'ampere_frames'
@@ -187,7 +185,7 @@
 			}
 
 			if (current_length && length !== current_length) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: length,
 					field_type: 'length'
@@ -200,7 +198,7 @@
 			}
 
 			if (current_z && z !== current_z) {
-				const updated_node = await overrideField({
+				const updated_node = overrideField({
 					node_id,
 					field_data: z,
 					field_type: 'z'
@@ -216,18 +214,16 @@
 				toast.success(`Overridden: ${overridden_fields.join(', ')}.`);
 			}
 
-			db_revisions.bumpWorkspaceAndSchedule();
 			closeDialog();
 		}
 	}
-	async function removeOverride(field_type: FieldType) {
+	function removeOverride(field_type: FieldType) {
 		const formatted_field = field_type
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 
-		await overrideField({ node_id, field_type, unoverride: true });
-		db_revisions.bumpWorkspaceAndSchedule();
+		overrideField({ node_id, field_type, unoverride: true });
 		closeDialog();
 		toast.success(`Removed override for ${formatted_field}`);
 	}

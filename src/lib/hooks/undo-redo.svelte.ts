@@ -1,10 +1,15 @@
-import { getState, setState } from '#lib/state/index.svelte';
-import { UNDO_REDO_STATE_CTX } from '#lib/state/constants';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-import type { GenericPhasePanelSchema } from '#lib/types/panel';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load';
-import { addNode, overrideField, removeNode, updateNode, type FieldType } from '#lib/db/mutations';
-import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+import { getState, setState } from '#lib/state/index.svelte.js';
+import { UNDO_REDO_STATE_CTX } from '#lib/state/constants.js';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
+import {
+	addNode,
+	overrideField,
+	removeNode,
+	updateNode,
+	type FieldType
+} from '#lib/db/mutations/index.js';
 
 type BatchData = {
 	data: PhaseLoadSchedule;
@@ -32,15 +37,10 @@ type Action<T extends PhaseLoadSchedule> = {
 	children_nodes?: T[];
 };
 export class UndoRedoState {
-	private db_revisions: ReturnType<typeof getDbRevisionsState>;
 	private undo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 	private redo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 
 	has_unsaved_actions = $state(false);
-
-	constructor(db_revisions: ReturnType<typeof getDbRevisionsState>) {
-		this.db_revisions = db_revisions;
-	}
 
 	resetUnsavedActions() {
 		this.has_unsaved_actions = false;
@@ -68,8 +68,8 @@ export class UndoRedoState {
 		return this.undo_stack.length > 0;
 	}
 
-	private async addNewNode(node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
-		const added_node = await addNode({
+	private addNewNode(node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
+		const added_node = addNode({
 			existing_id: node_data.id,
 			parent_id: node_data.parent_id as string,
 			...(node_data.panel_data && {
@@ -89,17 +89,17 @@ export class UndoRedoState {
 		//we want to revert the deleted node's children as well
 		if (children_nodes && children_nodes.length > 0) {
 			for (const child_node of children_nodes) {
-				await this.addNewNode(child_node);
+				this.addNewNode(child_node);
 			}
 		}
 
 		return added_node;
 	}
 
-	private async handleBatchOperation(
+	private handleBatchOperation(
 		last_action: Action<PhaseLoadSchedule>,
 		operation: 'add' | 'remove'
-	): Promise<BatchData[]> {
+	): BatchData[] {
 		if (!last_action.batch_data?.length) return [];
 
 		let batch_data = [] as {
@@ -109,16 +109,16 @@ export class UndoRedoState {
 
 		if (operation === 'add') {
 			for (const data of last_action.batch_data) {
-				const added_node = (await this.addNewNode(
+				const added_node = this.addNewNode(
 					data.data,
 					data.children_nodes
-				)) as unknown as PhaseLoadSchedule;
+				) as unknown as PhaseLoadSchedule;
 
 				batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
 			}
 		} else {
 			for (const data of last_action.batch_data) {
-				const result = await removeNode(data.data.id);
+				const result = removeNode(data.data.id);
 
 				if (result) {
 					batch_data = [
@@ -132,7 +132,7 @@ export class UndoRedoState {
 		return batch_data;
 	}
 
-	private async handleFieldOverride({
+	private handleFieldOverride({
 		is_undo = false,
 		field_data,
 		field_type,
@@ -145,7 +145,7 @@ export class UndoRedoState {
 		field_data?: number;
 		action: Action<PhaseLoadSchedule>;
 	}) {
-		await overrideField({
+		overrideField({
 			unoverride: is_undo,
 			field_type,
 			node_id: node_id,
@@ -168,7 +168,7 @@ export class UndoRedoState {
 				case 'create_node': {
 					if (!last_action.data) return;
 
-					const result_in_create_node = await removeNode(last_action.data.id);
+					const result_in_create_node = removeNode(last_action.data.id);
 					if (result_in_create_node) {
 						this.redo_stack = [
 							...this.redo_stack,
@@ -187,7 +187,7 @@ export class UndoRedoState {
 					const current_data = last_action.data;
 
 					if (previous_data) {
-						const updated_node = await updateNode({
+						const updated_node = updateNode({
 							id: previous_data.id,
 							whole_data: previous_data,
 							parent_id: previous_data.parent_id as string
@@ -209,7 +209,7 @@ export class UndoRedoState {
 				case 'delete_node': {
 					if (!last_action.data) return;
 
-					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
+					const added_node = this.addNewNode(last_action.data, last_action.children_nodes);
 					this.redo_stack = [
 						...this.redo_stack,
 						{
@@ -223,7 +223,7 @@ export class UndoRedoState {
 
 				case 'batch_delete': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'add');
+						const batch_data = this.handleBatchOperation(last_action, 'add');
 
 						this.redo_stack = [
 							...this.redo_stack,
@@ -239,7 +239,7 @@ export class UndoRedoState {
 
 				case 'batch_copy_node': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'remove');
+						const batch_data = this.handleBatchOperation(last_action, 'remove');
 
 						this.redo_stack = [
 							...this.redo_stack,
@@ -255,7 +255,7 @@ export class UndoRedoState {
 				case 'copy_node': {
 					if (!last_action.data) return;
 
-					const result_in_copy_node = await removeNode(last_action.data.id);
+					const result_in_copy_node = removeNode(last_action.data.id);
 					if (result_in_copy_node) {
 						this.redo_stack = [
 							...this.redo_stack,
@@ -272,7 +272,7 @@ export class UndoRedoState {
 				case 'override_at': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'at',
@@ -284,7 +284,7 @@ export class UndoRedoState {
 				case 'override_af': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'ampere_frames',
@@ -296,7 +296,7 @@ export class UndoRedoState {
 				case 'override_conductor_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'conductor_size',
@@ -307,7 +307,7 @@ export class UndoRedoState {
 				case 'override_conduit_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'conduit_size',
@@ -318,7 +318,7 @@ export class UndoRedoState {
 				case 'override_egc_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'egc_size',
@@ -330,7 +330,7 @@ export class UndoRedoState {
 				case 'override_z': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'z',
@@ -342,7 +342,7 @@ export class UndoRedoState {
 				case 'override_length': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						is_undo: true,
 						action: last_action,
 						field_type: 'length',
@@ -351,7 +351,6 @@ export class UndoRedoState {
 					break;
 				}
 			}
-			this.db_revisions.bumpWorkspaceAndSchedule();
 		}
 	}
 
@@ -364,7 +363,7 @@ export class UndoRedoState {
 				case 'create_node': {
 					if (!last_action.data) return;
 
-					const added_node = await this.addNewNode(last_action.data, last_action.children_nodes);
+					const added_node = this.addNewNode(last_action.data, last_action.children_nodes);
 					this.undo_stack = [
 						...this.undo_stack,
 						{ ...last_action, data: added_node as unknown as PhaseLoadSchedule }
@@ -377,7 +376,7 @@ export class UndoRedoState {
 					const current_data = last_action.data;
 
 					if (previous_data) {
-						const updated_node = await updateNode({
+						const updated_node = updateNode({
 							id: previous_data.id,
 							whole_data: previous_data,
 							parent_id: previous_data.parent_id as string
@@ -398,7 +397,7 @@ export class UndoRedoState {
 				case 'delete_node': {
 					if (!last_action.data) return;
 
-					const result = await removeNode(last_action.data.id);
+					const result = removeNode(last_action.data.id);
 					if (result) {
 						this.undo_stack = [
 							...this.undo_stack,
@@ -410,7 +409,7 @@ export class UndoRedoState {
 
 				case 'batch_delete': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'remove');
+						const batch_data = this.handleBatchOperation(last_action, 'remove');
 
 						this.undo_stack = [
 							...this.undo_stack,
@@ -426,10 +425,7 @@ export class UndoRedoState {
 				case 'copy_node': {
 					if (!last_action.data) return;
 
-					const added_copied_node = await this.addNewNode(
-						last_action.data,
-						last_action.children_nodes
-					);
+					const added_copied_node = this.addNewNode(last_action.data, last_action.children_nodes);
 					this.undo_stack = [
 						...this.undo_stack,
 						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
@@ -439,7 +435,7 @@ export class UndoRedoState {
 
 				case 'batch_copy_node': {
 					if (last_action.batch_data && last_action.batch_data.length > 0) {
-						const batch_data = await this.handleBatchOperation(last_action, 'add');
+						const batch_data = this.handleBatchOperation(last_action, 'add');
 
 						this.undo_stack = [
 							...this.undo_stack,
@@ -454,7 +450,7 @@ export class UndoRedoState {
 				case 'override_at': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_at as number,
 						action: last_action,
 						field_type: 'at',
@@ -465,7 +461,7 @@ export class UndoRedoState {
 				case 'override_af': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_ampere_frames as number,
 						action: last_action,
 						field_type: 'ampere_frames',
@@ -477,7 +473,7 @@ export class UndoRedoState {
 				case 'override_conductor_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_conductor_size as number,
 						action: last_action,
 						field_type: 'conductor_size',
@@ -488,7 +484,7 @@ export class UndoRedoState {
 				case 'override_conduit_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_conduit_size as number,
 						action: last_action,
 						field_type: 'conduit_size',
@@ -499,7 +495,7 @@ export class UndoRedoState {
 				case 'override_egc_size': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_egc_size as number,
 						action: last_action,
 						field_type: 'egc_size',
@@ -510,7 +506,7 @@ export class UndoRedoState {
 				case 'override_z': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_z as number,
 						action: last_action,
 						field_type: 'z',
@@ -521,7 +517,7 @@ export class UndoRedoState {
 				case 'override_length': {
 					if (!last_action.data) return;
 
-					await this.handleFieldOverride({
+					this.handleFieldOverride({
 						field_data: last_action.data.overrided_length as number,
 						action: last_action,
 						field_type: 'length',
@@ -530,14 +526,12 @@ export class UndoRedoState {
 					break;
 				}
 			}
-			this.db_revisions.bumpWorkspaceAndSchedule();
 		}
 	}
 }
 
 export function setUndoRedoState() {
-	const db_revisions = getDbRevisionsState();
-	return setState(new UndoRedoState(db_revisions), UNDO_REDO_STATE_CTX);
+	return setState(new UndoRedoState(), UNDO_REDO_STATE_CTX);
 }
 
 export function getUndoRedoState() {

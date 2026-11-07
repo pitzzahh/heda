@@ -1,5 +1,5 @@
 import { tv, type VariantProps } from 'tailwind-variants';
-import { anchoredSurface } from './anchored-surface';
+import { anchoredSurface } from './anchored-surface.js';
 
 /** Surface and rows shared by DropdownMenu, ContextMenu and Select in both ports. */
 export const menu = tv({

@@ -1,1 +1,1 @@
-export { onePhaseMainOrWyeCols } from './one-phase-main-or-wye-cols';
+export { onePhaseMainOrWyeCols } from './one-phase-main-or-wye-cols.js';

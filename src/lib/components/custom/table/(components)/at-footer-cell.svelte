@@ -6,9 +6,9 @@
 </script>
 
 <script lang="ts">
-	import { InfoIcon } from '#lib/assets/icons';
-	import { cn } from '#lib/utils';
-	import * as Tooltip from '#lib/components/ui/tooltip';
+	import { InfoIcon } from '#lib/assets/icons/index.js';
+	import { cn } from '#lib/utils/index.js';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 
 	let { at, has_greater_child_at }: Props = $props();
 </script>

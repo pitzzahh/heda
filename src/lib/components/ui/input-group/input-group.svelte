@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { type InputGroupSize, inputGroup } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type InputGroupSize, inputGroup } from './variants.js';
 
 	let {
 		ref = $bindable(null),

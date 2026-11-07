@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { breadcrumbStyles } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { breadcrumbStyles } from './context.js';
 
 	let { class: classProp, ...rest }: { class?: string } & HTMLAttributes<HTMLSpanElement> =
 		$props();

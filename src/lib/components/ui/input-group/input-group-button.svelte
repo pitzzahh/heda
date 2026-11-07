@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte';
 	import Button from '#lib/components/ui/button/button.svelte';
-	import type { ButtonSize } from '#lib/components/ui/button/variants';
-	import { cn } from '#lib/utils';
-	import { inputGroup } from './variants';
+	import type { ButtonSize } from '#lib/components/ui/button/variants.js';
+	import { cn } from '#lib/utils/index.js';
+	import { inputGroup } from './variants.js';
 
 	let {
 		ref = $bindable(null),

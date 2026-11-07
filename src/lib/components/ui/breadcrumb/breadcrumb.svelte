@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { type BreadcrumbSize, type BreadcrumbVariant, breadcrumb } from './variants';
-	import { setBreadcrumbStyle } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { type BreadcrumbSize, type BreadcrumbVariant, breadcrumb } from './variants.js';
+	import { setBreadcrumbStyle } from './context.js';
 
 	let {
 		children,

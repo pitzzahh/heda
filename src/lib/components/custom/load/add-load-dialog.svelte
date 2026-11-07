@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import { PlusCircleIcon } from '#lib/assets/icons';
-	import type { Node } from '#lib/types/db';
+	import { PlusCircleIcon } from '#lib/assets/icons/index.js';
+	import type { Node } from '#lib/types/db/index.js';
 
 	interface Props {
 		highest_unit?: NonNullable<Node['highest_unit_form']>;
@@ -14,10 +14,12 @@
 <script lang="ts">
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load';
-	import { cn } from '#lib/utils';
+	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
+	import { cn } from '#lib/utils/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
-	import { getNodeById } from '#lib/db/queries';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 	import { page } from '$app/state';
 
 	let {
@@ -27,6 +29,9 @@
 		latest_circuit_node,
 		panel_id_from_tree
 	}: Props = $props();
+
+	const parent_id = $derived(panel_id_from_tree || page.params.id?.split('_').at(-1) || '');
+	const parent_node = $derived(parent_id ? getNode(parent_id) : undefined);
 </script>
 
 <div class="flex flex-col gap-2">
@@ -55,30 +60,20 @@
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Supply From:</h4>
-								{#await getNodeById(panel_id_from_tree || page.params
-											.id!.split('_')
-											.at(-1) || '') then parent_node}
-									<p>
-										{#if parent_node?.highest_unit_form?.distribution_unit}
-											{parent_node.highest_unit_form.distribution_unit}
-										{:else if parent_node?.panel_data?.name}
-											{parent_node.panel_data.name}
-										{:else}
-											N/A
-										{/if}
-									</p>
-								{/await}
+								{#if parent_node?.highest_unit_form?.distribution_unit}
+									<p>{parent_node.highest_unit_form.distribution_unit}</p>
+								{:else if parent_node?.panel_data?.name}
+									<p>{parent_node.panel_data.name}</p>
+								{:else}
+									<p>N/A</p>
+								{/if}
 							</div>
 						</div>
 						<div>
 							<div class="flex gap-1">
 								<h4 class="font-semibold">Phase:</h4>
 								<p>
-									{#if highest_unit?.phase == null}
-										N/A
-									{:else}
-										{highest_unit?.phase}
-									{/if}
+									{getOptionLabel(DEFAULT_PHASES, highest_unit?.phase) || 'N/A'}
 								</p>
 							</div>
 						</div>

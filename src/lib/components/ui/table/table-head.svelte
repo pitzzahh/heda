@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLThAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { table } from './variants';
-	import { getTableStyle } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { table } from './variants.js';
+	import { getTableStyle } from './context.js';
 
 	let { children, class: className, ...rest }: { children?: Snippet } & HTMLThAttributes = $props();
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { AlertDialog as AlertDialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import type { DialogVariant } from '#lib/components/ui/dialog/context';
-	import { setAlertDialog } from './context';
+	import type { DialogVariant } from '#lib/components/ui/dialog/context.js';
+	import { setAlertDialog } from './context.js';
 
 	let {
 		children,

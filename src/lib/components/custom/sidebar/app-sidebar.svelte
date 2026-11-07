@@ -1,8 +1,8 @@
 <script lang="ts" module>
-	import { PlusIcon, DatabaseIcon } from '#lib/assets/icons';
+	import { PlusIcon, DatabaseIcon } from '#lib/assets/icons/index.js';
 	import type { ComponentProps } from 'svelte';
 	import type { Root as SidebarRoot } from '#lib/components/ui/sidebar/index.js';
-	import type { Project, Node } from '#lib/types/db';
+	import type { Project, Node } from '#lib/types/db/index.js';
 
 	type Props = ComponentProps<typeof SidebarRoot> & {
 		project?: Project;
@@ -12,12 +12,12 @@
 
 <script lang="ts">
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import { SidebarHeader, SidebarTree } from '.';
+	import { SidebarHeader, SidebarTree } from './index.js';
 	import Button from '#lib/components/ui/button/button.svelte';
-	import type { DialogState } from '#lib/state/types';
-	import { getState } from '#lib/state/index.svelte';
-	import { DIALOG_STATE_CTX } from '#lib/state/constants';
-	import { SelectedNodesActions } from './(components)';
+	import type { DialogState } from '#lib/state/types.js';
+	import { getState } from '#lib/state/index.svelte.js';
+	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
+	import { SelectedNodesActions } from './(components)/index.js';
 
 	let { ref = $bindable(null), project, root_node, ...restProps }: Props = $props();
 
