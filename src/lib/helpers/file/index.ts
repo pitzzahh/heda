@@ -35,23 +35,12 @@ export interface ParsedFileName {
 	extension: string;
 }
 
-/**
- * Gets the file name without the extension
- * @param path - The full path of the file
- * @param extension - The extension to remove
- * @returns The file name without the extension
- */
 export function getFileNameWithoutExtension(path: string, extension: string = EXTENSION): string {
 	const fileName = path.split('/').pop() || '';
 	const lastDotIndex = fileName.lastIndexOf(`.${extension}`);
 	return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
 }
 
-/**
- * A helper function to get the path of a file.
- * @param filePath the absolute file path.
- * @returns the path of the file.
- */
 export function getFilePath(filePath: string): string {
 	const parts = filePath.split('/');
 	parts.pop();

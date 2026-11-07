@@ -14,8 +14,7 @@
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { node, current_pole }: Props = $props();
-	// Writable derived: user picks override it until the next external prop change
-	// (undo/redo, refresh) recomputes it, so no effect is needed to adopt those.
+	// User picks override until undo/redo recomputes it.
 	let selected_pole = $derived(current_pole);
 
 	let undo_redo_state = getUndoRedoState();

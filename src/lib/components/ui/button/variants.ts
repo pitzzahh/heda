@@ -4,7 +4,7 @@ export const button = tv({
 	base: [
 		'relative inline-flex shrink-0 select-none items-center justify-center gap-2',
 		'whitespace-nowrap border border-transparent font-medium text-sm',
-		// Colour answers at once; the squish settles slower so it reads soft, not twitchy.
+		// Transform settles slower than colour.
 		'transition-[transform,scale,translate,background-color,border-color,color,box-shadow]',
 		'[transition-duration:var(--duration-slow),var(--duration-slow),var(--duration-slow),var(--duration-instant),var(--duration-instant),var(--duration-instant),var(--duration-instant)] ease-[var(--ease-smooth)]',
 		'active:scale-[var(--press-scale)]',
@@ -55,7 +55,6 @@ export const button = tv({
 			default: 'h-9 gap-2 rounded-lg px-4 [&_svg]:size-4',
 			lg: 'h-10 gap-2 rounded-lg px-5 active:scale-[var(--press-scale-lg)] [&_svg]:size-4.5',
 			xl: 'h-12 gap-2.5 rounded-xl px-6 text-base active:scale-[var(--press-scale-lg)] [&_svg]:size-5',
-			// Project size (home hero buttons); kept from the previous set.
 			'2xl': 'h-16 rounded-md px-16 text-xl active:scale-[var(--press-scale-lg)] [&_svg]:size-6',
 			'icon-xs': 'size-6 rounded-xs p-0 active:scale-[var(--press-scale-icon)] [&_svg]:size-3',
 			'icon-sm': 'size-8 rounded-md p-0 active:scale-[var(--press-scale-icon)] [&_svg]:size-3.5',
@@ -99,8 +98,7 @@ export const button = tv({
 	defaultVariants: { variant: 'default', size: 'default' }
 });
 
-/** Faces fill the button and inherit its justify, direction and gap. The hidden face leaves the
- * flow and is clipped across, so only what the button shows sizes it or adds scroll width. */
+/** Only the shown face sizes the button or adds scroll width. */
 export const buttonFace = tv({
 	slots: {
 		wrap: 'relative grid w-full min-w-0 grid-cols-[minmax(0,1fr)] overflow-x-clip gap-[inherit] [align-items:inherit] [flex-direction:inherit] [justify-content:inherit]',
@@ -115,7 +113,7 @@ export const buttonFace = tv({
 export type ButtonVariant = NonNullable<VariantProps<typeof button>['variant']>;
 export type ButtonSize = NonNullable<VariantProps<typeof button>['size']>;
 
-/** Square sizes show the spinner alone while loading; the label goes to assistive tech. */
+/** Square sizes show only the spinner while loading. */
 export function isIconSize(size: ButtonSize | undefined): boolean {
 	return size?.startsWith('icon') ?? false;
 }

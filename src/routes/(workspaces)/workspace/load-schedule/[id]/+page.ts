@@ -6,10 +6,10 @@ export const entries = () => {
 };
 
 export const load = async ({ params }) => {
-	// Fine-grained reactivity replaces `depends('app:workspace/load-schedule')`:
-	// this load runs only when `params` change. Tables derive live rows from
-	// `dbRevisions.schedule` keyed by the current node id, so a field edit
-	// recomputes only the schedule it touched, never the layout.
+	// No `depends('app:workspace/load-schedule')`: this load runs only when
+	// `params` change. Tables derive live rows from SignalDB cursors keyed by
+	// the current node id, so a field edit recomputes only the schedule it
+	// touched, never the layout.
 	const node_id = params.id.split('_').at(-1);
 	if (!node_id) {
 		console.warn('Viewing workspace without node_id');

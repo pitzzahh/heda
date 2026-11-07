@@ -9,9 +9,7 @@ import {
 import type { Node } from '#lib/types/db/index.js';
 import type { FileExport } from '#lib/types/main/index.js';
 
-// Files written before values were separated from labels stored the labels
-// themselves. Normalize them on load so the rest of the app only sees
-// canonical values.
+// Old files stored labels; normalize to canonical values on load.
 const LEGACY_PHASES: Record<string, string> = {
 	'1P': default_phases.ONE_PHASE,
 	'3P-Y': default_phases.THREE_PHASE_WYE,
