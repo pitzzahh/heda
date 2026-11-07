@@ -17,12 +17,7 @@ const VAULT_FILE = 'heda-v';
 // Pre-rename corpses, removed best-effort on launch (see databaseInstance).
 const LEGACY_FILES = ['heda-projects.json', 'heda-nodes.json', 'heda-vault.hold', 'salt.txt'];
 
-/**
- * Session passphrase, kept in a Stronghold vault unlocked by the session
- * secret (the file password). The vault holds per-session random key
- * material; the data key itself is never hardcoded. No session secret
- * (nothing unlocked yet) means memory-only.
- */
+/** Per-session random key material in a Stronghold vault; never hardcoded, never persisted. */
 async function loadPassphrase(vault_password: string, vault_path: string): Promise<string> {
 	const stronghold = await Stronghold.load(vault_path, vault_password);
 	let client;
@@ -97,14 +92,8 @@ async function sessionKey(): Promise<string | null> {
 }
 
 /**
- * Returns the database instance with all required collections initialized.
- * Session-scoped: previous session files are wiped on launch so every start
- * begins empty, exactly like the previous memory-only database. Outside Tauri
- * (web dev/preview) collections run on pure memory with no persistence.
- *
- * This is the only asynchronous part of the database (Stronghold + file I/O).
- * Once it settles, `getDatabase()` is synchronous, and every query and
- * mutation reads and writes the in-memory collections without yielding.
+ * Session-scoped: files wipe on launch, memory-only outside Tauri. The only
+ * async part of the database; after it settles, `getDatabase()` is sync.
  */
 export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 	if (dbInstance) return dbInstance;
@@ -152,11 +141,7 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 	return dbReady;
 }
 
-/**
- * Synchronous access to the already initialized collections. The root layout
- * awaits `initializeDatabase()` before any route renders, so every caller
- * past that point can read and write without a promise hop.
- */
+/** Sync access; the root layout awaits `initializeDatabase()` first. */
 export function getDatabase(): MyDatabaseCollections {
 	if (!dbInstance) {
 		throw new Error('Database accessed before initializeDatabase() completed');
