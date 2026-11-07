@@ -10,9 +10,9 @@
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
 	import { updateConductorSets } from '#lib/db/mutations';
-	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 
 	let { sets, node }: Props = $props();
 	// Snapshot at mount: local edit state.
@@ -25,6 +25,7 @@
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	async function saveSetsChanges() {
 		try {
@@ -39,7 +40,7 @@
 				data: updated_set as unknown as PhaseLoadSchedule,
 				previous_data: node
 			});
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			db_revisions.bumpWorkspaceAndSchedule();
 			toast.success('Sets updated successfully');
 		} catch (err) {
 			console.error(`An error occured while updating the sets: ${JSON.stringify(err)}`);

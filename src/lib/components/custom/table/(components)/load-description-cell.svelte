@@ -11,10 +11,10 @@
 
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
-	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { updateLoadDescription } from '#lib/db/mutations';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 
 	let { load_description, node_id, node_type, node }: Props = $props();
 	const load_description_suffix = $derived(load_description.split(' - ').at(-1));
@@ -28,6 +28,7 @@
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	async function saveLoadDescChanges() {
 		try {
@@ -44,7 +45,7 @@
 				data: updated_node as unknown as PhaseLoadSchedule,
 				previous_data: node
 			});
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			db_revisions.bumpWorkspaceAndSchedule();
 			toast.success('Load description updated successfully');
 		} catch (err) {
 			console.error(`Error: failed to update load description: ${JSON.stringify(err)}`);

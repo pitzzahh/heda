@@ -34,11 +34,11 @@
 	import { convertToNormalText } from '#lib/utils/text';
 	import { addNode, updateNode } from '#lib/db/mutations';
 	import { checkNodeExists } from '#lib/db/queries';
-	import { invalidate } from '$app/navigation';
 	import type { Node } from '#lib/types/db';
 	import type { TerminalTemperature } from '#lib/types/load';
 	import ScrollArea from '#lib/components/ui/scroll-area/scroll-area.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
 
@@ -53,6 +53,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 	let collapsibles = getCollapsiblesState();
 
 	// Snapshot of props at mount: initial form values never track later prop changes.
@@ -146,7 +147,7 @@
 					break;
 			}
 
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			db_revisions.bumpWorkspaceAndSchedule();
 			closeDialog();
 		}
 		submitting = false;

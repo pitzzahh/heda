@@ -1,5 +1,6 @@
 import { SettingsState } from '#lib/hooks/settings-state.svelte';
 import { UndoRedoState } from '#lib/hooks/undo-redo.svelte';
+import { DbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 import { SelectNodesToDelete } from '#lib/hooks/select-nodes-to-delete.svelte';
 import { Collapsibles } from '#lib/hooks/node-collapsibles.svelte';
 import type { ProjectState } from '#lib/hooks/project-state.svelte';
@@ -13,7 +14,8 @@ export type State =
 	| UndoRedoState
 	| SelectNodesToDelete
 	| ProjectState
-	| Collapsibles;
+	| Collapsibles
+	| DbRevisionsState;
 
 export type MainState = {
 	isArchiving: boolean;

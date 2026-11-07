@@ -49,12 +49,12 @@
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { overrideField, type FieldType } from '#lib/db/mutations';
-	import { invalidate } from '$app/navigation';
 	import * as Tooltip from '#lib/components/ui/tooltip';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	let {
 		node_id,
@@ -71,6 +71,7 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	// AT
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);
@@ -215,7 +216,7 @@
 				toast.success(`Overridden: ${overridden_fields.join(', ')}.`);
 			}
 
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			db_revisions.bumpWorkspaceAndSchedule();
 			closeDialog();
 		}
 	}
@@ -226,7 +227,7 @@
 			.join(' ');
 
 		await overrideField({ node_id, field_type, unoverride: true });
-		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		db_revisions.bumpWorkspaceAndSchedule();
 		closeDialog();
 		toast.success(`Removed override for ${formatted_field}`);
 	}

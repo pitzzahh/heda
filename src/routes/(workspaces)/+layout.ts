@@ -1,13 +1,9 @@
-import { getCurrentProject, getRootNode } from '#lib/db/queries/index.js';
-
-export const load = async ({ depends, url: { searchParams } }) => {
-	depends('app:workspace');
-	const project = await getCurrentProject(searchParams.get('project_id') ?? undefined);
-	const root_node = await getRootNode();
+export const load = async ({ url: { searchParams } }) => {
+	// Fine-grained reactivity replaces `depends('app:workspace')`: this load
+	// runs only when the route's search params change. Live project data derives
+	// from `dbRevisions.workspace` inside the layout, so mutations never rerun
+	// a load.
 	return {
-		is_new_file: searchParams.get('new_file') === 'true',
-		project_title: project?.project_name,
-		project,
-		root_node
+		is_new_file: searchParams.get('new_file') === 'true'
 	};
 };

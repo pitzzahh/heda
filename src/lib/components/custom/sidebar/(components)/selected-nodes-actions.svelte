@@ -3,8 +3,8 @@
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
 	import { removeNode } from '#lib/db/mutations';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-	import { invalidate } from '$app/navigation';
 	import { ConfirmationDialog } from '../..';
 	import { fly } from 'svelte/transition';
 	import Button from '#lib/components/ui/button/button.svelte';
@@ -12,6 +12,7 @@
 
 	let is_confirmation_dialog_open = $state(false);
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
+	const db_revisions = getDbRevisionsState();
 	const undo_redo_state = getUndoRedoState();
 
 	const component_state = $state({
@@ -48,11 +49,8 @@
 			{ id: toast_id }
 		);
 
-		await invalidate('app:workspace')
-			.then(() => invalidate('app:workspace/load-schedule'))
-			.finally(() => {
-				select_nodes_to_delete_state.removeAllNodeIds();
-			});
+		db_revisions.bumpWorkspaceAndSchedule();
+		select_nodes_to_delete_state.removeAllNodeIds();
 	}
 </script>
 

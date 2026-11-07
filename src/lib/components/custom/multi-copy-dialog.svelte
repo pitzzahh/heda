@@ -15,8 +15,8 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
-	import { invalidate } from '$app/navigation';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import { copyAndAddNodeById } from '#lib/db/mutations';
 	import { getNumberOfChildren } from '#lib/db/queries';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
@@ -33,6 +33,7 @@
 		might_take_long: false
 	});
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	async function handleMultiCopy(node_id: string) {
 		if (!multi_copy.valid) {
@@ -82,12 +83,11 @@
 				batch_data
 			});
 
-			return invalidate('app:workspace').then(() => {
-				multi_copy.processing = false;
-				open_dialog = false;
-				return toast.success(`[${copy_count}]: ${node_name} copied successfully`, {
-					id: toast_id
-				});
+			db_revisions.bumpWorkspaceAndSchedule();
+			multi_copy.processing = false;
+			open_dialog = false;
+			toast.success(`[${copy_count}]: ${node_name} copied successfully`, {
+				id: toast_id
 			});
 		} else {
 			multi_copy.processing = false;

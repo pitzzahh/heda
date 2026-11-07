@@ -70,7 +70,7 @@
 		removeNode,
 		updateNodeParentById
 	} from '#lib/db/mutations';
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Portal } from 'bits-ui';
@@ -79,6 +79,7 @@
 	import { toast } from 'svelte-sonner';
 	import { useSidebar } from '#lib/components/ui/sidebar/context.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
 	import { exportToExcel } from '#lib/helpers/export';
@@ -92,6 +93,7 @@
 	const params = $derived(page.params);
 	const sidebar_context = useSidebar();
 	const settings_state = getSettingsState();
+	const db_revisions = getDbRevisionsState();
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	let component_state = $state<ComponentState>({
@@ -112,20 +114,22 @@
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 	let is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
+	const child_nodes = $derived.by(() => {
+		void db_revisions.workspace;
+		return getChildNodesByParentId(node.id);
+	});
 
 	async function copyNodeById(node_id: string) {
 		component_state.node_name =
 			node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (component_state.open_copy_dialog) return;
-		await copyAndAddNodeById(node_id)
-			.then((copied_node) => {
-				undo_redo_state.setActionToUndo({
-					action: 'copy_node',
-					data: copied_node as unknown as PhaseLoadSchedule
-				});
-				invalidate('app:workspace');
-			})
-			.finally(() => invalidate('app:workspace/load-schedule'));
+		await copyAndAddNodeById(node_id).then((copied_node) => {
+			undo_redo_state.setActionToUndo({
+				action: 'copy_node',
+				data: copied_node as unknown as PhaseLoadSchedule
+			});
+		});
+		db_revisions.bumpWorkspaceAndSchedule();
 	}
 
 	// Handle drops between containers
@@ -152,7 +156,7 @@
 				previous_data: draggedItem as PhaseLoadSchedule
 			});
 			toast.success(`${getNodeName(draggedItem)} updated successfully`);
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+			db_revisions.bumpWorkspaceAndSchedule();
 			return;
 		}
 		return;
@@ -181,7 +185,7 @@
 		component_state.is_alt_pressed = false;
 	}}
 />
-{#await getChildNodesByParentId(node.id)}
+{#await child_nodes}
 	<Sidebar.MenuButton
 		class="hover:bg-accent flex w-full items-center justify-between transition-colors data-[active=true]:bg-transparent"
 	>
@@ -229,9 +233,8 @@
 									trigger_variant="destructive"
 									bind:some_open_state={component_state.open_load_context_menu}
 									onConfirm={async () => {
-										await removeNode(node.id)
-											.then(() => invalidate('app:workspace'))
-											.finally(() => invalidate('app:workspace/load-schedule'));
+										await removeNode(node.id);
+										db_revisions.bumpWorkspaceAndSchedule();
 									}}
 								/>
 							</ContextMenu.Content>
@@ -471,15 +474,13 @@
 												select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 											}
 										}
-										invalidate('app:workspace/load-schedule')
-											.then(() => (component_state.button_state = 'stale'))
-											.finally(() => {
-												toast.success(
-													node.node_type === 'root'
-														? `${project?.project_name ?? 'Project'} removed succesfully`
-														: `${node.panel_data?.name ?? 'Panel'} removed succesfully`
-												);
-											});
+										db_revisions.bumpWorkspaceAndSchedule();
+										component_state.button_state = 'stale';
+										toast.success(
+											node.node_type === 'root'
+												? `${project?.project_name ?? 'Project'} removed succesfully`
+												: `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+										);
 									}}
 								/>
 							</ContextMenu.Content>
@@ -573,18 +574,17 @@
 					select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 				}
 			}
-			invalidate('app:workspace').finally(() => {
-				component_state.button_state = 'stale';
-				component_state.open_tree_delete_dialog = false;
-				toast.success(
-					node.node_type === 'root'
-						? `${project?.project_name ?? 'Project'} removed succesfully`
-						: node.node_type === 'panel'
-							? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
-							: `${node.load_data?.load_description ?? 'Load'} removed succesfully`,
-					{ id: toast_id }
-				);
-			});
+			db_revisions.bumpWorkspaceAndSchedule();
+			component_state.button_state = 'stale';
+			component_state.open_tree_delete_dialog = false;
+			toast.success(
+				node.node_type === 'root'
+					? `${project?.project_name ?? 'Project'} removed succesfully`
+					: node.node_type === 'panel'
+						? `${node.panel_data?.name ?? 'Panel'} removed succesfully`
+						: `${node.load_data?.load_description ?? 'Load'} removed succesfully`,
+				{ id: toast_id }
+			);
 		}}
 	/>
 {/snippet}

@@ -1,24 +1,44 @@
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+</script>
+
 <script lang="ts">
 	import { DataTable } from '#lib/components/custom/table';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 	import { page } from '$app/state';
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
-	import { getRootNode, getNodeById } from '#lib/db/queries/index.js';
+	import {
+		getComputedLoads,
+		getComputedVoltageDrops,
+		getNodeById,
+		getRootNode
+	} from '#lib/db/queries/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { LightningAIcon } from '#lib/assets/icons';
 	import { getProjectState } from '#lib/hooks/project-state.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Skeleton } from '#lib/components/ui/skeleton';
 
-	let { data } = $props();
-
-	const root_node = $derived(data.root_node);
 	const params = $derived(page.params);
 	const node_id = $derived(params.id!.split('_').at(-1) as string);
 	const project_state = getProjectState();
+	const db_revisions = getDbRevisionsState();
+
+	// Live schedule rows: recomputes only when `dbRevisions.schedule` changes
+	// or the route's node id changes. No `$effect`, no `depends`, no invalidate.
+	const schedule = $derived.by(async () => {
+		void db_revisions.schedule;
+		const [current_node, loads, voltage_drops, root_node] = await Promise.all([
+			getNodeById(node_id),
+			getComputedLoads(node_id),
+			getComputedVoltageDrops(),
+			getRootNode()
+		]);
+		return { current_node, loads, voltage_drops, root_node };
+	});
 
 	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
@@ -102,17 +122,41 @@
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched" class="flex min-h-0 flex-1 flex-col">
-			<DataTable
-				data={data.loads && data.loads.length > 0 ? data.loads : []}
-				columns={onePhaseMainOrWyeCols(
-					data.current_node as PhaseLoadSchedule,
-					root_node?.highest_unit_form
-				)}
-				is_footer_shown={data.current_node?.node_type !== 'root'}
-			/>
+			{#await schedule}
+				<div class="border-border bg-card grid min-h-0 flex-1 place-items-center rounded-xl border">
+					<Skeleton class="h-40 w-2/3" />
+				</div>
+			{:then schedule_data}
+				<DataTable
+					data={schedule_data.loads && schedule_data.loads.length > 0 ? schedule_data.loads : []}
+					columns={onePhaseMainOrWyeCols(
+						schedule_data.current_node as PhaseLoadSchedule,
+						schedule_data.root_node?.highest_unit_form
+					)}
+					is_footer_shown={schedule_data.current_node?.node_type !== 'root'}
+				/>
+			{:catch}
+				<div class="text-muted-foreground grid min-h-0 flex-1 place-items-center text-sm">
+					Could not load the schedule.
+				</div>
+			{/await}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
-			<DataTable data={data.voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
+			{#await schedule}
+				<div class="border-border bg-card grid min-h-0 flex-1 place-items-center rounded-xl border">
+					<Skeleton class="h-40 w-2/3" />
+				</div>
+			{:then schedule_data}
+				<DataTable
+					data={schedule_data.voltage_drops}
+					is_footer_shown={false}
+					columns={voltageDropColumns()}
+				/>
+			{:catch}
+				<div class="text-muted-foreground grid min-h-0 flex-1 place-items-center text-sm">
+					Could not load voltage drops.
+				</div>
+			{/await}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
