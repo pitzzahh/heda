@@ -13,17 +13,15 @@
 </script>
 
 <div class="grid w-full place-content-center">
-	<Tooltip.Provider delayDuration={100}>
-		<Tooltip.Root>
-			<Tooltip.Trigger>
-				<p class="text-destructive flex items-center gap-[7px] text-center">
-					{trigger_value}
-					<InfoIcon class="size-[14px]" />
-				</p>
-			</Tooltip.Trigger>
-			<Tooltip.Content class="bg-destructive text-destructive-foreground">
-				{tooltip_content}
-			</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			<p class="text-destructive flex items-center gap-[7px] text-center">
+				{trigger_value}
+				<InfoIcon class="size-[14px]" />
+			</p>
+		</Tooltip.Trigger>
+		<Tooltip.Content class="bg-destructive text-destructive-foreground">
+			{tooltip_content}
+		</Tooltip.Content>
+	</Tooltip.Root>
 </div>

@@ -44,6 +44,7 @@ vi.mock('#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js', (
 }));
 
 import LoadSchedulePage from './+page.svelte';
+import { seen_columns } from './datatable.stub.svelte';
 
 vi.stubGlobal(
 	'ResizeObserver',
@@ -83,6 +84,25 @@ describe('load schedule page', () => {
 		click_trigger('Load Schedule');
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
 		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
+		unmount(component);
+	});
+
+	test('column definitions keep identity across tab switches', () => {
+		seen_columns.length = 0;
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+
+		click_trigger('Voltage Drop');
+		click_trigger('Load Schedule');
+		flushSync();
+
+		for (const footer of [true, false]) {
+			const entries = seen_columns.filter((entry) => entry.footer === footer);
+			expect(entries.length).toBeGreaterThan(0);
+			for (const entry of entries) {
+				expect(entry.columns).toBe(entries[0]?.columns);
+			}
+		}
 		unmount(component);
 	});
 });

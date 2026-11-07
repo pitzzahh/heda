@@ -1,7 +1,6 @@
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-import type { Node } from '#lib/types/db/index.js';
 import {
 	PoleDropdown,
 	LoadDescriptionCell,
@@ -137,8 +136,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 ];
 
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
-	current_node: PhaseLoadSchedule,
-	highest_unit?: NonNullable<Node['highest_unit_form']>
+	current_node: PhaseLoadSchedule
 ): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
@@ -243,15 +241,13 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 		header: 'Actions',
 		cell: ({ row }) => {
 			return renderComponent(ActionsColumnDropdown, {
-				node: row.original,
-				highest_unit
+				node: row.original
 			});
 		},
 
 		footer: () => {
 			return renderComponent(ActionsColumnDropdown, {
-				node: current_node as PhaseLoadSchedule,
-				highest_unit
+				node: current_node as PhaseLoadSchedule
 			});
 		}
 	}
