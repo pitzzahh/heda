@@ -1,4 +1,4 @@
-import type { Node } from '#lib/types/db';
+import type { Node } from '#lib/types/db/index.js';
 
 // NOTE: This is a temporary type for the columns in single-phase and three-phase loads.
 export type PhaseLoadSchedule = {

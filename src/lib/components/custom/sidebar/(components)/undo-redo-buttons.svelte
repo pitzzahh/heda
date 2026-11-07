@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { ArrowUUpLeftIcon, ArrowUUpRightIcon, CircleNotchIcon } from '#lib/assets/icons';
-	import * as Tooltip from '#lib/components/ui/tooltip';
-	import { buttonVariants } from '#lib/components/ui/button';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { cn } from '#lib/utils';
+	import { ArrowUUpLeftIcon, ArrowUUpRightIcon, CircleNotchIcon } from '#lib/assets/icons/index.js';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { buttonVariants } from '#lib/components/ui/button/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { cn } from '#lib/utils/index.js';
 	const undo_redo_state = getUndoRedoState();
 	let component_state = $state({
 		undo_status: 'idle' as 'idle' | 'processing',

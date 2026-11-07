@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Collapsible as CollapsiblePrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 
 	let {
 		children,

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Tabs as TabsPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { setTabs, type TabsOrientation, type TabsSize, type TabsVariant } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { setTabs, type TabsOrientation, type TabsSize, type TabsVariant } from './context.js';
 
 	let {
 		children,

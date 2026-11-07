@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-	import { setDropdownMenu } from './context';
+	import { setDropdownMenu } from './context.js';
 
 	let { open = $bindable(false), ...rest }: DropdownMenuPrimitive.RootProps = $props();
 

@@ -1,5 +1,5 @@
-import { COLLAPSIBLES_STATE_CTX } from '#lib/state/constants';
-import { getState, setState } from '#lib/state/index.svelte';
+import { COLLAPSIBLES_STATE_CTX } from '#lib/state/constants.js';
+import { getState, setState } from '#lib/state/index.svelte.js';
 import { PersistedState } from 'runed';
 export class Collapsibles {
 	persisted_state: PersistedState<string[]>;

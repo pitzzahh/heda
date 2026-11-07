@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import { cn } from '#lib/utils';
-	import { dialogFrame, dialogWidth } from './variants';
-	import { getDialog } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { dialogFrame, dialogWidth } from './variants.js';
+	import { getDialog } from './context.js';
 
 	let { children, class: classProp }: { children?: Snippet; class?: string } = $props();
 

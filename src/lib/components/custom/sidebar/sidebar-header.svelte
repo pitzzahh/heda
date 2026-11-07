@@ -5,8 +5,8 @@
 		ExportIcon,
 		FloppyDiskIcon,
 		TableIcon
-	} from '#lib/assets/icons';
-	import type { Node } from '#lib/types/db';
+	} from '#lib/assets/icons/index.js';
+	import type { Node } from '#lib/types/db/index.js';
 
 	interface Props {
 		root_node: Node;
@@ -14,23 +14,23 @@
 </script>
 
 <script lang="ts">
-	import * as Tooltip from '#lib/components/ui/tooltip';
-	import { Button, buttonVariants } from '#lib/components/ui/button';
-	import { Settings } from '..';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { Settings } from '../index.js';
 	import { toast } from 'svelte-sonner';
-	import { UndoRedoButtons } from './(components)';
-	import { exportToExcel } from '#lib/helpers/export';
-	import type { ButtonState } from '#lib/types/misc';
-	import type { FileExport } from '#lib/types/main';
-	import { getSessionPassword } from '#lib/db/session';
-	import { writeEncryptedFile } from '#lib/helpers/file';
-	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
-	import { getProjectState } from '#lib/hooks/project-state.svelte';
+	import { UndoRedoButtons } from './(components)/index.js';
+	import { exportToExcel } from '#lib/helpers/export/index.js';
+	import type { ButtonState } from '#lib/types/misc/index.js';
+	import type { FileExport } from '#lib/types/main/index.js';
+	import { getSessionPassword } from '#lib/db/session.js';
+	import { writeEncryptedFile } from '#lib/helpers/file/index.js';
+	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
+	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { Portal } from 'bits-ui';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	let { root_node }: Props = $props();
 
 	let component_state = $state({
@@ -54,7 +54,7 @@
 				});
 			}
 
-			const current_project = await getCurrentProject();
+			const current_project = getCurrentProject();
 
 			if (!current_project) {
 				console.error('Failed to save, no project found');
@@ -65,7 +65,7 @@
 
 			const file_data: FileExport = {
 				project: current_project,
-				nodes: await getAllChildNodes(current_project.root_node_id, true)
+				nodes: getAllChildNodes(current_project.root_node_id, true)
 			};
 
 			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);

@@ -1,5 +1,5 @@
-import { setState, getState } from '#lib/state/index.svelte';
-import { SELECT_NODES_TO_DELETE_CTX } from '#lib/state/constants';
+import { setState, getState } from '#lib/state/index.svelte.js';
+import { SELECT_NODES_TO_DELETE_CTX } from '#lib/state/constants.js';
 
 export class SelectNodesToDelete {
 	selected_nodes_id = $state<string[]>([]);

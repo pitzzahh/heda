@@ -9,24 +9,24 @@
 		PlusIcon,
 		TrashIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons';
-	import { Button, buttonVariants } from '#lib/components/ui/button';
+	} from '#lib/assets/icons/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import { heda_logo_for_dark, heda_logo_for_light } from '#lib/assets/index';
+	import { heda_logo_for_dark, heda_logo_for_light } from '#lib/assets/index.js';
 	import { toast } from 'svelte-sonner';
-	import { handleLoadFile, type NeedPassword } from '#lib/helpers/file';
-	import { clearSessionPassword } from '#lib/db/session';
-	import { PasswordDialog } from '#lib/components/custom';
-	import type { RecentProject } from '#lib/types/main';
+	import { handleLoadFile, type NeedPassword } from '#lib/helpers/file/index.js';
+	import { clearSessionPassword } from '#lib/db/session.js';
+	import { PasswordDialog } from '#lib/components/custom/index.js';
+	import type { RecentProject } from '#lib/types/main/index.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { Separator } from '#lib/components/ui/separator';
+	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
-	import { cn } from '#lib/utils';
-	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { cn } from '#lib/utils/index.js';
+	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { onMount } from 'svelte';
 	import * as pj from '../../package.json';
 

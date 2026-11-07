@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils';
-	import { focusGroupControl, type InputGroupAddonAlign, inputGroupAddon } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { focusGroupControl, type InputGroupAddonAlign, inputGroupAddon } from './variants.js';
 
 	let {
 		ref = $bindable(null),

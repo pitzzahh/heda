@@ -1,5 +1,5 @@
 import { tv, type VariantProps } from 'tailwind-variants';
-import { controlSize, fieldFrame } from '#lib/components/ui/shared/control';
+import { controlSize, fieldFrame } from '#lib/components/ui/shared/control.js';
 
 // Open state is `data-popup-open` from Base UI and `data-state=open` from bits-ui.
 export const selectTrigger = tv({

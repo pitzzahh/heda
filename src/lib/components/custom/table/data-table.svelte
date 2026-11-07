@@ -12,8 +12,8 @@
 	import { getCoreRowModel } from '@tanstack/table-core';
 	import { createSvelteTable, FlexRender } from '#lib/components/ui/data-table/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
-	import { TableIcon } from '#lib/assets/icons';
-	import { cn } from '#lib/utils';
+	import { TableIcon } from '#lib/assets/icons/index.js';
+	import { cn } from '#lib/utils/index.js';
 
 	let { data, columns, is_footer_shown }: DataTableProps<TData, TValue> = $props();
 

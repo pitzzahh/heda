@@ -40,7 +40,7 @@
 		RssIcon,
 		SunIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons';
+	} from '#lib/assets/icons/index.js';
 	import { slide } from 'svelte/transition';
 	import { PersistedState } from 'runed';
 	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
@@ -51,27 +51,27 @@
 	import { cubicOut } from 'svelte/easing';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
-	import * as Select from '#lib/components/ui/select';
+	import * as Select from '#lib/components/ui/select/index.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
-	import type { Font } from '#lib/types/settings';
-	import { cn } from '#lib/utils';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
+	import type { Font } from '#lib/types/settings/index.js';
+	import { cn } from '#lib/utils/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { Switch } from '#lib/components/ui/switch/index.js';
-	import { updateProjectSettings } from '#lib/db/mutations';
+	import { updateProjectSettings } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
-	import { checkForUpdates, installUpdate } from '#lib/utils/update';
+	import { checkForUpdates, installUpdate } from '#lib/utils/update/index.js';
 	import { Update } from '@tauri-apps/plugin-updater';
 	import * as pj from '../../../../package.json';
 	import { userPrefersMode } from 'mode-watcher';
-	import type { Settings } from '#lib/types/settings';
-	import { DIALOG_STATE_CTX } from '#lib/state/constants';
-	import { getState } from '#lib/state/index.svelte';
-	import type { DialogState } from '#lib/state/types';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getProjectState } from '#lib/hooks/project-state.svelte';
-	import { resetData } from '#lib/db/mutations';
+	import type { Settings } from '#lib/types/settings/index.js';
+	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
+	import { getState } from '#lib/state/index.svelte.js';
+	import type { DialogState } from '#lib/state/types.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { resetData } from '#lib/db/mutations/index.js';
 
 	const themeColors = [
 		{ name: 'Autocad', value: 'autocad', bg: 'bg-[#BF2722]' },
@@ -95,12 +95,14 @@
 	async function savePreference(message: string) {
 		if (!project_state.loaded) return;
 
-		await updateProjectSettings(project_state.id, {
+		const updated = updateProjectSettings(project_state.id, {
 			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
-		})
-			.then(() => undo_redo_state.setHasUnsavedActions())
-			.finally(() => toast.success(message))
-			.catch((e) => toast.warning(e));
+		});
+
+		if (!updated) return toast.warning('Failed to save the preference');
+
+		undo_redo_state.setHasUnsavedActions();
+		toast.success(message);
 	}
 
 	function handleChangeThemeColor(themeColor: Settings['color']) {
@@ -116,8 +118,8 @@
 		}
 	}
 
-	async function handleNewProject() {
-		await resetData();
+	function handleNewProject() {
+		resetData();
 		dialogs_state.highestUnit = true;
 		component_state.current.settings_open = false;
 	}

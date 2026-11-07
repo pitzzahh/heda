@@ -3,9 +3,9 @@
 	import InputGroup from '#lib/components/ui/input-group/input-group.svelte';
 	import InputGroupAddon from '#lib/components/ui/input-group/input-group-addon.svelte';
 	import InputGroupInput from '#lib/components/ui/input-group/input-group-input.svelte';
-	import type { InputGroupSize } from '#lib/components/ui/input-group/variants';
+	import type { InputGroupSize } from '#lib/components/ui/input-group/variants.js';
 	import LetterMorph from '#lib/components/text/letter-morph/letter-morph.svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import {
 		DEFAULT_STRENGTH_LABELS,
 		measurePassword,
@@ -13,8 +13,8 @@
 		type PasswordStrength,
 		type PasswordStrengthLabels,
 		strengthLabel
-	} from './strength';
-	import { passwordInput } from './variants';
+	} from './strength.js';
+	import { passwordInput } from './variants.js';
 
 	let {
 		label,

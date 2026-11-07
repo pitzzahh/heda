@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Select as SelectPrimitive } from 'bits-ui';
-	import type { SelectTriggerSize } from './variants';
-	import { setSelectSize } from './context';
+	import type { SelectTriggerSize } from './variants.js';
+	import { setSelectSize } from './context.js';
 
 	let {
 		open = $bindable(false),

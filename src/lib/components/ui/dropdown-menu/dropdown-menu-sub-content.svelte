@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { type MenuSize, menu } from '#lib/components/ui/shared/menu';
-	import { ANCHORED } from '#lib/components/ui/shared/anchor';
+	import { cn } from '#lib/utils/index.js';
+	import { type MenuSize, menu } from '#lib/components/ui/shared/menu.js';
+	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
 
 	let {
 		class: classProp,

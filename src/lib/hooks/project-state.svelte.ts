@@ -1,8 +1,8 @@
 import { PersistedState } from 'runed';
-import { setState, getState } from '#lib/state/index.svelte';
-import { PROJECT_STATE_CTX } from '#lib/state/constants';
+import { setState, getState } from '#lib/state/index.svelte.js';
+import { PROJECT_STATE_CTX } from '#lib/state/constants.js';
 import { exists } from '@tauri-apps/plugin-fs';
-import type { RecentProject } from '#lib/types/main';
+import type { RecentProject } from '#lib/types/main/index.js';
 
 type ProjectStateType = {
 	recent_projects?: RecentProject[];

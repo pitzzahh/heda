@@ -1,22 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import {
+	STANDARD_TERMINAL_TEMPERATURE,
+	default_load_types,
+	default_phases
+} from '#lib/constants/index.js';
 import * as v from 'valibot';
-import { HIGHEST_UNIT_SCHEMA } from './index';
+import { HIGHEST_UNIT_SCHEMA } from './index.js';
 import {
 	GENERIC_PHASE_MAIN_LOAD_SCHEMA,
 	QUANTITY_LABEL_FIELD,
 	VARIES_LABEL_FIELD
-} from './load/index';
-import { GENERIC_PHASE_PANEL_SCHEMA } from './panel/index';
-import { NODE_DOC_SCHEMA, PROJECT_DOC_SCHEMA } from './db';
-import { SETTINGS_SCHEMA } from './settings';
-import { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from './misc';
+} from './load/index.js';
+import { GENERIC_PHASE_PANEL_SCHEMA } from './panel/index.js';
+import { NODE_DOC_SCHEMA, PROJECT_DOC_SCHEMA } from './db.js';
+import { SETTINGS_SCHEMA } from './settings.js';
+import { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from './misc.js';
 
 describe('validators', () => {
 	it('accepts valid inputs', () => {
 		expect(
 			v.safeParse(HIGHEST_UNIT_SCHEMA, {
 				distribution_unit: 'Transformer',
-				phase: '1P',
+				phase: default_phases.ONE_PHASE,
 				password: 'correct-horse',
 				confirm_password: 'correct-horse'
 			}).success
@@ -40,21 +45,21 @@ describe('validators', () => {
 				circuit_number: 1,
 				ambient_temperature: 30,
 				length: 10,
-				terminal_temperature: 'Standard Temperature',
-				phase: '1P'
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
 			}).success
 		).toBe(true);
 		expect(
 			v.safeParse(GENERIC_PHASE_MAIN_LOAD_SCHEMA, {
 				circuit_number: 1,
-				terminal_temperature: 'Standard Temperature',
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 				ambient_temperature: 30,
 				length: 10,
 				quantity: 2,
 				load_description: 'Lighting Outlet',
 				varies: '50',
 				continuous: true,
-				load_type: 'Lighting Load'
+				load_type: default_load_types.LIGHTING_LOAD
 			}).success
 		).toBe(true);
 		expect(
@@ -75,7 +80,7 @@ describe('validators', () => {
 		);
 		const mismatch = v.safeParse(HIGHEST_UNIT_SCHEMA, {
 			distribution_unit: 'Transformer',
-			phase: '1P',
+			phase: default_phases.ONE_PHASE,
 			password: 'correct-horse',
 			confirm_password: 'different-horse'
 		});
@@ -88,7 +93,7 @@ describe('validators', () => {
 		expect(
 			v.safeParse(HIGHEST_UNIT_SCHEMA, {
 				distribution_unit: 'Transformer',
-				phase: '1P',
+				phase: default_phases.ONE_PHASE,
 				password: 'short',
 				confirm_password: 'short'
 			}).success
@@ -98,7 +103,7 @@ describe('validators', () => {
 				name: '',
 				circuit_number: 0,
 				length: 10,
-				phase: '1P'
+				phase: default_phases.ONE_PHASE
 			}).success
 		).toBe(false);
 		expect(
@@ -109,7 +114,7 @@ describe('validators', () => {
 				load_description: '',
 				varies: 'abc',
 				continuous: true,
-				load_type: 'Lighting Load'
+				load_type: default_load_types.LIGHTING_LOAD
 			}).success
 		).toBe(false);
 		expect(v.safeParse(VARIES_LABEL_FIELD, 'nope').success).toBe(false);
@@ -121,12 +126,12 @@ describe('validators', () => {
 			name: 'LP-1',
 			circuit_number: 1,
 			length: 10,
-			phase: '1P'
+			phase: default_phases.ONE_PHASE
 		});
 		expect(panel.success).toBe(true);
 		if (panel.success) {
 			expect(panel.output.ambient_temperature).toBe(30);
-			expect(panel.output.terminal_temperature).toBe('Standard Temperature');
+			expect(panel.output.terminal_temperature).toBe(STANDARD_TERMINAL_TEMPERATURE);
 		}
 	});
 });

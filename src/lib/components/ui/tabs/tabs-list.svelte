@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Tabs as TabsPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { tabsFrame } from './variants';
-	import { getTabs } from './context';
+	import { cn } from '#lib/utils/index.js';
+	import { tabsFrame } from './variants.js';
+	import { getTabs } from './context.js';
 
 	let { children, class: classProp, ...rest }: TabsPrimitive.ListProps = $props();
 

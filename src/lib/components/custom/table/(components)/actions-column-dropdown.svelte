@@ -5,10 +5,10 @@
 		DotsThreeIcon,
 		PencilIcon,
 		TrashIcon
-	} from '#lib/assets/icons';
-	import type { Node } from '#lib/types/db';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-	import type { VoltageDrop } from '#lib/types/voltage-drop';
+	} from '#lib/assets/icons/index.js';
+	import type { Node } from '#lib/types/db/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 
 	interface Props {
 		node: VoltageDrop | PhaseLoadSchedule;
@@ -20,20 +20,21 @@
 <script lang="ts">
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import { Button } from '#lib/components/ui/button';
-	import { copyAndAddNodeById, removeNode } from '#lib/db/mutations';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { copyAndAddNodeById, removeNode } from '#lib/db/mutations/index.js';
 	import GenericPhaseMainLoadForm from '#lib/components/custom/load/generic-phase-main-load-form.svelte';
-	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom';
-	import { getNodeById } from '#lib/db/queries';
+	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 	import ParentPanelPopover from '../../parent-panel-popover.svelte';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
 	import { toast } from 'svelte-sonner';
 	import OverrideSelectors from '../../override-selectors.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
-	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
-	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 
 	let { node, highest_unit, is_in_vd_table }: Props = $props();
 	const phase = $derived(highest_unit?.phase);
@@ -46,25 +47,26 @@
 	let node_name = $state('Unknown');
 	let open_copy_dialog = $state(false);
 
+	const parent_node = $derived(node.parent_id ? getNode(node.parent_id) : undefined);
+	const parent_display = $derived(
+		selected_parent ??
+			(parent_node
+				? {
+						name:
+							parent_node.highest_unit_form?.distribution_unit ||
+							parent_node.panel_data?.name ||
+							'',
+						id: parent_node.id
+					}
+				: null)
+	);
+
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 	let settings_state = getSettingsState();
 	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
-	// Loads the parent name for display whenever the row node changes.
-	$effect(() => {
-		if (node.parent_id) {
-			getNodeById(node.parent_id).then((node) => {
-				selected_parent = {
-					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
-					id: node?.id || ''
-				};
-			});
-		}
-	});
-
-	async function handleRemoveLoad() {
-		const result = await removeNode(node.id);
+	function handleRemoveLoad() {
+		const result = removeNode(node.id);
 		if (result) {
 			undo_redo_state.setActionToUndo({
 				action: 'delete_node',
@@ -73,7 +75,6 @@
 			});
 		}
 
-		db_revisions.bumpWorkspaceAndSchedule();
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 	}
@@ -82,16 +83,14 @@
 		return typeof (data as VoltageDrop).z !== 'undefined';
 	}
 
-	async function copyNodeById(node_id: string) {
+	function copyNodeById(node_id: string) {
 		node_name = node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (open_copy_dialog) return;
-		await copyAndAddNodeById(node_id).then((copied_node) => {
-			undo_redo_state.setActionToUndo({
-				action: 'copy_node',
-				data: copied_node as unknown as PhaseLoadSchedule
-			});
+		const copied_node = copyAndAddNodeById(node_id);
+		undo_redo_state.setActionToUndo({
+			action: 'copy_node',
+			data: copied_node as unknown as PhaseLoadSchedule
 		});
-		db_revisions.bumpWorkspaceAndSchedule();
 	}
 </script>
 
@@ -113,9 +112,9 @@
 						Update
 					</DropdownMenu.Item>
 					<DropdownMenu.Item
-						onclick={async () => {
+						onclick={() => {
 							open_copy_dialog = settings_state.is_load_multi_copy;
-							await copyNodeById(node.id);
+							copyNodeById(node.id);
 						}}
 					>
 						<CopyIcon class="ml-2 size-4" />
@@ -162,10 +161,11 @@
 						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
 							<!-- <p>{distribution_unit ?? 'N/A'}</p> -->
-							{#if selected_parent}
+							{#if parent_display}
 								<ParentPanelPopover
 									current_parent_id={node.parent_id || ''}
-									bind:selected_parent
+									selected_parent={parent_display}
+									onselect={(parent) => (selected_parent = parent)}
 									excluded_node_id={node.id}
 								/>
 							{/if}
@@ -175,11 +175,7 @@
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
 							<p>
-								{#if phase == null}
-									N/A
-								{:else}
-									{phase}
-								{/if}
+								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}
 							</p>
 						</div>
 					</div>
@@ -189,7 +185,7 @@
 		<Separator class="mt-0.5" />
 		<GenericPhaseMainLoadForm
 			action="edit"
-			selected_parent_id={selected_parent?.id}
+			selected_parent_id={parent_display?.id}
 			closeDialog={() => (is_update_dialog_open = false)}
 			node_to_edit={node}
 		/>

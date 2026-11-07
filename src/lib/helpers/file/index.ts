@@ -12,11 +12,11 @@ import {
 	decryptFilePayload,
 	detectFileVersion,
 	packFileV2
-} from './format';
-import { setSessionPassword } from '#lib/db/session';
+} from './format.js';
+import { setSessionPassword } from '#lib/db/session.js';
 import { toast } from 'svelte-sonner';
-import type { FileExport, RecentProject } from '#lib/types/main';
-import { loadCurrentProject } from '#lib/db/mutations';
+import type { FileExport, RecentProject } from '#lib/types/main/index.js';
+import { loadCurrentProject } from '#lib/db/mutations/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 
 export interface NeedPassword {

@@ -1,9 +1,9 @@
 import type { ColumnDef } from '@tanstack/table-core';
-import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-columns';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
-import type { Node } from '#lib/types/db';
-import { renderComponent } from '#lib/components/ui/data-table';
-import { ConductorSetsCell, InsulationsDropdown, ErrorCell } from '../(components)';
+import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-columns.js';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { Node } from '#lib/types/db/index.js';
+import { renderComponent } from '#lib/components/ui/data-table/index.js';
+import { ConductorSetsCell, InsulationsDropdown, ErrorCell } from '../(components)/index.js';
 
 export function onePhaseMainOrWyeCols(
 	current_node: PhaseLoadSchedule,
