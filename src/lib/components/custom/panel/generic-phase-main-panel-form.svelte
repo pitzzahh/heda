@@ -35,7 +35,7 @@
 	} from '#lib/constants/index.js';
 	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
 	import type { Phase } from '#lib/types/phase/index.js';
-	import { convertToNormalText } from '#lib/utils/text/index.js';
+	import { convertToNormalText } from '#lib/utils/format/index.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
 	import type { Node } from '#lib/types/db/index.js';

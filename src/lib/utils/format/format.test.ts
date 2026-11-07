@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatFraction, getOptionLabel } from './index.js';
+import { convertToNormalText, formatFraction, getOptionLabel } from './index.js';
 
 describe('formatFraction', () => {
 	it('renders mixed fractions', () => {
@@ -40,5 +40,12 @@ describe('getOptionLabel', () => {
 	it('renders an empty string for missing values', () => {
 		expect(getOptionLabel(options, null)).toBe('');
 		expect(getOptionLabel(options, undefined)).toBe('');
+	});
+});
+
+describe('convertToNormalText', () => {
+	it('normalizes separators and casing', () => {
+		expect(convertToNormalText('LOAD_SCHEDULE')).toBe('Load schedule');
+		expect(convertToNormalText('VOLTAGE_DROP', true)).toBe('Voltage drop');
 	});
 });

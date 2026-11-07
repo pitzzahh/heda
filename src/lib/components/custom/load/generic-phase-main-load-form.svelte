@@ -47,7 +47,7 @@
 	import { page } from '$app/state';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
-	import { convertToNormalText } from '#lib/utils/text/index.js';
+	import { convertToNormalText } from '#lib/utils/format/index.js';
 	import type { Node } from '#lib/types/db/index.js';
 	import type {
 		LoadType,
