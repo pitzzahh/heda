@@ -6,6 +6,7 @@
 	import type { DialogState } from '#lib/state/types';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants';
 	import { setSettingsState } from '#lib/hooks/settings-state.svelte';
+	import { setDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte';
 	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
 	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte';
@@ -16,6 +17,7 @@
 	let { children } = $props();
 
 	// INIT GLOBAL STATES
+	setDbRevisionsState();
 	setSettingsState(mode.current === 'light' ? 'light' : 'dark');
 	setUndoRedoState();
 	setSelectNodesToDeleteState();

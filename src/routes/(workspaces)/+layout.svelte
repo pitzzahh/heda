@@ -13,6 +13,8 @@
 	import UndoRedoWrapper from '#lib/components/custom/undo-redo-wrapper.svelte';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { getCurrentProject, getRootNode } from '#lib/db/queries/index.js';
 	import { page } from '$app/state';
 	import {
 		CaretRightIcon,
@@ -29,8 +31,18 @@
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	const on_load_schedule = $derived(page.url.pathname.includes('load-schedule'));
+	const project_id = $derived(page.url.searchParams.get('project_id') ?? undefined);
+
+	// Live workspace rows: recomputes only when `dbRevisions.workspace` changes
+	// or the route's project id changes. No `$effect`, no `depends`, no invalidate.
+	const workspace = $derived.by(async () => {
+		void db_revisions.workspace;
+		const [project, root_node] = await Promise.all([getCurrentProject(project_id), getRootNode()]);
+		return { project, root_node };
+	});
 
 	// Reacts to navigation: opens the new-file dialog. (Project loads announce
 	// themselves from the home page; a loading toast here could never dismiss.)
@@ -42,7 +54,15 @@
 <PageProgress />
 <UndoRedoWrapper>
 	<Sidebar.Provider class="h-svh overflow-hidden">
-		<AppSidebar project={data.project} root_node={data.root_node as Node} />
+		{#await workspace}
+			<aside class="flex h-full w-64 shrink-0 flex-col gap-2 border-r p-3">
+				<div class="bg-muted h-8 w-full rounded-md"></div>
+				<div class="bg-muted h-8 w-full rounded-md"></div>
+				<div class="bg-muted h-8 w-full rounded-md"></div>
+			</aside>
+		{:then workspace_data}
+			<AppSidebar project={workspace_data.project} root_node={workspace_data.root_node as Node} />
+		{/await}
 		<Sidebar.Inset class="overflow-y-auto">
 			<header
 				class="bg-background/80 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl backdrop-saturate-150 sm:px-4"

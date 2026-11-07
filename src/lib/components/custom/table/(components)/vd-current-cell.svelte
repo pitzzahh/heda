@@ -13,11 +13,12 @@
 	import * as Tooltip from '#lib/components/ui/tooltip';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { useAtAsCurrentsValue } from '#lib/db/mutations';
-	import { invalidate } from '$app/navigation';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 
 	let { current, is_at_used, node }: Props = $props();
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	async function handleChangeCurrentsValue() {
 		const updated_data = (await useAtAsCurrentsValue(
@@ -29,7 +30,7 @@
 			previous_data: node,
 			data: updated_data
 		});
-		await invalidate('app:workspace/load-schedule');
+		db_revisions.bumpSchedule();
 	}
 </script>
 

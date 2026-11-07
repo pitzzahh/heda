@@ -22,7 +22,6 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button } from '#lib/components/ui/button';
 	import { copyAndAddNodeById, removeNode } from '#lib/db/mutations';
-	import { invalidate } from '$app/navigation';
 	import GenericPhaseMainLoadForm from '#lib/components/custom/load/generic-phase-main-load-form.svelte';
 	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom';
 	import { getNodeById } from '#lib/db/queries';
@@ -32,6 +31,7 @@
 	import { toast } from 'svelte-sonner';
 	import OverrideSelectors from '../../override-selectors.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
 
@@ -47,6 +47,7 @@
 	let open_copy_dialog = $state(false);
 
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 	let settings_state = getSettingsState();
 	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
@@ -72,7 +73,7 @@
 			});
 		}
 
-		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		db_revisions.bumpWorkspaceAndSchedule();
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
 	}
@@ -84,15 +85,13 @@
 	async function copyNodeById(node_id: string) {
 		node_name = node.panel_data?.name || node.load_data?.load_description || 'Unknown';
 		if (open_copy_dialog) return;
-		await copyAndAddNodeById(node_id)
-			.then((copied_node) => {
-				undo_redo_state.setActionToUndo({
-					action: 'copy_node',
-					data: copied_node as unknown as PhaseLoadSchedule
-				});
-				invalidate('app:workspace');
-			})
-			.finally(() => invalidate('app:workspace/load-schedule'));
+		await copyAndAddNodeById(node_id).then((copied_node) => {
+			undo_redo_state.setActionToUndo({
+				action: 'copy_node',
+				data: copied_node as unknown as PhaseLoadSchedule
+			});
+		});
+		db_revisions.bumpWorkspaceAndSchedule();
 	}
 </script>
 
