@@ -105,7 +105,13 @@ export async function writeEncryptedFile<T>(
 	if (!file_path) {
 		throw new Error('No file to write to');
 	}
-	const file = await openFile(file_path, { write: true, create: true, createNew: new_file });
+	// Truncate: without it a shorter save leaves a stale tail that corrupts the envelope.
+	const file = await openFile(file_path, {
+		write: true,
+		create: true,
+		createNew: new_file,
+		truncate: true
+	});
 	await file.write(new TextEncoder().encode(await packFileV2(data, password)));
 	await file.close();
 }

@@ -26,6 +26,22 @@ describe('file format', () => {
 		await expect(decryptFilePayload(raw, 'correct-horse')).resolves.toEqual({ a: 1 });
 	});
 
+	it('opens v2 with a stale tail from an untruncated overwrite', async () => {
+		const first = await packFileV2({ a: 1, padding: 'x'.repeat(64) }, 'pw');
+		const second = await packFileV2({ a: 1 }, 'pw');
+		expect(second.length).toBeLessThan(first.length);
+		const corrupted = second + first.slice(second.length);
+		expect(detectFileVersion(corrupted)).toBe(2);
+		await expect(decryptFilePayload(corrupted, 'pw')).resolves.toEqual({ a: 1 });
+	});
+
+	it('still refuses files truncated inside the envelope', async () => {
+		const raw = await packFileV2({ a: 1 }, 'pw');
+		await expect(decryptFilePayload(raw.slice(0, raw.length - 10), 'pw')).rejects.toBeInstanceOf(
+			FileLegacyError
+		);
+	});
+
 	it('requires a password for v2', async () => {
 		const raw = await packFileV2({ a: 1 }, 'pw');
 		const err = (await decryptFilePayload(raw, null).catch((e) => e)) as FilePasswordError;
