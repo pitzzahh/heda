@@ -8,40 +8,33 @@
 		panel_id_from_tree?: string;
 	}
 
-	type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
+	export type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
 </script>
 
 <script lang="ts">
-	import { CaretUpDownIcon, CheckIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
-	import { createForm, Field, getInput, setInput, validate } from '@formisch/svelte';
+	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
-	import { Input } from '#lib/components/ui/input/index.js';
-	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import * as Popover from '#lib/components/ui/popover/index.js';
-	import * as Command from '#lib/components/ui/command/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
-	import { useId } from 'bits-ui';
-	import { tick } from 'svelte';
 	import { cn } from '#lib/utils/index.js';
 	import {
-		AMBIENT_TEMPERATURES,
-		DEFAULT_TERMINAL_TEMPERATURES,
-		STANDARD_TERMINAL_TEMPERATURE,
-		DEFAULT_LOADS,
-		DEFAULT_LOAD_TYPES,
 		default_load_types,
 		load_type_to_varies_label,
-		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
 		default_hp_current_relationship,
 		load_type_to_quantity_label
 	} from '#lib/constants/index.js';
+	import {
+		AmbientTempField,
+		NumberField,
+		TerminalTempField
+	} from '#lib/components/custom/fields/index.js';
+	import { LoadDescriptionField, LoadTypeField, VariesField } from './(components)/index.js';
 	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load/index.js';
 	import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 	import { page } from '$app/state';
@@ -55,7 +48,6 @@
 		TerminalTemperature,
 		VariesLabel
 	} from '#lib/types/load/index.js';
-	import { formatFraction, getOptionLabel } from '#lib/utils/format/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
@@ -196,50 +188,10 @@
 			: 'QTY'
 	);
 
-	let open_horsepower_rating = $state(false);
-	let open_terminal_temp = $state(false);
-	let open_load_type = $state(false);
-	let open_load_description = $state(false);
-	let open_ambient_temp = $state(false);
-	const terminal_temp_trigger_id = useId();
-	const ambient_temp_trigger_id = useId();
-	const load_type_trigger_id = useId();
-	const load_description_trigger_id = useId();
-	const horsepower_rating_trigger_id = useId();
-
 	function initialLoadType() {
 		return node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined;
 	}
 	let load_type = $state<FormLoadTypeOption | undefined>(initialLoadType());
-
-	// Refocus the trigger so keyboard users can keep tabbing through the form.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_horsepower_rating = false;
-		open_terminal_temp = false;
-		open_load_type = false;
-		open_load_description = false;
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
-
-	function selectDefaultLoad(description: string) {
-		setInput(form, { path: ['load_description'], input: description });
-		if (load_type === 'DEFAULT') {
-			const selected_load = DEFAULT_LOADS.find((f) => f.description === description);
-			if (!description || !selected_load) {
-				// TODO: Log system error
-				return toast.warning('Failed to identify the load description data', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
-			}
-			setInput(form, { path: ['varies'], input: selected_load.varies });
-			setInput(form, { path: ['continuous'], input: selected_load.continuous });
-			setInput(form, { path: ['load_type'], input: selected_load.type });
-		}
-		closeAndFocusTrigger(load_description_trigger_id);
-	}
 </script>
 
 <form
@@ -258,161 +210,30 @@
 	{/if}
 	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
 		<div class="flex flex-col gap-2.5">
-			<Field of={form} path={['circuit_number']}>
-				{#snippet children(field)}
-					<div class="space-y-2">
-						<Label class={cn({ 'text-destructive': is_circuit_number_taken })}>Circuit number</Label
-						>
-						<Input
-							{...field.props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							class={cn({ 'border-destructive': is_circuit_number_taken })}
-							value={field.input ?? ''}
-							oninput={(e) => field.onInput(e.currentTarget.valueAsNumber)}
-							placeholder="Enter the circuit number"
-						/>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the circuit number that will determine the circuit number of the wire to the
-							main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-			<Field of={form} path={['ambient_temperature']}>
-				{#snippet children(field)}
-					<div class="flex flex-col space-y-2">
-						<Popover.Root bind:open={open_ambient_temp}>
-							<Label class={cn(field.errors && 'text-destructive')}>Ambient Temperature</Label>
-							<Popover.Trigger
-								id={ambient_temp_trigger_id}
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!field.input && 'text-muted-foreground'
-								)}
-								role="combobox"
-							>
-								{field.input ? field.input : 'Select an ambient temperature'}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-									<Command.Empty>No terminal temp found.</Command.Empty>
-									<Command.Group>
-										<ScrollArea class="h-64 pr-2.5">
-											{#each AMBIENT_TEMPERATURES as ambient_temp (ambient_temp)}
-												<Command.Item
-													value={ambient_temp.toString()}
-													onSelect={() => {
-														field.onInput(ambient_temp);
-														closeAndFocusTrigger(ambient_temp_trigger_id);
-													}}
-													disabled={ambient_temp !== 30}
-												>
-													{ambient_temp}
-													<CheckIcon
-														class={cn(
-															'ml-auto size-4',
-															ambient_temp !== field.input && 'text-transparent'
-														)}
-													/>
-												</Command.Item>
-											{/each}
-										</ScrollArea>
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the ambient temp that will determine the ambient temp of the panel wire to the
-							main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<NumberField
+				{form}
+				path={['circuit_number']}
+				label="Circuit number"
+				hint="This is the circuit number that will determine the circuit number of the wire to the main."
+				placeholder="Enter the circuit number"
+				invalid={is_circuit_number_taken}
+			/>
+			<AmbientTempField {form} />
 		</div>
 
 		<div class="flex flex-col gap-2.5">
-			<Field of={form} path={['terminal_temperature']}>
-				{#snippet children(field)}
-					<div class="flex flex-col space-y-2">
-						<Popover.Root bind:open={open_terminal_temp}>
-							<Label class={cn('mb-0.5', field.errors && 'text-destructive')}
-								>Terminal Temperature</Label
-							>
-							<Popover.Trigger
-								id={terminal_temp_trigger_id}
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!field.input && 'text-muted-foreground'
-								)}
-								role="combobox"
-							>
-								{field.input
-									? getOptionLabel(DEFAULT_TERMINAL_TEMPERATURES, field.input)
-									: 'Select a terminal temperature'}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-									<Command.Empty>No terminal temp found.</Command.Empty>
-									<Command.Group>
-										{#each DEFAULT_TERMINAL_TEMPERATURES as terminal_temp (terminal_temp.value)}
-											<Command.Item
-												value={terminal_temp.value}
-												onSelect={() => {
-													field.onInput(terminal_temp.value as TerminalTemperature);
-													closeAndFocusTrigger(terminal_temp_trigger_id);
-												}}
-												disabled={terminal_temp.value !== STANDARD_TERMINAL_TEMPERATURE}
-											>
-												{terminal_temp.label}
-												<CheckIcon
-													class={cn(
-														'ml-auto size-4',
-														terminal_temp.value !== field.input && 'text-transparent'
-													)}
-												/>
-											</Command.Item>
-										{/each}
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-						<p class="text-muted-foreground text-[0.8rem]">
-							This is the terminal temp that will determine the terminal temp of the wire to the
-							main.
-						</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<TerminalTempField
+				{form}
+				hint="This is the terminal temp that will determine the terminal temp of the wire to the main."
+			/>
 
-			<Field of={form} path={['length']}>
-				{#snippet children(field)}
-					<div class="space-y-2">
-						<Label class={cn(field.errors && 'text-destructive')}>Length</Label>
-						<Input
-							{...field.props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							value={field.input ?? ''}
-							oninput={(e) => field.onInput(e.currentTarget.valueAsNumber)}
-							placeholder="Enter the length"
-						/>
-						<p class="text-muted-foreground text-[0.8rem]">This is the length of the load</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
+			<NumberField
+				{form}
+				path={['length']}
+				label="Length"
+				hint="This is the length of the load"
+				placeholder="Enter the length"
+			/>
 		</div>
 	</div>
 
@@ -456,183 +277,15 @@
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="flex justify-between gap-1">
-		<Field of={form} path={['quantity']}>
-			{#snippet children(field)}
-				<div class="w-1/4 space-y-2 text-center">
-					<Label class={cn(field.errors && 'text-destructive')}>
-						{#if quantity_label == null}
-							QTY
-						{:else}
-							{quantity_label}
-						{/if}
-					</Label>
-					<Input
-						{...field.props}
-						type="number"
-						min={1}
-						inputmode="numeric"
-						value={field.input ?? ''}
-						oninput={(e) => field.onInput(e.currentTarget.valueAsNumber)}
-						placeholder="Enter {convertToNormalText(quantity_label)}"
-					/>
-					<FieldErrors errors={field.errors} />
-				</div>
-			{/snippet}
-		</Field>
-		{#if load_type === 'CUSTOM'}
-			<Field of={form} path={['load_description']}>
-				{#snippet children(field)}
-					<div class="w-full space-y-2 text-center">
-						<Label class={cn(field.errors && 'text-destructive')}>Load description</Label>
-						<Input
-							{...field.props}
-							value={field.input ?? ''}
-							placeholder="Enter load description"
-						/>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-		{/if}
-		{#if load_type === 'DEFAULT'}
-			<Field of={form} path={['load_description']}>
-				{#snippet children(field)}
-					<div class="mt-[0.42rem] flex w-full flex-col space-y-2 text-center">
-						<Popover.Root bind:open={open_load_description}>
-							<Label class={cn('mb-[0.2rem]', field.errors && 'text-destructive')}
-								>Load description</Label
-							>
-							<Popover.Trigger
-								id={load_description_trigger_id}
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!field.input && 'text-muted-foreground'
-								)}
-								role="combobox"
-							>
-								{DEFAULT_LOADS.find((s) => s.description === field.input)?.description ??
-									'Select a load description'}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input autofocus placeholder="Search a load description..." class="h-9" />
-									<Command.Empty>No load description found.</Command.Empty>
-									<Command.Group>
-										<ScrollArea class="h-64 pr-2.5">
-											{#each DEFAULT_LOADS as default_load (default_load.description)}
-												<Command.Item
-													value={default_load.description}
-													onSelect={() => selectDefaultLoad(default_load.description)}
-												>
-													{default_load.description}
-													<CheckIcon
-														class={cn(
-															'ml-auto size-4',
-															default_load.description !== field.input && 'text-transparent'
-														)}
-													/>
-												</Command.Item>
-											{/each}
-										</ScrollArea>
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-		{/if}
-		<Field of={form} path={['varies']}>
-			{#snippet children(field)}
-				<div
-					class={cn('mt-2 grid w-1/3 space-y-2 text-center', {
-						'cursor-not-allowed': load_type === 'DEFAULT',
-						'text-center': variesLabel === 'Varies'
-					})}
-				>
-					{#if variesLabel === 'Horsepower Rating'}
-						<Popover.Root bind:open={open_horsepower_rating}>
-							<Label class={cn(field.errors && 'text-destructive')}>{variesLabel}</Label>
-							<Popover.Trigger
-								id={horsepower_rating_trigger_id}
-								class={cn(
-									buttonVariants({
-										variant: 'outline',
-										className: 'justify-between'
-									}),
-									!field.input && 'text-muted-foreground',
-									{ 'cursor-not-allowed': load_type === 'DEFAULT' }
-								)}
-								disabled={load_type === 'DEFAULT'}
-								role="combobox"
-							>
-								{@const varies_output =
-									default_hp_current_relationship[
-										field.input as keyof typeof default_hp_current_relationship
-									]}
-								{#if field.input}
-									<p>
-										<!-- eslint-disable-next-line svelte/no-at-html-tags -- formatFraction escapes input; only matched digits reach the markup -->
-										{@html formatFraction(field.input)}
-										({varies_output})
-									</p>
-								{:else}
-									Select a {variesLabel.toLowerCase()}
-								{/if}
-								<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<Command.Root>
-									<Command.Input
-										autofocus
-										placeholder="Search a {variesLabel.toLowerCase()}..."
-										class="h-9"
-									/>
-									<Command.Empty>No {variesLabel.toLowerCase()} found.</Command.Empty>
-									<Command.Group>
-										<ScrollArea class="h-64 pr-2.5">
-											{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating (hp_current_rating)}
-												<Command.Item
-													value={hp_current_rating}
-													onSelect={() => {
-														field.onInput(hp_current_rating);
-														closeAndFocusTrigger(horsepower_rating_trigger_id);
-													}}
-												>
-													<!-- eslint-disable-next-line svelte/no-at-html-tags -- formatFraction escapes input; only matched digits reach the markup -->
-													{@html formatFraction(hp_current_rating)}
-													<CheckIcon
-														class={cn(
-															'ml-auto size-4',
-															hp_current_rating !== field.input && 'text-transparent'
-														)}
-													/>
-												</Command.Item>
-											{/each}
-										</ScrollArea>
-									</Command.Group>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Root>
-					{:else}
-						<Label class={cn(field.errors && 'text-destructive')}>{variesLabel}</Label>
-						<Input
-							{...field.props}
-							inputmode="numeric"
-							readonly={load_type === 'DEFAULT'}
-							min={1}
-							class={cn('text-muted-foreground', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
-							value={field.input ?? ''}
-							placeholder="Enter {variesLabel.toLowerCase()}"
-						/>
-					{/if}
-					<FieldErrors errors={field.errors} />
-				</div>
-			{/snippet}
-		</Field>
+		<NumberField
+			{form}
+			path={['quantity']}
+			label={quantity_label}
+			placeholder="Enter {convertToNormalText(quantity_label)}"
+			wrapper_class="w-1/4 space-y-2 text-center"
+		/>
+		<LoadDescriptionField {form} {load_type} />
+		<VariesField {form} {load_type} varies_label={variesLabel} />
 		<Field of={form} path={['continuous']}>
 			{#snippet children(field)}
 				<div class="mt-[0.470rem] flex flex-col gap-2 space-y-2 text-center">
@@ -646,60 +299,6 @@
 				</div>
 			{/snippet}
 		</Field>
-		<Field of={form} path={['load_type']}>
-			{#snippet children(field)}
-				<div
-					class={cn('mt-2 grid space-y-2 text-center', {
-						'cursor-not-allowed': load_type === 'DEFAULT'
-					})}
-				>
-					<Popover.Root bind:open={open_load_type}>
-						<Label class={cn(field.errors && 'text-destructive')}>Load type</Label>
-						<Popover.Trigger
-							id={load_type_trigger_id}
-							class={cn(
-								buttonVariants({
-									variant: 'outline',
-									className: 'justify-between'
-								}),
-								!field.input && 'text-muted-foreground',
-								{ 'cursor-not-allowed': load_type === 'DEFAULT' }
-							)}
-							disabled={load_type === 'DEFAULT'}
-							role="combobox"
-						>
-							{field.input ? getOptionLabel(DEFAULT_LOAD_TYPES, field.input) : 'Select a load type'}
-							<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-						</Popover.Trigger>
-						<Popover.Content class="w-auto p-0">
-							<Command.Root>
-								<Command.Input autofocus placeholder="Search a load type..." class="h-9" />
-								<Command.Empty>No load type found.</Command.Empty>
-								<Command.Group>
-									{#each DEFAULT_LOAD_TYPES as load_type_option (load_type_option.value)}
-										<Command.Item
-											value={load_type_option.value}
-											onSelect={() => {
-												field.onInput(load_type_option.value as LoadType);
-												closeAndFocusTrigger(load_type_trigger_id);
-											}}
-										>
-											{load_type_option.label}
-											<CheckIcon
-												class={cn(
-													'ml-auto size-4',
-													load_type_option.value !== field.input && 'text-transparent'
-												)}
-											/>
-										</Command.Item>
-									{/each}
-								</Command.Group>
-							</Command.Root>
-						</Popover.Content>
-					</Popover.Root>
-					<FieldErrors errors={field.errors} />
-				</div>
-			{/snippet}
-		</Field>
+		<LoadTypeField {form} {load_type} />
 	</div>
 {/snippet}
