@@ -28,18 +28,20 @@
 	const project_state = getProjectState();
 
 	let active_tab = $state('load-sched');
+	let visited_tabs = $state<Record<string, boolean>>({
+		'load-sched': true,
+		'voltage-drop': false
+	});
 
-	// Each derived subscribes to the SignalDB cursor it reads, so a mutation
-	// recomputes only the rows it touched. The hidden tab is not computed until
-	// it is opened.
+	// Datasets stay hot once opened: the panels never unmount, so clearing a
+	// table would rebuild every row on each switch. Drops wait for first visit.
 	const current_node = $derived(getNodeById(node_id));
 	const parent_node = $derived(
 		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
 	);
 	const root_node = $derived(getRootNode());
-	const is_load_schedule = $derived(active_tab === 'load-sched');
-	const loads = $derived(is_load_schedule ? getComputedLoads(node_id) : []);
-	const voltage_drops = $derived(is_load_schedule ? [] : getComputedVoltageDrops());
+	const loads = $derived(getComputedLoads(node_id));
+	const voltage_drops = $derived(visited_tabs['voltage-drop'] ? getComputedVoltageDrops() : []);
 
 	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
@@ -96,7 +98,11 @@
 			</div>
 		</dl>
 	</div>
-	<Tabs.Root bind:value={active_tab} class="min-h-0 w-full flex-1">
+	<Tabs.Root
+		bind:value={active_tab}
+		onValueChange={(value) => (visited_tabs[value] = true)}
+		class="min-h-0 w-full flex-1"
+	>
 		<Tabs.List class="place-self-end">
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
