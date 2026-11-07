@@ -14,7 +14,7 @@ import { getSessionPassword } from './session.js';
 const PROJECTS_FILE = 'heda-p';
 const NODES_FILE = 'heda-n';
 const VAULT_FILE = 'heda-v';
-// Pre-rename corpses, removed best-effort on launch (see databaseInstance).
+// Pre-rename corpses, removed best-effort on launch (see initializeDatabase).
 const LEGACY_FILES = ['heda-projects.json', 'heda-nodes.json', 'heda-vault.hold', 'salt.txt'];
 
 /** Per-session random key material in a Stronghold vault; never hardcoded, never persisted. */
