@@ -14,11 +14,11 @@
 </script>
 
 <script lang="ts">
-	import { invalidate } from '$app/navigation';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import { changeInsulation } from '#lib/db/mutations';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 
 	let { adjusted_current, type, current_insulation, node }: Props = $props();
 	// Snapshot at mount: local edit state.
@@ -28,6 +28,7 @@
 	let selected_insulation = $state<Insulations>(initialInsulation());
 	let last_insulation_prop: string = initialInsulation();
 	let undo_redo_state = getUndoRedoState();
+	const db_revisions = getDbRevisionsState();
 
 	// The table refreshes in place, so adopt external prop changes (undo/redo, auto-upgrade).
 	$effect(() => {
@@ -59,7 +60,7 @@
 			data: updated_node as unknown as PhaseLoadSchedule,
 			previous_data: node
 		});
-		invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
+		db_revisions.bumpWorkspaceAndSchedule();
 	}
 </script>
 
