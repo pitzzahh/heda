@@ -19,7 +19,8 @@ import {
 	getComputedLoads,
 	getComputedVoltageDrops,
 	getNode,
-	getNodeById
+	getNodeById,
+	getParentNodes
 } from './queries/index.js';
 import { computeNodeLoad } from './queries/compute.js';
 import { loadSnapshot } from './queries/snapshot.js';
@@ -92,6 +93,31 @@ describe('db (signaldb)', () => {
 		expect(checkNodeExists({ circuit_number: 3, parent_id: root })).toBe(true);
 		expect(checkNodeExists({ circuit_number: 3, parent_id: root, node_id: first!.id })).toBe(false);
 		expect(checkNodeExists({ circuit_number: 4, parent_id: root })).toBe(false);
+	});
+
+	it('lists parent nodes with indexed lookups', async () => {
+		resetData();
+		const created = await createProject('Parents', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-1',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const parents = getParentNodes();
+		expect(parents.map((p) => p.name).sort()).toEqual(['LP-1', 'Transformer'].sort());
+		const excluded = getParentNodes(root);
+		expect(excluded).toHaveLength(1);
+		expect(excluded[0]?.name).toBe('LP-1');
 	});
 
 	it('loads a project export and sorts children by circuit number', async () => {
