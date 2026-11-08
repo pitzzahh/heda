@@ -18,14 +18,8 @@
 </script>
 
 <script lang="ts" generics="TData extends { id?: string }, TValue">
-	import {
-		Virtualizer,
-		elementScroll,
-		observeElementOffset,
-		observeElementRect,
-		type VirtualItem
-	} from '@tanstack/virtual-core';
 	import { getCoreRowModel } from '@tanstack/table-core';
+	import { VirtualWindow } from '#lib/hooks/virtual-window.svelte.js';
 	import { createSvelteTable, FlexRender } from '#lib/components/ui/data-table/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
@@ -63,98 +57,41 @@
 	const rowClasses = $derived(tableVariants(getTableStyle()()).row());
 	const cellClasses = $derived(tableVariants(getTableStyle()()).cell());
 
-	let scrollEl = $state<HTMLDivElement | null>(null);
-	let virtualItems = $state<VirtualItem[]>([]);
-	let virtualTotalSize = $state(0);
-	let viewportHeight = $state(0);
-	// Once a real viewport was seen, a 0 height means the table is hidden
-	// (inactive tab), not that layout is unavailable.
-	let has_measured_viewport = $state(false);
-
-	function attachScrollElement(node: Element) {
-		scrollEl = node as HTMLDivElement;
-		return () => {
-			scrollEl = null;
-		};
-	}
-
-	function handleVirtualChange(instance: Virtualizer<HTMLDivElement, HTMLTableRowElement>) {
-		viewportHeight = instance.scrollRect?.height ?? 0;
-		if (viewportHeight > 0) has_measured_viewport = true;
-
-		// A hidden tab reports a zero-height viewport. Keep the last rendered
-		// window instead of recomputing an empty range, so switching back can
-		// reuse those rows and measure them immediately.
-		if (viewportHeight === 0 && has_measured_viewport) return;
-
-		virtualItems = instance.getVirtualItems();
-		virtualTotalSize = instance.getTotalSize();
-	}
-
-	// Bridges the imperative virtual-core instance to Svelte rendering; onChange and the
-	// sync effect are required to integrate an external mutable virtualizer with runes.
-	const rowVirtualizer = new Virtualizer<HTMLDivElement, HTMLTableRowElement>({
-		count: 0,
-		getScrollElement: () => scrollEl,
-		estimateSize: () => ROW_ESTIMATE_SIZE,
+	// Bridges the imperative virtual-core instance to Svelte rendering in one
+	// reusable place; see VirtualWindow.
+	const virtual = new VirtualWindow({
+		estimate_size: ROW_ESTIMATE_SIZE,
 		overscan: ROW_OVERSCAN,
-		observeElementRect,
-		observeElementOffset,
-		scrollToFn: elementScroll,
-		getItemKey: (index) => String(rows[index]?.id ?? index),
-		onChange: handleVirtualChange
+		initial_render_count: INITIAL_RENDER_COUNT,
+		get_item_key: (index) => String(rows[index]?.id ?? index)
 	});
 
 	// Mounts ResizeObserver/scroll observers and returns virtualizer cleanup on teardown.
-	$effect(() => rowVirtualizer._didMount());
+	$effect(() => virtual.mount());
 
 	// Syncs row count/keys and the scroll element; imperative lifecycle calls are required
 	// by virtual-core and do not reassign unrelated component state.
-	$effect(() => {
-		// setOptions replaces the full option set, so preserve the existing observers and
-		// onChange whenever the reactive count/scroll element syncs.
-		rowVirtualizer.setOptions({
-			...rowVirtualizer.options,
-			count: rows.length,
-			getScrollElement: () => scrollEl,
-			getItemKey: (index) => String(rows[index]?.id ?? index),
-			onChange: handleVirtualChange
-		});
-		rowVirtualizer._willUpdate();
-		handleVirtualChange(rowVirtualizer);
-	});
+	$effect(() => virtual.sync(rows.length));
 
-	const visibleRows = $derived.by(() => {
-		if (rows.length === 0) return [];
-		if (virtualItems.length > 0) {
-			return virtualItems.flatMap((virtualRow) => {
-				const row = rows[virtualRow.index];
-				return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
-			});
-		}
-		// The viewport has not been measured yet (first paint / jsdom), or the
-		// row model changed before the virtualizer synced: render only the head.
-		return rows
-			.slice(0, INITIAL_RENDER_COUNT)
-			.map((row, index) => ({ key: String(row.id ?? index), index, row }));
-	});
-	const virtualPadding = $derived.by(() => {
-		if (virtualItems.length === 0 || visibleRows.length === rows.length) {
-			return { start: 0, end: 0 };
-		}
-		const start = virtualItems[0]?.start ?? 0;
-		const end = virtualTotalSize - (virtualItems[virtualItems.length - 1]?.end ?? 0);
-		return { start: Math.max(0, start), end: Math.max(0, end) };
+	const visibleRows = $derived.by(() =>
+		virtual.visible_items.flatMap((virtualRow) => {
+			const row = rows[virtualRow.index];
+			return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
+		})
+	);
+	const virtualPadding = $derived({
+		start: virtual.padding_start,
+		end: virtual.padding_end
 	});
 
 	function measureRow(node: Element) {
-		rowVirtualizer.measureElement(node as HTMLTableRowElement);
+		virtual.measure(node);
 	}
 </script>
 
 <Tooltip.Provider delayDuration={100}>
 	<div
-		{@attach attachScrollElement}
+		{@attach virtual.attach_scroll_element}
 		class="border-border bg-card flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border shadow-(--surface-shadow)"
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
