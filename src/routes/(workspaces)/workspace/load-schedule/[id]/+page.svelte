@@ -34,9 +34,18 @@
 		'load-sched': true,
 		'voltage-drop': false
 	});
+	let voltage_activated = $state(false);
+
+	// Latch activation from the bound tab value so it's reliable regardless of
+	// how the tab changes. One-way state (stays true) — not derivable without
+	// losing the latch, and reacting to UI tab state is an external sync.
+	$effect(() => {
+		if (active_tab === 'voltage-drop') voltage_activated = true;
+	});
 
 	// Datasets stay hot once warmed: the tab panels never unmount, so clearing a
-	// table would rebuild every row on each switch. Drops warm up while idle.
+	// table would rebuild every row on each switch. Drops warm in the
+	// background but the heavy table only mounts once the user visits the tab.
 	const current_node = $derived(getNodeById(node_id));
 	const parent_node = $derived(
 		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
@@ -45,6 +54,7 @@
 	const loads = $derived(getComputedLoads(node_id));
 	let voltage_drops = $state<VoltageDrop[]>([]);
 	let drops_ready = $state(false);
+	let voltage_mounted = $state(false);
 
 	// Column definitions are expensive to rebuild and invalidate TanStack's
 	// row model, so keep them stable across tab switches.
@@ -53,23 +63,38 @@
 	);
 	const voltage_drop_columns = voltageDropColumns();
 
-	// Async worker fetch keyed to the revision: the tree walk stays off the
-	// main thread so the tab click never blocks on it. Runs on every write to
-	// keep the rows warm, and stale results never overwrite fresh ones.
+	// Async worker fetch keyed to the revision. Snapshot load and worker clone
+	// are synchronous costs, so dispatch them off the reactive flush to keep the
+	// UI responsive. `revision` is read here to track changes; stale results are
+	// dropped. External async coordination (not derivable state) requires an
+	// effect.
 	$effect(() => {
 		const revision = getSnapshotRevision();
-		void getComputedVoltageDropsAsync()
-			.then((drops) => {
-				if (getSnapshotRevision() === revision) {
-					voltage_drops = drops;
+		const timer = setTimeout(() => {
+			void getComputedVoltageDropsAsync()
+				.then((drops) => {
+					if (getSnapshotRevision() === revision) {
+						voltage_drops = drops;
+						drops_ready = true;
+					}
+				})
+				.catch(() => {
 					drops_ready = true;
-					visited_tabs['voltage-drop'] = true;
-				}
-			})
-			.catch(() => {
-				drops_ready = true;
-				visited_tabs['voltage-drop'] = true;
-			});
+				});
+		}, 0);
+		return () => clearTimeout(timer);
+	});
+
+	// Defer the heavy DataTable mount so the tab switch (skeleton/indicator)
+	// paints before TanStack builds the full row model. External scheduling for
+	// a non-derivable mount gate requires an effect.
+	$effect(() => {
+		if (voltage_activated && drops_ready && !voltage_mounted) {
+			const timer = setTimeout(() => {
+				voltage_mounted = true;
+			}, 0);
+			return () => clearTimeout(timer);
+		}
 	});
 
 	// Redirects home when the schedule opens without a loaded project.
@@ -129,7 +154,9 @@
 	</div>
 	<Tabs.Root
 		bind:value={active_tab}
-		onValueChange={(value) => (visited_tabs[value] = true)}
+		onValueChange={(value) => {
+			visited_tabs[value] = true;
+		}}
 		class="min-h-0 w-full flex-1"
 	>
 		<Tabs.List class="place-self-end">
@@ -151,7 +178,7 @@
 			{/if}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
-			{#if drops_ready}
+			{#if voltage_mounted && drops_ready}
 				<DataTable
 					data={voltage_drops}
 					is_footer_shown={false}
