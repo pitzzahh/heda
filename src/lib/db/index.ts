@@ -16,6 +16,73 @@ const NODES_FILE = 'heda-n';
 const VAULT_FILE = 'heda-v';
 // Pre-rename corpses, removed best-effort on launch (see initializeDatabase).
 const LEGACY_FILES = ['heda-projects.json', 'heda-nodes.json', 'heda-vault.hold', 'salt.txt'];
+// Web-only (non-Tauri) keepalive: tab-scoped `sessionStorage` snapshot so a
+// reload in the same window restores the in-memory collections. Cleared when
+// the tab closes; Tauri uses its encrypted files instead.
+const SESSION_DATA_KEY = 'heda-session-data';
+
+function sessionStorageOrNull(): Storage | null {
+	try {
+		return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+	} catch {
+		return null;
+	}
+}
+
+function hasKeepalive(): boolean {
+	return getSessionPassword() !== null;
+}
+
+let webSnapshotListenerAttached = false;
+
+function attachWebSnapshotSave(): void {
+	if (webSnapshotListenerAttached) return;
+	webSnapshotListenerAttached = true;
+	const save = () => {
+		if (!dbInstance) return;
+		try {
+			const payload = JSON.stringify({
+				projects: dbInstance.projects.find().fetch(),
+				nodes: dbInstance.nodes.find().fetch()
+			});
+			sessionStorageOrNull()?.setItem(SESSION_DATA_KEY, payload);
+		} catch {
+			// Best-effort: quota or private mode just skips the next reload restore.
+		}
+	};
+	try {
+		window.addEventListener('pagehide', save);
+	} catch {
+		// Node tests have no window.
+	}
+}
+
+function restoreWebSession(): void {
+	if (!hasKeepalive()) return;
+	let raw: string | null = null;
+	try {
+		raw = sessionStorageOrNull()?.getItem(SESSION_DATA_KEY) ?? null;
+	} catch {
+		return;
+	}
+	if (!raw || !dbInstance) return;
+	try {
+		const parsed = JSON.parse(raw) as { projects?: Project[]; nodes?: Node[] };
+		if (parsed.projects?.length) dbInstance.projects.insertMany(parsed.projects);
+		if (parsed.nodes?.length) dbInstance.nodes.insertMany(parsed.nodes);
+	} catch {
+		// Corrupt snapshot: stay on the empty session instead of crashing.
+	}
+}
+
+/** Drop the web keepalive snapshot (called when the user ends the session). */
+export function clearSessionSnapshot(): void {
+	try {
+		sessionStorageOrNull()?.removeItem(SESSION_DATA_KEY);
+	} catch {
+		// Storage unavailable; nothing to clear.
+	}
+}
 
 /** Per-session random key material in a Stronghold vault; never hardcoded, never persisted. */
 async function loadPassphrase(vault_password: string, vault_path: string): Promise<string> {
@@ -92,21 +159,31 @@ async function sessionKey(): Promise<string | null> {
 }
 
 /**
- * Session-scoped: files wipe on launch, memory-only outside Tauri. The only
- * async part of the database; after it settles, `getDatabase()` is sync.
+ * Session-scoped: fresh launches start empty, same-tab reloads restore.
+ * The only async part of the database; after it settles, `getDatabase()` is sync.
  */
 export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 	if (dbInstance) return dbInstance;
 	if (dbReady) return dbReady;
 	dbReady = (async () => {
 		const useTauri = isTauri();
+		const sameSession = hasKeepalive();
 		const key = useTauri ? await sessionKey() : null;
 		if (useTauri) {
-			for (const file of [PROJECTS_FILE, NODES_FILE, VAULT_FILE, ...LEGACY_FILES]) {
+			for (const file of LEGACY_FILES) {
 				try {
 					await remove(file, { baseDir: BaseDirectory.AppLocalData });
 				} catch {
 					// A missing file means a fresh session. Nothing to wipe.
+				}
+			}
+			if (!sameSession) {
+				for (const file of [PROJECTS_FILE, NODES_FILE, VAULT_FILE]) {
+					try {
+						await remove(file, { baseDir: BaseDirectory.AppLocalData });
+					} catch {
+						// A missing file means a fresh session. Nothing to wipe.
+					}
 				}
 			}
 		}
@@ -141,6 +218,10 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 		// visible row. Cap stays well above the default without needing 10k.
 		projects.setMaxListeners(1_000);
 		nodes.setMaxListeners(1_000);
+		if (!useTauri) {
+			restoreWebSession();
+			attachWebSnapshotSave();
+		}
 		return dbInstance;
 	})();
 	return dbReady;
