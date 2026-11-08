@@ -68,8 +68,6 @@
 				nodes: getAllChildNodes(current_project.root_node_id, true)
 			};
 
-			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
-
 			const session_password = getSessionPassword();
 			if (!session_password) {
 				console.error('Failed to save, no session password');
