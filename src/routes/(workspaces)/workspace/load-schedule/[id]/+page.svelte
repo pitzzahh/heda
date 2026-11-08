@@ -1,9 +1,9 @@
 <script lang="ts" module>
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 </script>
 
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
@@ -11,11 +11,11 @@
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
-		getComputedVoltageDrops,
 		getComputedVoltageDropsAsync,
 		getNode,
 		getNodeById,
-		getRootNode
+		getRootNode,
+		getSnapshotRevision
 	} from '#lib/db/queries/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
@@ -43,7 +43,7 @@
 	);
 	const root_node = $derived(getRootNode());
 	const loads = $derived(getComputedLoads(node_id));
-	const voltage_drops = $derived(visited_tabs['voltage-drop'] ? getComputedVoltageDrops() : []);
+	let voltage_drops = $state<VoltageDrop[]>([]);
 
 	// Column definitions are expensive to rebuild and invalidate TanStack's
 	// row model, so keep them stable across tab switches.
@@ -52,26 +52,21 @@
 	);
 	const voltage_drop_columns = voltageDropColumns();
 
-	onMount(() => {
-		// Computing the whole tree and building its row model is the expensive
-		// part of the first switch to Voltage Drop. Warm both while idle (and
-		// off the main thread when a worker is available) so the switch itself
-		// only reveals already-rendered rows.
-		const warm_voltage_drops = () => {
-			void getComputedVoltageDropsAsync()
-				.then(() => {
+	// Async worker fetch keyed to the revision: the tree walk stays off the
+	// main thread so the tab click never blocks on it. Runs on every write to
+	// keep the rows warm, and stale results never overwrite fresh ones.
+	$effect(() => {
+		const revision = getSnapshotRevision();
+		void getComputedVoltageDropsAsync()
+			.then((drops) => {
+				if (getSnapshotRevision() === revision) {
+					voltage_drops = drops;
 					visited_tabs['voltage-drop'] = true;
-				})
-				.catch(() => {
-					visited_tabs['voltage-drop'] = true;
-				});
-		};
-		if (typeof requestIdleCallback === 'function') {
-			const idle_id = requestIdleCallback(warm_voltage_drops, { timeout: 500 });
-			return () => cancelIdleCallback(idle_id);
-		}
-		const timeout_id = setTimeout(warm_voltage_drops, 150);
-		return () => clearTimeout(timeout_id);
+				}
+			})
+			.catch(() => {
+				visited_tabs['voltage-drop'] = true;
+			});
 	});
 
 	// Redirects home when the schedule opens without a loaded project.

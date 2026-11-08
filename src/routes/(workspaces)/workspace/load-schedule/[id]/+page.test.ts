@@ -29,7 +29,8 @@ vi.mock('#lib/db/queries/index.js', () => ({
 	getRootNode: () => ({ highest_unit_form: { phase: 'one_phase' } }),
 	getComputedLoads: () => [{ id: 'load-1' }],
 	getComputedVoltageDrops: () => [{ id: 'vd-1' }],
-	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }])
+	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }]),
+	getSnapshotRevision: () => 0
 }));
 
 vi.mock('#lib/components/custom/table/index.js', async () => ({
@@ -89,11 +90,13 @@ describe('load schedule page', () => {
 		}
 	});
 
-	test('both tables stay populated when switching tabs', () => {
+	test('both tables stay populated when switching tabs', async () => {
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
+		await Promise.resolve();
+		flushSync();
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
-		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('0');
+		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
 
 		click_trigger('Voltage Drop');
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
