@@ -97,6 +97,17 @@
 		}
 	});
 
+	// Pre-mount the hidden voltage table shortly after warm-up so the first
+	// visit only reveals it instead of paying the full mount on the click.
+	// External scheduling for a non-derivable mount gate requires an effect.
+	$effect(() => {
+		if (!drops_ready) return;
+		const timer = setTimeout(() => {
+			voltage_mounted = true;
+		}, 500);
+		return () => clearTimeout(timer);
+	});
+
 	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
 		if (!project_state.loaded) {
