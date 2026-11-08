@@ -4,6 +4,7 @@ import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import type { Node } from '#lib/types/db/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 import { evictNodeFromCache } from '../queries/index.js';
+import { loadSnapshot } from '../queries/snapshot.js';
 import { withNodeDefaults } from './defaults.js';
 
 export function addNode({
@@ -54,103 +55,77 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 	const database = getDatabase();
 
 	try {
-		const existing_node = database.nodes.findOne({ id: node_id });
+		const snapshot = loadSnapshot();
+		const existing_root = snapshot.node_by_id.get(node_id) as Node | undefined;
 
-		if (!existing_node) {
+		if (!existing_root) {
 			throw Error('Node not found');
 		}
 
-		// get nodes under the same parent
-		const nodes_under_parent = database.nodes
-			.find({ parent_id: sub_parent_id || existing_node.parent_id })
-			.fetch();
-
-		// extract all circuit numbers under the parent
-		const used_numbers = nodes_under_parent.map((node) => node.circuit_number) as number[];
-
-		// find the next available circuit number
-		let next_circuit_num = 1;
-		while (used_numbers.includes(next_circuit_num)) {
-			next_circuit_num++;
+		const target_parent_id = sub_parent_id || (existing_root.parent_id as string | undefined);
+		const siblings = target_parent_id
+			? (snapshot.children_by_parent.get(target_parent_id) ?? [])
+			: [];
+		const used_numbers = new Set(siblings.map((node) => node.circuit_number));
+		let next_circuit_num = existing_root.circuit_number ?? 1;
+		while (used_numbers.has(next_circuit_num)) {
+			next_circuit_num += 1;
 		}
 
-		const {
-			load_data,
-			panel_data,
-			node_type,
-			parent_id,
-			id,
-			overrided_at,
-			conductor_qty,
-			conductor_sets,
-			overrided_egc_size,
-			overrided_conduit_size,
-			overrided_conductor_size,
-			conductor_insulation,
-			egc_insulation,
-			conduit_type,
-			length,
-			overrided_ampere_frames,
-			pole,
-			kaic,
-			is_at_used_as_currents_value,
-			overrided_length,
-			overrided_z
-		} = existing_node;
-		const created_node = withNodeDefaults({
-			id: crypto.randomUUID(),
-			node_type,
-			circuit_number: next_circuit_num,
-			length,
-			panel_data,
-			load_data,
-			parent_id: sub_parent_id || parent_id,
-			conductor_qty,
-			conductor_sets,
-			overrided_at,
-			overrided_egc_size,
-			overrided_conduit_size,
-			overrided_conductor_size,
-			conductor_insulation,
-			egc_insulation,
-			conduit_type,
-			overrided_ampere_frames,
-			overrided_length,
-			overrided_z,
-			pole,
-			kaic,
-			is_at_used_as_currents_value,
-			child_ids: []
-		});
-		database.nodes.insert(created_node);
-
-		// If the node is a panel, recursively copy its children
-		if (node_type === 'panel') {
-			const children = database.nodes
-				.find({ parent_id: id }, { sort: { circuit_number: 1 } })
-				.fetch();
-
-			// Sequentially copy children to prevent race conditions. Yield between
-			// siblings so deep hierarchies do not block the UI thread.
-			for (const child of children) {
-				await copyAndAddNodeById(child.id, created_node.id);
-				await new Promise((resolve) => setTimeout(resolve, 0));
+		// Collect the whole subtree first, then insert it in one batch so a
+		// large panel costs one notification instead of one per node.
+		const subtree: Node[] = [];
+		const stack: Node[] = [existing_root];
+		const seen = new Set<string>();
+		while (stack.length > 0) {
+			const current = stack.pop() as Node;
+			if (seen.has(current.id)) continue;
+			seen.add(current.id);
+			subtree.push(current);
+			const children = snapshot.children_by_parent.get(current.id) ?? [];
+			for (let index = children.length - 1; index >= 0; index -= 1) {
+				stack.push(children[index] as Node);
 			}
 		}
 
-		// Update parent node with the new child ID
-		if (sub_parent_id || parent_id) {
-			const existingParent = database.nodes.findOne({ id: sub_parent_id || parent_id });
+		const id_map = new Map<string, string>();
+		for (const node of subtree) {
+			id_map.set(node.id, crypto.randomUUID());
+		}
 
-			if (existingParent) {
+		const clones = subtree.map((node) => {
+			const is_root = node.id === node_id;
+			const new_parent_id = is_root
+				? (target_parent_id as string)
+				: (id_map.get(node.parent_id as string) as string);
+			const child_ids = (snapshot.children_by_parent.get(node.id) ?? [])
+				.map((child) => id_map.get(child.id) as string)
+				.filter(Boolean);
+			return withNodeDefaults({
+				...node,
+				id: id_map.get(node.id) as string,
+				parent_id: new_parent_id,
+				circuit_number: is_root ? next_circuit_num : node.circuit_number,
+				panel_data: node.panel_data ? structuredClone(node.panel_data) : undefined,
+				load_data: node.load_data ? structuredClone(node.load_data) : undefined,
+				child_ids
+			});
+		});
+
+		database.nodes.insertMany(clones);
+		const created_root = clones[0];
+
+		if (target_parent_id) {
+			const existing_parent = database.nodes.findOne({ id: target_parent_id });
+			if (existing_parent) {
 				database.nodes.updateOne(
-					{ id: existingParent.id },
-					{ $set: { child_ids: [...existingParent.child_ids, created_node.id] } }
+					{ id: existing_parent.id },
+					{ $set: { child_ids: [...existing_parent.child_ids, created_root.id] } }
 				);
 			}
 		}
 
-		return created_node;
+		return created_root;
 	} catch (err) {
 		console.error(`Error copying and adding a node: ${JSON.stringify(err)}`);
 	}
@@ -232,37 +207,42 @@ export function removeNode(
 	id: string,
 	visited: Set<string> = new Set()
 ): { removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined {
-	if (visited.has(id)) {
-		throw Error(`Circular reference detected at node ${id}`);
-	}
-	visited.add(id);
-
 	const database = getDatabase();
-	const children_nodes: PhaseLoadSchedule[] = [];
 
 	try {
-		const children = database.nodes.find({ parent_id: id }).fetch();
+		const snapshot = loadSnapshot();
+		const root = snapshot.node_by_id.get(id) as Node | undefined;
 
-		for (const child of children) {
-			const result = removeNode(child.id, visited);
-			if (result) {
-				const { removed_node, children_nodes: grand_children } = result;
-				children_nodes.push(removed_node, ...grand_children);
-			}
-		}
-
-		const removed_node = database.nodes.findOne({ id });
-
-		if (!removed_node) {
+		if (!root) {
 			throw Error(`Node with ID ${id} not found.`);
 		}
 
-		database.nodes.removeOne({ id });
-		evictNodeFromCache(id);
+		// Collect the subtree first so the delete is one bulk remove instead
+		// of one removeOne per node.
+		const subtree: Node[] = [];
+		const stack: Node[] = [root];
+		const seen = new Set(visited);
+		while (stack.length > 0) {
+			const current = stack.pop() as Node;
+			if (seen.has(current.id)) {
+				throw Error(`Circular reference detected at node ${current.id}`);
+			}
+			seen.add(current.id);
+			subtree.push(current);
+			const children = snapshot.children_by_parent.get(current.id) ?? [];
+			for (let index = children.length - 1; index >= 0; index -= 1) {
+				stack.push(children[index] as Node);
+			}
+		}
+
+		database.nodes.removeMany({ id: { $in: subtree.map((node) => node.id) } });
+		for (const node of subtree) {
+			evictNodeFromCache(node.id);
+		}
 
 		return {
-			removed_node: removed_node as unknown as PhaseLoadSchedule,
-			children_nodes
+			removed_node: subtree[0] as unknown as PhaseLoadSchedule,
+			children_nodes: subtree.slice(1) as unknown as PhaseLoadSchedule[]
 		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
