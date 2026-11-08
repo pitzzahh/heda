@@ -1,6 +1,12 @@
 import type ExcelJS from 'exceljs';
 import type { Node } from '#lib/types/db/index.js';
-import { getComputedLoads, getNodeById, getNodeDepth } from '#lib/db/queries/index.js';
+import {
+	buildChildrenByParent,
+	getComputedLoadsFromNodes,
+	getNodeDepthFromNodes,
+	getNodeByIdFromNodes
+} from '#lib/db/queries/loads-core.js';
+import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
 import { DEFAULT_PHASES } from '#lib/constants/index.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format/index.js';
 import type { ExportProcessResult, Header } from './types.js';
@@ -8,10 +14,23 @@ import type { ExportProcessResult, Header } from './types.js';
 export async function processOnePhaseExcelPanelBoardSchedule(
 	workbook: ExcelJS.Workbook,
 	node_id: string,
-	highest_unit?: Node['highest_unit_form']
+	highest_unit?: Node['highest_unit_form'],
+	nodes: Node[] = [],
+	is_dynamic = false
 ): Promise<ExportProcessResult> {
-	const current_node = getNodeById(node_id);
-	const children = getComputedLoads(node_id);
+	const current_node = getNodeByIdFromNodes(nodes, node_id);
+	const children = getComputedLoadsFromNodes(nodes, node_id, is_dynamic);
+	const computation_context: LoadComputationContext = {
+		children_by_parent: buildChildrenByParent(nodes),
+		is_dynamic,
+		memo: new Map()
+	};
+	const computed_current_node = current_node
+		? computeNodeLoad(current_node, computation_context)
+		: undefined;
+	if (!computed_current_node) {
+		return { valid: false, message: 'Node not found', is_system_error: true };
+	}
 
 	if (!current_node) {
 		return {
@@ -22,9 +41,11 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	}
 
 	// Use the existing getNodeDepth2 function to calculate the depth
-	const actualDepth = getNodeDepth(node_id);
+	const actualDepth = getNodeDepthFromNodes(nodes, node_id);
 	const panel_level = getOrdinalSuffix(actualDepth);
-	const parent_node = current_node.parent_id ? getNodeById(current_node.parent_id) : undefined;
+	const parent_node = current_node?.parent_id
+		? getNodeByIdFromNodes(nodes, current_node.parent_id)
+		: undefined;
 	const panel_name =
 		current_node?.panel_data?.name ??
 		current_node?.highest_unit_form?.distribution_unit ??
@@ -110,7 +131,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 		current_header_column += header.cols;
 	});
 
-	const loads = getComputedLoads(node_id);
+	const loads = getComputedLoadsFromNodes(nodes, node_id, is_dynamic);
 	let current_load_row = startRow + 6;
 
 	for (const load of loads) {
@@ -146,21 +167,21 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	const main_columns = [
 		{ column: 'A', value: 'TOTAL' },
 		{ column: 'B', value: 'MAIN' },
-		{ column: 'C', value: current_node.voltage.toString() },
-		{ column: 'D', value: current_node.va.toString() },
-		{ column: 'E', value: current_node.current.toString() },
-		{ column: 'F', value: current_node.at.toString() },
-		{ column: 'G', value: current_node.ampere_frames.toString() },
-		{ column: 'H', value: current_node.pole ?? 'N/A' },
-		{ column: 'I', value: current_node.kaic ?? 'N/A' },
-		{ column: 'J', value: current_node.conductor_sets?.toString() ?? 'N/A' },
-		{ column: 'K', value: current_node.conductor_qty?.toString() ?? 'N/A' },
-		{ column: 'L', value: current_node.conductor_size.toString() },
-		{ column: 'M', value: current_node.conductor_insulation ?? 'N/A' },
-		{ column: 'N', value: current_node.egc_size.toString() },
-		{ column: 'O', value: current_node.egc_insulation ?? 'N/A' },
-		{ column: 'P', value: current_node.conduit_size.toString() },
-		{ column: 'Q', value: current_node.conduit_type ?? 'N/A' }
+		{ column: 'C', value: computed_current_node!.voltage.toString() },
+		{ column: 'D', value: computed_current_node!.va.toString() },
+		{ column: 'E', value: computed_current_node!.current.toString() },
+		{ column: 'F', value: computed_current_node!.at.toString() },
+		{ column: 'G', value: computed_current_node!.ampere_frames.toString() },
+		{ column: 'H', value: computed_current_node!.pole ?? 'N/A' },
+		{ column: 'I', value: computed_current_node!.kaic ?? 'N/A' },
+		{ column: 'J', value: computed_current_node!.conductor_sets?.toString() ?? 'N/A' },
+		{ column: 'K', value: computed_current_node!.conductor_qty?.toString() ?? 'N/A' },
+		{ column: 'L', value: computed_current_node!.conductor_size.toString() },
+		{ column: 'M', value: computed_current_node!.conductor_insulation ?? 'N/A' },
+		{ column: 'N', value: computed_current_node!.egc_size.toString() },
+		{ column: 'O', value: computed_current_node!.egc_insulation ?? 'N/A' },
+		{ column: 'P', value: computed_current_node!.conduit_size.toString() },
+		{ column: 'Q', value: computed_current_node!.conduit_type ?? 'N/A' }
 	];
 
 	main_columns.forEach(({ column, value }) => {
@@ -177,7 +198,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	// Process children
 	for (const child of children) {
 		if (child.node_type === 'root' || child.node_type === 'panel') {
-			await processOnePhaseExcelPanelBoardSchedule(workbook, child.id, highest_unit);
+			await processOnePhaseExcelPanelBoardSchedule(
+				workbook,
+				child.id,
+				highest_unit,
+				nodes,
+				is_dynamic
+			);
 		}
 	}
 
