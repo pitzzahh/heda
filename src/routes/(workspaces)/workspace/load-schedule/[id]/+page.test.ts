@@ -28,7 +28,8 @@ vi.mock('#lib/db/queries/index.js', () => ({
 	getNode: () => undefined,
 	getRootNode: () => ({ highest_unit_form: { phase: 'one_phase' } }),
 	getComputedLoads: () => [{ id: 'load-1' }],
-	getComputedVoltageDrops: () => [{ id: 'vd-1' }]
+	getComputedVoltageDrops: () => [{ id: 'vd-1' }],
+	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }])
 }));
 
 vi.mock('#lib/components/custom/table/index.js', async () => ({
@@ -71,7 +72,7 @@ function click_trigger(label: string) {
 }
 
 describe('load schedule page', () => {
-	test('warms the voltage-drop table after mount without a click', () => {
+	test('warms the voltage-drop table after mount without a click', async () => {
 		vi.useFakeTimers();
 		try {
 			const component = mount(LoadSchedulePage, { target: document.body });
@@ -79,6 +80,7 @@ describe('load schedule page', () => {
 			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('0');
 
 			vi.advanceTimersByTime(200);
+			await Promise.resolve();
 			flushSync();
 			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
 			unmount(component);
