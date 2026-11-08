@@ -15,4 +15,4 @@ export {
 	getNumberOfChildren,
 	getParentNodes
 } from './loads.js';
-export { getComputedVoltageDrops } from './voltage-drops.js';
+export { getComputedVoltageDrops, getComputedVoltageDropsAsync } from './voltage-drops.js';
