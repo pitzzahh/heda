@@ -40,9 +40,37 @@
 
 	setTableActions(new TableActionsState());
 
+	// Bridges the imperative virtual-core instance to Svelte rendering in one
+	// reusable place; see VirtualWindow.
+	const virtual = new VirtualWindow({
+		estimate_size: ROW_ESTIMATE_SIZE,
+		overscan: ROW_OVERSCAN,
+		initial_render_count: INITIAL_RENDER_COUNT,
+		get_item_key: (index) => String((data[index] as TData | undefined)?.id ?? index)
+	});
+
+	// Mounts ResizeObserver/scroll observers and returns virtualizer cleanup on teardown.
+	$effect(() => virtual.mount());
+
+	// Syncs row count/keys and the scroll element; imperative lifecycle calls are required
+	// by virtual-core and do not reassign unrelated component state.
+	$effect(() => virtual.sync(data.length));
+
+	// For large read-only virtualized tables (voltage drop), only feed the
+	// visible window to TanStack so row-model cost scales with the viewport, not
+	// the full dataset. Footers that aggregate over the row model are not used in
+	// this mode.
+	const table_data = $derived.by((): TData[] => {
+		if (!is_in_vd_table) return data;
+		return virtual.visible_items.flatMap((virtualRow) => {
+			const item = data[virtualRow.index];
+			return item ? [item] : [];
+		});
+	});
+
 	const table = createSvelteTable({
 		get data() {
-			return data;
+			return table_data;
 		},
 		get columns() {
 			return columns;
@@ -57,28 +85,19 @@
 	const rowClasses = $derived(tableVariants(getTableStyle()()).row());
 	const cellClasses = $derived(tableVariants(getTableStyle()()).cell());
 
-	// Bridges the imperative virtual-core instance to Svelte rendering in one
-	// reusable place; see VirtualWindow.
-	const virtual = new VirtualWindow({
-		estimate_size: ROW_ESTIMATE_SIZE,
-		overscan: ROW_OVERSCAN,
-		initial_render_count: INITIAL_RENDER_COUNT,
-		get_item_key: (index) => String(rows[index]?.id ?? index)
-	});
-
-	// Mounts ResizeObserver/scroll observers and returns virtualizer cleanup on teardown.
-	$effect(() => virtual.mount());
-
-	// Syncs row count/keys and the scroll element; imperative lifecycle calls are required
-	// by virtual-core and do not reassign unrelated component state.
-	$effect(() => virtual.sync(rows.length));
-
-	const visibleRows = $derived.by(() =>
-		virtual.visible_items.flatMap((virtualRow) => {
-			const row = rows[virtualRow.index];
+	const visibleRows = $derived.by(() => {
+		if (!is_in_vd_table) {
+			return virtual.visible_items.flatMap((virtualRow) => {
+				const row = rows[virtualRow.index];
+				return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
+			});
+		}
+		// Windowed rows align with visible_items by position.
+		return virtual.visible_items.flatMap((virtualRow, windowIndex) => {
+			const row = rows[windowIndex];
 			return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
-		})
-	);
+		});
+	});
 	const virtualPadding = $derived({
 		start: virtual.padding_start,
 		end: virtual.padding_end
