@@ -7,6 +7,7 @@ import {
 import { StrongholdTimeoutError, getDatabase, initializeDatabase, withTimeout } from './index.js';
 import {
 	addNode,
+	copyAndAddNodeById,
 	createProject,
 	loadCurrentProject,
 	removeNode,
@@ -411,6 +412,92 @@ describe('db (signaldb)', () => {
 		});
 		expect(getChildNodesByParentId(root)).toHaveLength(2);
 		expect(getChildNodesByParentId(root)).not.toBe(first);
+	});
+
+	it('copies a panel subtree with new ids in one batch', async () => {
+		resetData();
+		const created = await createProject('Copy', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const load_data = (circuit_number: number) =>
+			({
+				load_type: default_load_types.GENERAL_LIGHTING,
+				quantity: 10,
+				varies: '0',
+				load_description: `Load ${circuit_number}`,
+				continuous: false,
+				circuit_number,
+				length: 10,
+				ambient_temperature: 30,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				config_preference: 'CUSTOM'
+			}) as const;
+		addNode({ parent_id: panel!.id, load_data: load_data(1) });
+		addNode({ parent_id: panel!.id, load_data: load_data(2) });
+
+		const copied = await copyAndAddNodeById(panel!.id);
+		expect(copied?.id).not.toBe(panel!.id);
+		expect(copied?.parent_id).toBe(root);
+		expect(copied?.circuit_number).toBe(2);
+		const copied_children = getChildNodesByParentId(copied!.id);
+		expect(copied_children).toHaveLength(2);
+		for (const child of copied_children) {
+			expect(child.parent_id).toBe(copied!.id);
+			expect(child.load_data).not.toBe(getNode(child.id)?.load_data);
+		}
+		expect(getChildNodesByParentId(panel!.id)).toHaveLength(2);
+	});
+
+	it('removes a panel subtree in one batch', async () => {
+		resetData();
+		const created = await createProject('Remove', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const load_data = {
+			load_type: default_load_types.GENERAL_LIGHTING,
+			quantity: 10,
+			varies: '0',
+			load_description: 'Load 1',
+			continuous: false,
+			circuit_number: 1,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		} as const;
+		addNode({ parent_id: panel!.id, load_data });
+
+		const removed = removeNode(panel!.id);
+		expect(removed?.removed_node.id).toBe(panel!.id);
+		expect(removed?.children_nodes).toHaveLength(1);
+		expect(getChildNodesByParentId(root)).toHaveLength(0);
+		expect(getChildNodesByParentId(panel!.id)).toHaveLength(0);
 	});
 
 	it('passes fast promises through the Stronghold timeout', async () => {
