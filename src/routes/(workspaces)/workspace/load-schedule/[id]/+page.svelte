@@ -12,6 +12,7 @@
 	import {
 		getComputedLoads,
 		getComputedVoltageDrops,
+		getComputedVoltageDropsAsync,
 		getNode,
 		getNodeById,
 		getRootNode
@@ -53,10 +54,17 @@
 
 	onMount(() => {
 		// Computing the whole tree and building its row model is the expensive
-		// part of the first switch to Voltage Drop. Warm both while idle so the
-		// switch itself only reveals already-rendered rows.
+		// part of the first switch to Voltage Drop. Warm both while idle (and
+		// off the main thread when a worker is available) so the switch itself
+		// only reveals already-rendered rows.
 		const warm_voltage_drops = () => {
-			visited_tabs['voltage-drop'] = true;
+			void getComputedVoltageDropsAsync()
+				.then(() => {
+					visited_tabs['voltage-drop'] = true;
+				})
+				.catch(() => {
+					visited_tabs['voltage-drop'] = true;
+				});
 		};
 		if (typeof requestIdleCallback === 'function') {
 			const idle_id = requestIdleCallback(warm_voltage_drops, { timeout: 500 });
