@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
@@ -33,8 +34,8 @@
 		'voltage-drop': false
 	});
 
-	// Datasets stay hot once opened: the panels never unmount, so clearing a
-	// table would rebuild every row on each switch. Drops wait for first visit.
+	// Datasets stay hot once warmed: the tab panels never unmount, so clearing a
+	// table would rebuild every row on each switch. Drops warm up while idle.
 	const current_node = $derived(getNodeById(node_id));
 	const parent_node = $derived(
 		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
@@ -42,6 +43,28 @@
 	const root_node = $derived(getRootNode());
 	const loads = $derived(getComputedLoads(node_id));
 	const voltage_drops = $derived(visited_tabs['voltage-drop'] ? getComputedVoltageDrops() : []);
+
+	// Column definitions are expensive to rebuild and invalidate TanStack's
+	// row model, so keep them stable across tab switches.
+	const load_columns = $derived(
+		current_node ? onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule) : []
+	);
+	const voltage_drop_columns = voltageDropColumns();
+
+	onMount(() => {
+		// Computing the whole tree and building its row model is the expensive
+		// part of the first switch to Voltage Drop. Warm both while idle so the
+		// switch itself only reveals already-rendered rows.
+		const warm_voltage_drops = () => {
+			visited_tabs['voltage-drop'] = true;
+		};
+		if (typeof requestIdleCallback === 'function') {
+			const idle_id = requestIdleCallback(warm_voltage_drops, { timeout: 500 });
+			return () => cancelIdleCallback(idle_id);
+		}
+		const timeout_id = setTimeout(warm_voltage_drops, 150);
+		return () => clearTimeout(timeout_id);
+	});
 
 	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
@@ -111,7 +134,7 @@
 			{#if current_node}
 				<DataTable
 					data={loads}
-					columns={onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule)}
+					columns={load_columns}
 					highest_unit={root_node?.highest_unit_form}
 					is_footer_shown={current_node.node_type !== 'root'}
 				/>
@@ -125,7 +148,7 @@
 			<DataTable
 				data={voltage_drops}
 				is_footer_shown={false}
-				columns={voltageDropColumns()}
+				columns={voltage_drop_columns}
 				is_in_vd_table
 			/>
 		</Tabs.Content>
