@@ -19,7 +19,6 @@
 
 	export interface SettingsComponentType {
 		active_setting: NavName;
-		settings_open: boolean;
 		app_update: Update | null;
 		update_state: 'stale' | 'available' | 'no_updates' | 'processing' | 'error' | 'downloading';
 	}
@@ -27,7 +26,6 @@
 
 <script lang="ts">
 	import { GearIcon, MagicWandIcon, MonitorIcon, RssIcon } from '#lib/assets/icons/index.js';
-	import { slide } from 'svelte/transition';
 	import { PersistedState } from 'runed';
 	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
@@ -39,13 +37,15 @@
 
 	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
 		active_setting: 'Project',
-		settings_open: false,
 		app_update: null,
 		update_state: 'stale'
 	});
+
+	// Open/close is session-only: a persisted dialog would reopen on every load.
+	let settings_open = $state(false);
 </script>
 
-<Dialog.Root bind:open={component_state.current.settings_open}>
+<Dialog.Root bind:open={settings_open}>
 	<Tooltip.Provider>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
@@ -114,20 +114,20 @@
 					</div>
 				</header>
 
-				<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0" transition:slide>
-					{#if component_state.current.active_setting === 'Project'}
-						<ProjectSection
-							close_settings={() => (component_state.current.settings_open = false)}
-						/>
-					{:else if component_state.current.active_setting === 'Preferences'}
-						<PreferencesSection />
-					{:else if component_state.current.active_setting === 'Updates'}
-						<UpdatesSection
-							bind:update_state={component_state.current.update_state}
-							bind:app_update={component_state.current.app_update}
-						/>
-					{/if}
-				</div>
+				{#key component_state.current.active_setting}
+					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
+						{#if component_state.current.active_setting === 'Project'}
+							<ProjectSection close_settings={() => (settings_open = false)} />
+						{:else if component_state.current.active_setting === 'Preferences'}
+							<PreferencesSection />
+						{:else if component_state.current.active_setting === 'Updates'}
+							<UpdatesSection
+								bind:update_state={component_state.current.update_state}
+								bind:app_update={component_state.current.app_update}
+							/>
+						{/if}
+					</div>
+				{/key}
 			</main>
 		</Sidebar.Provider>
 		<Dialog.Close />
