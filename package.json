@@ -65,6 +65,7 @@
 		"@signaldb/core": "1",
 		"@signaldb/svelte": "^2.0.0",
 		"@tanstack/table-core": "^8.21.3",
+		"@tanstack/virtual-core": "^3.19.11",
 		"@tauri-apps/api": "^2.12.4",
 		"@tauri-apps/plugin-dialog": "~2.8.4",
 		"@tauri-apps/plugin-fs": "~2.7.1",
