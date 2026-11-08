@@ -122,7 +122,6 @@ export async function peekFileVersion(file_path: string): Promise<1 | 2> {
 
 export async function readEncryptedFile<T>(filePath: string, password: string | null): Promise<T> {
 	const raw = new TextDecoder().decode(await readFile(filePath));
-	console.log('File read successfully!');
 	return decryptFilePayload<T>(raw, password);
 }
 
@@ -191,17 +190,11 @@ export async function handleLoadFile(
 			});
 		}
 
-		console.log(`Loaded data: ${JSON.stringify(file_data, null, 2)}`);
-		console.log(`Complete file path: ${complete_file_path}`);
-		console.log(`File name: ${instance_name}`);
-
 		// Password proven correct. Cache it before the first db touch so the
 		// session store (Stronghold vault) unlocks with this file's secret.
 		setSessionPassword(password!);
 
 		const loaded_project = await loadCurrentProject(file_data);
-
-		console.log(`Loaded project: ${JSON.stringify(loaded_project, null, 2)}`);
 
 		return {
 			id: loaded_project.id,
