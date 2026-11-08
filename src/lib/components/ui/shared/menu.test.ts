@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { menu } from './menu';
-import { anchoredSurface } from './anchored-surface';
+import { menu } from './menu.js';
+import { anchoredSurface } from './anchored-surface.js';
 
 describe('menu', () => {
 	test('surface carries the anchored surface and padding', () => {

@@ -24,9 +24,22 @@ export function formatFraction(input: string): string {
 				(_, numerator: string, denominator: string) =>
 					`<sup>${numerator}</sup>&frasl;<sub>${denominator}</sub>`
 			)
-			// Match single digits (if specific formatting is needed)
-			.replace(/\b(\d+)\b/g, '$1')
 	);
+}
+
+/**
+ * Resolves the display label for an option value. Falls back to the raw value
+ * so data written by older app versions still renders.
+ *
+ * @param options - Options carrying canonical values and display labels.
+ * @param value - The stored value to resolve.
+ * @returns The display label, the raw value, or an empty string.
+ */
+export function getOptionLabel(
+	options: readonly { value: string; label: string }[],
+	value: string | null | undefined
+): string {
+	return options.find((option) => option.value === value)?.label ?? value ?? '';
 }
 
 /**

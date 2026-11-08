@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Checkbox as CheckboxPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
-	import { type CheckboxSize, type CheckboxVariant, checkbox } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { type CheckboxSize, type CheckboxVariant, checkbox } from './variants.js';
 
 	type Props = {
 		checked?: boolean;

@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-	import { XCircleIcon } from '#lib/assets/icons';
+	import { XCircleIcon } from '#lib/assets/icons/index.js';
 
 	let { errors }: Props = $props();
 </script>

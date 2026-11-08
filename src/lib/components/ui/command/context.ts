@@ -1,5 +1,5 @@
 import { createContext, getContext, hasContext, type Snippet, setContext } from 'svelte';
-import type { CommandVariant, commandFrame } from './variants';
+import type { CommandVariant, commandFrame } from './variants.js';
 
 export type CommandContext = {
 	/** Visible rows after filtering, for the count next to the search input. */

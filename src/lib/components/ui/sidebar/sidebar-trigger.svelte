@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { SidebarIcon } from '#lib/assets/icons';
+	import { SidebarIcon } from '#lib/assets/icons/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { useSidebar } from './context.svelte.js';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '#lib/components/ui/tooltip';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '#lib/components/ui/tooltip/index.js';
 
 	let {
 		ref = $bindable(null),

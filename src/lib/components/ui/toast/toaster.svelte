@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte';
 	import { Toaster as Sonner, type ToasterProps } from 'svelte-sonner';
-	import { cn } from '#lib/utils';
-	import { TOAST_CLASSES } from '#lib/components/ui/shared/toast-classes';
+	import { cn } from '#lib/utils/index.js';
+	import { TOAST_CLASSES } from '#lib/components/ui/shared/toast-classes.js';
 
 	// svelte-sonner's `Snippet` and this file's resolve to the same runtime shape but a
 	// different type identity across the package boundary; erase it through `unknown`.

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Tooltip as TooltipPrimitive } from 'bits-ui';
-	import { cn } from '#lib/utils';
+	import { cn } from '#lib/utils/index.js';
 
 	let { class: classProp, ...rest }: TooltipPrimitive.TriggerProps = $props();
 </script>

@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-	import { Skeleton } from '#lib/components/ui/skeleton';
+	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 
 	let { children, options_count = Math.floor(Math.random() * (10 - 5 + 1)) + 5 }: Props = $props();
 </script>

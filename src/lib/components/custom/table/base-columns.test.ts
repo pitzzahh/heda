@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { describe, expect, test } from 'vitest';
-import { createLeftMostBaseColumns, createRightMostBaseColumns } from './base-columns';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+import { createLeftMostBaseColumns, createRightMostBaseColumns } from './base-columns.js';
+import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
 const stub = {} as PhaseLoadSchedule;
 

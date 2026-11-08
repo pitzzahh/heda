@@ -13,8 +13,8 @@
 	import { PasswordInput } from '#lib/components/ui/password-input/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { cn } from '#lib/utils';
-	import { LockKeyIcon, WarningCircleIcon } from '#lib/assets/icons';
+	import { cn } from '#lib/utils/index.js';
+	import { LockKeyIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 
 	let { open = $bindable(false), mode, error = null, busy = false, onSubmit }: Props = $props();
 

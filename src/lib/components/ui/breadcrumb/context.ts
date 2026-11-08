@@ -1,5 +1,5 @@
 import { getContext, hasContext, setContext } from 'svelte';
-import { type BreadcrumbSize, type BreadcrumbVariant, breadcrumb } from './variants';
+import { type BreadcrumbSize, type BreadcrumbVariant, breadcrumb } from './variants.js';
 
 type Style = { variant: BreadcrumbVariant; size: BreadcrumbSize };
 

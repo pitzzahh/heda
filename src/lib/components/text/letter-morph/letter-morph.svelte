@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { cn } from '#lib/utils';
-	import { createLetterMorph } from './letters';
-	import { type LetterMorphSize, type LetterMorphVariant, letterMorph } from './variants';
+	import { cn } from '#lib/utils/index.js';
+	import { createLetterMorph } from './letters.js';
+	import { type LetterMorphSize, type LetterMorphVariant, letterMorph } from './variants.js';
 
 	let {
 		text,

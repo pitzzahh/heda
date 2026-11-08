@@ -1,12 +1,13 @@
 import { Collection } from '@signaldb/core';
+import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
 import { isTauri } from '@tauri-apps/api/core';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { Stronghold } from '@tauri-apps/plugin-stronghold';
-import type { MyDatabaseCollections, Node, Project } from '#lib/types/db';
-import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security';
-import { getSessionPassword } from './session';
+import type { MyDatabaseCollections, Node, Project } from '#lib/types/db/index.js';
+import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security/index.js';
+import { getSessionPassword } from './session.js';
 
 // Session store files. Deliberately nondescript and extensionless so they do
 // not advertise their contents: p = projects, n = nodes, v = vault, k = KDF salt.
@@ -100,8 +101,12 @@ async function sessionKey(): Promise<string | null> {
  * Session-scoped: previous session files are wiped on launch so every start
  * begins empty, exactly like the previous memory-only database. Outside Tauri
  * (web dev/preview) collections run on pure memory with no persistence.
+ *
+ * This is the only asynchronous part of the database (Stronghold + file I/O).
+ * Once it settles, `getDatabase()` is synchronous, and every query and
+ * mutation reads and writes the in-memory collections without yielding.
  */
-export async function databaseInstance(): Promise<MyDatabaseCollections> {
+export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 	if (dbInstance) return dbInstance;
 	if (dbReady) return dbReady;
 	dbReady = (async () => {
@@ -118,6 +123,7 @@ export async function databaseInstance(): Promise<MyDatabaseCollections> {
 		}
 		const projects = new Collection<Project>({
 			name: 'projects',
+			reactivity: svelteReactivityAdapter,
 			persistence:
 				useTauri && key
 					? adapter<Project>(PROJECTS_FILE, {
@@ -129,6 +135,7 @@ export async function databaseInstance(): Promise<MyDatabaseCollections> {
 		});
 		const nodes = new Collection<Node>({
 			name: 'nodes',
+			reactivity: svelteReactivityAdapter,
 			persistence:
 				useTauri && key
 					? adapter<Node>(NODES_FILE, {
@@ -143,4 +150,16 @@ export async function databaseInstance(): Promise<MyDatabaseCollections> {
 		return dbInstance;
 	})();
 	return dbReady;
+}
+
+/**
+ * Synchronous access to the already initialized collections. The root layout
+ * awaits `initializeDatabase()` before any route renders, so every caller
+ * past that point can read and write without a promise hop.
+ */
+export function getDatabase(): MyDatabaseCollections {
+	if (!dbInstance) {
+		throw new Error('Database accessed before initializeDatabase() completed');
+	}
+	return dbInstance;
 }

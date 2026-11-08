@@ -1,11 +1,11 @@
 import * as v from 'valibot';
-import { PASSWORD_FIELD, PHASE_FIELD } from './shared';
+import { PASSWORD_FIELD, PHASE_FIELD } from './shared.js';
 
-export * from './load/index';
-export * from './panel/index';
-export * from './db';
-export * from './misc';
-export * from './settings';
+export * from './load/index.js';
+export * from './panel/index.js';
+export * from './db.js';
+export * from './misc.js';
+export * from './settings.js';
 
 export const HIGHEST_UNIT_SCHEMA = v.pipe(
 	v.object({

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db';
+	import type { Node } from '#lib/types/db/index.js';
 
 	interface Props {
 		highest_unit: NonNullable<Node['highest_unit_form']>;
@@ -15,12 +15,14 @@
 <script lang="ts">
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
-	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel';
+	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import type { Phase } from '#lib/types/phase';
-	import { cn } from '#lib/utils';
+	import type { Phase } from '#lib/types/phase/index.js';
+	import { cn } from '#lib/utils/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
-	import { getNodeById } from '#lib/db/queries';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
 
 	let {
 		parent_id,
@@ -34,19 +36,22 @@
 
 	const phase = $derived(highest_unit.phase);
 
+	const parent_node = $derived(
+		panel_to_edit.parent_id ? getNode(panel_to_edit.parent_id) : undefined
+	);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
-
-	// Loads the parent name for display whenever the edited panel changes.
-	$effect(() => {
-		if (panel_to_edit.parent_id) {
-			getNodeById(panel_to_edit.parent_id).then((node) => {
-				selected_parent = {
-					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
-					id: node?.id || ''
-				};
-			});
-		}
-	});
+	const parent_display = $derived(
+		selected_parent ??
+			(parent_node
+				? {
+						name:
+							parent_node.highest_unit_form?.distribution_unit ||
+							parent_node.panel_data?.name ||
+							'',
+						id: parent_node.id
+					}
+				: null)
+	);
 </script>
 
 <Dialog.Root bind:open={open_panel_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
@@ -64,10 +69,11 @@
 					<div>
 						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
-							{#if selected_parent}
+							{#if parent_display}
 								<ParentPanelPopover
 									current_parent_id={panel_to_edit.parent_id || ''}
-									bind:selected_parent
+									selected_parent={parent_display}
+									onselect={(parent) => (selected_parent = parent)}
 									excluded_node_id={panel_to_edit.id}
 								/>
 							{/if}
@@ -77,11 +83,7 @@
 						<div class="flex gap-1">
 							<h4 class="font-semibold">Phase:</h4>
 							<p>
-								{#if phase == null}
-									N/A
-								{:else}
-									{phase}
-								{/if}
+								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}
 							</p>
 						</div>
 					</div>
@@ -94,7 +96,7 @@
 				action="edit"
 				{parent_id}
 				main_phase={phase as Phase}
-				selected_parent_id={selected_parent?.id}
+				selected_parent_id={parent_display?.id}
 				closeDialog={() => (open_panel_dialog = false)}
 				node_to_edit={panel_to_edit}
 			/>

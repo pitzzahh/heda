@@ -1,15 +1,16 @@
-import { getOrdinalSuffix } from '#lib/utils/format';
-import type { Node } from '#lib/types/db';
+import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format/index.js';
+import type { Node } from '#lib/types/db/index.js';
 import {
 	getComputedLoads,
 	getComputedVoltageDrops,
 	getNodeById,
 	getNodeDepth
-} from '#lib/db/queries';
+} from '#lib/db/queries/index.js';
+import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
 import { toast } from 'svelte-sonner';
-import ExcelJS from 'exceljs';
-import type { ExcelExportType } from '#lib/types/misc';
-import { convertToNormalText } from '#lib/utils/text';
+import type ExcelJS from 'exceljs';
+import type { ExcelExportType } from '#lib/types/misc/index.js';
+import { convertToNormalText } from '#lib/utils/text/index.js';
 
 type ExportProcessResult = {
 	valid: boolean;
@@ -25,8 +26,8 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	node_id: string,
 	highest_unit?: Node['highest_unit_form']
 ): Promise<ExportProcessResult> {
-	const current_node = await getNodeById(node_id);
-	const children = await getComputedLoads(node_id);
+	const current_node = getNodeById(node_id);
+	const children = getComputedLoads(node_id);
 
 	if (!current_node) {
 		return {
@@ -37,11 +38,9 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	}
 
 	// Use the existing getNodeDepth2 function to calculate the depth
-	const actualDepth = await getNodeDepth(node_id);
+	const actualDepth = getNodeDepth(node_id);
 	const panel_level = getOrdinalSuffix(actualDepth);
-	const parent_node = current_node.parent_id
-		? await getNodeById(current_node.parent_id)
-		: undefined;
+	const parent_node = current_node.parent_id ? getNodeById(current_node.parent_id) : undefined;
 	const panel_name =
 		current_node?.panel_data?.name ??
 		current_node?.highest_unit_form?.distribution_unit ??
@@ -69,7 +68,8 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	);
 
 	worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
-	worksheet.getCell(`B${startRow + 1}`).value = `: ${highest_unit?.phase} + E, ${230}V, ${60}Hz`;
+	worksheet.getCell(`B${startRow + 1}`).value =
+		`: ${getOptionLabel(DEFAULT_PHASES, highest_unit?.phase)} + E, ${230}V, ${60}Hz`;
 	worksheet.getCell(`B${startRow + 2}`).value = `: ${from_supply_name}`;
 	worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
@@ -126,7 +126,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 		current_header_column += header.cols;
 	});
 
-	const loads = await getComputedLoads(node_id);
+	const loads = getComputedLoads(node_id);
 	let current_load_row = startRow + 6;
 
 	for (const load of loads) {
@@ -264,7 +264,7 @@ export async function processOnePhaseVoltageDrop(
 		current_header_column += header.cols;
 	});
 
-	const voltage_drops = await getComputedVoltageDrops();
+	const voltage_drops = getComputedVoltageDrops();
 	let current_load_row = startRow + 2;
 
 	for (const voltage_drop_node of voltage_drops) {
@@ -336,15 +336,19 @@ export async function exportToExcel(
 		position: 'bottom-center'
 	});
 
-	const workbook = new ExcelJS.Workbook();
+	// Loaded on demand: parsing exceljs at startup costs every launch for a
+	// feature that runs only when the user exports.
+	const { default: excel } = await import('exceljs');
+	const workbook = new excel.Workbook();
 	workbook.title = `Exported ${file_name} ${convertToNormalText(type, true)}`;
 	workbook.creator = 'HEDA(Desktop App)';
 
 	try {
+		const phase_label = getOptionLabel(DEFAULT_PHASES, highest_unit?.phase);
 		switch (highest_unit?.phase) {
-			case '1P':
-				workbook.subject = `1P ${convertToNormalText(type, true)}`;
-				workbook.category = ['1P', `${convertToNormalText(type, true)}`, 'Export'].join(',');
+			case default_phases.ONE_PHASE:
+				workbook.subject = `${phase_label} ${convertToNormalText(type, true)}`;
+				workbook.category = [phase_label, `${convertToNormalText(type, true)}`, 'Export'].join(',');
 				workbook.description = 'Load schedule for 1 phase load schedule';
 				switch (type) {
 					case 'LOAD_SCHEDULE': {
@@ -391,9 +395,10 @@ export async function exportToExcel(
 					}
 				}
 				break;
-			case '3P':
-				workbook.subject = '3P Load Schedule';
-				workbook.category = ['3P', 'Load Schedule', 'Export'].join(',');
+			case default_phases.THREE_PHASE_WYE:
+			case default_phases.THREE_PHASE_DELTA:
+				workbook.subject = `${phase_label} Load Schedule`;
+				workbook.category = [phase_label, 'Load Schedule', 'Export'].join(',');
 				workbook.description = 'Load schedule for 3 phase load schedule';
 				return toast.warning('This feature is still under development', {
 					description: 'Three phase load schedule is not yet supported',

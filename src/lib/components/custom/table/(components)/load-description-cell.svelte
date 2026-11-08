@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
 	interface Props {
 		load_description: string;
@@ -12,9 +12,8 @@
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
 	import { toast } from 'svelte-sonner';
-	import { updateLoadDescription } from '#lib/db/mutations';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
-	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
+	import { updateLoadDescription } from '#lib/db/mutations/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { load_description, node_id, node_type, node }: Props = $props();
 	const load_description_suffix = $derived(load_description.split(' - ').at(-1));
@@ -28,11 +27,10 @@
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
 	let undo_redo_state = getUndoRedoState();
-	const db_revisions = getDbRevisionsState();
 
-	async function saveLoadDescChanges() {
+	function saveLoadDescChanges() {
 		try {
-			const updated_node = await updateLoadDescription({
+			const updated_node = updateLoadDescription({
 				node_id,
 				load_description:
 					node_type === 'load'
@@ -45,7 +43,6 @@
 				data: updated_node as unknown as PhaseLoadSchedule,
 				previous_data: node
 			});
-			db_revisions.bumpWorkspaceAndSchedule();
 			toast.success('Load description updated successfully');
 		} catch (err) {
 			console.error(`Error: failed to update load description: ${JSON.stringify(err)}`);
