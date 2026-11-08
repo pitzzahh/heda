@@ -29,78 +29,75 @@
 
 	let menu_open = $state(false);
 	let edit_dialog_open = $state(false);
+
+	const tooltip_data = $derived([
+		{
+			trigger_callback: () => on_copy(node.id, settings_state.is_load_multi_copy),
+			variant: 'ghost',
+			icon: CopyIcon,
+			className: 'text-muted-foreground',
+			tooltip_content: 'Copy Load'
+		},
+		{
+			trigger_callback: () => (edit_dialog_open = true),
+			variant: 'ghost',
+			icon: PencilIcon,
+			hidden: false,
+			className: 'text-muted-foreground',
+			tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
+		},
+		{
+			trigger_callback: () => on_delete(),
+			variant: 'ghost',
+			icon: TrashIcon,
+			hidden: false,
+			tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
+			className: 'text-destructive hover:bg-destructive/10!'
+		}
+	]);
 </script>
 
-{#if settings_state.show_loads_on_unit_hierarchy}
-	<button
-		use:draggable={{ container: node.id, dragData: node }}
-		onclick={() => {
-			if (is_alt_pressed) {
-				select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
-			}
-		}}
-	>
-		<Sidebar.MenuItem class="w-full">
-			<Sidebar.MenuButton
-				class="hover:bg-accent active:bg-accent/70 flex w-full items-center transition-colors data-[active=true]:bg-transparent"
-			>
-				<ContextMenu.Root bind:open={menu_open}>
-					<ContextMenu.Trigger class="flex w-full items-center gap-1">
-						<div class="flex w-full items-center gap-2">
-							<div class="w-4">
-								<PlugChargingIcon class="size-4" />
-							</div>
-							<span class="truncate">
-								{typeof node === 'string' ? node : node.load_data?.load_description}
-							</span>
-							{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
-								<div class="bg-destructive size-2 rounded-full"></div>
-							{/if}
-						</div>
-					</ContextMenu.Trigger>
-					<ContextMenu.Content class="grid gap-1">
-						<UpdateLoadDialog {highest_unit} bind:some_open_state={menu_open} load_to_edit={node} />
-						<ConfirmationDialog
-							trigger_text="Remove load"
-							trigger_variant="destructive"
-							bind:some_open_state={menu_open}
-							onConfirm={() => {
-								removeNode(node.id);
-							}}
-						/>
-					</ContextMenu.Content>
-				</ContextMenu.Root>
-			</Sidebar.MenuButton>
-
-			{@const tooltip_data = [
-				{
-					trigger_callback: () => on_copy(node.id, settings_state.is_load_multi_copy),
-					variant: 'ghost',
-					icon: CopyIcon,
-					className: 'text-muted-foreground',
-					tooltip_content: 'Copy Load'
-				},
-				{
-					trigger_callback: () => (edit_dialog_open = true),
-					variant: 'ghost',
-					icon: PencilIcon,
-					hidden: false,
-					className: 'text-muted-foreground',
-					tooltip_content: `Edit ${node.load_data?.load_description || 'Load'}`
-				},
-				{
-					trigger_callback: () => on_delete(),
-					variant: 'ghost',
-					icon: TrashIcon,
-					hidden: false,
-					tooltip_content: `Remove ${node.load_data?.load_description || 'Load'}`,
-					className: 'text-destructive hover:bg-destructive/10!'
+<div data-sidebar="menu-item" class="group/menu-item relative w-full">
+	<div use:draggable={{ container: node.id, dragData: node }}>
+		<Sidebar.MenuButton
+			class="hover:bg-accent active:bg-accent/70 flex w-full items-center transition-colors data-[active=true]:bg-transparent"
+			onclick={() => {
+				if (is_alt_pressed) {
+					select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 				}
-			]}
-			<TreeActionsMenu actions={tooltip_data} />
-		</Sidebar.MenuItem>
-	</button>
-{/if}
+			}}
+		>
+			<ContextMenu.Root bind:open={menu_open}>
+				<ContextMenu.Trigger class="flex w-full items-center gap-1">
+					<div class="flex w-full items-center gap-2">
+						<div class="w-4">
+							<PlugChargingIcon class="size-4" />
+						</div>
+						<span class="truncate">
+							{typeof node === 'string' ? node : node.load_data?.load_description}
+						</span>
+						{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
+							<div class="bg-destructive size-2 rounded-full"></div>
+						{/if}
+					</div>
+				</ContextMenu.Trigger>
+				<ContextMenu.Content class="grid gap-1">
+					<UpdateLoadDialog {highest_unit} bind:some_open_state={menu_open} load_to_edit={node} />
+					<ConfirmationDialog
+						trigger_text="Remove load"
+						trigger_variant="destructive"
+						bind:some_open_state={menu_open}
+						onConfirm={() => {
+							removeNode(node.id);
+						}}
+					/>
+				</ContextMenu.Content>
+			</ContextMenu.Root>
+		</Sidebar.MenuButton>
+	</div>
+
+	<TreeActionsMenu actions={tooltip_data} />
+</div>
 
 <UpdateLoadDialog
 	{highest_unit}
