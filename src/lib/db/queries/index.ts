@@ -16,3 +16,4 @@ export {
 	getParentNodes
 } from './loads.js';
 export { getComputedVoltageDrops, getComputedVoltageDropsAsync } from './voltage-drops.js';
+export { getSnapshotRevision } from './snapshot.js';
