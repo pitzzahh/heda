@@ -1,5 +1,4 @@
 import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
-import { generateWorkbook } from '#lib/helpers/export/generate.js';
 import type { ExcelExportType } from '#lib/types/misc/index.js';
 
 self.onmessage = async (event: MessageEvent) => {
@@ -14,6 +13,9 @@ self.onmessage = async (event: MessageEvent) => {
 
 		if (type === 'export') {
 			const { payload } = event.data;
+			// Dynamically imported so voltage computes never bundle the workbook
+			// generator (and its database imports) into the worker startup.
+			const { generateWorkbook } = await import('#lib/helpers/export/generate.js');
 			const generated = await generateWorkbook({
 				type: payload.type as ExcelExportType,
 				node_id: payload.node_id,
