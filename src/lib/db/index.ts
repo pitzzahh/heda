@@ -1,4 +1,4 @@
-import { Collection } from '@signaldb/core';
+import { Collection, createIndex } from '@signaldb/core';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
 import { isTauri } from '@tauri-apps/api/core';
@@ -125,6 +125,7 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 		const nodes = new Collection<Node>({
 			name: 'nodes',
 			reactivity: svelteReactivityAdapter,
+			indices: [createIndex('parent_id'), createIndex('node_type'), createIndex('circuit_number')],
 			persistence:
 				useTauri && key
 					? adapter<Node>(NODES_FILE, {
