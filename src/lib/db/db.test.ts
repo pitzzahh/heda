@@ -378,6 +378,41 @@ describe('db (signaldb)', () => {
 		expect(loadSnapshot(false)).not.toBe(unsorted);
 	});
 
+	it('returns the same child array until the next write', async () => {
+		resetData();
+		const created = await createProject('Children', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const first = getChildNodesByParentId(root);
+		expect(getChildNodesByParentId(root)).toBe(first);
+		addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-B',
+				circuit_number: 2,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		expect(getChildNodesByParentId(root)).toHaveLength(2);
+		expect(getChildNodesByParentId(root)).not.toBe(first);
+	});
+
 	it('passes fast promises through the Stronghold timeout', async () => {
 		await expect(withTimeout(Promise.resolve('key'), 50)).resolves.toBe('key');
 	});
