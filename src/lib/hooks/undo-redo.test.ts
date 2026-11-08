@@ -32,7 +32,7 @@ describe('UndoRedoState', () => {
 			}
 		});
 
-		undo_redo_state.copyNodeById(panel!.id);
+		await undo_redo_state.copyNodeById(panel!.id);
 		expect(getChildNodesByParentId(root)).toHaveLength(2);
 		expect(undo_redo_state.hasUndoActions()).toBe(true);
 

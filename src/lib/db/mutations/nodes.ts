@@ -50,7 +50,7 @@ export function addNode({
 	}
 }
 
-export function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
+export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
 	const database = getDatabase();
 
 	try {
@@ -130,9 +130,11 @@ export function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
 				.find({ parent_id: id }, { sort: { circuit_number: 1 } })
 				.fetch();
 
-			// Sequentially copy children to prevent race conditions
+			// Sequentially copy children to prevent race conditions. Yield between
+			// siblings so deep hierarchies do not block the UI thread.
 			for (const child of children) {
-				copyAndAddNodeById(child.id, created_node.id);
+				await copyAndAddNodeById(child.id, created_node.id);
+				await new Promise((resolve) => setTimeout(resolve, 0));
 			}
 		}
 
