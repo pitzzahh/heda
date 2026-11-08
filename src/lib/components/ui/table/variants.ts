@@ -8,8 +8,8 @@ export const table = tv({
 		body: '',
 		footer: 'font-medium text-muted-foreground',
 		row: 'transition-colors',
-		head: 'text-left align-middle text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground [&:has([role=checkbox])]:pr-0',
-		cell: 'align-middle text-foreground tabular-nums [&:has([role=checkbox])]:pr-0',
+		head: 'text-left align-middle text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+		cell: 'align-middle text-foreground tabular-nums whitespace-nowrap [&:has([role=checkbox])]:pr-0',
 		caption: 'mt-4 text-sm text-muted-foreground'
 	},
 	variants: {
