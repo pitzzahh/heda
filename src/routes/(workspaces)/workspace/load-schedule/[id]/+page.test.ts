@@ -101,9 +101,23 @@ describe('load schedule page', () => {
 		expect(stub_rows('false')).toBeNull();
 
 		await settle_warm();
-		// Data is warm but the heavy table stays unmounted until the user visits
-		// the tab, so background work never blocks the load schedule.
+		// Data is warm but the heavy table stays unmounted until the idle
+		// pre-mount delay elapses, so background work never blocks the load
+		// schedule.
 		expect(stub_rows('false')).toBeNull();
+		unmount(component);
+	});
+
+	test('pre-mounts the hidden voltage table while idle, before any click', async () => {
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		await settle_warm();
+		expect(stub_rows('false')).toBeNull();
+
+		// jsdom has no requestIdleCallback, so the fallback timer mounts it.
+		await vi.advanceTimersByTimeAsync(500);
+		flushSync();
+		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
 		unmount(component);
 	});
 
