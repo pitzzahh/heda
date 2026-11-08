@@ -1,5 +1,4 @@
 import type { Node } from '#lib/types/db/index.js';
-import { loadSnapshot } from '#lib/db/queries/snapshot.js';
 import type { ExcelExportType } from '#lib/types/misc/index.js';
 import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
 import { convertToNormalText, getOptionLabel } from '#lib/utils/format/index.js';
@@ -30,9 +29,14 @@ export async function generateWorkbook(payload: {
 		throw new Error('No highest unit found');
 	}
 
+	// Dynamic so worker voltage computes never pull the database/Tauri graph
+	// into their startup; the worker always passes `nodes`.
 	const snapshot = payload.nodes
 		? null
-		: (loadSnapshot() as { nodes: Node[]; is_dynamic: boolean });
+		: ((await import('#lib/db/queries/snapshot.js')).loadSnapshot() as {
+				nodes: Node[];
+				is_dynamic: boolean;
+			});
 	const nodes = payload.nodes ?? snapshot!.nodes;
 	const is_dynamic = payload.nodes ? (payload.is_dynamic ?? false) : snapshot!.is_dynamic;
 
