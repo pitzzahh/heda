@@ -12,6 +12,10 @@ export const computed_load_array_reuse = new Map<
 >();
 export const voltage_drop_reuse = new Map<string, { is_dynamic: boolean; value: VoltageDrop }>();
 let voltage_drop_array_reuse: { is_dynamic: boolean; value: VoltageDrop[] } | null = null;
+export const voltage_drop_result_reuse: { revision: number; value: VoltageDrop[] | null } = {
+	revision: -1,
+	value: null
+};
 export const node_by_id_reuse = new Map<string, { is_dynamic: boolean; value: NodeByIdResult }>();
 
 export function isSameValue(a: unknown, b: unknown): boolean {
@@ -58,6 +62,8 @@ export function clearQueryCache(): void {
 	computed_load_array_reuse.clear();
 	voltage_drop_reuse.clear();
 	voltage_drop_array_reuse = null;
+	voltage_drop_result_reuse.revision = -1;
+	voltage_drop_result_reuse.value = null;
 	node_by_id_reuse.clear();
 }
 
@@ -65,6 +71,8 @@ export function evictNodeFromCache(node_id: string): void {
 	computed_load_reuse.delete(node_id);
 	computed_load_array_reuse.delete(node_id);
 	voltage_drop_reuse.delete(node_id);
+	voltage_drop_result_reuse.revision = -1;
+	voltage_drop_result_reuse.value = null;
 	node_by_id_reuse.delete(node_id);
 }
 

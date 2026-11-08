@@ -1,10 +1,20 @@
-import { reuseIfEqual, reuseVoltageDropArray, voltage_drop_reuse } from './cache.js';
-import { loadSnapshot } from './snapshot.js';
+import {
+	reuseIfEqual,
+	reuseVoltageDropArray,
+	voltage_drop_reuse,
+	voltage_drop_result_reuse
+} from './cache.js';
+import { getSnapshotRevision, loadSnapshot } from './snapshot.js';
 import { computeNodeLoad, type LoadComputationContext } from './compute.js';
 import { ALTERNATING_CURRENT_REACTANCE } from '#lib/constants/index.js';
 import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 
 export function getComputedVoltageDrops(): VoltageDrop[] {
+	const revision = getSnapshotRevision();
+	if (voltage_drop_result_reuse.value && voltage_drop_result_reuse.revision === revision) {
+		return voltage_drop_result_reuse.value;
+	}
+
 	const snapshot = loadSnapshot();
 	const context: LoadComputationContext = {
 		children_by_parent: snapshot.children_by_parent,
@@ -66,5 +76,8 @@ export function getComputedVoltageDrops(): VoltageDrop[] {
 
 	if (root) walk(root.id);
 
-	return reuseVoltageDropArray(snapshot.is_dynamic, voltage_drops);
+	const result = reuseVoltageDropArray(snapshot.is_dynamic, voltage_drops);
+	voltage_drop_result_reuse.revision = revision;
+	voltage_drop_result_reuse.value = result;
+	return result;
 }
