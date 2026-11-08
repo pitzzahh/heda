@@ -61,8 +61,8 @@ export class UndoRedoState {
 		this.setHasUnsavedActions();
 	}
 
-	copyNodeById(node_id: string) {
-		const copied_node = copyAndAddNodeById(node_id);
+	async copyNodeById(node_id: string) {
+		const copied_node = await copyAndAddNodeById(node_id);
 		this.setActionToUndo({
 			action: 'copy_node',
 			data: copied_node as unknown as PhaseLoadSchedule
