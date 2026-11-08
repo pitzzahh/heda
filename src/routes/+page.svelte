@@ -18,6 +18,7 @@
 	import { toast } from 'svelte-sonner';
 	import { handleLoadFile, type NeedPassword } from '#lib/helpers/file/index.js';
 	import { clearSessionPassword } from '#lib/db/session.js';
+	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { PasswordDialog } from '#lib/components/custom/index.js';
 	import type { RecentProject } from '#lib/types/main/index.js';
 	import { goto } from '$app/navigation';
@@ -118,6 +119,7 @@
 		select_nodes_to_delete_state.removeAllNodeIds();
 		undo_redo_state.resetData();
 		clearSessionPassword();
+		clearSessionSnapshot();
 	});
 </script>
 
