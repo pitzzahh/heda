@@ -1,6 +1,7 @@
 import {
 	Virtualizer,
 	elementScroll,
+	measureElement as defaultMeasureElement,
 	observeElementOffset,
 	observeElementRect,
 	type VirtualItem
@@ -57,6 +58,13 @@ export class VirtualWindow {
 			scrollToFn: elementScroll,
 			indexAttribute: options.index_attribute ?? 'data-index',
 			getItemKey: (index) => this.#get_item_key(index),
+			// Hidden elements report 0 and would poison the size cache,
+			// cascading the window; unmeasured items keep the estimate.
+			measureElement: (node, entry, instance) => {
+				const size = defaultMeasureElement(node, entry, instance);
+				if (size === 0) return instance.options.estimateSize(instance.indexFromElement(node));
+				return size;
+			},
 			onChange: (instance) => this.#handleChange(instance)
 		});
 	}
