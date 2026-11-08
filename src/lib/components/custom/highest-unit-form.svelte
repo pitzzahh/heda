@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createForm, Field, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
@@ -31,6 +31,7 @@
 	} from '#lib/helpers/file';
 	import { LockKeyIcon } from '#lib/assets/icons';
 	import { getProjectState } from '#lib/hooks/project-state.svelte';
+	import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte';
 	import { remove, copyFile } from '@tauri-apps/plugin-fs';
@@ -40,6 +41,7 @@
 	let { closeDialog }: Props = $props();
 
 	const project_state = getProjectState();
+	const db_revisions = getDbRevisionsState();
 	const settings_state = getSettingsState();
 	const undo_redo_state = getUndoRedoState();
 
@@ -159,7 +161,7 @@
 				})
 			)
 				.then(() => {
-					invalidate('app:workspace');
+					db_revisions.bumpWorkspace();
 					console.log(`${project_state.current_project_name} created successfully`);
 					toast.success(`${project_state.current_project_name} created successfully`);
 				})

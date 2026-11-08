@@ -4,7 +4,7 @@ import type { PhaseLoadSchedule } from '#lib/types/load/one_phase';
 import type { GenericPhasePanelSchema } from '#lib/types/panel';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load';
 import { addNode, overrideField, removeNode, updateNode, type FieldType } from '#lib/db/mutations';
-import { invalidate } from '$app/navigation';
+import { getDbRevisionsState } from '#lib/hooks/db-revisions.svelte';
 
 type BatchData = {
 	data: PhaseLoadSchedule;
@@ -32,12 +32,15 @@ type Action<T extends PhaseLoadSchedule> = {
 	children_nodes?: T[];
 };
 export class UndoRedoState {
+	private db_revisions: ReturnType<typeof getDbRevisionsState>;
 	private undo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 	private redo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 
 	has_unsaved_actions = $state(false);
 
-	constructor() {}
+	constructor(db_revisions: ReturnType<typeof getDbRevisionsState>) {
+		this.db_revisions = db_revisions;
+	}
 
 	resetUnsavedActions() {
 		this.has_unsaved_actions = false;
@@ -348,8 +351,7 @@ export class UndoRedoState {
 					break;
 				}
 			}
-			await invalidate('app:workspace');
-			await invalidate('app:workspace/load-schedule');
+			this.db_revisions.bumpWorkspaceAndSchedule();
 		}
 	}
 
@@ -528,14 +530,14 @@ export class UndoRedoState {
 					break;
 				}
 			}
-			await invalidate('app:workspace');
-			await invalidate('app:workspace/load-schedule');
+			this.db_revisions.bumpWorkspaceAndSchedule();
 		}
 	}
 }
 
 export function setUndoRedoState() {
-	return setState(new UndoRedoState(), UNDO_REDO_STATE_CTX);
+	const db_revisions = getDbRevisionsState();
+	return setState(new UndoRedoState(db_revisions), UNDO_REDO_STATE_CTX);
 }
 
 export function getUndoRedoState() {
