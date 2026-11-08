@@ -20,8 +20,7 @@
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { adjusted_current, type, current_insulation, node }: Props = $props();
-	// Writable derived: user picks override it until the next external prop change
-	// (undo/redo, auto-upgrade) recomputes it, so no effect is needed to adopt those.
+	// User picks override until undo/redo recomputes it.
 	let selected_insulation = $derived(current_insulation as Insulations);
 	let undo_redo_state = getUndoRedoState();
 
@@ -33,10 +32,12 @@
 				: insulations
 	);
 
-	// Auto-upgrades TW-Cu once the adjusted current exceeds its rating.
+	// Silent repair: TW-Cu past its rating upgrades without an undo entry, since
+	// it was never a user action; the file is still marked unsaved so it persists.
 	$effect(() => {
 		if (adjusted_current > 100 && current_insulation === 'TW-Cu') {
-			handleChangeInsulation('THHN-Cu');
+			changeInsulation({ node_id: node.id, insulation: 'THHN-Cu', type });
+			undo_redo_state.setHasUnsavedActions();
 		}
 	});
 
