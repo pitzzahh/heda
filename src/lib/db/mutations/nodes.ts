@@ -158,15 +158,9 @@ export function updateNode({
 				{ id },
 				{
 					$set: {
-						...{
-							...whole_data,
-							panel_data: whole_data.panel_data
-								? JSON.parse(JSON.stringify(whole_data.panel_data))
-								: undefined,
-							load_data: whole_data.load_data
-								? JSON.parse(JSON.stringify(whole_data.load_data))
-								: undefined
-						}
+						...whole_data,
+						panel_data: whole_data.panel_data ? structuredClone(whole_data.panel_data) : undefined,
+						load_data: whole_data.load_data ? structuredClone(whole_data.load_data) : undefined
 					}
 				}
 			);

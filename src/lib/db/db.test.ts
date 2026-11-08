@@ -252,6 +252,31 @@ describe('db (signaldb)', () => {
 		expect(edited?.panel_data?.name).toBe('LP-A2');
 	});
 
+	it('does not alias panel data on whole-node updates', async () => {
+		resetData();
+		const created = await createProject('WholeData', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const whole_data = getNode(panel!.id)!;
+		updateNode({ id: panel!.id, parent_id: root, whole_data });
+		const stored = getNode(panel!.id)!;
+		expect(stored.panel_data).toEqual(whole_data.panel_data);
+		expect(stored.panel_data).not.toBe(whole_data.panel_data);
+	});
+
 	it('returns fresh data when a node id is reused after removal', async () => {
 		resetData();
 		const created = await createProject('ReusedId', {
