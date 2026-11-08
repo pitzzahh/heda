@@ -58,6 +58,12 @@ function buildSnapshot(sort_by_circuit: boolean): LoadSnapshot {
 	};
 }
 
+/** Monotonic counter bumped by every node/project collection change. */
+export function getSnapshotRevision(): number {
+	ensureObserved();
+	return revision;
+}
+
 export function loadSnapshot(sort_by_circuit = true): LoadSnapshot {
 	ensureObserved();
 	if (cached_revision !== revision) {

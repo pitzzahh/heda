@@ -150,20 +150,21 @@ describe('db (signaldb)', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		addNode({
+		const load_data = {
+			load_type: default_load_types.GENERAL_LIGHTING,
+			quantity: 10,
+			varies: '0',
+			load_description: '10 - Lighting',
+			continuous: false,
+			circuit_number: 1,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		} as const;
+		const node = addNode({
 			parent_id: root,
-			load_data: {
-				load_type: default_load_types.GENERAL_LIGHTING,
-				quantity: 10,
-				varies: '0',
-				load_description: '10 - Lighting',
-				continuous: false,
-				circuit_number: 1,
-				length: 10,
-				ambient_temperature: 30,
-				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-				config_preference: 'CUSTOM'
-			}
+			load_data
 		});
 
 		const first_loads = getComputedLoads(root);
@@ -174,6 +175,16 @@ describe('db (signaldb)', () => {
 		const voltage_drops = getComputedVoltageDrops();
 		expect(getComputedVoltageDrops()).toBe(voltage_drops);
 		expect(voltage_drops).toHaveLength(1);
+
+		// The revision-keyed memo must not survive a write.
+		updateNode({
+			id: node!.id,
+			parent_id: root,
+			load_data: { ...load_data, length: 20 }
+		});
+		const updated_drops = getComputedVoltageDrops();
+		expect(updated_drops).not.toBe(voltage_drops);
+		expect(updated_drops[0]?.length).toBe(20);
 	});
 
 	it('keeps single-node reads stable across unrelated edits', async () => {
