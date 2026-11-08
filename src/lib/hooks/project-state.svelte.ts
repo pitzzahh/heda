@@ -114,9 +114,6 @@ export class ProjectState {
 			if (update_current) {
 				this.setCurrentProject(updatedProject);
 			}
-			console.log(`Project updated: ${JSON.stringify(updatedProject)}`);
-			console.log(`Recent projects: ${JSON.stringify(this.recent_projects)}`);
-			console.log(`Persisted state: ${JSON.stringify(this.persisted_state.current)}`);
 		}
 	}
 

@@ -89,11 +89,7 @@
 
 			let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
-			console.log(`Project data: ${JSON.stringify(data, null, 2)}`);
-
 			const created_project = await createProject(project_name, project_input);
-
-			console.log(`Created project: ${JSON.stringify(created_project)}`);
 
 			if (!created_project) {
 				return toast.warning('Failed to create project', {
@@ -113,7 +109,6 @@
 
 			if (await doesFileExists(file_path_with_file)) {
 				if (settings_state.backup_project_file_if_exists) {
-					console.info(`Current project exists, backing up first: ${file_path_with_file}`);
 					const toast_id = toast.loading('Backing up project file', {
 						description:
 							'The project file is being backed up. You enabled this feature, to disable it go to settings.'
@@ -126,18 +121,13 @@
 					});
 					project_state.removeRecentProject(project.id, true);
 				}
-				console.info(`Current project exists, removing first: ${file_path_with_file}`);
 				await remove(file_path_with_file);
 			}
-
-			console.log('Generating file data');
 
 			const file_data: FileExport = {
 				project,
 				nodes: getAllChildNodes(project.root_node_id, true)
 			};
-
-			console.log(`File data to be writted: ${JSON.stringify(file_data, null, 2)}`);
 
 			await writeEncryptedFile(file_data, data.password, file_path_with_file, true);
 			closeDialog();
@@ -152,14 +142,12 @@
 			);
 			// The schedule page bounces home while loaded is false; mark it before navigating.
 			project_state.setProjectLoaded(true);
-			console.log(`Redirecting to project: ${project_name}`);
 			await goto(
 				resolve('/(workspaces)/workspace/load-schedule/[id]', {
 					id: `${data.distribution_unit}_${root_node_id}`
 				})
 			)
 				.then(() => {
-					console.log(`${project_state.current_project_name} created successfully`);
 					toast.success(`${project_state.current_project_name} created successfully`);
 				})
 				.catch((err) => {
