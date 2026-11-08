@@ -16,11 +16,11 @@ export const table = tv({
 		variant: {
 			default: {
 				container: 'rounded-xl border border-border bg-card',
-				root: 'border-collapse',
-				header: 'bg-secondary/50 [&_tr]:border-border [&_tr]:border-b [&_th]:whitespace-nowrap',
-				body: '[&_tr:last-child]:border-0',
+				root: 'border-separate border-spacing-0',
+				header: 'bg-secondary/50 [&_th]:border-border [&_th]:border-b [&_th]:whitespace-nowrap',
+				body: '[&_td]:border-border [&_td]:border-b [&_tr:last-child_td]:border-b-0',
 				footer: 'border-border border-t bg-muted/40 tabular-nums [&>tr]:last:border-b-0',
-				row: 'border-border border-b hover:bg-accent/60 data-[state=selected]:bg-primary/6'
+				row: 'hover:bg-accent/60 data-[state=selected]:bg-primary/6'
 			},
 			// The header sits on a card rim around an inset body, and
 			// hairlines split the columns. Separate borders, so cells can round the body corners.
