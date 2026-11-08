@@ -31,7 +31,6 @@
 	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
 	import ConfirmationDialog from '#lib/components/custom/confirmation-dialog.svelte';
 	import AddPanelAndViewTrigger from '../add-panel-and-view-trigger.svelte';
-	import SidebarTree from '../sidebar-tree.svelte';
 	import UpdatePanelDialog from '../update-panel-dialog.svelte';
 	import AddLoadDialog from '#lib/components/custom/load/add-load-dialog.svelte';
 	import TreeActionsMenu from './tree-actions-menu.svelte';
@@ -60,6 +59,13 @@
 	const params = $derived(page.params);
 	const child_nodes = $derived(getChildNodesByParentId(node.id));
 	const is_collapsible_open = $derived(collapsibles.checkIsIdExisting(node.id));
+	const has_visible_children = $derived(
+		child_nodes.some(
+			(child) =>
+				child.node_type === 'panel' ||
+				(child.node_type === 'load' && settings_state.show_loads_on_unit_hierarchy)
+		)
+	);
 
 	let menu_open = $state(false);
 	let edit_dialog_open = $state(false);
@@ -67,50 +73,11 @@
 	let add_load_open = $state(false);
 	let button_state = $state<'stale' | 'processing'>('stale');
 
-	function handleDrop(state: DragDropState<Node>, _node: Node) {
-		const { draggedItem, targetContainer } = state;
-		if (!targetContainer || _node.id === draggedItem.parent_id) {
-			toast.warning(
-				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
-			);
-			return;
-		}
-		if (_node.id === targetContainer) {
-			toast.info(`Setting ${getNodeName(draggedItem)} panel to ${getNodeName(_node)}`);
-			const updated_node = updateNodeParentById(
-				{
-					id: draggedItem.id,
-					parent_id: draggedItem.parent_id
-				},
-				targetContainer
-			);
-			undo_redo_state.setActionToUndo({
-				action: 'update_node',
-				data: updated_node as unknown as PhaseLoadSchedule,
-				previous_data: draggedItem as PhaseLoadSchedule
-			});
-			toast.success(`${getNodeName(draggedItem)} updated successfully`);
-			return;
-		}
-		return;
-	}
+	const node_name = $derived(
+		(node.highest_unit_form?.distribution_unit || node.panel_data?.name) as string
+	);
 
-	function getNodeName(_node?: Node) {
-		if (!_node) return 'unknown';
-		return _node.node_type === 'root'
-			? _node?.highest_unit_form?.distribution_unit
-			: _node.node_type === 'panel'
-				? _node?.panel_data?.name
-				: _node.node_type === 'load'
-					? _node?.load_data?.load_description
-					: 'unknown';
-	}
-</script>
-
-<Sidebar.MenuItem class="w-full" aria-disabled={button_state === 'processing'}>
-	{@const node_name = (node.highest_unit_form?.distribution_unit ||
-		node.panel_data?.name) as string}
-	{@const tooltip_data = [
+	const tooltip_data = $derived([
 		{
 			trigger_callback: () => (add_panel_open = true),
 			variant: 'ghost',
@@ -185,8 +152,53 @@
 			tooltip_content: node.node_type === 'root' ? 'Remove Project' : 'Remove Panel',
 			className: 'text-destructive hover:bg-destructive/10!'
 		}
-	]}
+	]);
 
+	function handleDrop(state: DragDropState<Node>, _node: Node) {
+		const { draggedItem, targetContainer } = state;
+		if (!targetContainer || _node.id === draggedItem.parent_id) {
+			toast.warning(
+				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
+			);
+			return;
+		}
+		if (_node.id === targetContainer) {
+			toast.info(`Setting ${getNodeName(draggedItem)} panel to ${getNodeName(_node)}`);
+			const updated_node = updateNodeParentById(
+				{
+					id: draggedItem.id,
+					parent_id: draggedItem.parent_id
+				},
+				targetContainer
+			);
+			undo_redo_state.setActionToUndo({
+				action: 'update_node',
+				data: updated_node as unknown as PhaseLoadSchedule,
+				previous_data: draggedItem as PhaseLoadSchedule
+			});
+			toast.success(`${getNodeName(draggedItem)} updated successfully`);
+			return;
+		}
+		return;
+	}
+
+	function getNodeName(_node?: Node) {
+		if (!_node) return 'unknown';
+		return _node.node_type === 'root'
+			? _node?.highest_unit_form?.distribution_unit
+			: _node.node_type === 'panel'
+				? _node?.panel_data?.name
+				: _node.node_type === 'load'
+					? _node?.load_data?.load_description
+					: 'unknown';
+	}
+</script>
+
+<div
+	data-sidebar="menu-item"
+	class="group/menu-item relative w-full"
+	aria-disabled={button_state === 'processing'}
+>
 	<Collapsible.Root open={is_collapsible_open} class="group/collapsible">
 		<button
 			onclick={() => {
@@ -219,19 +231,21 @@
 					'cursor-not-allowed opacity-50': button_state === 'processing'
 				})}
 			>
-				<Collapsible.Trigger>
-					{#snippet child({ props })}
-						<CaretRightIcon
-							{...props}
-							weight="bold"
-							class="text-muted-foreground hover:text-foreground size-4 shrink-0 cursor-pointer transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) data-[state=open]:rotate-90 motion-reduce:transition-none"
-							onclick={(e) => {
-								e.stopPropagation();
-								collapsibles.toggleCollapsible(node.id);
-							}}
-						/>
-					{/snippet}
-				</Collapsible.Trigger>
+				{#if has_visible_children}
+					<Collapsible.Trigger>
+						{#snippet child({ props })}
+							<CaretRightIcon
+								{...props}
+								weight="bold"
+								class="text-muted-foreground hover:text-foreground size-4 shrink-0 cursor-pointer transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) data-[state=open]:rotate-90 motion-reduce:transition-none"
+								onclick={(e) => {
+									e.stopPropagation();
+									collapsibles.toggleCollapsible(node.id);
+								}}
+							/>
+						{/snippet}
+					</Collapsible.Trigger>
+				{/if}
 				<ContextMenu.Root bind:open={menu_open}>
 					<ContextMenu.Trigger class="flex w-full items-center justify-between">
 						<div
@@ -304,13 +318,6 @@
 				</ContextMenu.Root>
 			</Sidebar.MenuButton>
 		</button>
-		<Collapsible.Content class="w-full">
-			<Sidebar.MenuSub class="w-full">
-				{#each child_nodes as child (child.id)}
-					<SidebarTree node={child} {highest_unit} />
-				{/each}
-			</Sidebar.MenuSub>
-		</Collapsible.Content>
 	</Collapsible.Root>
 
 	<TreeActionsMenu actions={tooltip_data} />
@@ -330,7 +337,7 @@
 		latest_circuit_node={child_nodes ? child_nodes[child_nodes.length - 1] : undefined}
 		panel_id_from_tree={node.id}
 	/>
-</Sidebar.MenuItem>
+</div>
 
 {#if node.parent_id}
 	<UpdatePanelDialog
