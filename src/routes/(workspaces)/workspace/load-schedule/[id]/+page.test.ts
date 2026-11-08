@@ -71,6 +71,22 @@ function click_trigger(label: string) {
 }
 
 describe('load schedule page', () => {
+	test('warms the voltage-drop table after mount without a click', () => {
+		vi.useFakeTimers();
+		try {
+			const component = mount(LoadSchedulePage, { target: document.body });
+			flushSync();
+			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('0');
+
+			vi.advanceTimersByTime(200);
+			flushSync();
+			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
+			unmount(component);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	test('both tables stay populated when switching tabs', () => {
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
