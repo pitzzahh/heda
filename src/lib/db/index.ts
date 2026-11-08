@@ -137,10 +137,10 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 		});
 		await Promise.all([projects.isReady(), nodes.isReady()]);
 		dbInstance = { projects, nodes };
-		// Reactive cursors can legitimately exceed the default listener cap on
-		// large hierarchies; raising it avoids noisy, non-actionable warnings.
-		projects.setMaxListeners(10_000);
-		nodes.setMaxListeners(10_000);
+		// Child lookups reuse a shared snapshot, so few cursors remain per
+		// visible row. Cap stays well above the default without needing 10k.
+		projects.setMaxListeners(1_000);
+		nodes.setMaxListeners(1_000);
 		return dbInstance;
 	})();
 	return dbReady;

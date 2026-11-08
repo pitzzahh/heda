@@ -5,10 +5,12 @@ import { getDatabase } from '../index.js';
 import type { Node } from '#lib/types/db/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
+const EMPTY_CHILDREN: Node[] = [];
+
 export function getChildNodesByParentId(parent_id: string): Node[] {
-	return getDatabase()
-		.nodes.find({ parent_id }, { sort: { circuit_number: 1 } })
-		.fetch() as Node[];
+	// Snapshot hit is O(1) after one cached build; the old per-row find()
+	// created a cursor per visible tree item and scanned the collection.
+	return loadSnapshot().children_by_parent.get(parent_id) ?? EMPTY_CHILDREN;
 }
 
 export function getParentNodes(excluded_id?: string): { name: string; id: string }[] {
