@@ -145,6 +145,7 @@
 
 					{#each visibleRows as visibleRow (visibleRow.key)}
 						{@const row = visibleRow.row}
+						{@const cells = row.getVisibleCells()}
 						<tr
 							{@attach measureRow}
 							data-slot="table-row"
@@ -154,11 +155,11 @@
 								'bg-primary/5': row.getIsSelected()
 							})}
 						>
-							{#each row.getVisibleCells() as cell, cellIdx (cell.id)}
+							{#each cells as cell, cellIdx (cell.id)}
 								<td
 									data-slot="table-cell"
 									class={cn(cellClasses, {
-										'border-border/60 border-r': cellIdx + 1 !== row.getVisibleCells().length,
+										'border-border/60 border-r': cellIdx + 1 !== cells.length,
 										'text-center': cellIdx === 0 || cell.column.id === 'load_description',
 										'min-w-62.5': cell.column.columnDef.header === 'LOAD DESCRIPTION'
 									})}
