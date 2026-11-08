@@ -32,9 +32,9 @@ export async function loadCurrentProject(file_export: FileExport): Promise<Proje
 		console.error('Project name mismatch after insertion');
 	}
 
-	for (const node of nodes) {
-		db.nodes.insert(withNodeDefaults({ ...node }));
-	}
+	// Bulk-insert so SignalDB emits one change notification instead of one per
+	// node; per-node inserts froze the UI on large projects.
+	db.nodes.insertMany(nodes.map((node) => withNodeDefaults({ ...node })));
 
 	return inserted_loaded_project;
 }
