@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('$app/state', () => ({
 	page: { params: { id: 'panel_node1' } }
@@ -59,6 +59,7 @@ vi.stubGlobal(
 
 afterEach(() => {
 	document.body.innerHTML = '';
+	vi.useRealTimers();
 });
 
 function stub_rows(footer: string) {
@@ -72,33 +73,51 @@ function click_trigger(label: string) {
 	flushSync();
 }
 
-describe('load schedule page', () => {
-	test('warms the voltage-drop table after mount without a click', async () => {
-		vi.useFakeTimers();
-		try {
-			const component = mount(LoadSchedulePage, { target: document.body });
-			flushSync();
-			expect(stub_rows('false')).toBeNull();
+async function settle_warm() {
+	// Effect schedules a setTimeout(0) before the async worker call resolves.
+	await vi.advanceTimersByTimeAsync(0);
+	await Promise.resolve();
+	await Promise.resolve();
+	flushSync();
+	await Promise.resolve();
+	flushSync();
+}
 
-			vi.advanceTimersByTime(200);
-			await Promise.resolve();
-			flushSync();
-			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
-			unmount(component);
-		} finally {
-			vi.useRealTimers();
-		}
+async function settle_mount() {
+	// Mount deferral runs in a macrotask after activation+ready.
+	await vi.advanceTimersByTimeAsync(0);
+	flushSync();
+}
+
+describe('load schedule page', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	test('warms voltage drops in the background without mounting the hidden table', async () => {
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
+		expect(stub_rows('false')).toBeNull();
+
+		await settle_warm();
+		// Data is warm but the heavy table stays unmounted until the user visits
+		// the tab, so background work never blocks the load schedule.
+		expect(stub_rows('false')).toBeNull();
+		unmount(component);
 	});
 
 	test('both tables stay populated when switching tabs', async () => {
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
-		await Promise.resolve();
-		flushSync();
+		await settle_warm();
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
-		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
+		// Not mounted until visited.
+		expect(stub_rows('false')).toBeNull();
 
 		click_trigger('Voltage Drop');
+		// Activation + ready mounts the table after the deferred paint tick.
+		await settle_mount();
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
 		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
 
@@ -112,10 +131,10 @@ describe('load schedule page', () => {
 		seen_columns.length = 0;
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
-		await Promise.resolve();
-		flushSync();
+		await settle_warm();
 
 		click_trigger('Voltage Drop');
+		await settle_mount();
 		click_trigger('Load Schedule');
 		flushSync();
 

@@ -20,9 +20,10 @@ export function getComputedVoltageDrops(): VoltageDrop[] {
 }
 
 /**
- * Async variant that offloads the tree walk to a Web Worker when available,
- * falling back to the synchronous path. Updates the same revision cache so
- * subsequent synchronous reads are instant.
+ * Async entry point for the UI. Computes on the main thread (no worker clone of
+ * the full node graph) so cost scales with the walk, not with cloning thousands
+ * of rich objects. Callers defer dispatch off the click/flush path; results are
+ * cached by snapshot revision.
  */
 export async function getComputedVoltageDropsAsync(): Promise<VoltageDrop[]> {
 	const revision = getSnapshotRevision();
@@ -30,16 +31,7 @@ export async function getComputedVoltageDropsAsync(): Promise<VoltageDrop[]> {
 		return voltage_drop_result_reuse.value;
 	}
 
-	const snapshot = loadSnapshot();
-	try {
-		const { computeVoltageDropsInWorker } = await import('#lib/workers/compute-client.js');
-		const result = await computeVoltageDropsInWorker(snapshot.nodes, snapshot.is_dynamic);
-		if (getSnapshotRevision() === revision) {
-			voltage_drop_result_reuse.revision = revision;
-			voltage_drop_result_reuse.value = result;
-		}
-		return result;
-	} catch {
-		return getComputedVoltageDrops();
-	}
+	// Yield once so callers that forgot to defer don't block the current turn.
+	await Promise.resolve();
+	return getComputedVoltageDrops();
 }
