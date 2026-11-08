@@ -33,21 +33,19 @@
 
 <div class="flex w-full items-center justify-center gap-2">
 	{current}
-	<Tooltip.Provider delayDuration={100}>
-		<Tooltip.Root>
-			<Tooltip.Trigger>
-				<Button
-					size="icon"
-					onclick={handleChangeCurrentsValue}
-					class="size-6"
-					variant={is_at_used ? 'default' : 'outline'}
-				>
-					<RepeatIcon class="size-3" />
-				</Button>
-			</Tooltip.Trigger>
-			<Tooltip.Content>
-				{is_at_used ? `Use the current's value itself` : 'Use the AT as the value of this current'}
-			</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			<Button
+				size="icon"
+				onclick={handleChangeCurrentsValue}
+				class="size-6"
+				variant={is_at_used ? 'default' : 'outline'}
+			>
+				<RepeatIcon class="size-3" />
+			</Button>
+		</Tooltip.Trigger>
+		<Tooltip.Content>
+			{is_at_used ? `Use the current's value itself` : 'Use the AT as the value of this current'}
+		</Tooltip.Content>
+	</Tooltip.Root>
 </div>
