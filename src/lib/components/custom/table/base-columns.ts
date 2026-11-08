@@ -16,11 +16,6 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 ): ColumnDef<T>[] => [
 	{
 		accessorKey: 'circuit_number',
-		// header: () =>
-		// 	renderComponent(AddLoadDialog, {
-		// 		'aria-label': 'Select row',
-		// 		class: 'translate-y-[2px]'
-		// 	}),
 		header: () => 'CRKT #',
 		footer: () => 'Total'
 	},
@@ -55,7 +50,6 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		accessorKey: 'va',
 		header: 'APPARENT POWER (VA)',
 		footer: () => {
-			// return props.table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.va, 0);
 			return current_node.va;
 		}
 	},
@@ -67,30 +61,6 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 		}
 	},
 
-	// NOTE: SHOULD ONLY SHOW IF THE PHASE IS 3
-	// {
-	// 	header: 'CURRENT',
-	// 	columns: [
-	// 		{
-	// 			accessorKey: 'ab',
-	// 			cell: (info) => info.getValue(),
-	// 			header: () => 'AB',
-	// 			footer: (props) => '34'
-	// 		},
-	// 		{
-	// 			accessorKey: 'bc',
-	// 			cell: (info) => info.getValue(),
-	// 			header: () => 'BC',
-	// 			footer: (props) => '34'
-	// 		},
-	// 		{
-	// 			accessorKey: 'ca',
-	// 			cell: (info) => info.getValue(),
-	// 			header: () => 'CA',
-	// 			footer: (props) => '34'
-	// 		}
-	// 	]
-	// },
 	{
 		header: 'CIRCUIT BREAKER',
 		columns: [
@@ -110,25 +80,6 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 				header: () => 'AT',
 				footer: (props) => {
-					// const total_current = parseFloat(
-					// 	props.table
-					// 		.getFilteredRowModel()
-					// 		.rows.reduce((sum, row) => sum + row.original.current, 0)
-					// 		.toFixed(2)
-					// );
-					// const child_load_ampere_trips = props.table
-					// 	.getFilteredRowModel()
-					// 	.rows.map((row) => row.original.at || row.original.overrided_at)
-					// 	.filter(Boolean);
-					// const main_at = current_node.overrided_at || computeAmpereTrip(total_current);
-					// const has_greater_child_at = child_load_ampere_trips.some(
-					// 	(child_at) => child_at && child_at >= main_at
-					// );
-
-					// return renderComponent(AtFooterCell, {
-					// 	at: !main_at ? '' : main_at.toString(),
-					// 	has_greater_child_at
-					// });
 					const child_load_ampere_trips = props.table
 						.getFilteredRowModel()
 						.rows.map((row) => row.original.at || row.original.overrided_at)

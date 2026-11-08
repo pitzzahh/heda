@@ -336,8 +336,7 @@ export async function exportToExcel(
 		position: 'bottom-center'
 	});
 
-	// Loaded on demand: parsing exceljs at startup costs every launch for a
-	// feature that runs only when the user exports.
+	// Deferred: exceljs parses only when exporting, never at startup.
 	const { default: excel } = await import('exceljs');
 	const workbook = new excel.Workbook();
 	workbook.title = `Exported ${file_name} ${convertToNormalText(type, true)}`;
