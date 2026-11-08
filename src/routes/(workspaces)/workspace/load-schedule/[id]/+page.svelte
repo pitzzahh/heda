@@ -44,6 +44,7 @@
 	const root_node = $derived(getRootNode());
 	const loads = $derived(getComputedLoads(node_id));
 	let voltage_drops = $state<VoltageDrop[]>([]);
+	let drops_ready = $state(false);
 
 	// Column definitions are expensive to rebuild and invalidate TanStack's
 	// row model, so keep them stable across tab switches.
@@ -61,10 +62,12 @@
 			.then((drops) => {
 				if (getSnapshotRevision() === revision) {
 					voltage_drops = drops;
+					drops_ready = true;
 					visited_tabs['voltage-drop'] = true;
 				}
 			})
 			.catch(() => {
+				drops_ready = true;
 				visited_tabs['voltage-drop'] = true;
 			});
 	});
@@ -148,12 +151,20 @@
 			{/if}
 		</Tabs.Content>
 		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
-			<DataTable
-				data={voltage_drops}
-				is_footer_shown={false}
-				columns={voltage_drop_columns}
-				is_in_vd_table
-			/>
+			{#if drops_ready}
+				<DataTable
+					data={voltage_drops}
+					is_footer_shown={false}
+					columns={voltage_drop_columns}
+					is_in_vd_table
+				/>
+			{:else}
+				<div
+					class="text-muted-foreground border-border bg-card grid min-h-0 flex-1 place-items-center rounded-xl border text-sm"
+				>
+					Loading voltage drop…
+				</div>
+			{/if}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
