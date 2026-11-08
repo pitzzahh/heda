@@ -34,8 +34,8 @@
 	import UpdatePanelDialog from '../update-panel-dialog.svelte';
 	import AddLoadDialog from '#lib/components/custom/load/add-load-dialog.svelte';
 	import TreeActionsMenu from './tree-actions-menu.svelte';
-	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
 	import { getChildNodesByParentId } from '#lib/db/queries/index.js';
+	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
 	import { updateNodeParentById } from '#lib/db/mutations/index.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
