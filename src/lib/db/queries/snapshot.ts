@@ -1,3 +1,4 @@
+import { createSubscriber } from 'svelte/reactivity';
 import { getDatabase } from '../index.js';
 import type { Node } from '#lib/types/db/index.js';
 
@@ -33,12 +34,25 @@ let cached_revision = -1;
 let cached_sorted: LoadSnapshot | null = null;
 let cached_unsorted: LoadSnapshot | null = null;
 
+// `subscribe()` tracks the current `$derived`/`$effect` scope; `bump()` wakes
+// every tracked scope after any write. This is O(1) per read and needs no
+// collection scan. Outside a reactive scope `subscribe()` is a safe no-op.
+let wakeTrackedScopes: (() => void) | null = null;
+const subscribeToSnapshot = createSubscriber((update) => {
+	wakeTrackedScopes = update;
+	return () => {
+		wakeTrackedScopes = null;
+	};
+});
+
+function bump(): void {
+	revision += 1;
+	wakeTrackedScopes?.();
+}
+
 function ensureObserved(): void {
 	if (observers_attached) return;
 	observers_attached = true;
-	const bump = () => {
-		revision += 1;
-	};
 	const database = getDatabase();
 	database.nodes.find({}).observeChanges({ added: bump, changed: bump, removed: bump }, true);
 	database.projects.find({}).observeChanges({ added: bump, changed: bump, removed: bump }, true);
@@ -58,14 +72,25 @@ function buildSnapshot(sort_by_circuit: boolean): LoadSnapshot {
 	};
 }
 
+/**
+ * Subscribe the current `$derived` to snapshot changes. Required so a
+ * derived whose cache was primed outside tracking (warmup, handler) still
+ * re-reads after later writes.
+ */
+function subscribeToChanges(): void {
+	subscribeToSnapshot();
+}
+
 /** Monotonic counter bumped by every node/project collection change. */
 export function getSnapshotRevision(): number {
 	ensureObserved();
+	subscribeToChanges();
 	return revision;
 }
 
 export function loadSnapshot(sort_by_circuit = true): LoadSnapshot {
 	ensureObserved();
+	subscribeToChanges();
 	if (cached_revision !== revision) {
 		cached_sorted = null;
 		cached_unsorted = null;
