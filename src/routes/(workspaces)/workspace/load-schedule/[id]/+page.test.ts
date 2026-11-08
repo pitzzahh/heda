@@ -57,8 +57,6 @@ vi.stubGlobal(
 	}
 );
 
-
-
 afterEach(() => {
 	document.body.innerHTML = '';
 	vi.useRealTimers();
