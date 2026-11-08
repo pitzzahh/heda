@@ -17,6 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { copyAndAddNodeById } from '#lib/db/mutations/index.js';
+	import { tick } from 'svelte';
 	import { getNumberOfChildren } from '#lib/db/queries/index.js';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
@@ -33,14 +34,16 @@
 	});
 	let undo_redo_state = getUndoRedoState();
 
-	function handleMultiCopy(node_id: string) {
+	async function handleMultiCopy(node_id: string) {
 		if (!multi_copy.valid) {
 			return toast.warning('Invalid copy count, must be greater than 0');
 		}
 		const toast_id = toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
 		multi_copy.processing = true;
+		// Let the spinner paint before the synchronous copy work starts.
+		await tick();
 		const copy_count = Number(multi_copy.value);
-		let latest_node = copyAndAddNodeById(node_id);
+		let latest_node = await copyAndAddNodeById(node_id);
 
 		if (latest_node) {
 			if (latest_node.node_type === 'panel') {
@@ -63,7 +66,9 @@
 			];
 
 			for (let i = 1; i < copy_count; i++) {
-				latest_node = copyAndAddNodeById(latest_node.id);
+				// Yield so the dialog stays responsive on deep hierarchies.
+				await new Promise((resolve) => setTimeout(resolve, 0));
+				latest_node = await copyAndAddNodeById(latest_node.id);
 
 				if (!latest_node) {
 					multi_copy.processing = false;
