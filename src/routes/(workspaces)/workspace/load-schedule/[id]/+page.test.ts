@@ -78,7 +78,7 @@ describe('load schedule page', () => {
 		try {
 			const component = mount(LoadSchedulePage, { target: document.body });
 			flushSync();
-			expect(stub_rows('false')?.getAttribute('data-rows')).toBe('0');
+			expect(stub_rows('false')).toBeNull();
 
 			vi.advanceTimersByTime(200);
 			await Promise.resolve();
@@ -108,9 +108,11 @@ describe('load schedule page', () => {
 		unmount(component);
 	});
 
-	test('column definitions keep identity across tab switches', () => {
+	test('column definitions keep identity across tab switches', async () => {
 		seen_columns.length = 0;
 		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		await Promise.resolve();
 		flushSync();
 
 		click_trigger('Voltage Drop');

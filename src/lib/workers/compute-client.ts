@@ -13,6 +13,15 @@ let worker_failed = false;
 let next_id = 0;
 const pending = new Map<number, PendingTask>();
 
+/**
+ * Spawns the compute worker early so the first tab switch never pays spawn
+ * plus module load on the click. Safe to call repeatedly; no-op when the
+ * worker is already up or known-broken.
+ */
+export function preloadComputeWorker(): void {
+	getWorker();
+}
+
 function getWorker(): Worker | null {
 	if (worker_failed) return null;
 	if (worker) return worker;
