@@ -1,5 +1,4 @@
 <script lang="ts" module>
-	import { CaretDownIcon, CaretUpIcon, XIcon } from '#lib/assets/icons/index.js';
 	import {
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
@@ -48,8 +47,8 @@
 
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { RemoveOverrideButton, StepperField } from './(components)/index.js';
 	import { overrideField, type FieldType } from '#lib/db/mutations/index.js';
-	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
@@ -234,15 +233,13 @@
 		<!-- AT Selector -->
 		<div class="grid gap-2">
 			<p class="text-sm">AT</p>
-			{@render Selector({
-				selected_value: selected_ampere_rating,
-				is_overridden: overridden_fields.at,
-				handleDecrement: () =>
-					(at_current_index = handleDecrement(at_current_index, at_last_index)),
-				handleIncrement: () =>
-					(at_current_index = handleIncrement(at_current_index, at_last_index)),
-				handleRemoveOverride: () => removeOverride('at')
-			})}
+			<StepperField
+				selected_value={selected_ampere_rating}
+				is_overridden={overridden_fields.at}
+				on_decrement={() => (at_current_index = handleDecrement(at_current_index, at_last_index))}
+				on_increment={() => (at_current_index = handleIncrement(at_current_index, at_last_index))}
+				on_remove_override={() => removeOverride('at')}
+			/>
 		</div>
 	{/if}
 
@@ -251,56 +248,56 @@
 		<p class="text-sm">
 			{#if is_in_vd_table}Cable{:else}Conductor{/if} Size
 		</p>
-		{@render Selector({
-			selected_value: selected_conductor_size,
-			is_overridden: overridden_fields.conductor_size,
-			handleDecrement: () =>
+		<StepperField
+			selected_value={selected_conductor_size}
+			is_overridden={overridden_fields.conductor_size}
+			on_decrement={() =>
 				(conductor_size_current_index = handleDecrement(
 					conductor_size_current_index,
 					conductor_size_last_index
-				)),
-			handleIncrement: () =>
+				))}
+			on_increment={() =>
 				(conductor_size_current_index = handleIncrement(
 					conductor_size_current_index,
 					conductor_size_last_index
-				)),
-			handleRemoveOverride: () => removeOverride('conductor_size')
-		})}
+				))}
+			on_remove_override={() => removeOverride('conductor_size')}
+		/>
 	</div>
 
 	{#if !is_in_vd_table}
 		<!-- EGC Size Selector -->
 		<div class="grid gap-2">
 			<p class="text-sm">EGC Size</p>
-			{@render Selector({
-				selected_value: selected_egc_size,
-				is_overridden: overridden_fields.egc_size,
-				handleRemoveOverride: () => removeOverride('egc_size'),
-				handleDecrement: () =>
-					(egc_size_current_index = handleDecrement(egc_size_current_index, egc_size_last_index)),
-				handleIncrement: () =>
-					(egc_size_current_index = handleIncrement(egc_size_current_index, egc_size_last_index))
-			})}
+			<StepperField
+				selected_value={selected_egc_size}
+				is_overridden={overridden_fields.egc_size}
+				on_decrement={() =>
+					(egc_size_current_index = handleDecrement(egc_size_current_index, egc_size_last_index))}
+				on_increment={() =>
+					(egc_size_current_index = handleIncrement(egc_size_current_index, egc_size_last_index))}
+				on_remove_override={() => removeOverride('egc_size')}
+			/>
 		</div>
 
 		<!-- Conduit Size Selector -->
 		<div class="grid gap-2">
 			<p class="text-sm">Conduit Size</p>
-			{@render Selector({
-				selected_value: selected_conduit_size,
-				is_overridden: overridden_fields.conduit_size,
-				handleRemoveOverride: () => removeOverride('conduit_size'),
-				handleDecrement: () =>
+			<StepperField
+				selected_value={selected_conduit_size}
+				is_overridden={overridden_fields.conduit_size}
+				on_decrement={() =>
 					(conduit_size_current_index = handleDecrement(
 						conduit_size_current_index,
 						conduit_size_last_index
-					)),
-				handleIncrement: () =>
+					))}
+				on_increment={() =>
 					(conduit_size_current_index = handleIncrement(
 						conduit_size_current_index,
 						conduit_size_last_index
-					))
-			})}
+					))}
+				on_remove_override={() => removeOverride('conduit_size')}
+			/>
 		</div>
 
 		<!-- Ampere Frames(AF) Selector -->
@@ -320,23 +317,7 @@
 				</Select.Root>
 
 				{#if overridden_fields.ampere_frames}
-					<Tooltip.Provider delayDuration={100}>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									class="h-8 w-full max-w-8"
-									size="sm"
-									variant="destructive"
-									onclick={() => removeOverride('ampere_frames')}
-								>
-									<XIcon class="size-4" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-destructive text-destructive-foreground"
-								>Remove Override</Tooltip.Content
-							>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<RemoveOverrideButton on_remove={() => removeOverride('ampere_frames')} />
 				{/if}
 			</div>
 		</div>
@@ -349,23 +330,7 @@
 			<div class="flex items-center gap-2">
 				<Input type="number" bind:value={length} />
 				{#if overridden_fields.length}
-					<Tooltip.Provider delayDuration={100}>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									class="h-8 w-full max-w-8"
-									size="sm"
-									variant="destructive"
-									onclick={() => removeOverride('length')}
-								>
-									<XIcon class="size-4" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-destructive text-destructive-foreground"
-								>Remove Override</Tooltip.Content
-							>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<RemoveOverrideButton on_remove={() => removeOverride('length')} />
 				{/if}
 			</div>
 		</div>
@@ -375,23 +340,7 @@
 			<div class="flex items-center gap-2">
 				<Input type="number" bind:value={z} />
 				{#if overridden_fields.z}
-					<Tooltip.Provider delayDuration={100}>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									class="h-8 w-full max-w-8"
-									size="sm"
-									variant="destructive"
-									onclick={() => removeOverride('z')}
-								>
-									<XIcon class="size-4" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content class="bg-destructive text-destructive-foreground"
-								>Remove Override</Tooltip.Content
-							>
-						</Tooltip.Root>
-					</Tooltip.Provider>
+					<RemoveOverrideButton on_remove={() => removeOverride('z')} />
 				{/if}
 			</div>
 		</div>
@@ -399,48 +348,3 @@
 
 	<Button class="w-full" onclick={handleOverride}>Override</Button>
 </div>
-
-{#snippet Selector({
-	selected_value,
-	handleDecrement,
-	handleIncrement,
-	is_overridden,
-	handleRemoveOverride
-}: {
-	selected_value?: number;
-	handleDecrement: () => void;
-	handleIncrement: () => void;
-	handleRemoveOverride: () => void;
-	is_overridden: boolean;
-})}
-	<div class="flex items-center gap-2">
-		<div class="flex w-full items-center justify-center gap-2">
-			<Button class="h-8 w-full max-w-8" size="icon" onclick={handleDecrement}>
-				<CaretDownIcon class="size-4" />
-			</Button>
-			<p class="border-border w-full min-w-12 border py-1 text-center">{selected_value}</p>
-			<Button class="h-8 w-full max-w-8" size="sm" onclick={handleIncrement}>
-				<CaretUpIcon class="size-4" />
-			</Button>
-		</div>
-		{#if is_overridden}
-			<Tooltip.Provider delayDuration={100}>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						<Button
-							class="h-8 w-full max-w-8"
-							size="sm"
-							variant="destructive"
-							onclick={handleRemoveOverride}
-						>
-							<XIcon class="size-4" />
-						</Button>
-					</Tooltip.Trigger>
-					<Tooltip.Content class="bg-destructive text-destructive-foreground"
-						>Remove Override</Tooltip.Content
-					>
-				</Tooltip.Root>
-			</Tooltip.Provider>
-		{/if}
-	</div>
-{/snippet}
