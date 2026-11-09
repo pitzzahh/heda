@@ -15,9 +15,9 @@
 <div class="grid w-full place-content-center">
 	<Tooltip.Root>
 		<Tooltip.Trigger>
-			<p class="text-destructive flex items-center gap-[7px] text-center">
+			<p class="text-destructive flex items-center gap-1.75 text-center">
 				{trigger_value}
-				<InfoIcon class="size-[14px]" />
+				<InfoIcon class="size-3.5" />
 			</p>
 		</Tooltip.Trigger>
 		<Tooltip.Content class="bg-destructive text-destructive-foreground">
