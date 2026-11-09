@@ -25,16 +25,18 @@
 
 	function measure() {
 		if (!list || !viewport || !root) return;
+		const listRect = list.getBoundingClientRect();
 		const next: Record<string, Rect> = {};
 		for (const el of list.querySelectorAll<HTMLElement>('[data-tab]')) {
 			const id = el.dataset.tab;
-			if (id)
-				next[id] = {
-					left: el.offsetLeft,
-					top: el.offsetTop,
-					width: el.offsetWidth,
-					height: el.offsetHeight
-				};
+			if (!id) continue;
+			const rect = el.getBoundingClientRect();
+			next[id] = {
+				left: rect.left - listRect.left,
+				top: rect.top - listRect.top,
+				width: rect.width,
+				height: rect.height
+			};
 		}
 		rects = next;
 
@@ -54,6 +56,7 @@
 		const observer = new ResizeObserver(measure);
 		observer.observe(root);
 		observer.observe(list);
+		for (const el of list.querySelectorAll('[data-tab]')) observer.observe(el);
 		const port = viewport;
 		port.addEventListener('scroll', measure, { passive: true });
 		return () => {

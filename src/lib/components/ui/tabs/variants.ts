@@ -5,7 +5,7 @@ export const tabsFrame = tv({
 	slots: {
 		list: 'relative flex w-full items-stretch',
 		trigger:
-			'relative z-10 inline-flex flex-1 items-center justify-center whitespace-nowrap font-medium text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
+			'relative z-10 inline-flex min-w-0 flex-1 items-center justify-center whitespace-nowrap font-medium text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
 		// The sliding marker, measured from the active trigger.
 		indicator:
 			'pointer-events-none absolute left-0 transition-[transform,scale,translate,width,height] duration-(--duration-slow) ease-[var(--ease-drawer)] motion-reduce:transition-none'
