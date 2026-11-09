@@ -35,14 +35,14 @@
 
 <Field of={form} path={['ambient_temperature']}>
 	{#snippet children(field)}
-		<div class="flex flex-col space-y-2">
+		<div class="flex min-w-0 flex-col gap-2">
 			<Popover.Root bind:open>
 				<Label class={cn(field.errors && 'text-destructive')}>Ambient Temperature</Label>
 				<Popover.Trigger
 					id={trigger_id}
 					class={cn(
 						buttonVariants({ variant: 'outline' }),
-						'justify-between',
+						'w-full min-w-0 justify-between',
 						!field.input && 'text-muted-foreground'
 					)}
 					role="combobox"
@@ -67,10 +67,7 @@
 									>
 										{ambient_temp}
 										<CheckIcon
-											class={cn(
-												'ml-auto size-4',
-												ambient_temp !== field.input && 'text-transparent'
-											)}
+											class={cn('ml-auto size-4', ambient_temp !== field.input && 'opacity-0')}
 										/>
 									</Command.Item>
 								{/each}

@@ -184,7 +184,7 @@
 
 	const quantity_label: QuantityLabel | 'QTY' = $derived(
 		getInput(form, { path: ['load_type'] })
-			? load_type_to_quantity_label[getInput(form, { path: ['load_type'] }) as LoadType]
+			? (load_type_to_quantity_label[getInput(form, { path: ['load_type'] }) as LoadType] ?? 'QTY')
 			: 'QTY'
 	);
 
@@ -208,8 +208,8 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="mt-2 grid grid-cols-2 place-items-start justify-between gap-2">
-		<div class="flex flex-col gap-2.5">
+	<div class="mt-2 grid gap-4 sm:grid-cols-2">
+		<div class="flex min-w-0 flex-col gap-4">
 			<NumberField
 				{form}
 				path={['circuit_number']}
@@ -221,7 +221,7 @@
 			<AmbientTempField {form} />
 		</div>
 
-		<div class="flex flex-col gap-2.5">
+		<div class="flex min-w-0 flex-col gap-4">
 			<TerminalTempField
 				{form}
 				hint="This is the terminal temp that will determine the terminal temp of the wire to the main."
@@ -238,7 +238,7 @@
 	</div>
 
 	{#if !load_type}
-		<div class="my-2 flex items-center justify-around gap-2">
+		<div class="my-4 flex items-center justify-center gap-3">
 			<Button variant="outline" onclick={() => (load_type = 'DEFAULT')}>Default</Button>
 			<Button variant="outline" onclick={() => (load_type = 'CUSTOM')}>Custom</Button>
 		</div>
@@ -252,14 +252,15 @@
 	>
 		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
 			{@render SubFields(load_type)}
-			<Separator class="my-2" />
+			<Separator class="my-4" />
 		{/if}
 	</div>
 
-	<div class="flex gap-2">
+	<div class="flex gap-3">
 		{#if load_type}
 			<Button
 				variant="ghost"
+				class="shrink-0"
 				onclick={() =>
 					(load_type =
 						load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
@@ -271,34 +272,36 @@
 						: undefined}
 			</Button>
 		{/if}
-		<Button type="submit" class="w-full" loading={submitting}>Save</Button>
+		<Button type="submit" class="min-w-0 flex-1" loading={submitting}>Save</Button>
 	</div>
 </form>
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
-	<div class="flex justify-between gap-1">
-		<NumberField
-			{form}
-			path={['quantity']}
-			label={quantity_label}
-			placeholder="Enter {convertToNormalText(quantity_label)}"
-			wrapper_class="w-1/4 space-y-2 text-center"
-		/>
+	<div class="space-y-4">
 		<LoadDescriptionField {form} {load_type} />
-		<VariesField {form} {load_type} varies_label={variesLabel} />
-		<Field of={form} path={['continuous']}>
-			{#snippet children(field)}
-				<div class="mt-[0.470rem] flex flex-col gap-2 space-y-2 text-center">
-					<Label class={cn(field.errors && 'text-destructive')}>Continuous</Label>
-					<Checkbox
-						disabled={load_type === 'DEFAULT'}
-						checked={field.input ?? false}
-						onCheckedChange={(v) => field.onInput(v)}
-						class="mx-auto mt-0"
-					/>
-				</div>
-			{/snippet}
-		</Field>
-		<LoadTypeField {form} {load_type} />
+		<div class="grid grid-cols-2 gap-4 *:min-w-0 sm:grid-cols-4">
+			<NumberField
+				{form}
+				path={['quantity']}
+				label={quantity_label}
+				placeholder="Enter {convertToNormalText(quantity_label)}"
+			/>
+			<VariesField {form} {load_type} varies_label={variesLabel} />
+			<LoadTypeField {form} {load_type} />
+			<Field of={form} path={['continuous']}>
+				{#snippet children(field)}
+					<div class="flex min-w-0 flex-col gap-2">
+						<Label class={cn(field.errors && 'text-destructive')}>Continuous</Label>
+						<div class="flex h-9 items-center">
+							<Checkbox
+								disabled={load_type === 'DEFAULT'}
+								checked={field.input ?? false}
+								onCheckedChange={(v) => field.onInput(v)}
+							/>
+						</div>
+					</div>
+				{/snippet}
+			</Field>
+		</div>
 	</div>
 {/snippet}

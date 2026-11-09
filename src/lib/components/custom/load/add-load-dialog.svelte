@@ -15,7 +15,6 @@
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
-	import { cn } from '#lib/utils/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
@@ -35,9 +34,6 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	{#if !remove_trigger}
-		CRKT NO.
-	{/if}
 	<Dialog.Root bind:open={open_dialog_state}>
 		{#if !remove_trigger}
 			<Dialog.Trigger
@@ -54,11 +50,11 @@
 			<Dialog.Header>
 				<Dialog.Title>Add load</Dialog.Title>
 				<Dialog.Description>Enter the load details.</Dialog.Description>
-				<div class={cn('flex flex-col items-center justify-start')}>
-					<h4 class="mb-1 font-bold">MAIN</h4>
-					<div class="grid w-full grid-cols-2 justify-items-start">
+				<div class="flex flex-col gap-1">
+					<h4 class="text-center font-bold">MAIN</h4>
+					<div class="grid w-full grid-cols-2 gap-4">
 						<div>
-							<div class="flex gap-1">
+							<div class="flex items-center gap-1">
 								<h4 class="font-semibold">Supply From:</h4>
 								{#if parent_node?.highest_unit_form?.distribution_unit}
 									<p>{parent_node.highest_unit_form.distribution_unit}</p>
@@ -70,7 +66,7 @@
 							</div>
 						</div>
 						<div>
-							<div class="flex gap-1">
+							<div class="flex items-center gap-1">
 								<h4 class="font-semibold">Phase:</h4>
 								<p>
 									{getOptionLabel(DEFAULT_PHASES, highest_unit?.phase) || 'N/A'}
