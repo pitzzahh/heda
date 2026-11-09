@@ -114,7 +114,9 @@
 		class="border-border bg-card flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border shadow-(--surface-shadow)"
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
-		<Table.Root containerClass="overflow-visible">
+		<!-- Transparent end border: unlike end-side padding/margin, a border always
+		counts toward scrollable overflow, so scrolled content clears the bar. -->
+		<Table.Root containerClass="overflow-visible" class="border-r-[12px] border-transparent">
 			<Table.Header class="bg-secondary sticky top-0 z-10">
 				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 					<Table.Row>
