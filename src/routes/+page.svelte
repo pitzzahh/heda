@@ -323,7 +323,7 @@
 						<ScrollArea class="max-h-72 w-full">
 							{#if project_state.recent_projects && project_state?.recent_projects?.length > 0}
 								{#each project_state.recent_projects as project (project.id)}
-									<div class="group flex w-full items-center gap-2 py-1">
+									<div class="group flex w-full items-center gap-2 py-1 pr-3">
 										<Button
 											variant={project.exists ? 'outline' : 'warning_soft'}
 											class={cn('h-auto min-h-14 flex-1 justify-start gap-3 px-2 py-2', {
