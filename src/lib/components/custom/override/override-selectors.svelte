@@ -306,7 +306,7 @@
 			<div class="flex items-center gap-2">
 				<Input type="text" bind:value={ampere_frames} />
 				<Select.Root type="single" bind:value={ampere_frames}>
-					<Select.Trigger class="w-10 text-xs"></Select.Trigger>
+					<Select.Trigger class="w-20 shrink-0 text-xs">{ampere_frames}</Select.Trigger>
 					<Select.Content class="text-sm">
 						{#each ampere_frames_ratings as ampere_frame, i (i)}
 							<Select.Item value={ampere_frame} disabled={ampere_frames === ampere_frame}>
