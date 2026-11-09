@@ -42,9 +42,11 @@
 <div class="grid w-full place-content-center">
 	<DropdownMenu.Root bind:open={open_dropdown_menu}>
 		<DropdownMenu.Trigger>
-			<Button size="icon" variant="outline">
-				<DotsThreeIcon class="size-4" />
-			</Button>
+			{#snippet child({ props })}
+				<Button size="icon" variant="outline" {...props}>
+					<DotsThreeIcon class="size-4" />
+				</Button>
+			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="end">
 			<DropdownMenu.Group>
