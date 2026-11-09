@@ -110,13 +110,13 @@
 
 <Tooltip.Provider delayDuration={100}>
 	<div
-		class="border-border bg-card flex min-h-0 flex-1 [scrollbar-gutter:stable] flex-col overflow-auto rounded-xl border shadow-(--surface-shadow)"
+		class="border-border bg-card flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border pr-4 pb-4 shadow-(--surface-shadow)"
 		{@attach virtual.attach_scroll_element}
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
-		<!-- scrollbar-gutter on the scroll box reserves the bar lanes, so rows
-		never slide under them in any renderer. Transparent end borders would
-		need to match the bar width in every engine and leave dead scroll room.
+		<!-- End padding on the scroll box keeps the lanes clear of the bars.
+		scrollbar-gutter does nothing on overlay bars, so the lanes are
+		reserved by hand instead.
 		Inner card chrome off: this box scrolls with the content, so its own
 		border would slide into view as a fake cut-off edge. -->
 		<Table.Root containerClass="overflow-visible rounded-none border-0 bg-transparent">
