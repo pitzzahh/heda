@@ -114,13 +114,13 @@
 		class="border-border bg-card flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border shadow-(--surface-shadow)"
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
-		<!-- Transparent end border: unlike end-side padding/margin, a border always
-		counts toward scrollable overflow, so scrolled content clears the bar.
+		<!-- Transparent end borders: unlike end-side padding/margin, a border always
+		counts toward scrollable overflow, so max-scrolled content clears the bars.
 		Inner card chrome off: this box scrolls with the content, so its own
 		border would slide into view as a fake cut-off edge. -->
 		<Table.Root
 			containerClass="overflow-visible rounded-none border-0 bg-transparent"
-			class="border-r-[12px] border-transparent"
+			class="border-r-[12px] border-b-[12px] border-transparent"
 		>
 			<Table.Header class="bg-secondary sticky top-0 z-10">
 				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
