@@ -32,6 +32,34 @@
 		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
+		"fileAssociations": [
+			{
+				"ext": ["heda"],
+				"name": "HEDA Project",
+				"description": "Hierarchical Electrical Design Analyzer project",
+				"mimeType": "application/x-heda",
+				"role": "Editor",
+				"rank": "Default",
+				"exportedType": {
+					"identifier": "me.araopj.heda.heda",
+					"conformsTo": ["public.data"]
+				}
+			}
+		],
+		"linux": {
+			"deb": {
+				"desktopTemplate": "linux/heda.desktop.hbs",
+				"files": {
+					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+				}
+			},
+			"rpm": {
+				"desktopTemplate": "linux/heda.desktop.hbs",
+				"files": {
+					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+				}
+			}
+		},
 		"windows": {
 			"webviewInstallMode": {
 				"type": "embedBootstrapper"

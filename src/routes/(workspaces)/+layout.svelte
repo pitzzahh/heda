@@ -2,9 +2,8 @@
 	import { AppSidebar } from '#lib/components/custom/sidebar/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import { buttonVariants, Button } from '#lib/components/ui/button/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
-	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { HighestUnitForm, PageProgress } from '#lib/components/custom/index.js';
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
@@ -137,21 +136,3 @@
 		</Dialog.Content>
 	</Dialog.Root>
 </UndoRedoWrapper>
-
-<AlertDialog.Root bind:open={dialogs_state.has_unsaved_changes}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Unsaved changes found!</AlertDialog.Title>
-			<AlertDialog.Description>
-				Would you like to save your current changes before performing any actions?
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel class={buttonVariants({ variant: 'ghost' })}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action class={buttonVariants({ variant: 'destructive' })}
-				>Continue without saving changes</AlertDialog.Action
-			>
-			<AlertDialog.Action class={buttonVariants()}>Save and continue</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>

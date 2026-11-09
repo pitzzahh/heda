@@ -10,3 +10,6 @@ dist/
 coverage/
 src-tauri/target/
 src-tauri/gen/
+
+# Non-Prettier formats (line-based / template output)
+src-tauri/linux/*.hbs

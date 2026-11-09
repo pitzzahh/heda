@@ -9,9 +9,12 @@ export type FileExport = {
 	nodes: Node[];
 };
 
+export type FileProtection = 'device' | 'password';
+
 export type RecentProject = {
 	id: string;
 	project_name: string;
 	project_path: string;
 	exists: boolean;
+	protection?: FileProtection;
 };

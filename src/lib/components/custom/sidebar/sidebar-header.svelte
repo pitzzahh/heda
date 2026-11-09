@@ -3,6 +3,7 @@
 		CheckIcon,
 		CircleNotchIcon,
 		ExportIcon,
+		LockKeyIcon,
 		FloppyDiskIcon,
 		TableIcon
 	} from '#lib/assets/icons/index.js';
@@ -21,16 +22,16 @@
 	import { UndoRedoButtons } from './(components)/index.js';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
 	import type { ButtonState } from '#lib/types/misc/index.js';
-	import type { FileExport } from '#lib/types/main/index.js';
-	import { getSessionPassword } from '#lib/db/session.js';
-	import { writeEncryptedFile } from '#lib/helpers/file/index.js';
-	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
+	import { saveCurrentProject, writeEncryptedFile, EXTENSION } from '#lib/helpers/file/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { Portal } from 'bits-ui';
 	import { cn } from '#lib/utils/index.js';
+	import PasswordDialog from '../password-dialog.svelte';
+	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
+	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 	let { root_node }: Props = $props();
 
 	let component_state = $state({
@@ -54,40 +55,46 @@
 				});
 			}
 
-			const current_project = getCurrentProject();
-
-			if (!current_project) {
-				console.error('Failed to save, no project found');
-				return toast.warning('Failed to save, no project found', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
+			const saved = await saveCurrentProject(project_state.current_project_path, undo_redo_state);
+			if (saved && !settings_state.auto_save_enabled) {
+				toast.success('Saved successfully');
 			}
-
-			const file_data: FileExport = {
-				project: current_project,
-				nodes: getAllChildNodes(current_project.root_node_id, true)
-			};
-
-			const session_password = getSessionPassword();
-			if (!session_password) {
-				console.error('Failed to save, no session password');
-				return toast.warning('Failed to save, no session password', {
-					description: 'Reload the file and try again.'
-				});
-			}
-			await writeEncryptedFile(file_data, session_password, project_state.current_project_path);
-			undo_redo_state.resetUnsavedActions();
-		} catch (err) {
-			console.error(`Failed to save file: ${JSON.stringify(err)}`);
-			toast.error(`Failed to save file: ${(err as Error)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while saving the file.'
-			});
 		} finally {
 			component_state.saving = false;
 		}
+	}
 
-		if (!settings_state.auto_save_enabled) {
-			toast.success('Saved successfully');
+	let share_open = $state(false);
+	let share_error = $state<string | null>(null);
+	let share_busy = $state(false);
+
+	// A password-protected copy that anyone with the password can open. The
+	// current file keeps its own protection.
+	async function handleShareSubmit(password: string) {
+		share_busy = true;
+		share_error = null;
+		try {
+			const current = getCurrentProject();
+			if (!current) throw new Error('No project found');
+			const path = await saveDialog({
+				filters: [{ name: 'Heda file', extensions: [EXTENSION] }]
+			});
+			if (!path) return;
+			const file_path = path.endsWith(`.${EXTENSION}`) ? path : `${path}.${EXTENSION}`;
+			await writeEncryptedFile(
+				{ project: current, nodes: getAllChildNodes(current.root_node_id, true) },
+				password,
+				file_path,
+				true
+			);
+			share_open = false;
+			toast.success('Password-protected copy saved', {
+				description: 'Anyone with the password can open this file.'
+			});
+		} catch (err) {
+			share_error = (err as Error)?.message ?? 'The copy could not be saved.';
+		} finally {
+			share_busy = false;
 		}
 	}
 
@@ -226,6 +233,10 @@
 							/>
 							Export whole project voltage drop</DropdownMenu.Item
 						>
+						<DropdownMenu.Item onclick={() => (share_open = true)}>
+							<LockKeyIcon class="mr-0.5 block h-4 w-4" />
+							Export password-protected copy</DropdownMenu.Item
+						>
 					</DropdownMenu.Group>
 				</DropdownMenu.Content>
 			</Portal>
@@ -238,3 +249,11 @@
 		{/snippet}
 	</svelte:boundary>
 </div>
+
+<PasswordDialog
+	bind:open={share_open}
+	mode="create"
+	error={share_error}
+	busy={share_busy}
+	onSubmit={handleShareSubmit}
+/>
