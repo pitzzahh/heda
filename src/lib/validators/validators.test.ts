@@ -27,6 +27,12 @@ describe('validators', () => {
 			}).success
 		).toBe(true);
 		expect(
+			v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				distribution_unit: 'Transformer',
+				phase: default_phases.ONE_PHASE
+			}).success
+		).toBe(true);
+		expect(
 			v.safeParse(SETTINGS_SCHEMA, {
 				color: 'excel',
 				font: 'default',

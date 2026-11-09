@@ -17,8 +17,10 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 			'Transformer'
 		),
 		phase: PHASE_FIELD,
-		password: PASSWORD_FIELD,
-		confirm_password: v.string('Please confirm the file password.')
+		// Optional: no password means the file uses this device's key and opens
+		// without a prompt. A password is only for files that must be shared.
+		password: v.optional(PASSWORD_FIELD),
+		confirm_password: v.optional(v.string('Please confirm the file password.'))
 	}),
 	v.forward(
 		v.partialCheck(

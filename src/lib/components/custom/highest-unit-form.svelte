@@ -11,6 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { PasswordInput } from '#lib/components/ui/password-input/index.js';
+	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -21,9 +22,11 @@
 	import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
-	import { setSessionPassword } from '#lib/db/session.js';
+	import { setSessionPassword, setSessionProtection } from '#lib/db/session.js';
+	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 	import {
 		getFileName,
+		writeDeviceEncryptedFile,
 		writeEncryptedFile,
 		EXTENSION,
 		doesFileExists,
@@ -49,6 +52,7 @@
 	});
 
 	let submitting = $state(false);
+	let use_password = $state(false);
 
 	async function handleSubmit() {
 		if (submitting) return;
@@ -60,12 +64,16 @@
 		const data = result.output;
 		submitting = true;
 		try {
-			// Passwords are never stored. They unlock the session and seal the file.
+			// Secrets are never stored. The password (when set) unlocks the
+			// session and seals the file; otherwise the device key does both.
 			const project_input = {
 				distribution_unit: data.distribution_unit,
 				phase: data.phase
 			};
-			setSessionPassword(data.password);
+			const password = use_password ? data.password : undefined;
+			const device_key = password ? null : await getDeviceKey();
+			setSessionPassword(password ?? device_key!);
+			setSessionProtection(password ? 'password' : 'device');
 
 			let file_path_with_file = await saveDialog({
 				filters: [
@@ -129,14 +137,19 @@
 				nodes: getAllChildNodes(project.root_node_id, true)
 			};
 
-			await writeEncryptedFile(file_data, data.password, file_path_with_file, true);
+			if (password) {
+				await writeEncryptedFile(file_data, password, file_path_with_file, true);
+			} else {
+				await writeDeviceEncryptedFile(file_data, device_key!, file_path_with_file, true);
+			}
 			closeDialog();
 			project_state.addRecentProject(
 				{
 					id: project.id,
 					project_name,
 					project_path: file_path_with_file,
-					exists: true
+					exists: true,
+					protection: password ? 'password' : 'device'
 				},
 				true
 			);
@@ -248,38 +261,50 @@
 				</fieldset>
 			{/snippet}
 		</Field>
-		<Field of={form} path={['password']}>
-			{#snippet children(field)}
-				<div class="space-y-2">
-					<Label class={cn(field.errors && 'text-destructive')}>File password</Label>
-					<PasswordInput
-						{...field.props}
-						label="File password"
-						value={field.input ?? ''}
-						onValueChange={(v) => field.onInput(v)}
-						autocomplete="new-password"
-						placeholder="Protects this file (min. 8 characters)"
-					/>
-					<FieldErrors errors={field.errors} />
+		<div class="rounded-xl border p-3">
+			<Checkbox
+				checked={use_password}
+				onCheckedChange={(v) => (use_password = v)}
+				label="Protect with a password"
+				description="Off: this device's key encrypts the file, so it opens with no password. Use a password only if this file must be shared with another device."
+			/>
+			{#if use_password}
+				<div class="grid gap-4 pt-3">
+					<Field of={form} path={['password']}>
+						{#snippet children(field)}
+							<div class="space-y-2">
+								<Label class={cn(field.errors && 'text-destructive')}>File password</Label>
+								<PasswordInput
+									{...field.props}
+									label="File password"
+									value={field.input ?? ''}
+									onValueChange={(v) => field.onInput(v)}
+									autocomplete="new-password"
+									placeholder="Protects this file (min. 8 characters)"
+								/>
+								<FieldErrors errors={field.errors} />
+							</div>
+						{/snippet}
+					</Field>
+					<Field of={form} path={['confirm_password']}>
+						{#snippet children(field)}
+							<div class="space-y-2">
+								<Label class={cn(field.errors && 'text-destructive')}>Confirm password</Label>
+								<PasswordInput
+									{...field.props}
+									label="Confirm file password"
+									value={field.input ?? ''}
+									onValueChange={(v) => field.onInput(v)}
+									autocomplete="new-password"
+									placeholder="Repeat the file password"
+								/>
+								<FieldErrors errors={field.errors} />
+							</div>
+						{/snippet}
+					</Field>
 				</div>
-			{/snippet}
-		</Field>
-		<Field of={form} path={['confirm_password']}>
-			{#snippet children(field)}
-				<div class="space-y-2">
-					<Label class={cn(field.errors && 'text-destructive')}>Confirm password</Label>
-					<PasswordInput
-						{...field.props}
-						label="Confirm file password"
-						value={field.input ?? ''}
-						onValueChange={(v) => field.onInput(v)}
-						autocomplete="new-password"
-						placeholder="Repeat the file password"
-					/>
-					<FieldErrors errors={field.errors} />
-				</div>
-			{/snippet}
-		</Field>
+			{/if}
+		</div>
 	</div>
 	<Button type="submit" class="mt-5 h-11 w-full" loading={submitting}>
 		<LockKeyIcon class="size-4" />

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+	FileDeviceKeyError,
 	FileLegacyError,
 	FilePasswordError,
 	decryptFilePayload,
 	detectFileVersion,
-	packFileV2
+	packFileV2,
+	packFileV3
 } from './format.js';
+
+const DEVICE_KEY = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+const OTHER_DEVICE_KEY = '//////////////////////////////////////////w=';
 
 // Sample v1 bytes (kept only so the refusal path tests the real shape).
 const GOLDEN =
@@ -54,6 +59,20 @@ describe('file format', () => {
 		const err = (await decryptFilePayload(raw, 'wrong').catch((e) => e)) as FilePasswordError;
 		expect(err).toBeInstanceOf(FilePasswordError);
 		expect(err.code).toBe('invalid');
+	});
+
+	it('detects v3 device-encrypted envelopes', async () => {
+		const raw = await packFileV3({ a: 1 }, DEVICE_KEY);
+		expect(detectFileVersion(raw)).toBe(3);
+		await expect(decryptFilePayload(raw, null, DEVICE_KEY)).resolves.toEqual({ a: 1 });
+	});
+
+	it('refuses v3 without a device key or with the wrong one', async () => {
+		const raw = await packFileV3({ a: 1 }, DEVICE_KEY);
+		await expect(decryptFilePayload(raw, null, null)).rejects.toBeInstanceOf(FileDeviceKeyError);
+		await expect(decryptFilePayload(raw, null, OTHER_DEVICE_KEY)).rejects.toBeInstanceOf(
+			FileDeviceKeyError
+		);
 	});
 
 	it('refuses legacy files with a clear error', async () => {

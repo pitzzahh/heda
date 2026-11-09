@@ -81,7 +81,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 
 - Store: `@signaldb/core` v1 `Collection<Project>` / `Collection<Node>` (see `src/lib/db/index.ts`). Never reintroduce RxDB.
 - Persistence: `@pitzzahh/signaldb-adapter-tauri` in Tauri, pure memory in web dev/preview. Detect via `isTauri()` from `@tauri-apps/api/core`.
-- Session encryption key is a per-session random passphrase kept in a Stronghold vault (`tauri-plugin-stronghold`, argon2 snapshot KDF, registered in `src-tauri` builders + `stronghold:default` capability). The vault password is the session secret (the open file's password). Never hardcoded, never persisted.
+- Session encryption key is a per-session random passphrase kept in a Stronghold vault (`tauri-plugin-stronghold`, argon2 snapshot KDF, registered in `src-tauri` builders + `stronghold:default` capability). The vault password is the session secret (the open file's password, or the device key for device-encrypted files). Never hardcoded, never persisted.
 - Never await Stronghold bare: its Rust memory protection can panic (sandboxed kernels, locked-memory limits) and leave the IPC promise unsettled, hanging the UI at loading. Every vault access races `withTimeout` (5s) and degrades to memory-only on timeout: no retry after a hang, only after an active throw (corrupt vault).
 - Session-scoped by design: `databaseInstance()` wipes the session files (including the vault) on launch so every start begins empty. Do NOT add cross-session restore without a product decision.
 - Session files are deliberately nondescript and extensionless (`heda-p`, `heda-n`, `heda-v` in `$APPLOCALDATA`); never rename them to something advertising their contents.
@@ -92,8 +92,9 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 ## Crypto & file passwords
 
 - All crypto is WebCrypto ONLY (`src/lib/helpers/security/index.ts`: PBKDF2-SHA256, AES-256-GCM, `getRandomValues`). Never reintroduce `crypto-js`.
-- `.heda` format is one JSON envelope `{v:2,salt,payload}` sealed with the user's file password (PBKDF2 100k + GCM). Format code lives in `src/lib/helpers/file/format.ts` (pure, tested). Password problems surface as `FilePasswordError` (`required`/`invalid`); v1 bytes are recognized but no longer openable (`FileLegacyError`).
-- The file password lives ONLY in `src/lib/db/session.ts` (memory, cleared on home/reset) and the file seal. Never persist it (no localStorage, no `highest_unit_form`, no logs), never pass it through props; call `getSessionPassword()` at the call site.
+- The device key (`src/lib/helpers/security/device-key.ts`) is one random 256-bit key per installation, stored in an owner-only file (`heda-d` in `$APPLOCALDATA`) on Tauri, else `localStorage`. It is the default file seal, so local files open/save with no password. Never move it into a `.heda` file; it is what keeps files unreadable in text editors.
+- `.heda` format: one JSON envelope. v3 `{v:3,payload}` is sealed with the raw device key (AES-256-GCM, no KDF, milliseconds). v2 `{v:2,salt,payload}` is sealed with the user's file password (PBKDF2 100k + GCM) and exists for files that must be shared with other devices. Format code lives in `src/lib/helpers/file/format.ts` (pure, tested). Password problems surface as `FilePasswordError` (`required`/`invalid`); a v3 file sealed on another device surfaces as `FileDeviceKeyError`; v1 bytes are recognized but no longer openable (`FileLegacyError`).
+- The file password (when a file has one) lives ONLY in `src/lib/db/session.ts` (memory, cleared on home/reset) and the file seal. Never persist it (no localStorage, no `highest_unit_form`, no logs), never pass it through props; call `getSessionPassword()` at the call site. File protection mode (`device`|`password`) is tracked alongside it in the same module.
 - Password inputs validate through `PASSWORD_FIELD` (`src/lib/validators/shared.ts`, min 8) wherever Formisch is in play; standalone prompts (`PasswordDialog`) enforce the same min-8/match rules locally.
 - Crypto changes extend `security.test.ts` + `format.test.ts`.
 
