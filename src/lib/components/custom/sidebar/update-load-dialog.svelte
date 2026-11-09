@@ -19,7 +19,6 @@
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
 	import { getOptionLabel } from '#lib/utils/format/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
-	import { cn } from '#lib/utils/index.js';
 
 	let {
 		open_load_dialog = $bindable(false),
@@ -58,9 +57,9 @@
 	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update Load</Dialog.Title>
-			<div class={cn('flex flex-col items-center justify-start')}>
-				<h4 class="mb-1 font-bold">MAIN</h4>
-				<div class="grid w-full grid-cols-2 justify-items-start">
+			<div class="flex flex-col gap-1">
+				<h4 class="text-center font-bold">MAIN</h4>
+				<div class="grid w-full grid-cols-2 gap-4">
 					<div>
 						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
@@ -75,7 +74,7 @@
 						</div>
 					</div>
 					<div>
-						<div class="flex gap-1">
+						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Phase:</h4>
 							<p>
 								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}

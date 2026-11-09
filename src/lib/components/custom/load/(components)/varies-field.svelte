@@ -44,10 +44,7 @@
 <Field of={form} path={['varies']}>
 	{#snippet children(field)}
 		<div
-			class={cn('mt-2 grid w-1/3 space-y-2 text-center', {
-				'cursor-not-allowed': load_type === 'DEFAULT',
-				'text-center': varies_label === 'Varies'
-			})}
+			class={cn('flex min-w-0 flex-col gap-2', { 'cursor-not-allowed': load_type === 'DEFAULT' })}
 		>
 			{#if varies_label === 'Horsepower Rating'}
 				<Popover.Root bind:open>
@@ -59,6 +56,7 @@
 								variant: 'outline',
 								className: 'justify-between'
 							}),
+							'w-full min-w-0',
 							!field.input && 'text-muted-foreground',
 							{ 'cursor-not-allowed': load_type === 'DEFAULT' }
 						)}
@@ -70,13 +68,15 @@
 								field.input as keyof typeof default_hp_current_relationship
 							]}
 						{#if field.input}
-							<p>
+							<p class="min-w-0 flex-1 truncate text-left">
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -- formatFraction escapes input; only matched digits reach the markup -->
 								{@html formatFraction(field.input as string)}
 								({varies_output})
 							</p>
 						{:else}
-							Select a {varies_label.toLowerCase()}
+							<span class="min-w-0 flex-1 truncate text-left"
+								>Select a {varies_label.toLowerCase()}</span
+							>
 						{/if}
 						<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
@@ -103,7 +103,7 @@
 											<CheckIcon
 												class={cn(
 													'ml-auto size-4',
-													hp_current_rating !== field.input && 'text-transparent'
+													hp_current_rating !== field.input && 'opacity-0'
 												)}
 											/>
 										</Command.Item>

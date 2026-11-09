@@ -24,7 +24,7 @@
 
 <Field of={form} {path}>
 	{#snippet children(field)}
-		<div class={wrapper_class ?? 'space-y-2'}>
+		<div class={wrapper_class ?? 'flex min-w-0 flex-col gap-2'}>
 			<Label class={cn({ 'text-destructive': invalid || field.errors })}>{label}</Label>
 			<Input
 				{...field.props}

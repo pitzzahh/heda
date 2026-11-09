@@ -39,7 +39,7 @@
 <Field of={form} path={['load_type']}>
 	{#snippet children(field)}
 		<div
-			class={cn('mt-2 grid space-y-2 text-center', {
+			class={cn('flex min-w-0 flex-col gap-2', {
 				'cursor-not-allowed': load_type === 'DEFAULT'
 			})}
 		>
@@ -52,15 +52,18 @@
 							variant: 'outline',
 							className: 'justify-between'
 						}),
+						'w-full min-w-0',
 						!field.input && 'text-muted-foreground',
 						{ 'cursor-not-allowed': load_type === 'DEFAULT' }
 					)}
 					disabled={load_type === 'DEFAULT'}
 					role="combobox"
 				>
-					{field.input
-						? getOptionLabel(DEFAULT_LOAD_TYPES, field.input as string)
-						: 'Select a load type'}
+					<span class="min-w-0 flex-1 truncate text-left">
+						{field.input
+							? getOptionLabel(DEFAULT_LOAD_TYPES, field.input as string)
+							: 'Select a load type'}
+					</span>
 					<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 				</Popover.Trigger>
 				<Popover.Content class="w-auto p-0">
@@ -80,7 +83,7 @@
 									<CheckIcon
 										class={cn(
 											'ml-auto size-4',
-											load_type_option.value !== field.input && 'text-transparent'
+											load_type_option.value !== field.input && 'opacity-0'
 										)}
 									/>
 								</Command.Item>
