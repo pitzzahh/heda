@@ -67,10 +67,7 @@
 								>
 									{convertToNormalText(phase_type_option)}
 									<CheckIcon
-										class={cn(
-											'ml-auto size-4',
-											phase_type_option !== field.input && 'text-transparent'
-										)}
+										class={cn('ml-auto size-4', phase_type_option !== field.input && 'opacity-0')}
 									/>
 								</Command.Item>
 							{/each}

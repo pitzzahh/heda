@@ -74,10 +74,7 @@
 								>
 									{phase_option.label}
 									<CheckIcon
-										class={cn(
-											'ml-auto size-4',
-											phase_option.value !== field.input && 'text-transparent'
-										)}
+										class={cn('ml-auto size-4', phase_option.value !== field.input && 'opacity-0')}
 									/>
 								</Command.Item>
 							{/each}
