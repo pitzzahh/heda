@@ -57,7 +57,7 @@
 {#if load_type === 'CUSTOM'}
 	<Field of={form} path={['load_description']}>
 		{#snippet children(field)}
-			<div class="w-full space-y-2 text-center">
+			<div class="flex min-w-0 flex-col gap-2">
 				<Label class={cn(field.errors && 'text-destructive')}>Load description</Label>
 				<Input
 					{...field.props}
@@ -72,22 +72,22 @@
 {#if load_type === 'DEFAULT'}
 	<Field of={form} path={['load_description']}>
 		{#snippet children(field)}
-			<div class="mt-[0.42rem] flex w-full flex-col space-y-2 text-center">
+			<div class="flex min-w-0 flex-col gap-2">
 				<Popover.Root bind:open>
-					<Label class={cn('mb-[0.2rem]', field.errors && 'text-destructive')}
-						>Load description</Label
-					>
+					<Label class={cn(field.errors && 'text-destructive')}>Load description</Label>
 					<Popover.Trigger
 						id={trigger_id}
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
-							'justify-between',
+							'w-full min-w-0 justify-between',
 							!field.input && 'text-muted-foreground'
 						)}
 						role="combobox"
 					>
-						{DEFAULT_LOADS.find((s) => s.description === field.input)?.description ??
-							'Select a load description'}
+						<span class="min-w-0 flex-1 truncate text-left">
+							{DEFAULT_LOADS.find((s) => s.description === field.input)?.description ??
+								'Select a load description'}
+						</span>
 						<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
 					<Popover.Content class="w-auto p-0">
@@ -105,7 +105,7 @@
 											<CheckIcon
 												class={cn(
 													'ml-auto size-4',
-													default_load.description !== field.input && 'text-transparent'
+													default_load.description !== field.input && 'opacity-0'
 												)}
 											/>
 										</Command.Item>
