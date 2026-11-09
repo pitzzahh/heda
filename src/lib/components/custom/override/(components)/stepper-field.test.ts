@@ -29,9 +29,7 @@ describe('StepperField', () => {
 		const by_label = (label: string) => document.querySelector(`button[aria-label="${label}"]`);
 		by_label('Decrease value')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		by_label('Increase value')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		document
-			.querySelector('div.row-span-2 button')
-			?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		by_label('Remove override')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		flushSync();
 
 		expect(on_decrement).toHaveBeenCalledOnce();
@@ -54,7 +52,7 @@ describe('StepperField', () => {
 		});
 		flushSync();
 		expect(document.body.textContent).not.toContain('(Override)');
-		expect(document.querySelector('div.row-span-2')).toBeNull();
+		expect(document.querySelector('button[aria-label="Remove override"]')).toBeNull();
 		unmount(component);
 	});
 });

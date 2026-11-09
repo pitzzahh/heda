@@ -20,7 +20,7 @@
 			>
 				Remove Override
 			</Tooltip.Content>
-			<Button variant="destructive" size="icon" class="size-6">
+			<Button variant="destructive" size="icon" class="size-6" aria-label="Remove override">
 				<XIcon class="size-3" />
 			</Button>
 		</Tooltip.Trigger>
