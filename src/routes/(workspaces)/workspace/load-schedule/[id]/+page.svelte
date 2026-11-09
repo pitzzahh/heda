@@ -119,7 +119,7 @@
 	});
 </script>
 
-<div class="flex min-h-0 w-full flex-1 flex-col gap-2">
+<div class="flex min-h-0 w-full flex-1 flex-col gap-4">
 	<div
 		class="border-border bg-card flex flex-col gap-4 rounded-2xl border px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
 	>
