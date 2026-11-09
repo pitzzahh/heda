@@ -16,8 +16,14 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '#lib/assets/index.js';
 	import { toast } from 'svelte-sonner';
-	import { handleLoadFile, type NeedPassword } from '#lib/helpers/file/index.js';
-	import { clearSessionPassword } from '#lib/db/session.js';
+	import {
+		handleLoadFile,
+		migrateHedaFile,
+		type NeedMigration,
+		type NeedPassword
+	} from '#lib/helpers/file/index.js';
+	import { clearSessionPassword, setSessionProtection } from '#lib/db/session.js';
+	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
 	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { PasswordDialog } from '#lib/components/custom/index.js';
 	import type { RecentProject } from '#lib/types/main/index.js';
@@ -25,6 +31,7 @@
 	import { resolve } from '$app/paths';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { getFileOpenState } from '#lib/hooks/file-open.svelte.js';
 	import { cn } from '#lib/utils/index.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
@@ -34,6 +41,7 @@
 	const project_state = getProjectState();
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 	const undo_redo_state = getUndoRedoState();
+	const open_file_state = getFileOpenState();
 
 	let component_state = $state({
 		status: 'idle' as 'idle' | 'processing'
@@ -43,6 +51,28 @@
 	let unlock_path = $state('');
 	let unlock_error = $state<string | null>(null);
 	let unlock_busy = $state(false);
+	let migrate_open = $state(false);
+	let migrate_path = $state('');
+	let migrate_error = $state<string | null>(null);
+	let migrate_busy = $state(false);
+
+	async function convertLoadedFile(recent_project_data: RecentProject) {
+		try {
+			await convertHedaFileToDevice(
+				recent_project_data.project_path,
+				sessionStorage.getItem('heda-session-password') ?? ''
+			);
+			setSessionProtection('device');
+			toast.success('File now opens without a password', {
+				description: 'A verified .v2.bak backup was kept next to the file.'
+			});
+		} catch (err) {
+			console.error(`Failed to convert file: ${(err as Error)?.message ?? 'unknown error'}`);
+			toast.error('Could not convert this file to device encryption', {
+				description: 'The file still opens with its password.'
+			});
+		}
+	}
 
 	async function handleLoadFileSuccess(recent_project_data: RecentProject) {
 		await goto(
@@ -55,6 +85,15 @@
 				project_state.setCurrentProject(recent_project_data);
 
 				project_state.setProjectLoaded(true);
+				if (recent_project_data.protection === 'password') {
+					return toast.success('Project loaded successfully', {
+						description: 'This file uses a password. Convert it so it opens without one.',
+						action: {
+							label: 'Convert',
+							onClick: () => void convertLoadedFile(recent_project_data)
+						}
+					});
+				}
 				return toast.success('Project loaded successfully', {
 					description: 'The file has been loaded successfully.'
 				});
@@ -76,6 +115,10 @@
 		return !!obj && typeof obj === 'object' && 'need_password' in obj;
 	}
 
+	function isNeedMigration(obj: unknown): obj is NeedMigration {
+		return !!obj && typeof obj === 'object' && 'need_migration' in obj;
+	}
+
 	async function attemptLoad(path: string | undefined, password: string | null = null) {
 		const handle_file_result = await handleLoadFile(
 			path,
@@ -91,6 +134,29 @@
 			unlock_path = handle_file_result.file_path;
 			unlock_error = handle_file_result.invalid ? 'Wrong password. Try again.' : null;
 			unlock_open = true;
+		} else if (isNeedMigration(handle_file_result)) {
+			migrate_path = handle_file_result.file_path;
+			migrate_error = null;
+			migrate_open = true;
+		}
+	}
+
+	async function handleMigrationSubmit() {
+		const path = migrate_path;
+		migrate_busy = true;
+		migrate_error = null;
+		try {
+			const { backup_path } = await migrateHedaFile(path);
+			const backup_name = backup_path.replace(/\\/g, '/').split('/').pop() ?? backup_path;
+			migrate_open = false;
+			toast.success('Legacy file upgraded', {
+				description: `A verified backup was saved as ${backup_name}.`
+			});
+			await attemptLoad(path);
+		} catch (err) {
+			migrate_error = (err as Error)?.message ?? 'The legacy file could not be upgraded.';
+		} finally {
+			migrate_busy = false;
 		}
 	}
 
@@ -120,6 +186,15 @@
 		undo_redo_state.resetData();
 		clearSessionPassword();
 		clearSessionSnapshot();
+	});
+
+	// Consumes a .heda path the OS asked us to open; clearing it is an event
+	// handshake with the root layout, so an effect is the only fitting spot.
+	$effect(() => {
+		const path = open_file_state.pending_path;
+		if (!path) return;
+		open_file_state.pending_path = null;
+		void attemptLoad(path);
 	});
 </script>
 
@@ -407,4 +482,43 @@
 			unlock_busy = false;
 		}}
 	/>
+
+	<Dialog.Root bind:open={migrate_open}>
+		<Dialog.Content class="sm:max-w-md">
+			<Dialog.Header>
+				<div class="flex items-center gap-3">
+					<div
+						class="bg-primary/10 text-primary border-primary/15 flex size-11 shrink-0 items-center justify-center rounded-xl border"
+					>
+						<LockKeyIcon class="size-5" />
+					</div>
+					<div class="grid gap-0.5">
+						<Dialog.Title>Upgrade legacy file</Dialog.Title>
+						<Dialog.Description>
+							This file uses the old format. Upgrade it to device encryption so it opens without a
+							password. A verified backup of the original is kept next to it.
+						</Dialog.Description>
+					</div>
+				</div>
+			</Dialog.Header>
+			{#if migrate_error}
+				<div
+					class="border-destructive/25 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-medium"
+					role="alert"
+				>
+					<WarningCircleIcon class="mt-0.5 size-4 shrink-0" />
+					<span>{migrate_error}</span>
+				</div>
+			{/if}
+			<div class="mt-5 flex justify-end gap-2">
+				<Button variant="ghost" onclick={() => (migrate_open = false)} disabled={migrate_busy}
+					>Cancel</Button
+				>
+				<Button onclick={handleMigrationSubmit} disabled={migrate_busy} loading={migrate_busy}>
+					Upgrade file
+				</Button>
+			</div>
+			<Dialog.Close />
+		</Dialog.Content>
+	</Dialog.Root>
 </div>

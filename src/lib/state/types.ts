@@ -3,9 +3,16 @@ import { UndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 import { SelectNodesToDelete } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 import { Collapsibles } from '#lib/hooks/node-collapsibles.svelte.js';
 import type { ProjectState } from '#lib/hooks/project-state.svelte.js';
+import type { FileOpenState } from '#lib/hooks/file-open.svelte.js';
 
 export type State =
-	DialogState | SettingsState | UndoRedoState | SelectNodesToDelete | ProjectState | Collapsibles;
+	| DialogState
+	| SettingsState
+	| UndoRedoState
+	| SelectNodesToDelete
+	| ProjectState
+	| Collapsibles
+	| FileOpenState;
 
 export type DialogState = {
 	highestUnit: boolean;

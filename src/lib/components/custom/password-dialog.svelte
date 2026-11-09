@@ -58,7 +58,7 @@
 						<Dialog.Description>
 							{mode === 'unlock'
 								? 'This file is password protected.'
-								: 'This upgrades the file to password protection. The old app-wide key will no longer open it.'}
+								: 'Anyone with this password can open the file on any device.'}
 						</Dialog.Description>
 					</div>
 				</div>

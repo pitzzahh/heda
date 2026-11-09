@@ -15,7 +15,7 @@ export function bytesToHex(bytes: Uint8Array): string {
 }
 
 // Chunked so multi-megabyte project files don't blow the call stack.
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
 	let binary = '';
 	for (let i = 0; i < bytes.length; i += 0x8000) {
 		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -23,14 +23,15 @@ function bytesToBase64(bytes: Uint8Array): string {
 	return btoa(binary);
 }
 
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
 	const binary = atob(base64);
 	const out = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
 	return out;
 }
 
-// Memoized: autosave re-derives the same key every tick, and the KDF is the slowest step.
+// Memoized: repeated unlocks/decrypts of the same file reuse the derived key,
+// and the KDF is the slowest step. Saves use a fresh salt, so they re-derive.
 const derived_cache = new Map<string, Promise<Uint8Array>>();
 
 export function deriveKey(
