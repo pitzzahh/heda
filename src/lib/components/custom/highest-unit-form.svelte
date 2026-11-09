@@ -48,11 +48,10 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { distribution_unit: 'Transformer' }
+		initialInput: { distribution_unit: 'Transformer', use_password: false }
 	});
 
 	let submitting = $state(false);
-	let use_password = $state(false);
 
 	async function handleSubmit() {
 		if (submitting) return;
@@ -70,7 +69,7 @@
 				distribution_unit: data.distribution_unit,
 				phase: data.phase
 			};
-			const password = use_password ? data.password : undefined;
+			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
 			setSessionPassword(password ?? device_key!);
 			setSessionProtection(password ? 'password' : 'device');
@@ -230,7 +229,7 @@
 									buttonVariants({
 										variant: 'outline',
 										className:
-											'hover:border-primary/40 hover:bg-accent [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/10 [&:has([data-state=checked])]:text-primary h-11 w-full justify-between px-4 font-medium'
+											'hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary h-11 w-full justify-between px-4 font-medium'
 									}),
 									{
 										'cursor-not-allowed opacity-60': phase_option.value !== default_phases.ONE_PHASE
@@ -261,50 +260,54 @@
 				</fieldset>
 			{/snippet}
 		</Field>
-		<div class="rounded-xl border p-3">
-			<Checkbox
-				checked={use_password}
-				onCheckedChange={(v) => (use_password = v)}
-				label="Protect with a password"
-				description="Off: this device's key encrypts the file, so it opens with no password. Use a password only if this file must be shared with another device."
-			/>
-			{#if use_password}
-				<div class="grid gap-4 pt-3">
-					<Field of={form} path={['password']}>
-						{#snippet children(field)}
-							<div class="space-y-2">
-								<Label class={cn(field.errors && 'text-destructive')}>File password</Label>
-								<PasswordInput
-									{...field.props}
-									label="File password"
-									value={field.input ?? ''}
-									onValueChange={(v) => field.onInput(v)}
-									autocomplete="new-password"
-									placeholder="Protects this file (min. 8 characters)"
-								/>
-								<FieldErrors errors={field.errors} />
-							</div>
-						{/snippet}
-					</Field>
-					<Field of={form} path={['confirm_password']}>
-						{#snippet children(field)}
-							<div class="space-y-2">
-								<Label class={cn(field.errors && 'text-destructive')}>Confirm password</Label>
-								<PasswordInput
-									{...field.props}
-									label="Confirm file password"
-									value={field.input ?? ''}
-									onValueChange={(v) => field.onInput(v)}
-									autocomplete="new-password"
-									placeholder="Repeat the file password"
-								/>
-								<FieldErrors errors={field.errors} />
-							</div>
-						{/snippet}
-					</Field>
+		<Field of={form} path={['use_password']}>
+			{#snippet children(use_password_field)}
+				<div class="rounded-xl border p-3">
+					<Checkbox
+						checked={use_password_field.input ?? false}
+						onCheckedChange={(v) => use_password_field.onInput(v)}
+						label="Protect with a password"
+						description="Off: this device's key encrypts the file, so it opens with no password. Use a password only if this file must be shared with another device."
+					/>
+					{#if use_password_field.input}
+						<div class="grid gap-4 pt-3">
+							<Field of={form} path={['password']}>
+								{#snippet children(field)}
+									<div class="space-y-2">
+										<Label class={cn(field.errors && 'text-destructive')}>File password</Label>
+										<PasswordInput
+											{...field.props}
+											label="File password"
+											value={field.input ?? ''}
+											onValueChange={(v) => field.onInput(v)}
+											autocomplete="new-password"
+											placeholder="Protects this file (min. 8 characters)"
+										/>
+										<FieldErrors errors={field.errors} />
+									</div>
+								{/snippet}
+							</Field>
+							<Field of={form} path={['confirm_password']}>
+								{#snippet children(field)}
+									<div class="space-y-2">
+										<Label class={cn(field.errors && 'text-destructive')}>Confirm password</Label>
+										<PasswordInput
+											{...field.props}
+											label="Confirm file password"
+											value={field.input ?? ''}
+											onValueChange={(v) => field.onInput(v)}
+											autocomplete="new-password"
+											placeholder="Repeat the file password"
+										/>
+										<FieldErrors errors={field.errors} />
+									</div>
+								{/snippet}
+							</Field>
+						</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
+			{/snippet}
+		</Field>
 	</div>
 	<Button type="submit" class="mt-5 h-11 w-full" loading={submitting}>
 		<LockKeyIcon class="size-4" />

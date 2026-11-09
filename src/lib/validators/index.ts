@@ -17,6 +17,7 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 			'Transformer'
 		),
 		phase: PHASE_FIELD,
+		use_password: v.optional(v.boolean(), false),
 		// Optional: no password means the file uses this device's key and opens
 		// without a prompt. A password is only for files that must be shared.
 		password: v.optional(PASSWORD_FIELD),
@@ -29,5 +30,13 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 			'Passwords do not match.'
 		),
 		['confirm_password']
+	),
+	v.forward(
+		v.partialCheck(
+			[['use_password'], ['password']],
+			(input) => !input.use_password || !!input.password,
+			'Set a file password or turn off password protection.'
+		),
+		['password']
 	)
 );

@@ -127,6 +127,27 @@ describe('validators', () => {
 		expect(v.safeParse(NODE_DOC_SCHEMA, { id: 'n1' }).success).toBe(false);
 	});
 
+	it('requires a password when protection is on', () => {
+		const missing = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE,
+			use_password: true
+		});
+		expect(missing.success).toBe(false);
+		if (!missing.success) {
+			expect(missing.issues.some((i) => i.path?.some((p) => p.key === 'password'))).toBe(true);
+		}
+		expect(
+			v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				distribution_unit: 'Transformer',
+				phase: default_phases.ONE_PHASE,
+				use_password: true,
+				password: 'correct-horse',
+				confirm_password: 'correct-horse'
+			}).success
+		).toBe(true);
+	});
+
 	it('applies schema defaults for optional fields', () => {
 		const panel = v.safeParse(GENERIC_PHASE_PANEL_SCHEMA, {
 			name: 'LP-1',
