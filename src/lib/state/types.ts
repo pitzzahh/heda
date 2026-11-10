@@ -14,7 +14,11 @@ export type State =
 	| Collapsibles
 	| FileOpenState;
 
+export type UnsavedDecision = 'cancel' | 'continue' | 'save';
+
 export type DialogState = {
 	highestUnit: boolean;
 	has_unsaved_changes: boolean;
+	/** Opens the shared unsaved-changes dialog and resolves with the choice. */
+	promptUnsavedChanges: () => Promise<UnsavedDecision>;
 };

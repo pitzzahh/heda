@@ -1,10 +1,7 @@
-<script lang="ts" module>
-	type UnsavedDecision = 'cancel' | 'continue' | 'save';
-</script>
-
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -16,7 +13,7 @@
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
 	import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
 	import { setState } from '#lib/state/index.svelte.js';
-	import type { DialogState } from '#lib/state/types.js';
+	import type { DialogState, UnsavedDecision } from '#lib/state/types.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import { setSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
@@ -25,7 +22,9 @@
 	import { setProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { setOpenFileState } from '#lib/hooks/file-open.svelte.js';
 	import { FILE_OPEN_EVENT, planFileOpenAction } from '#lib/helpers/file/open-request.js';
+	import { WINDOW_CLOSE_REQUESTED } from '#lib/helpers/file/close-request.js';
 	import { saveCurrentProject } from '#lib/helpers/file/index.js';
+	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 
 	let { children } = $props();
 
@@ -38,7 +37,8 @@
 	const dialogs_state = setState<DialogState>(
 		{
 			highestUnit: false,
-			has_unsaved_changes: false
+			has_unsaved_changes: false,
+			promptUnsavedChanges: () => promptUnsavedChanges()
 		},
 		DIALOG_STATE_CTX
 	);
@@ -46,7 +46,8 @@
 
 	// OS file-open flow: the OS handed us a .heda path (double-click /
 	// "Open With"). Requests are queued so prompts never interleave.
-	let unsaved_resolver: ((decision: UnsavedDecision) => void) | null = null;
+	const leave = createLeaveProject();
+	const unsaved_resolvers = new SvelteSet<(decision: UnsavedDecision) => void>();
 	let file_open_queue: Promise<void> = Promise.resolve();
 
 	onMount(() => {
@@ -55,12 +56,22 @@
 		// during setup, so no request can slip between the two.
 		let disposed = false;
 		let unlisten: (() => void) | undefined;
+		let unlisten_close: (() => void) | undefined;
 		listen<string>(FILE_OPEN_EVENT, (event) => requestFileOpen(event.payload))
 			.then((fn) => {
 				if (disposed) fn();
 				else unlisten = fn;
 			})
 			.catch((err) => error(`Failed to listen for file open requests: ${err}`));
+		// System close (Alt+F4 / close button) is prevented by Rust; it asks
+		// us through this event whether the close may proceed after the
+		// unsaved-changes flow.
+		listen(WINDOW_CLOSE_REQUESTED, () => void leave.closeApp())
+			.then((fn) => {
+				if (disposed) fn();
+				else unlisten_close = fn;
+			})
+			.catch((err) => error(`Failed to listen for window close requests: ${err}`));
 		invoke<string | null>('take_pending_file_open')
 			.then((path) => {
 				if (path) requestFileOpen(path);
@@ -69,6 +80,7 @@
 		return () => {
 			disposed = true;
 			unlisten?.();
+			unlisten_close?.();
 		};
 	});
 
@@ -89,15 +101,16 @@
 	forwardConsole('warn', warn);
 	forwardConsole('error', error);
 
+	// Several flows can prompt (file open, Home, window close); one decision
+	// settles all of them so no caller is left hanging.
 	function settleUnsavedChanges(decision: UnsavedDecision) {
-		const resolve_promise = unsaved_resolver;
-		unsaved_resolver = null;
-		resolve_promise?.(decision);
+		unsaved_resolvers.forEach((resolve_promise) => resolve_promise(decision));
+		unsaved_resolvers.clear();
 	}
 
 	function promptUnsavedChanges(): Promise<UnsavedDecision> {
 		return new Promise((resolve_promise) => {
-			unsaved_resolver = resolve_promise;
+			unsaved_resolvers.add(resolve_promise);
 			dialogs_state.has_unsaved_changes = true;
 		});
 	}
@@ -163,25 +176,26 @@
 		queueMicrotask(() => settleUnsavedChanges('cancel'));
 	}}
 >
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Unsaved changes found!</AlertDialog.Title>
-			<AlertDialog.Description>
-				Would you like to save your current changes before performing any actions?
+	<AlertDialog.Content class="z-[100]">
+		<AlertDialog.Header class="items-start text-left">
+			<AlertDialog.Title class="text-lg font-semibold tracking-tight"
+				>Unsaved changes found!</AlertDialog.Title
+			>
+			<AlertDialog.Description class="text-sm leading-relaxed">
+				You have changes that are not saved yet. Save them before continuing?
 			</AlertDialog.Description>
 		</AlertDialog.Header>
-		<AlertDialog.Footer>
+		<AlertDialog.Footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 			<AlertDialog.Cancel
 				class={buttonVariants({ variant: 'ghost' })}
 				onclick={() => settleUnsavedChanges('cancel')}>Cancel</AlertDialog.Cancel
 			>
 			<AlertDialog.Action
-				class={buttonVariants({ variant: 'destructive' })}
-				onclick={() => settleUnsavedChanges('continue')}
-				>Continue without saving changes</AlertDialog.Action
+				class={buttonVariants({ variant: 'destructive_soft' })}
+				onclick={() => settleUnsavedChanges('continue')}>Don't save</AlertDialog.Action
 			>
 			<AlertDialog.Action class={buttonVariants()} onclick={() => settleUnsavedChanges('save')}
-				>Save and continue</AlertDialog.Action
+				>Save changes</AlertDialog.Action
 			>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

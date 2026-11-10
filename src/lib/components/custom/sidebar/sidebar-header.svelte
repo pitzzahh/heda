@@ -3,6 +3,7 @@
 		CheckIcon,
 		CircleNotchIcon,
 		ExportIcon,
+		HouseIcon,
 		LockKeyIcon,
 		FloppyDiskIcon,
 		TableIcon
@@ -26,6 +27,7 @@
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { Portal } from 'bits-ui';
 	import { cn } from '#lib/utils/index.js';
@@ -43,6 +45,7 @@
 	const undo_redo_state = getUndoRedoState();
 	const settings_state = getSettingsState();
 	const project_state = getProjectState();
+	const leave = createLeaveProject();
 
 	async function handleSave() {
 		if (component_state.saving) return;
@@ -154,6 +157,22 @@
 
 		<Settings />
 		<UndoRedoButtons />
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger
+					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+					onclick={() => void leave.goHome()}
+					aria-label="Go Home"
+				>
+					<HouseIcon class="size-4" />
+				</Tooltip.Trigger>
+				<Tooltip.Content
+					>{undo_redo_state.has_unsaved_actions
+						? 'Go Home (unsaved changes will prompt)'
+						: 'Go Home'}</Tooltip.Content
+				>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 	</div>
 	<svelte:boundary>
 		<DropdownMenu.Root>
