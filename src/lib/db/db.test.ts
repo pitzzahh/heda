@@ -4,7 +4,13 @@ import {
 	default_load_types,
 	default_phases
 } from '#lib/constants/index.js';
-import { StrongholdTimeoutError, getDatabase, initializeDatabase, withTimeout } from './index.js';
+import {
+	StrongholdTimeoutError,
+	clearCollection,
+	getDatabase,
+	initializeDatabase,
+	withTimeout
+} from './index.js';
 import {
 	addNode,
 	copyAndAddNodeById,
@@ -21,7 +27,8 @@ import {
 	getComputedVoltageDrops,
 	getNode,
 	getNodeById,
-	getParentNodes
+	getParentNodes,
+	getSnapshotRevision
 } from './queries/index.js';
 import { computeNodeLoad } from './queries/compute.js';
 import { loadSnapshot } from './queries/snapshot.js';
@@ -523,6 +530,46 @@ describe('db (signaldb)', () => {
 		expect(removed?.children_nodes).toHaveLength(1);
 		expect(getChildNodesByParentId(root)).toHaveLength(0);
 		expect(getChildNodesByParentId(panel!.id)).toHaveLength(0);
+	});
+
+	it('clears a collection in one pass and keeps indices usable', async () => {
+		resetData();
+		const created = await createProject('Clear', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		expect(loadSnapshot().nodes).toHaveLength(2);
+
+		const revision = getSnapshotRevision();
+		clearCollection(getDatabase().nodes, getDatabase().nodes_memory);
+		expect(getDatabase().nodes.find().fetch()).toHaveLength(0);
+		expect(loadSnapshot().nodes).toHaveLength(0);
+		// The snapshot cache is invalidated, not left serving the old nodes.
+		expect(getSnapshotRevision()).toBeGreaterThan(revision);
+
+		// Clearing an already-empty collection is a no-op.
+		const empty_revision = getSnapshotRevision();
+		clearCollection(getDatabase().nodes, getDatabase().nodes_memory);
+		expect(getSnapshotRevision()).toBe(empty_revision);
+
+		// The rebuilt id index still resolves fresh inserts.
+		const next = await createProject('AfterClear', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		expect(getNode(next!.root_node_id)?.id).toBe(next!.root_node_id);
 	});
 
 	it('passes fast promises through the Stronghold timeout', async () => {
