@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::SystemTime;
 
-use tauri::{Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_fs::FsExt;
 
 #[tauri::command]
@@ -101,6 +101,9 @@ struct FileOpenState {
 /// Must match `FILE_OPEN_EVENT` in `src/lib/helpers/file/open-request.ts`.
 const FILE_OPEN_EVENT: &str = "file-open-request";
 
+/// Must match `WINDOW_CLOSE_REQUESTED` in `src/lib/helpers/file/close-request.ts`.
+const WINDOW_CLOSE_REQUESTED: &str = "window-close-requested";
+
 fn is_heda_file(arg: &str) -> bool {
     Path::new(arg)
         .extension()
@@ -139,6 +142,14 @@ fn take_pending_file_open(state: tauri::State<'_, FileOpenState>) -> Option<Stri
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .take()
+}
+
+/// Quits the app. The webview invokes this only after the user resolved the
+/// unsaved-changes prompt for a prevented close request; `exit` skips the
+/// close event, so it cannot re-trigger the prompt.
+#[tauri::command]
+fn close_main_window(app: AppHandle) {
+    app.exit(0);
 }
 
 pub fn run() {
@@ -183,6 +194,7 @@ pub fn run() {
             get_file_metadata,
             get_exe_path,
             take_pending_file_open,
+            close_main_window,
             load_device_key,
             store_device_key
         ])
@@ -203,7 +215,19 @@ pub fn run() {
             {
                 deliver_file_open(app.handle(), path);
             }
+
             Ok(())
+        })
+        // Every system close (close button, Alt+F4, Cmd+W) is prevented and
+        // handed to the webview, which runs the unsaved-changes prompt and
+        // quits through `close_main_window` only after the user decides.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                if let Err(err) = window.emit(WINDOW_CLOSE_REQUESTED, ()) {
+                    log::warn!("failed to emit window close request: {err}");
+                }
+            }
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

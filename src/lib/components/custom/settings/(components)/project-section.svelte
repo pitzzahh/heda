@@ -22,7 +22,8 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import { resetData, updateProjectSettings } from '#lib/db/mutations/index.js';
+	import { updateProjectSettings } from '#lib/db/mutations/index.js';
+	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
 
 	let { close_settings }: Props = $props();
@@ -31,6 +32,7 @@
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
+	const leave = createLeaveProject();
 
 	async function savePreference(message: string) {
 		if (!project_state.loaded) return;
@@ -45,17 +47,30 @@
 		toast.success(message);
 	}
 
-	function handleNewProject() {
-		resetData();
-		dialogs_state.highestUnit = true;
+	function handleHomeClick(event: MouseEvent) {
+		if (!undo_redo_state.has_unsaved_actions) {
+			leave.resetSession();
+			return; // the anchor navigates natively
+		}
+
+		// Defer the anchor until the save finishes or the dialog is answered.
+		event.preventDefault();
+		// Settings closes first so the prompt stacks on a clean backdrop.
+		void leave.goHome(() => close_settings());
+	}
+
+	async function handleNewProject() {
+		if (!(await leave.confirmLeave(() => close_settings()))) return;
 		close_settings();
+		leave.resetSession();
+		dialogs_state.highestUnit = true;
 	}
 </script>
 
 <div class="flex flex-col gap-2">
 	<p class="text-sm font-semibold tracking-tight">Project</p>
 	<div class="grid w-full grid-cols-2 gap-1.5">
-		<Button onclick={() => resetData()} href="/" class="w-full" variant="outline">
+		<Button onclick={handleHomeClick} href="/" class="w-full" variant="outline">
 			<HouseIcon />
 			Home
 		</Button>
