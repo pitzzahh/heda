@@ -10,7 +10,14 @@
 	setSettingsState('light');
 	setProjectState();
 	setUndoRedoState();
-	setState<DialogState>({ highestUnit: false, has_unsaved_changes: false }, DIALOG_STATE_CTX);
+	setState<DialogState>(
+		{
+			highestUnit: false,
+			has_unsaved_changes: false,
+			promptUnsavedChanges: () => Promise.resolve('cancel')
+		},
+		DIALOG_STATE_CTX
+	);
 </script>
 
 <Settings />

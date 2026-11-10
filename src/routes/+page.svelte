@@ -184,6 +184,9 @@
 		project_state.removeCurrentProject();
 		select_nodes_to_delete_state.removeAllNodeIds();
 		undo_redo_state.resetData();
+		// Unsaved changes belong to the project being left; a new one must not
+		// inherit the flag (which would fire an immediate auto-save).
+		undo_redo_state.resetUnsavedActions();
 		clearSessionPassword();
 		clearSessionSnapshot();
 	});
