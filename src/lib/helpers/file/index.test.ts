@@ -150,6 +150,47 @@ describe('saveCurrentProject', () => {
 		expect(open_mock.mock.calls.map(([path]) => path)).toEqual(['/tmp/a.heda', '/tmp/b.heda']);
 		expect(undo_redo_state.resetUnsavedActions).toHaveBeenCalledTimes(2);
 	});
+
+	it('drops a queued save when another project took its place', async () => {
+		getCurrentProject_mock.mockReturnValueOnce({ id: 'p1', root_node_id: 'n1' });
+		getCurrentProject_mock.mockReturnValue({ id: 'p2', root_node_id: 'n2' });
+		await expect(saveCurrentProject('/tmp/x.heda', undo_redo_state)).resolves.toBe(false);
+		expect(open_mock).not.toHaveBeenCalled();
+		expect(undo_redo_state.resetUnsavedActions).not.toHaveBeenCalled();
+		expect(toast.warning).not.toHaveBeenCalled();
+	});
+
+	it('writes the snapshotted project when another loads mid-save', async () => {
+		const writes: Uint8Array[] = [];
+		let release_write: (() => void) | undefined;
+		const write_started = new Promise<void>((resolve) => {
+			write_mock.mockImplementation(async (bytes: Uint8Array) => {
+				writes.push(bytes);
+				resolve();
+				await new Promise<void>((resolve_release) => (release_write = resolve_release));
+			});
+		});
+		getCurrentProject_mock.mockReturnValue({
+			id: 'p1',
+			root_node_id: 'n1',
+			project_name: 'Old Project'
+		});
+		getAllChildNodes_mock.mockReturnValue([{ id: 'n1' }]);
+
+		const save = saveCurrentProject('/tmp/old.heda', undo_redo_state);
+		await write_started;
+		// Home cleared the old project and a new one loaded mid-write.
+		getCurrentProject_mock.mockReturnValue({ id: 'p2', root_node_id: 'n2' });
+		release_write?.();
+		await expect(save).resolves.toBe(false);
+		expect(undo_redo_state.resetUnsavedActions).not.toHaveBeenCalled();
+
+		const written = await decryptFilePayload<{ project: { project_name: string } }>(
+			new TextDecoder().decode(writes[0]),
+			'secret'
+		);
+		expect(written.project.project_name).toBe('Old Project');
+	});
 });
 
 function installFileSystem(entries: Record<string, Uint8Array>): Map<string, Uint8Array> {
