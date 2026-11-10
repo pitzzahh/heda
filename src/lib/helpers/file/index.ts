@@ -398,35 +398,47 @@ let save_queue: Promise<unknown> = Promise.resolve();
 /**
  * Writes the current project to `file_path` and clears the unsaved flag on
  * success. Returns whether the save went through; failures surface as toasts.
+ *
+ * The project and its nodes are snapshotted here, not when the queued save
+ * runs: the user can go Home (which clears the database) or load another file
+ * while an earlier save is still in flight, and reading the current project at
+ * execution time would write the wrong data to `file_path`.
  */
 export function saveCurrentProject(
 	file_path: string,
 	undo_redo_state: { resetUnsavedActions: () => void }
 ): Promise<boolean> {
-	const run = save_queue.then(() => performSave(file_path, undo_redo_state));
+	const current_project = getCurrentProject();
+
+	if (!current_project) {
+		console.error('Failed to save, no project found');
+		toast.warning('Failed to save, no project found', {
+			description: 'This is a system error and should not be here, the error has been logged.'
+		});
+		return Promise.resolve(false);
+	}
+
+	const file_data: FileExport = {
+		project: current_project,
+		nodes: getAllChildNodes(current_project.root_node_id, true)
+	};
+	const project_id = current_project.id;
+
+	const run = save_queue.then(() => performSave(file_path, project_id, file_data, undo_redo_state));
 	save_queue = run.catch(() => undefined);
 	return run;
 }
 
 async function performSave(
 	file_path: string,
+	project_id: string,
+	file_data: FileExport,
 	undo_redo_state: { resetUnsavedActions: () => void }
 ): Promise<boolean> {
 	try {
-		const current_project = getCurrentProject();
-
-		if (!current_project) {
-			console.error('Failed to save, no project found');
-			toast.warning('Failed to save, no project found', {
-				description: 'This is a system error and should not be here, the error has been logged.'
-			});
-			return false;
-		}
-
-		const file_data: FileExport = {
-			project: current_project,
-			nodes: getAllChildNodes(current_project.root_node_id, true)
-		};
+		// The workspace moved on while this save was queued (Home, another
+		// file). Writing now would clobber the new state, so drop it.
+		if (getCurrentProject()?.id !== project_id) return false;
 
 		const protection = getSessionProtection();
 		if (protection === 'device') {
@@ -442,6 +454,9 @@ async function performSave(
 			}
 			await writeEncryptedFile(file_data, session_password, file_path);
 		}
+		// Re-check before clearing: a project loaded while the write was in
+		// flight must keep its own unsaved flag.
+		if (getCurrentProject()?.id !== project_id) return false;
 		undo_redo_state.resetUnsavedActions();
 		return true;
 	} catch (err) {
