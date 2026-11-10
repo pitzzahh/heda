@@ -1,4 +1,4 @@
-import { getDatabase, initializeDatabase } from '../index.js';
+import { clearCollection, getDatabase, initializeDatabase } from '../index.js';
 import type { Project } from '#lib/types/db/index.js';
 import type { FileExport } from '#lib/types/main/index.js';
 import { clearQueryCache } from '../queries/index.js';
@@ -8,8 +8,8 @@ import { withNodeDefaults, withProjectDefaults } from './defaults.js';
 export function resetData(minimumDeletedTime: number = 0) {
 	void minimumDeletedTime;
 	const db = getDatabase();
-	db.projects.removeMany({});
-	db.nodes.removeMany({});
+	clearCollection(db.projects, db.projects_memory);
+	clearCollection(db.nodes, db.nodes_memory);
 	clearQueryCache();
 }
 

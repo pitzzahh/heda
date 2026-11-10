@@ -1,4 +1,5 @@
 import { Collection, createIndex } from '@signaldb/core';
+import type { BaseItem } from '@signaldb/core';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
 import { isTauri } from '@tauri-apps/api/core';
@@ -187,8 +188,13 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 				}
 			}
 		}
+		// The collections default to a plain array as their memory adapter; keep
+		// typed references to those arrays so `clearCollection` can drop every
+		// item in one pass without the O(n²) `removeMany({})` path.
+		const projects_memory: Project[] = [];
 		const projects = new Collection<Project>({
 			name: 'projects',
+			memory: projects_memory,
 			reactivity: svelteReactivityAdapter,
 			persistence:
 				useTauri && key
@@ -199,8 +205,10 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 						})
 					: undefined
 		});
+		const nodes_memory: Node[] = [];
 		const nodes = new Collection<Node>({
 			name: 'nodes',
+			memory: nodes_memory,
 			reactivity: svelteReactivityAdapter,
 			indices: [createIndex('parent_id'), createIndex('node_type'), createIndex('circuit_number')],
 			persistence:
@@ -213,7 +221,7 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 					: undefined
 		});
 		await Promise.all([projects.isReady(), nodes.isReady()]);
-		dbInstance = { projects, nodes };
+		dbInstance = { projects, nodes, projects_memory, nodes_memory };
 		// Child lookups reuse a shared snapshot, so few cursors remain per
 		// visible row. Cap stays well above the default without needing 10k.
 		projects.setMaxListeners(1_000);
@@ -233,4 +241,26 @@ export function getDatabase(): MyDatabaseCollections {
 		throw new Error('Database accessed before initializeDatabase() completed');
 	}
 	return dbInstance;
+}
+
+/**
+ * Drops every item from a collection in one shot.
+ *
+ * `Collection.removeMany({})` is O(n²) — it rescans the array and rebuilds the
+ * indices once per item — and emits one `removed` event per item. On a large
+ * project that froze the UI for seconds when leaving the workspace. The memory
+ * array is supplied by the caller (it is the adapter the collection was built
+ * with), so clearing it directly is O(1); `batch` then rebuilds the indices in
+ * one pass and a single `removed` event invalidates observers, cursors and the
+ * persistence adapter together.
+ */
+export function clearCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[]
+): void {
+	if (memory.length === 0) return;
+	const last_item = memory[memory.length - 1];
+	memory.length = 0;
+	collection.batch(() => {});
+	collection.emit('removed', last_item);
 }
