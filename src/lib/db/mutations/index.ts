@@ -1,7 +1,9 @@
 export {
 	addNode,
 	copyAndAddNodeById,
+	copyAndAddNodesById,
 	removeNode,
+	removeNodesById,
 	updateNode,
 	updateNodeParentById
 } from './nodes.js';
