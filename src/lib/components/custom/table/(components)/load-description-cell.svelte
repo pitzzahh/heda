@@ -5,7 +5,6 @@
 		load_description: string;
 		node_id: string;
 		node_type: 'panel' | 'load';
-		node: PhaseLoadSchedule;
 	}
 </script>
 
@@ -13,9 +12,10 @@
 	import { IsFocusWithin } from 'runed';
 	import { toast } from 'svelte-sonner';
 	import { updateLoadDescription } from '#lib/db/mutations/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
-	let { load_description, node_id, node_type, node }: Props = $props();
+	let { load_description, node_id, node_type }: Props = $props();
 	const load_description_suffix = $derived(load_description.split(' - ').at(-1));
 	// Snapshot at mount: local edit state, never tracks later prop changes.
 	function initialDescription() {
@@ -30,6 +30,7 @@
 
 	function saveLoadDescChanges() {
 		try {
+			const previous_node = getNode(node_id);
 			const updated_node = updateLoadDescription({
 				node_id,
 				load_description:
@@ -41,7 +42,7 @@
 			undo_redo_state.setActionToUndo({
 				action: 'update_node',
 				data: updated_node as unknown as PhaseLoadSchedule,
-				previous_data: node
+				previous_data: previous_node as unknown as PhaseLoadSchedule
 			});
 			toast.success('Load description updated successfully');
 		} catch (err) {

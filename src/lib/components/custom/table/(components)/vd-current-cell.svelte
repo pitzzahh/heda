@@ -13,19 +13,21 @@
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { useAtAsCurrentsValue } from '#lib/db/mutations/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { current, is_at_used, node }: Props = $props();
 	let undo_redo_state = getUndoRedoState();
 
 	function handleChangeCurrentsValue() {
+		const previous_node = getNode(node.id);
 		const updated_data = useAtAsCurrentsValue(
 			node.id,
 			is_at_used ? false : true
 		) as unknown as VoltageDrop;
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
-			previous_data: node,
+			previous_data: previous_node as unknown as VoltageDrop,
 			data: updated_data
 		});
 	}
