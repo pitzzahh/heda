@@ -34,6 +34,7 @@
 	import PasswordDialog from '../password-dialog.svelte';
 	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+	import { untrack } from 'svelte';
 	let { root_node }: Props = $props();
 
 	let component_state = $state({
@@ -44,6 +45,7 @@
 
 	const undo_redo_state = getUndoRedoState();
 	const settings_state = getSettingsState();
+	let last_autosaved_version = -1;
 	const project_state = getProjectState();
 	const leave = createLeaveProject();
 
@@ -101,11 +103,21 @@
 		}
 	}
 
-	// Auto-saver: persists to disk whenever unsaved actions appear while enabled.
+	// Auto-saver: writes each edit version once. Reading `saving` re-runs it after an
+	// in-flight save, so edits made during that write are saved next; a failed save
+	// is not retried until the next edit.
 	$effect(() => {
-		if (undo_redo_state.has_unsaved_actions && settings_state.auto_save_enabled) {
-			handleSave();
+		const version = undo_redo_state.edit_version;
+		if (
+			!undo_redo_state.has_unsaved_actions ||
+			!settings_state.auto_save_enabled ||
+			component_state.saving ||
+			version === last_autosaved_version
+		) {
+			return;
 		}
+		last_autosaved_version = version;
+		untrack(handleSave);
 	});
 </script>
 

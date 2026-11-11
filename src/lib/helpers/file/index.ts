@@ -392,7 +392,7 @@ let save_queue: Promise<unknown> = Promise.resolve();
  */
 export function saveCurrentProject(
 	file_path: string,
-	undo_redo_state: { resetUnsavedActions: () => void }
+	undo_redo_state: { edit_version: number; resetUnsavedActions: (saved_version: number) => void }
 ): Promise<boolean> {
 	const current_project = getCurrentProject();
 
@@ -409,8 +409,12 @@ export function saveCurrentProject(
 		nodes: getAllChildNodes(current_project.root_node_id, true)
 	};
 	const project_id = current_project.id;
+	// Edits made while this save is queued or writing are not in `file_data`.
+	const edit_version = undo_redo_state.edit_version;
 
-	const run = save_queue.then(() => performSave(file_path, project_id, file_data, undo_redo_state));
+	const run = save_queue.then(() =>
+		performSave(file_path, project_id, file_data, edit_version, undo_redo_state)
+	);
 	save_queue = run.catch(() => undefined);
 	return run;
 }
@@ -419,7 +423,8 @@ async function performSave(
 	file_path: string,
 	project_id: string,
 	file_data: FileExport,
-	undo_redo_state: { resetUnsavedActions: () => void }
+	edit_version: number,
+	undo_redo_state: { edit_version: number; resetUnsavedActions: (saved_version: number) => void }
 ): Promise<boolean> {
 	try {
 		// The workspace moved on while this save was queued (Home, another
@@ -443,7 +448,7 @@ async function performSave(
 		// Re-check before clearing: a project loaded while the write was in
 		// flight must keep its own unsaved flag.
 		if (getCurrentProject()?.id !== project_id) return false;
-		undo_redo_state.resetUnsavedActions();
+		undo_redo_state.resetUnsavedActions(edit_version);
 		return true;
 	} catch (err) {
 		console.error(`Failed to save file: ${JSON.stringify(err)}`);

@@ -1,3 +1,4 @@
+import { untrack } from 'svelte';
 import { getState, setState } from '#lib/state/index.svelte.js';
 import { UNDO_REDO_STATE_CTX } from '#lib/state/constants.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
@@ -43,12 +44,18 @@ export class UndoRedoState {
 	private redo_stack = $state<Action<PhaseLoadSchedule>[]>([]);
 
 	has_unsaved_actions = $state(false);
+	/** Bumped on every edit so a save can tell whether newer edits landed while it wrote. */
+	edit_version = $state(0);
 
-	resetUnsavedActions() {
+	/** Pass the `edit_version` a save snapshotted; the flag only clears if nothing changed since. */
+	resetUnsavedActions(saved_version?: number) {
+		if (saved_version !== undefined && saved_version !== this.edit_version) return;
 		this.has_unsaved_actions = false;
 	}
 
 	setHasUnsavedActions() {
+		// Untracked read: effects call this, and tracking the counter would re-run them forever.
+		this.edit_version = untrack(() => this.edit_version) + 1;
 		this.has_unsaved_actions = true;
 	}
 

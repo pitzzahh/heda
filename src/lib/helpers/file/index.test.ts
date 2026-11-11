@@ -102,7 +102,7 @@ describe('writeEncryptedFile', () => {
 });
 
 describe('saveCurrentProject', () => {
-	const undo_redo_state = { resetUnsavedActions: vi.fn() };
+	const undo_redo_state = { edit_version: 0, resetUnsavedActions: vi.fn() };
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -121,6 +121,15 @@ describe('saveCurrentProject', () => {
 		);
 		expect(undo_redo_state.resetUnsavedActions).toHaveBeenCalledTimes(1);
 		expect(toast.error).not.toHaveBeenCalled();
+	});
+
+	it('clears the unsaved flag with the edit version it snapshotted', async () => {
+		const state = { edit_version: 3, resetUnsavedActions: vi.fn() };
+		const save = saveCurrentProject('/tmp/x.heda', state);
+		// An edit lands while the save is queued.
+		state.edit_version = 4;
+		await expect(save).resolves.toBe(true);
+		expect(state.resetUnsavedActions).toHaveBeenCalledWith(3);
 	});
 
 	it('fails without a loaded project', async () => {
