@@ -1,0 +1,20 @@
+# Formatter settings for `bun fmt`, which replaces Prettier.
+# The options are Prettier's, under the same names.
+[fmt]
+printWidth = 100
+useTabs = true
+singleQuote = true
+trailingComma = "none"
+ignorePatterns = [
+	"build/",
+	".svelte-kit/",
+	"dist/",
+	"coverage/",
+	"src-tauri/target/",
+	"src-tauri/gen/",
+	# Line-based template output, not source code.
+	"src-tauri/linux/*.hbs",
+	"package-lock.json",
+	"pnpm-lock.yaml",
+	"yarn.lock"
+]
