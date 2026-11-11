@@ -31,8 +31,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			return renderComponent(LoadDescriptionCell, {
 				load_description: data.load_description,
 				node_id: data.id,
-				node_type: data.node_type as 'panel' | 'load',
-				node: data
+				node_type: data.node_type as 'panel' | 'load'
 			});
 		},
 		footer: () => 'MAIN'

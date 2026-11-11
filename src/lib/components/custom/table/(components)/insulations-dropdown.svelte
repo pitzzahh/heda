@@ -16,6 +16,7 @@
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
 	import { changeInsulation } from '#lib/db/mutations/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
@@ -42,11 +43,12 @@
 	});
 
 	function handleChangeInsulation(insulation: Insulations) {
+		const previous_node = getNode(node.id);
 		const updated_node = changeInsulation({ node_id: node.id, insulation, type });
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			data: updated_node as unknown as PhaseLoadSchedule,
-			previous_data: node
+			previous_data: previous_node as unknown as PhaseLoadSchedule
 		});
 	}
 </script>
