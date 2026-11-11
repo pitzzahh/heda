@@ -4,7 +4,7 @@ import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import type { Node } from '#lib/types/db/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 import { evictNodeFromCache } from '../queries/index.js';
-import { loadSnapshot } from '../queries/snapshot.js';
+import { loadSnapshot, type LoadSnapshot } from '../queries/snapshot.js';
 import { withNodeDefaults } from './defaults.js';
 
 export function addNode({
@@ -51,10 +51,79 @@ export function addNode({
 	}
 }
 
-export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
+// Collect the whole subtree in preorder (root first). Callers clone from one
+// snapshot so a batch copy never rebuilds the graph between copies.
+function collectSubtree(snapshot: LoadSnapshot, node_id: string): Node[] {
+	const root = snapshot.node_by_id.get(node_id);
+	if (!root) throw Error('Node not found');
+
+	const subtree: Node[] = [];
+	const stack: Node[] = [root];
+	const seen = new Set<string>();
+	while (stack.length > 0) {
+		const current = stack.pop() as Node;
+		if (seen.has(current.id)) continue;
+		seen.add(current.id);
+		subtree.push(current);
+		const children = snapshot.children_by_parent.get(current.id) ?? [];
+		for (let index = children.length - 1; index >= 0; index -= 1) {
+			stack.push(children[index] as Node);
+		}
+	}
+	return subtree;
+}
+
+function cloneSubtree(
+	snapshot: LoadSnapshot,
+	subtree: Node[],
+	node_id: string,
+	target_parent_id: string | undefined,
+	circuit_number: number
+): { clones: Node[]; root: Node } {
+	const id_map = new Map<string, string>();
+	for (const node of subtree) {
+		id_map.set(node.id, crypto.randomUUID());
+	}
+
+	let root: Node | undefined;
+	const clones = subtree.map((node) => {
+		const is_root = node.id === node_id;
+		const clone = withNodeDefaults({
+			...node,
+			id: id_map.get(node.id) as string,
+			parent_id: is_root ? target_parent_id : (id_map.get(node.parent_id as string) as string),
+			circuit_number: is_root ? circuit_number : node.circuit_number,
+			panel_data: node.panel_data ? structuredClone(node.panel_data) : undefined,
+			load_data: node.load_data ? structuredClone(node.load_data) : undefined,
+			child_ids: (snapshot.children_by_parent.get(node.id) ?? [])
+				.map((child) => id_map.get(child.id) as string)
+				.filter(Boolean)
+		});
+		if (is_root) root = clone;
+		return clone;
+	});
+
+	if (!root) throw Error('Node not found');
+	return { clones, root };
+}
+
+/**
+ * Copies a node and its subtree `count` times as siblings, in one database
+ * batch. The old loop called `copyAndAddNodeById` per copy, which rebuilt the
+ * snapshot, the indices and the persistence file for every copy; 100 copies of
+ * a 30-load panel meant 3,000+ nodes inserted one panel at a time.
+ */
+export async function copyAndAddNodesById(
+	node_id: string,
+	count: number,
+	sub_parent_id?: string
+): Promise<Node[]> {
 	const database = getDatabase();
 
 	try {
+		const copy_count = Math.floor(count);
+		if (!Number.isFinite(copy_count) || copy_count <= 0) return [];
+
 		const snapshot = loadSnapshot();
 		const existing_root = snapshot.node_by_id.get(node_id) as Node | undefined;
 
@@ -67,68 +136,45 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 			? (snapshot.children_by_parent.get(target_parent_id) ?? [])
 			: [];
 		const used_numbers = new Set(siblings.map((node) => node.circuit_number));
+		const subtree = collectSubtree(snapshot, node_id);
+
+		const clones: Node[] = [];
+		const roots: Node[] = [];
 		let next_circuit_num = existing_root.circuit_number ?? 1;
-		while (used_numbers.has(next_circuit_num)) {
+
+		for (let index = 0; index < copy_count; index += 1) {
+			while (used_numbers.has(next_circuit_num)) {
+				next_circuit_num += 1;
+			}
+			used_numbers.add(next_circuit_num);
+			const created = cloneSubtree(snapshot, subtree, node_id, target_parent_id, next_circuit_num);
+			clones.push(...created.clones);
+			roots.push(created.root);
 			next_circuit_num += 1;
 		}
 
-		// Collect the whole subtree first, then insert it in one batch so a
-		// large panel costs one notification instead of one per node.
-		const subtree: Node[] = [];
-		const stack: Node[] = [existing_root];
-		const seen = new Set<string>();
-		while (stack.length > 0) {
-			const current = stack.pop() as Node;
-			if (seen.has(current.id)) continue;
-			seen.add(current.id);
-			subtree.push(current);
-			const children = snapshot.children_by_parent.get(current.id) ?? [];
-			for (let index = children.length - 1; index >= 0; index -= 1) {
-				stack.push(children[index] as Node);
-			}
-		}
-
-		const id_map = new Map<string, string>();
-		for (const node of subtree) {
-			id_map.set(node.id, crypto.randomUUID());
-		}
-
-		const clones = subtree.map((node) => {
-			const is_root = node.id === node_id;
-			const new_parent_id = is_root
-				? (target_parent_id as string)
-				: (id_map.get(node.parent_id as string) as string);
-			const child_ids = (snapshot.children_by_parent.get(node.id) ?? [])
-				.map((child) => id_map.get(child.id) as string)
-				.filter(Boolean);
-			return withNodeDefaults({
-				...node,
-				id: id_map.get(node.id) as string,
-				parent_id: new_parent_id,
-				circuit_number: is_root ? next_circuit_num : node.circuit_number,
-				panel_data: node.panel_data ? structuredClone(node.panel_data) : undefined,
-				load_data: node.load_data ? structuredClone(node.load_data) : undefined,
-				child_ids
-			});
-		});
-
 		database.nodes.insertMany(clones);
-		const created_root = clones[0];
 
 		if (target_parent_id) {
 			const existing_parent = database.nodes.findOne({ id: target_parent_id });
 			if (existing_parent) {
 				database.nodes.updateOne(
 					{ id: existing_parent.id },
-					{ $set: { child_ids: [...existing_parent.child_ids, created_root.id] } }
+					{ $set: { child_ids: [...existing_parent.child_ids, ...roots.map((root) => root.id)] } }
 				);
 			}
 		}
 
-		return created_root;
+		return roots;
 	} catch (err) {
-		console.error(`Error copying and adding a node: ${JSON.stringify(err)}`);
+		console.error(`Error copying and adding nodes: ${JSON.stringify(err)}`);
+		return [];
 	}
+}
+
+export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string) {
+	const [created_root] = await copyAndAddNodesById(node_id, 1, sub_parent_id);
+	return created_root;
 }
 
 export function updateNode({
@@ -240,6 +286,64 @@ export function removeNode(
 		};
 	} catch (error) {
 		console.error(`Failed to remove node ${id}:`, error);
+	}
+}
+
+/**
+ * Removes many subtrees in one `removeMany`, sharing a single snapshot.
+ * Undo/redo and multi-select delete used to call `removeNode` per id, which
+ * rebuilt the snapshot and persisted the whole collection once per node.
+ * Roots nested inside an earlier root are skipped instead of failing.
+ */
+export function removeNodesById(
+	ids: string[]
+): { removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }[] {
+	const database = getDatabase();
+
+	try {
+		const snapshot = loadSnapshot();
+		const removed = new Set<string>();
+		const subtree_ids: string[] = [];
+		const results: {
+			removed_node: PhaseLoadSchedule;
+			children_nodes: PhaseLoadSchedule[];
+		}[] = [];
+
+		for (const id of ids) {
+			const root = snapshot.node_by_id.get(id);
+			if (!root || removed.has(id)) continue;
+
+			const subtree: Node[] = [];
+			const stack: Node[] = [root];
+			while (stack.length > 0) {
+				const current = stack.pop() as Node;
+				if (removed.has(current.id)) continue;
+				removed.add(current.id);
+				subtree.push(current);
+				const children = snapshot.children_by_parent.get(current.id) ?? [];
+				for (let index = children.length - 1; index >= 0; index -= 1) {
+					stack.push(children[index] as Node);
+				}
+			}
+
+			for (const node of subtree) subtree_ids.push(node.id);
+			results.push({
+				removed_node: subtree[0] as unknown as PhaseLoadSchedule,
+				children_nodes: subtree.slice(1) as unknown as PhaseLoadSchedule[]
+			});
+		}
+
+		if (subtree_ids.length > 0) {
+			database.nodes.removeMany({ id: { $in: subtree_ids } });
+			for (const node_id of subtree_ids) {
+				evictNodeFromCache(node_id);
+			}
+		}
+
+		return results;
+	} catch (error) {
+		console.error('Failed to remove nodes:', error);
+		return [];
 	}
 }
 

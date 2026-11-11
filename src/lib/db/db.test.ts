@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
@@ -14,9 +14,11 @@ import {
 import {
 	addNode,
 	copyAndAddNodeById,
+	copyAndAddNodesById,
 	createProject,
 	loadCurrentProject,
 	removeNode,
+	removeNodesById,
 	resetData,
 	updateNode
 } from './mutations/index.js';
@@ -491,6 +493,112 @@ describe('db (signaldb)', () => {
 			expect(child.load_data).not.toBe(getNode(child.id)?.load_data);
 		}
 		expect(getChildNodesByParentId(panel!.id)).toHaveLength(2);
+	});
+
+	it('copies many panels with one insert and one parent update', async () => {
+		resetData();
+		const created = await createProject('Batch Copy', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})!;
+		for (let circuit_number = 1; circuit_number <= 30; circuit_number += 1) {
+			addNode({
+				parent_id: panel.id,
+				load_data: {
+					load_type: default_load_types.GENERAL_LIGHTING,
+					quantity: 10,
+					varies: '0',
+					load_description: `Load ${circuit_number}`,
+					continuous: false,
+					circuit_number,
+					length: 10,
+					ambient_temperature: 30,
+					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+					config_preference: 'CUSTOM'
+				} as never
+			});
+		}
+
+		const database = getDatabase();
+		const insert_many = vi.spyOn(database.nodes, 'insertMany');
+		const update_one = vi.spyOn(database.nodes, 'updateOne');
+
+		const copies = await copyAndAddNodesById(panel.id, 100);
+
+		expect(copies).toHaveLength(100);
+		// One persistence-visible batch instead of one per copy.
+		expect(insert_many).toHaveBeenCalledTimes(1);
+		expect(update_one).toHaveBeenCalledTimes(1);
+		expect(database.nodes.find({}).count()).toBe(2 + 30 + 100 * 31);
+		expect(getChildNodesByParentId(root)).toHaveLength(101);
+		expect(new Set(copies.map((copy) => copy.circuit_number)).size).toBe(100);
+		for (const copy of copies) {
+			expect(copy.parent_id).toBe(root);
+			expect(getChildNodesByParentId(copy.id)).toHaveLength(30);
+		}
+
+		insert_many.mockRestore();
+		update_one.mockRestore();
+	});
+
+	it('removes many subtrees with one bulk delete', async () => {
+		resetData();
+		const created = await createProject('Batch Remove', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'LP-A',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})!;
+		addNode({
+			parent_id: panel.id,
+			load_data: {
+				load_type: default_load_types.GENERAL_LIGHTING,
+				quantity: 10,
+				varies: '0',
+				load_description: 'Load 1',
+				continuous: false,
+				circuit_number: 1,
+				length: 10,
+				ambient_temperature: 30,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				config_preference: 'CUSTOM'
+			} as never
+		});
+		const copies = await copyAndAddNodesById(panel.id, 10);
+
+		const database = getDatabase();
+		const remove_many = vi.spyOn(database.nodes, 'removeMany');
+		const removed = removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
+
+		expect(remove_many).toHaveBeenCalledTimes(1);
+		expect(removed).toHaveLength(11);
+		expect(removed.every((entry) => entry.children_nodes.length === 1)).toBe(true);
+		expect(getChildNodesByParentId(root)).toHaveLength(0);
+		expect(getChildNodesByParentId(panel.id)).toHaveLength(0);
+
+		remove_many.mockRestore();
 	});
 
 	it('removes a panel subtree in one batch', async () => {
