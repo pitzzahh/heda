@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	FileDeviceKeyError,
 	FileLegacyError,
@@ -17,6 +17,32 @@ const GOLDEN =
 	'G7JNhp76jXwfI3zwqaaeoQ==:eb+1N45kbgXIluv1PzsA3T6mCIgRgvuNJptMBtqkBB0=:BtWa2mNahLn5SnEMiHsM5/ylnE3RmB/DYGgnsUMwK4s=';
 
 describe('file format', () => {
+	afterEach(() => vi.restoreAllMocks());
+
+	it('detects a version without parsing the payload', async () => {
+		const raw = await packFileV3({ padding: 'x'.repeat(1_000_000) }, DEVICE_KEY);
+		const parse = vi.spyOn(JSON, 'parse');
+
+		expect(detectFileVersion(raw)).toBe(3);
+		expect(parse).not.toHaveBeenCalled();
+	});
+
+	it('parses only the decrypted payload', async () => {
+		const raw = await packFileV3({ a: 1 }, DEVICE_KEY);
+		const parse = vi.spyOn(JSON, 'parse');
+
+		await expect(decryptFilePayload(raw, null, DEVICE_KEY)).resolves.toEqual({ a: 1 });
+		expect(parse).toHaveBeenCalledTimes(1);
+	});
+
+	it('serializes the payload once when packing', async () => {
+		const stringify = vi.spyOn(JSON, 'stringify');
+
+		await packFileV3({ a: 1 }, DEVICE_KEY);
+
+		expect(stringify).toHaveBeenCalledTimes(1);
+	});
+
 	it('detects v2 envelopes', async () => {
 		expect(detectFileVersion(await packFileV2({ a: 1 }, 'pw'))).toBe(2);
 	});
