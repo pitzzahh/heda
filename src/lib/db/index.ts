@@ -1,5 +1,5 @@
 import { Collection, createIndex } from '@signaldb/core';
-import type { BaseItem } from '@signaldb/core';
+import type { BaseItem, Changeset, PersistenceAdapter } from '@signaldb/core';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
 import { isTauri } from '@tauri-apps/api/core';
@@ -159,6 +159,47 @@ async function sessionKey(): Promise<string | null> {
 	}
 }
 
+// Long enough to fold a multi-step edit into one write, short enough that a
+// same-tab reload rarely misses the last edit.
+const SESSION_SAVE_DELAY_MS = 100;
+
+/**
+ * Makes a burst of mutations cost one session-file write.
+ *
+ * SignalDB calls `save` with a copy of the collection taken at the first
+ * change, then calls it again for every change that arrived meanwhile, and the
+ * adapter rewrites the whole file each time. Waiting briefly and writing the
+ * live memory array catches the rest of the burst; the follow-up save is
+ * skipped when the written copy already holds every changed item. Items are
+ * replaced (never mutated) on update, so identity tells which version was
+ * written.
+ */
+export function coalesceSaves<T extends BaseItem<string>>(
+	inner: PersistenceAdapter<T, string>,
+	memory: T[],
+	delay_ms = SESSION_SAVE_DELAY_MS
+): PersistenceAdapter<T, string> {
+	let written: Set<T> | null = null;
+	return {
+		...inner,
+		async save(_items, changes) {
+			if (written && isWritten(changes, written)) return;
+			await new Promise((resolve) => setTimeout(resolve, delay_ms));
+			const items = memory.slice();
+			await inner.save(items, changes);
+			written = new Set(items);
+		}
+	};
+}
+
+function isWritten<T>(changes: Changeset<T>, written: Set<T>): boolean {
+	return (
+		changes.added.every((item) => written.has(item)) &&
+		changes.modified.every((item) => written.has(item)) &&
+		changes.removed.every((item) => !written.has(item))
+	);
+}
+
 /**
  * Session-scoped: fresh launches start empty, same-tab reloads restore.
  * The only async part of the database; after it settles, `getDatabase()` is sync.
@@ -198,11 +239,14 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 			reactivity: svelteReactivityAdapter,
 			persistence:
 				useTauri && key
-					? adapter<Project>(PROJECTS_FILE, {
-							encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
-							decrypt: async (encrypted) =>
-								JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Project[]
-						})
+					? coalesceSaves(
+							adapter<Project>(PROJECTS_FILE, {
+								encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
+								decrypt: async (encrypted) =>
+									JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Project[]
+							}),
+							projects_memory
+						)
 					: undefined
 		});
 		const nodes_memory: Node[] = [];
@@ -213,11 +257,14 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 			indices: [createIndex('parent_id'), createIndex('node_type'), createIndex('circuit_number')],
 			persistence:
 				useTauri && key
-					? adapter<Node>(NODES_FILE, {
-							encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
-							decrypt: async (encrypted) =>
-								JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Node[]
-						})
+					? coalesceSaves(
+							adapter<Node>(NODES_FILE, {
+								encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
+								decrypt: async (encrypted) =>
+									JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Node[]
+							}),
+							nodes_memory
+						)
 					: undefined
 		});
 		await Promise.all([projects.isReady(), nodes.isReady()]);

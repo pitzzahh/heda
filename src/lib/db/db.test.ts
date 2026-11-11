@@ -4,9 +4,11 @@ import {
 	default_load_types,
 	default_phases
 } from '#lib/constants/index.js';
+import { Collection } from '@signaldb/core';
 import {
 	StrongholdTimeoutError,
 	clearCollection,
+	coalesceSaves,
 	getDatabase,
 	initializeDatabase,
 	withTimeout
@@ -685,6 +687,38 @@ describe('db (signaldb)', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		expect(getNode(next!.root_node_id)?.id).toBe(next!.root_node_id);
+	});
+
+	it('writes a burst of mutations to the session file once', async () => {
+		type Item = { id: string; value: number };
+		const memory: Item[] = [];
+		const save = vi.fn<(items: Item[]) => Promise<void>>(async () => {});
+		const collection = new Collection<Item>({
+			memory,
+			persistence: coalesceSaves<Item>(
+				{ register: async () => {}, load: async () => ({ items: [] }), save },
+				memory,
+				5
+			)
+		});
+		await collection.isReady();
+
+		collection.insert({ id: 'a', value: 1 });
+		collection.insert({ id: 'b', value: 2 });
+		collection.updateOne({ id: 'a' }, { $set: { value: 3 } });
+		await vi.waitFor(() => expect(save).toHaveBeenCalled());
+		await new Promise((resolve) => setTimeout(resolve, 30));
+
+		expect(save).toHaveBeenCalledTimes(1);
+		expect(save.mock.calls[0][0]).toEqual([
+			{ id: 'a', value: 3 },
+			{ id: 'b', value: 2 }
+		]);
+
+		// A change after the write still reaches the file.
+		collection.removeOne({ id: 'b' });
+		await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+		expect(save.mock.calls[1][0]).toEqual([{ id: 'a', value: 3 }]);
 	});
 
 	it('passes fast promises through the Stronghold timeout', async () => {
