@@ -174,9 +174,10 @@ fn close_main_window(app: AppHandle) {
 
 pub fn run() {
     let log_plugin = tauri_plugin_log::Builder::new()
+        // The platform log directory (e.g. ~/.local/share/<identifier>/logs on
+        // Linux), not the user's home folder.
         .target(tauri_plugin_log::Target::new(
-            tauri_plugin_log::TargetKind::Folder {
-                path: dirs::home_dir().unwrap(),
+            tauri_plugin_log::TargetKind::LogDir {
                 file_name: Some("heda-app".to_string()),
             },
         ))
