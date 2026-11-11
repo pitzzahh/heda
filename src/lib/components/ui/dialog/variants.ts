@@ -23,10 +23,15 @@ export const dialogFrame = tv({
 			'data-starting-style:opacity-0',
 			'motion-reduce:transition-none'
 		],
-		panel: 'rounded-2xl border border-border/70 shadow-[var(--overlay-shadow)]',
+		// The top hairline catches the light like the edge of a drafting sheet.
+		// No `relative` here: it would merge over the popup's `fixed` via `cn`.
+		panel: [
+			'rounded-2xl border border-border/70 shadow-[var(--overlay-shadow)]',
+			"before:pointer-events-none before:absolute before:inset-x-7 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-foreground/10 before:to-transparent before:content-['']"
+		],
 		// The icon-only close in the corner; a close with children styles itself.
 		close:
-			'absolute top-3 right-3 grid size-8 place-items-center rounded-md text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+			'absolute top-4 right-4 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
 		footer: 'flex items-center justify-end gap-2',
 		body: 'relative overflow-hidden'
 	},
@@ -91,7 +96,12 @@ export const dialogFrame = tv({
 				footer: 'px-2 pt-2 pb-1',
 				body: 'rounded-xl border border-border bg-popover p-5'
 			},
-			default: { panel: 'bg-popover p-6', footer: 'pt-6', body: '' }
+			default: {
+				panel: 'bg-popover p-6',
+				// Full-bleed action bar: the negative margins cancel the panel padding.
+				footer: '-mx-6 -mb-6 mt-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',
+				body: ''
+			}
 		}
 	},
 	defaultVariants: { motion: 'zoom', variant: 'default' }

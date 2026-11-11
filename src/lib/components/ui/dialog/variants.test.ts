@@ -64,6 +64,16 @@ describe('dialogFrame', () => {
 		expect(popup).toContain('var(--dialog-scale,1)');
 	});
 
+	test('panel never overrides the popup position', () => {
+		// Content composes popup then panel through `cn`, where position utilities
+		// collide: a `relative` panel replaces `fixed` and drops the dialog out of
+		// its viewport centering.
+		for (const variant of ['default', 'framed'] as const) {
+			const panel = dialogFrame({ variant }).panel();
+			expect(panel, variant).not.toMatch(/(^|\s)(static|relative|absolute|sticky|fixed)(\s|$)/);
+		}
+	});
+
 	test('uses only the data-state bits-ui emits', () => {
 		for (const motion of MOTIONS) {
 			const popup = dialogFrame({ motion }).popup();
