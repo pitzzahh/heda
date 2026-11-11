@@ -27,7 +27,8 @@ export class ProjectState {
 			current_project: undefined
 		});
 		this.persisted_state = _persisted_state;
-		this.validateRecentProjects();
+		// Fire and forget: the constructor cannot await, and the merge tolerates edits meanwhile.
+		void this.validateRecentProjects();
 		this.setProjectLoaded(this.persisted_state.current.loaded);
 		this.recent_projects = this.persisted_state.current.recent_projects;
 		if (recent_project) this.addRecentProject(recent_project);
@@ -132,12 +133,27 @@ export class ProjectState {
 	}
 
 	async validateRecentProjects() {
-		this.persisted_state.current.recent_projects = await Promise.all(
-			this.persisted_state.current.recent_projects?.map(async (project) => {
-				project.exists = await exists(project.project_path);
-				return project;
-			}) || []
+		const checks = await Promise.all(
+			(this.persisted_state.current.recent_projects ?? []).map(async ({ id, project_path }) => {
+				try {
+					return [id, await exists(project_path)] as const;
+				} catch {
+					// Unreadable path (scope, permissions): keep the last known state.
+					return [id, undefined] as const;
+				}
+			})
 		);
+		const found: Record<string, boolean | undefined> = Object.fromEntries(checks);
+		// Merge into the list as it is now, so projects added or removed while the
+		// checks ran are not overwritten by the list read before them.
+		this.persisted_state.current = {
+			...this.persisted_state.current,
+			recent_projects: this.persisted_state.current.recent_projects?.map((project) => {
+				const on_disk = found[project.id];
+				return on_disk === undefined ? project : { ...project, exists: on_disk };
+			})
+		};
+		this.recent_projects = this.persisted_state.current.recent_projects;
 	}
 }
 export function setProjectState(recent_project?: RecentProject) {
