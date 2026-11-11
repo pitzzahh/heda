@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { TrashIcon, XCircleIcon } from '#lib/assets/icons/index.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-	import { removeNode } from '#lib/db/mutations/index.js';
+	import { removeNodesById } from '#lib/db/mutations/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import ConfirmationDialog from '../../confirmation-dialog.svelte';
 	import { fly } from 'svelte/transition';
 	import Button from '#lib/components/ui/button/button.svelte';
@@ -18,21 +17,15 @@
 	});
 
 	function handleRemoveSelectedItems() {
-		let results = [] as { data: PhaseLoadSchedule; children_nodes?: PhaseLoadSchedule[] }[];
 		component_state.button_state = 'processing';
 		const toast_id = toast.loading(
 			`Removing ${select_nodes_to_delete_state.selected_nodes_id.size} items`
 		);
-		for (const node_id of select_nodes_to_delete_state.selected_nodes_id) {
-			const result = removeNode(node_id);
-
-			if (result) {
-				results = [
-					...results,
-					{ data: result.removed_node, children_nodes: result.children_nodes }
-				];
-			}
-		}
+		const removed = removeNodesById([...select_nodes_to_delete_state.selected_nodes_id]);
+		const results = removed.map(({ removed_node, children_nodes }) => ({
+			data: removed_node,
+			children_nodes
+		}));
 
 		undo_redo_state.setActionToUndo({
 			action: 'batch_delete',

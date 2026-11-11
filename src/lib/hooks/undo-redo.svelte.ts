@@ -8,6 +8,7 @@ import {
 	copyAndAddNodeById,
 	overrideField,
 	removeNode,
+	removeNodesById,
 	updateNode,
 	type FieldType
 } from '#lib/db/mutations/index.js';
@@ -126,16 +127,11 @@ export class UndoRedoState {
 				batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
 			}
 		} else {
-			for (const data of last_action.batch_data) {
-				const result = removeNode(data.data.id);
-
-				if (result) {
-					batch_data = [
-						...batch_data,
-						{ data: result.removed_node, children_nodes: result.children_nodes }
-					];
-				}
-			}
+			const removed = removeNodesById(last_action.batch_data.map((batch) => batch.data.id));
+			batch_data = removed.map(({ removed_node, children_nodes }) => ({
+				data: removed_node,
+				children_nodes
+			}));
 		}
 
 		return batch_data;
