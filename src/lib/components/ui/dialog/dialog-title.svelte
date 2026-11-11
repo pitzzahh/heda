@@ -9,7 +9,7 @@
 	{...rest}
 	data-slot="dialog-title"
 	class={cn(
-		'text-foreground [&>svg]:text-muted-foreground flex items-center gap-2 text-lg font-semibold [&>svg]:size-5',
+		'text-foreground [&>svg]:text-muted-foreground flex items-center gap-2 text-xl leading-snug font-semibold tracking-tight text-balance [&>svg]:size-5',
 		classProp
 	)}
 />
