@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const { exists } = vi.hoisted(() => ({ exists: vi.fn() }));
-vi.mock('@tauri-apps/plugin-fs', () => ({ exists }));
+vi.mock('#lib/helpers/file/index.js', () => ({ allowProjectFolder: exists }));
 
 import { ProjectState } from './project-state.svelte.js';
 

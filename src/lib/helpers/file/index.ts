@@ -89,6 +89,16 @@ export async function getFileName(path: string): Promise<string | undefined> {
 	}
 }
 
+/**
+ * Lets the fs plugin reach the folder of an existing `.heda` file (the file and
+ * the temp/backup files written next to it). The capability grants no user
+ * folders, so call this before touching a project path outside a dialog.
+ * Resolves `false` when the file does not exist.
+ */
+export async function allowProjectFolder(path: string): Promise<boolean> {
+	return invoke<boolean>('allow_project_folder', { path });
+}
+
 export async function doesFileExists(
 	path: string | URL,
 	options?: ExistsOptions
@@ -184,6 +194,7 @@ export async function handleLoadFile(
 		// all work on the same string.
 		let raw: string;
 		try {
+			await allowProjectFolder(complete_file_path);
 			raw = new TextDecoder().decode(await readFile(complete_file_path));
 		} catch {
 			_idle?.();

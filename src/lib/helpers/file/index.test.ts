@@ -250,6 +250,22 @@ describe('handleLoadFile', () => {
 			nodes: []
 		});
 	});
+
+	it('grants the project folder before reading the file', async () => {
+		const path = '/tmp/device.heda';
+		const raw = await packFileV3(
+			{ project: { id: 'p1', project_name: 'Project' }, nodes: [] },
+			DEVICE_KEY
+		);
+		installFileSystem({ [path]: new TextEncoder().encode(raw) });
+
+		await handleLoadFile(path);
+
+		expect(invoke_mock).toHaveBeenCalledWith('allow_project_folder', { path });
+		expect(invoke_mock.mock.invocationCallOrder[0]).toBeLessThan(
+			read_file_mock.mock.invocationCallOrder[0]
+		);
+	});
 });
 
 describe('legacy v1 migration', () => {
