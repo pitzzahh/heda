@@ -11,7 +11,9 @@ const {
 	getCurrentProject_mock,
 	getAllChildNodes_mock,
 	getSessionPassword_mock,
-	getSessionProtection_mock
+	getSessionProtection_mock,
+	invoke_mock,
+	load_current_project_mock
 } = vi.hoisted(() => ({
 	open_mock: vi.fn(),
 	write_mock: vi.fn(),
@@ -23,7 +25,9 @@ const {
 	getCurrentProject_mock: vi.fn(),
 	getAllChildNodes_mock: vi.fn(),
 	getSessionPassword_mock: vi.fn(),
-	getSessionProtection_mock: vi.fn()
+	getSessionProtection_mock: vi.fn(),
+	invoke_mock: vi.fn(),
+	load_current_project_mock: vi.fn()
 }));
 vi.mock('#lib/db/session.js', () => ({
 	getSessionPassword: getSessionPassword_mock,
@@ -47,11 +51,11 @@ vi.mock('#lib/db/queries/index.js', () => ({
 	getCurrentProject: getCurrentProject_mock,
 	getAllChildNodes: getAllChildNodes_mock
 }));
-vi.mock('#lib/db/mutations/index.js', () => ({ loadCurrentProject: vi.fn() }));
+vi.mock('#lib/db/mutations/index.js', () => ({ loadCurrentProject: load_current_project_mock }));
 vi.mock('svelte-sonner', () => ({
 	toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), loading: vi.fn(), dismiss: vi.fn() }
 }));
-vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
+vi.mock('@tauri-apps/api/core', () => ({ invoke: invoke_mock }));
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 
 import {
@@ -60,7 +64,7 @@ import {
 	saveCurrentProject,
 	writeEncryptedFile
 } from './index.js';
-import { decryptFilePayload } from './format.js';
+import { decryptFilePayload, packFileV3 } from './format.js';
 import {
 	LEGACY_V1_FIXTURE_FIXED_SALT,
 	LEGACY_V1_FIXTURE_PASSPHRASE,
@@ -71,6 +75,7 @@ import { toast } from 'svelte-sonner';
 
 const LEGACY_PATH = '/tmp/Legacy Project.heda';
 const NEW_PASSWORD = 'new-file-password';
+const DEVICE_KEY = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
 function legacyBytes(): Uint8Array {
 	return new TextEncoder().encode(LEGACY_V1_PLAIN_FIXED);
@@ -210,6 +215,35 @@ function installFileSystem(entries: Record<string, Uint8Array>): Map<string, Uin
 	return files;
 }
 
+describe('handleLoadFile', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		invoke_mock.mockResolvedValue('Project');
+		load_current_project_mock.mockResolvedValue({ id: 'p1' });
+	});
+
+	it('reads an encrypted file exactly once', async () => {
+		const path = '/tmp/device.heda';
+		const raw = await packFileV3(
+			{ project: { id: 'p1', project_name: 'Project' }, nodes: [] },
+			DEVICE_KEY
+		);
+		installFileSystem({ [path]: new TextEncoder().encode(raw) });
+
+		await expect(handleLoadFile(path)).resolves.toMatchObject({
+			id: 'p1',
+			project_name: 'Project',
+			project_path: path,
+			protection: 'device'
+		});
+		expect(read_file_mock).toHaveBeenCalledTimes(1);
+		expect(load_current_project_mock).toHaveBeenCalledWith({
+			project: { id: 'p1', project_name: 'Project' },
+			nodes: []
+		});
+	});
+});
+
 describe('legacy v1 migration', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -224,6 +258,7 @@ describe('legacy v1 migration', () => {
 			need_migration: true,
 			file_path: LEGACY_PATH
 		});
+		expect(read_file_mock).toHaveBeenCalledTimes(1);
 		expect(toast.warning).not.toHaveBeenCalled();
 	});
 
