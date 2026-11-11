@@ -7,7 +7,8 @@
 	import { resolve } from '$app/paths';
 	import { invoke, isTauri } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
-	import { warn, debug, trace, info, error } from '@tauri-apps/plugin-log';
+	import { error } from '@tauri-apps/plugin-log';
+	import { forwardConsoleToLog } from '#lib/helpers/log/index.js';
 	import { toast } from 'svelte-sonner';
 	import { Toaster } from '#lib/components/ui/toast/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
@@ -51,7 +52,9 @@
 	let file_open_queue: Promise<void> = Promise.resolve();
 
 	onMount(() => {
+		// The log plugin only exists in the desktop app; on the web every call would reject.
 		if (!isTauri()) return;
+		const restore_console = forwardConsoleToLog();
 		// Attach the listener before pulling the cold-start path Rust buffered
 		// during setup, so no request can slip between the two.
 		let disposed = false;
@@ -78,28 +81,12 @@
 			})
 			.catch((err) => error(`Failed to take pending file open: ${err}`));
 		return () => {
+			restore_console();
 			disposed = true;
 			unlisten?.();
 			unlisten_close?.();
 		};
 	});
-
-	function forwardConsole(
-		fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',
-		logger: (message: string) => Promise<void>
-	) {
-		const original = console[fnName];
-		console[fnName] = (message) => {
-			original(message);
-			logger(message);
-		};
-	}
-
-	forwardConsole('log', trace);
-	forwardConsole('debug', debug);
-	forwardConsole('info', info);
-	forwardConsole('warn', warn);
-	forwardConsole('error', error);
 
 	// Several flows can prompt (file open, Home, window close); one decision
 	// settles all of them so no caller is left hanging.
