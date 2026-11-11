@@ -53,6 +53,13 @@ describe('UndoRedoState', () => {
 		expect(undo_redo_state.has_unsaved_actions).toBe(false);
 	});
 
+	test('undo and redo with empty history leave the project clean', async () => {
+		const undo_redo_state = new UndoRedoState();
+		await undo_redo_state.undo();
+		await undo_redo_state.redo();
+		expect(undo_redo_state.has_unsaved_actions).toBe(false);
+	});
+
 	test('resetting without a version always clears the unsaved flag', () => {
 		const undo_redo_state = new UndoRedoState();
 		undo_redo_state.setHasUnsavedActions();

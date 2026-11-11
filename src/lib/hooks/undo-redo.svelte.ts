@@ -173,9 +173,8 @@ export class UndoRedoState {
 
 	async undo() {
 		const last_action = this.undo_stack.pop();
-		this.setHasUnsavedActions();
-
 		if (last_action) {
+			this.setHasUnsavedActions();
 			switch (last_action.action) {
 				case 'create_node': {
 					if (!last_action.data) return;
@@ -368,9 +367,8 @@ export class UndoRedoState {
 
 	async redo() {
 		const last_action = this.redo_stack.pop();
-		this.setHasUnsavedActions();
-
 		if (last_action) {
+			this.setHasUnsavedActions();
 			switch (last_action.action) {
 				case 'create_node': {
 					if (!last_action.data) return;
