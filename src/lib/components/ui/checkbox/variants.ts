@@ -12,7 +12,7 @@ export const checkbox = tv({
 			'data-[state=checked]:border-primary data-[state=checked]:before:scale-100 data-[state=checked]:before:opacity-100',
 			'data-[state=checked]:hover:border-primary-hover data-[state=checked]:hover:before:bg-primary-hover',
 			'data-[state=indeterminate]:border-primary data-[state=indeterminate]:before:scale-100 data-[state=indeterminate]:before:opacity-100',
-			'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+			'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-hidden',
 			'motion-reduce:transition-none motion-reduce:before:transition-none'
 		],
 		mark: 'relative z-10',
@@ -28,7 +28,7 @@ export const checkbox = tv({
 			default: {},
 			circle: {},
 			card: {
-				root: 'relative w-full rounded-xl border border-border bg-card px-3.5 py-3 transition-[border-color,scale] duration-[var(--duration-press)] ease-[var(--ease-ui-out)] active:scale-[var(--press-scale-lg)] motion-reduce:transition-none hover:border-border-strong has-data-[state=checked]:border-primary',
+				root: 'relative w-full rounded-xl border border-border bg-card px-3.5 py-3 transition-[border-color,scale] duration-[var(--duration-press)] ease-[var(--ease-ui-out)] hover:border-border-strong active:scale-[var(--press-scale-lg)] has-data-[state=checked]:border-primary motion-reduce:transition-none',
 				label: 'after:absolute after:inset-0 after:rounded-[inherit]'
 			}
 		},

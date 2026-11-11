@@ -8,5 +8,5 @@
 <AlertDialogPrimitive.Description
 	{...rest}
 	data-slot="alert-dialog-description"
-	class={cn('text-muted-foreground text-sm leading-relaxed', classProp)}
+	class={cn('text-sm leading-relaxed text-muted-foreground', classProp)}
 />

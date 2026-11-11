@@ -18,3 +18,8 @@ ignorePatterns = [
 	"pnpm-lock.yaml",
 	"yarn.lock"
 ]
+
+# Sorts the classes in class lists, like Prettier's Tailwind plugin did.
+[fmt.sortTailwindcss]
+# Tailwind 4: the stylesheet that imports Tailwind.
+stylesheet = "./src/app.css"

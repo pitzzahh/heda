@@ -47,7 +47,7 @@
 			<Dialog.Header>
 				<div class="flex items-center gap-3">
 					<div
-						class="bg-primary/10 text-primary border-primary/15 flex size-11 shrink-0 items-center justify-center rounded-xl border"
+						class="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
 					>
 						<LockKeyIcon class="size-5" />
 					</div>
@@ -94,7 +94,7 @@
 					{/if}
 					{#if (local_error ?? error) !== null}
 						<div
-							class="border-destructive/25 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-medium"
+							class="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive"
 							role="alert"
 						>
 							<WarningCircleIcon class="mt-0.5 size-4 shrink-0" />

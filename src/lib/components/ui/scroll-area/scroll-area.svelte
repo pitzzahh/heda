@@ -72,7 +72,7 @@
 		>
 			<ScrollAreaPrimitive.Thumb
 				data-slot="scroll-area-thumb"
-				class="bg-border-strong relative flex-1 rounded-full"
+				class="relative flex-1 rounded-full bg-border-strong"
 			/>
 		</ScrollAreaPrimitive.Scrollbar>
 		<ScrollAreaPrimitive.Corner />
@@ -81,11 +81,11 @@
 	<span
 		aria-hidden="true"
 		style:opacity={atTop ? 0 : 1}
-		class="from-background pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b to-transparent transition-opacity duration-(--duration-fast)"
+		class="pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-background to-transparent transition-opacity duration-(--duration-fast)"
 	></span>
 	<span
 		aria-hidden="true"
 		style:opacity={atBottom ? 0 : 1}
-		class="from-background duration-(--duration-fast pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t to-transparent transition-opacity"
+		class="duration-(--duration-fast pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-background to-transparent transition-opacity"
 	></span>
 </ScrollAreaPrimitive.Root>

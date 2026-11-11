@@ -85,7 +85,7 @@
 			{:else if update_state === 'downloading'}
 				<div class="m-0 h-full w-full overflow-hidden rounded-md">
 					<div
-						class="from-primary to-primary/80 text-primary-foreground flex h-full items-center justify-center bg-linear-to-r text-[11px] font-semibold tabular-nums transition-all duration-500 ease-in-out"
+						class="flex h-full items-center justify-center bg-linear-to-r from-primary to-primary/80 text-[11px] font-semibold text-primary-foreground tabular-nums transition-all duration-500 ease-in-out"
 						style="width: {Math.max(tween.target, 12)}%"
 					>
 						{tween.target}%
@@ -98,7 +98,7 @@
 			{/if}
 		</Button>
 		{#snippet failed(error, reset)}
-			<p class="text-muted-foreground text-sm">{error}</p>
+			<p class="text-sm text-muted-foreground">{error}</p>
 			<Button onclick={reset} variant="outline" size="sm">Try again</Button>
 		{/snippet}
 	</svelte:boundary>

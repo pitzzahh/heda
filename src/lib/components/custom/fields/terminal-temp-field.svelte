@@ -81,7 +81,7 @@
 					</Command.Root>
 				</Popover.Content>
 			</Popover.Root>
-			<p class="text-muted-foreground text-[0.8rem]">{hint}</p>
+			<p class="text-[0.8rem] text-muted-foreground">{hint}</p>
 			<FieldErrors errors={field.errors} />
 		</div>
 	{/snippet}

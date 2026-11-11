@@ -202,7 +202,7 @@
 	});
 </script>
 
-<div class="bg-background text-foreground relative flex min-h-screen flex-col overflow-hidden">
+<div class="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
 	<!-- Backdrop: faint blueprint grid fading out, plus a soft primary glow. -->
 	<div
 		aria-hidden="true"
@@ -210,27 +210,27 @@
 	></div>
 	<div
 		aria-hidden="true"
-		class="bg-primary/10 pointer-events-none absolute -top-48 left-[12%] h-128 w-128 rounded-full blur-3xl"
+		class="pointer-events-none absolute -top-48 left-[12%] h-128 w-128 rounded-full bg-primary/10 blur-3xl"
 	></div>
 
 	<header
-		class="border-border/70 relative z-10 flex items-center justify-between border-b px-5 py-3 sm:px-8"
+		class="relative z-10 flex items-center justify-between border-b border-border/70 px-5 py-3 sm:px-8"
 	>
 		<div class="flex items-center gap-3">
 			<img src={heda_logo_for_dark} alt="" class="hidden h-8 w-8 dark:block" />
 			<img src={heda_logo_for_light} alt="" class="block h-8 w-8 dark:hidden" />
 			<span class="text-sm font-extrabold tracking-[0.28em] uppercase">Heda</span>
-			<span class="text-muted-foreground hidden text-[10px] font-medium tracking-wide lg:inline">
+			<span class="hidden text-[10px] font-medium tracking-wide text-muted-foreground lg:inline">
 				Hierarchical Electrical Design Analyzer
 			</span>
 		</div>
 		<div class="flex items-center gap-2">
 			<span
-				class="border-border text-muted-foreground rounded-full border px-3 py-1 font-mono text-[10px] tracking-wider"
+				class="rounded-full border border-border px-3 py-1 font-mono text-[10px] tracking-wider text-muted-foreground"
 				>PEC 2017</span
 			>
 			<span
-				class="border-border text-muted-foreground hidden rounded-full border px-3 py-1 font-mono text-[10px] tracking-wider sm:inline"
+				class="hidden rounded-full border border-border px-3 py-1 font-mono text-[10px] tracking-wider text-muted-foreground sm:inline"
 				>v{pj.version}</span
 			>
 		</div>
@@ -241,9 +241,9 @@
 	>
 		<div class="lg:col-span-7">
 			<p
-				class="text-primary flex items-center gap-3 text-[11px] font-bold tracking-[0.22em] uppercase"
+				class="flex items-center gap-3 text-[11px] font-bold tracking-[0.22em] text-primary uppercase"
 			>
-				<span class="bg-primary/60 inline-block h-px w-10"></span>
+				<span class="inline-block h-px w-10 bg-primary/60"></span>
 				Philippine Electrical Code 2017
 			</p>
 
@@ -253,10 +253,10 @@
 				HEDA<span class="text-primary">.</span>
 			</h1>
 
-			<p class="text-muted-foreground mt-7 max-w-xl text-lg leading-8">
+			<p class="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">
 				Design hierarchical electrical systems: connected load, demand factors, conductor sizing and
 				voltage drop, in one code-compliant
-				<span class="text-foreground font-medium"> load schedule workspace</span>.
+				<span class="font-medium text-foreground"> load schedule workspace</span>.
 			</p>
 
 			<div class="mt-10 flex flex-wrap items-center gap-3">
@@ -292,7 +292,7 @@
 							class="h-13 w-full justify-start gap-3 px-3"
 						>
 							<span
-								class="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg border"
+								class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
 							>
 								<CircleNotchIcon
 									class={cn('hidden size-4 animate-spin', {
@@ -307,7 +307,7 @@
 							</span>
 							<span class="flex flex-col items-start leading-tight">
 								<span class="text-sm font-semibold">Browse files…</span>
-								<span class="text-muted-foreground text-[11px] font-normal">
+								<span class="text-[11px] font-normal text-muted-foreground">
 									Open a .heda file from disk
 								</span>
 							</span>
@@ -317,7 +317,7 @@
 							<div class="flex items-center gap-3 pt-1">
 								<Separator class="flex-1" />
 								<p
-									class="text-muted-foreground text-[10px] font-semibold tracking-[0.2em] uppercase"
+									class="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
 								>
 									Recent
 								</p>
@@ -337,7 +337,7 @@
 											onclick={() => attemptLoad(project.project_path)}
 										>
 											<span
-												class="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg border"
+												class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
 											>
 												<MonitorIcon class="size-4" />
 											</span>
@@ -346,12 +346,12 @@
 													>{project?.project_name ?? 'unknown'}</span
 												>
 												<span
-													class="text-muted-foreground w-full truncate text-left text-[11px] font-normal"
+													class="w-full truncate text-left text-[11px] font-normal text-muted-foreground"
 													>{project.project_path ?? 'unknown path'}</span
 												>
 												{#if !project.exists}
 													<span
-														class="text-warning-strong mt-0.5 text-[10px] font-bold tracking-wider uppercase"
+														class="mt-0.5 text-[10px] font-bold tracking-wider text-warning-strong uppercase"
 														>File not found</span
 													>
 												{/if}
@@ -360,7 +360,7 @@
 										<Button
 											variant="ghost"
 											size="icon"
-											class="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-60 transition-opacity group-hover:opacity-100"
+											class="shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
 											onclick={() => {
 												project_state.removeRecentProject(project.id);
 												toast.info(`${project.project_name ?? 'Project'} removed successfully`);
@@ -383,10 +383,10 @@
 				</Dialog.Root>
 			</div>
 
-			<p class="text-muted-foreground mt-7 flex items-center gap-2 text-xs">
+			<p class="mt-7 flex items-center gap-2 text-xs text-muted-foreground">
 				<LockKeyIcon class="size-4 shrink-0" />
 				<span>
-					Every <span class="text-foreground font-mono">.heda</span> file is sealed with your password
+					Every <span class="font-mono text-foreground">.heda</span> file is sealed with your password
 					with AES-256-GCM. Nothing leaves your machine.
 				</span>
 			</p>
@@ -394,24 +394,24 @@
 
 		<div class="hidden lg:col-span-5 lg:block">
 			<figure
-				class="border-border bg-card/70 relative rounded-3xl border p-8 shadow-[var(--surface-shadow)] backdrop-blur-xs"
+				class="relative rounded-3xl border border-border bg-card/70 p-8 shadow-[var(--surface-shadow)] backdrop-blur-xs"
 			>
 				<!-- Corner ticks, drawing-sheet style -->
 				<span
-					class="border-foreground/30 absolute top-3 left-3 size-5 rounded-tl-md border-t-2 border-l-2"
+					class="absolute top-3 left-3 size-5 rounded-tl-md border-t-2 border-l-2 border-foreground/30"
 				></span>
 				<span
-					class="border-foreground/30 absolute top-3 right-3 size-5 rounded-tr-md border-t-2 border-r-2"
+					class="absolute top-3 right-3 size-5 rounded-tr-md border-t-2 border-r-2 border-foreground/30"
 				></span>
 				<span
-					class="border-foreground/30 absolute bottom-3 left-3 size-5 rounded-bl-md border-b-2 border-l-2"
+					class="absolute bottom-3 left-3 size-5 rounded-bl-md border-b-2 border-l-2 border-foreground/30"
 				></span>
 				<span
-					class="border-foreground/30 absolute right-3 bottom-3 size-5 rounded-br-md border-r-2 border-b-2"
+					class="absolute right-3 bottom-3 size-5 rounded-br-md border-r-2 border-b-2 border-foreground/30"
 				></span>
 
 				<div
-					class="text-muted-foreground flex items-center justify-between font-mono text-[10px] tracking-[0.2em] uppercase"
+					class="flex items-center justify-between font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase"
 				>
 					<span>HEDA-001</span>
 					<span>Rev 2.6</span>
@@ -421,42 +421,42 @@
 					<img src={heda_logo_for_dark} alt="HEDA logo" class="hidden h-44 w-44 dark:block" />
 					<img src={heda_logo_for_light} alt="HEDA logo" class="block h-44 w-44 dark:hidden" />
 					<p
-						class="text-muted-foreground mt-5 text-center text-[10px] leading-5 font-medium tracking-[0.28em] uppercase"
+						class="mt-5 text-center text-[10px] leading-5 font-medium tracking-[0.28em] text-muted-foreground uppercase"
 					>
 						Hierarchical<br />Electrical<br />Design Analyzer
 					</p>
 				</div>
 
-				<div class="divide-border/80 divide-y border-t">
+				<div class="divide-y divide-border/80 border-t">
 					{#each spec_rows as row (row.label)}
 						{@const Icon = row.icon}
 						<div class="flex items-center gap-4 py-3.5">
 							<span
-								class="border-border bg-background text-primary flex size-9 shrink-0 items-center justify-center rounded-lg border"
+								class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-primary"
 							>
 								<Icon class="size-4" />
 							</span>
 							<span class="flex min-w-0 flex-col">
 								<span
-									class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase"
+									class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase"
 								>
 									{row.label}
 								</span>
-								<span class="text-foreground truncate text-sm font-medium">{row.value}</span>
+								<span class="truncate text-sm font-medium text-foreground">{row.value}</span>
 							</span>
 						</div>
 					{/each}
 				</div>
 
 				<div
-					class="text-muted-foreground flex items-center justify-between border-t pt-4 font-mono text-[9px] tracking-[0.2em] uppercase"
+					class="flex items-center justify-between border-t pt-4 font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase"
 				>
 					<span class="flex items-center gap-2">
 						<span class="relative flex size-2">
 							<span
-								class="bg-success absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+								class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60"
 							></span>
-							<span class="bg-success relative inline-flex size-2 rounded-full"></span>
+							<span class="relative inline-flex size-2 rounded-full bg-success"></span>
 						</span>
 						Local-first
 					</span>
@@ -467,7 +467,7 @@
 	</main>
 
 	<footer
-		class="border-border/70 text-muted-foreground relative z-10 flex items-center justify-between gap-4 border-t px-5 py-3 text-[10px] font-semibold tracking-[0.2em] uppercase sm:px-8"
+		class="relative z-10 flex items-center justify-between gap-4 border-t border-border/70 px-5 py-3 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase sm:px-8"
 	>
 		<span>Heda</span>
 		<span class="hidden md:inline">Load Schedules · Voltage Drop · Conductor Sizing</span>
@@ -492,7 +492,7 @@
 			<Dialog.Header>
 				<div class="flex items-center gap-3">
 					<div
-						class="bg-primary/10 text-primary border-primary/15 flex size-11 shrink-0 items-center justify-center rounded-xl border"
+						class="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
 					>
 						<LockKeyIcon class="size-5" />
 					</div>
@@ -507,7 +507,7 @@
 			</Dialog.Header>
 			{#if migrate_error}
 				<div
-					class="border-destructive/25 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-medium"
+					class="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive"
 					role="alert"
 				>
 					<WarningCircleIcon class="mt-0.5 size-4 shrink-0" />

@@ -5,7 +5,7 @@ export const tabsFrame = tv({
 	slots: {
 		list: 'relative flex w-full items-stretch',
 		trigger:
-			'relative z-10 inline-flex min-w-0 flex-1 items-center justify-center whitespace-nowrap font-medium text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
+			'relative z-10 inline-flex min-w-0 flex-1 items-center justify-center font-medium whitespace-nowrap text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
 		// The sliding marker, measured from the active trigger.
 		indicator:
 			'pointer-events-none absolute left-0 transition-[transform,scale,translate,width,height] duration-(--duration-slow) ease-[var(--ease-drawer)] motion-reduce:transition-none'
@@ -23,7 +23,7 @@ export const tabsFrame = tv({
 				indicator: 'top-0.5 bottom-0.5 border border-border bg-background shadow-xs'
 			},
 			underline: {
-				list: 'gap-1 border-border border-b',
+				list: 'gap-1 border-b border-border',
 				trigger: 'rounded-md aria-selected:text-foreground',
 				indicator: '-bottom-px h-0.5 rounded-full bg-primary'
 			},
@@ -38,9 +38,9 @@ export const tabsFrame = tv({
 				indicator: 'inset-y-0 border border-border'
 			},
 			enclosed: {
-				list: 'gap-1 border-border border-b',
+				list: 'gap-1 border-b border-border',
 				trigger: 'aria-selected:text-foreground',
-				indicator: '-bottom-px top-0 border border-border border-b-background bg-background'
+				indicator: 'top-0 -bottom-px border border-border border-b-background bg-background'
 			}
 		},
 		size: {
