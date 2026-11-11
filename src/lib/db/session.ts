@@ -4,10 +4,17 @@
 // (same-tab, cleared when the tab closes) so a reload in the same window can
 // re-unlock the session store instead of forcing a home + reload. Nothing is
 // kept in `localStorage`.
-const PASSWORD_KEY = 'heda-session-password';
-const PROTECTION_KEY = 'heda-file-protection';
+//
+// The secret and its protection mode are stored as one entry: written
+// separately, a failed second write could leave a device-key session that
+// reloads as a password session and saves an unopenable file.
+const SESSION_KEY = 'heda-session';
+// Written by earlier builds; only removed now.
+const LEGACY_KEYS = ['heda-session-password', 'heda-file-protection'];
 
 export type FileProtection = 'device' | 'password';
+
+type StoredSession = { secret: string; protection: FileProtection };
 
 function storage(): Storage | null {
 	try {
@@ -17,60 +24,63 @@ function storage(): Storage | null {
 	}
 }
 
-let session_password: string | null = null;
-let file_protection: FileProtection | null = null;
+let session: StoredSession | null = null;
 
-export function setSessionPassword(password: string): void {
-	session_password = password;
+function restore(): StoredSession | null {
+	if (session) return session;
 	try {
-		storage()?.setItem(PASSWORD_KEY, password);
+		const raw = storage()?.getItem(SESSION_KEY);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as Partial<StoredSession>;
+		if (
+			typeof parsed.secret === 'string' &&
+			parsed.secret &&
+			(parsed.protection === 'device' || parsed.protection === 'password')
+		) {
+			session = { secret: parsed.secret, protection: parsed.protection };
+		}
+	} catch {
+		// Unreadable storage or a malformed entry: treat the session as locked.
+	}
+	return session;
+}
+
+function persist(): void {
+	try {
+		if (session) storage()?.setItem(SESSION_KEY, JSON.stringify(session));
 	} catch {
 		// Storage can throw in private mode; memory still holds the session.
 	}
+}
+
+/** Caches the unlock secret together with how the open file is sealed. */
+export function setSession(secret: string, protection: FileProtection): void {
+	session = { secret, protection };
+	persist();
 }
 
 export function getSessionPassword(): string | null {
-	if (session_password) return session_password;
-	try {
-		const stored = storage()?.getItem(PASSWORD_KEY) ?? null;
-		if (stored) session_password = stored;
-		return session_password;
-	} catch {
-		return null;
-	}
-}
-
-export function clearSessionPassword(): void {
-	session_password = null;
-	file_protection = null;
-	try {
-		storage()?.removeItem(PASSWORD_KEY);
-		storage()?.removeItem(PROTECTION_KEY);
-	} catch {
-		// Nothing to clear if storage is unavailable.
-	}
-}
-
-export function setSessionProtection(protection: FileProtection): void {
-	file_protection = protection;
-	try {
-		storage()?.setItem(PROTECTION_KEY, protection);
-	} catch {
-		// Storage can throw in private mode; memory still holds the session.
-	}
+	return restore()?.secret ?? null;
 }
 
 export function getSessionProtection(): FileProtection | null {
-	if (file_protection) return file_protection;
+	return restore()?.protection ?? null;
+}
+
+/** Changes the protection mode of the open session, keeping its secret. */
+export function setSessionProtection(protection: FileProtection): void {
+	const current = restore();
+	if (!current) return;
+	session = { ...current, protection };
+	persist();
+}
+
+export function clearSessionPassword(): void {
+	session = null;
 	try {
-		const stored = storage()?.getItem(PROTECTION_KEY);
-		if (stored === 'device' || stored === 'password') {
-			file_protection = stored;
-			return file_protection;
-		}
-		if (stored === null && getSessionPassword()) return 'password';
-		return null;
+		storage()?.removeItem(SESSION_KEY);
+		for (const key of LEGACY_KEYS) storage()?.removeItem(key);
 	} catch {
-		return getSessionPassword() ? 'password' : null;
+		// Nothing to clear if storage is unavailable.
 	}
 }

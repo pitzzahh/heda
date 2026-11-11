@@ -18,8 +18,7 @@ import {
 import {
 	getSessionPassword,
 	getSessionProtection,
-	setSessionPassword,
-	setSessionProtection,
+	setSession,
 	type FileProtection
 } from '#lib/db/session.js';
 import { getDeviceKey } from '#lib/helpers/security/device-key.js';
@@ -238,11 +237,9 @@ export async function handleLoadFile(
 		// The secret is proven correct (or is the device key). Cache it before
 		// the first db touch so the session store (Stronghold vault) unlocks.
 		if (protection === 'device' && device_key) {
-			setSessionPassword(device_key);
-			setSessionProtection('device');
+			setSession(device_key, 'device');
 		} else {
-			setSessionPassword(password!);
-			setSessionProtection('password');
+			setSession(password!, 'password');
 		}
 
 		const loaded_project = await loadCurrentProject(file_data);

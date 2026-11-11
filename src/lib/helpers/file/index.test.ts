@@ -31,9 +31,8 @@ const {
 }));
 vi.mock('#lib/db/session.js', () => ({
 	getSessionPassword: getSessionPassword_mock,
-	setSessionPassword: vi.fn(),
-	getSessionProtection: getSessionProtection_mock,
-	setSessionProtection: vi.fn()
+	setSession: vi.fn(),
+	getSessionProtection: getSessionProtection_mock
 }));
 vi.mock('#lib/helpers/security/device-key.js', () => ({
 	getDeviceKey: vi.fn().mockResolvedValue('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
