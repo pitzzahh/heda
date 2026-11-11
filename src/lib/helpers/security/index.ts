@@ -14,16 +14,34 @@ export function bytesToHex(bytes: Uint8Array): string {
 	return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Native base64 is an order of magnitude faster than building a binary string
+// by hand. It ships with current Chromium/WebKit/Node; older WebKitGTK builds
+// take the chunked fallback below.
+type NativeBase64Bytes = Uint8Array & { toBase64?: () => string };
+type NativeBase64Constructor = typeof Uint8Array & {
+	fromBase64?: (base64: string) => Uint8Array;
+};
+
 // Chunked so multi-megabyte project files don't blow the call stack.
 export function bytesToBase64(bytes: Uint8Array): string {
-	let binary = '';
+	const native = (bytes as NativeBase64Bytes).toBase64;
+	if (typeof native === 'function') return native.call(bytes);
+
+	const chunks: string[] = [];
 	for (let i = 0; i < bytes.length; i += 0x8000) {
-		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+		// `apply` beats both spread and string concatenation here; the spread
+		// operator on a 32 KiB typed array is ~7x slower in V8/JSC.
+		chunks.push(
+			String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000) as unknown as number[])
+		);
 	}
-	return btoa(binary);
+	return btoa(chunks.join(''));
 }
 
 export function base64ToBytes(base64: string): Uint8Array {
+	const fromBase64 = (Uint8Array as NativeBase64Constructor).fromBase64;
+	if (typeof fromBase64 === 'function') return fromBase64.call(Uint8Array, base64);
+
 	const binary = atob(base64);
 	const out = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
