@@ -69,7 +69,11 @@
 		// System close (Alt+F4 / close button) is prevented by Rust; it asks
 		// us through this event whether the close may proceed after the
 		// unsaved-changes flow.
-		listen(WINDOW_CLOSE_REQUESTED, () => void leave.closeApp())
+		listen(WINDOW_CLOSE_REQUESTED, () => {
+			// Tells Rust the webview is alive; an unanswered request lets the next close quit.
+			invoke('ack_close_request').catch((err) => error(`Failed to ack close request: ${err}`));
+			void leave.closeApp();
+		})
 			.then((fn) => {
 				if (disposed) fn();
 				else unlisten_close = fn;
