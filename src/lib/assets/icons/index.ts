@@ -28,6 +28,7 @@ export { default as InfoIcon } from 'phosphor-svelte/lib/InfoIcon';
 export { default as LightningAIcon } from 'phosphor-svelte/lib/LightningAIcon';
 export { default as LockKeyIcon } from 'phosphor-svelte/lib/LockKeyIcon';
 export { default as MagicWandIcon } from 'phosphor-svelte/lib/MagicWandIcon';
+export { default as MinusIcon } from 'phosphor-svelte/lib/MinusIcon';
 export { default as MonitorIcon } from 'phosphor-svelte/lib/MonitorIcon';
 export { default as MoonIcon } from 'phosphor-svelte/lib/MoonIcon';
 export { default as PackageIcon } from 'phosphor-svelte/lib/PackageIcon';

@@ -1,138 +1,214 @@
 <script module lang="ts">
-	type MultiCopy = {
-		valid: boolean;
-		value: number;
-		processing: boolean;
-		might_take_long: boolean;
-		error?: string;
-	};
-
 	type Props = { open_dialog: boolean; node_name: string; node_id: string };
+
+	const MAX_COPY_COUNT = 1000;
+	const LARGE_COPY_ITEMS = 400;
+	const VERY_LARGE_COPY_ITEMS = 1500;
+
+	function countFromInput(value: number | undefined) {
+		if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+		return Math.min(MAX_COPY_COUNT, Math.max(1, Math.floor(value)));
+	}
 </script>
 
 <script lang="ts">
-	import { CircleNotchIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { MinusIcon, PlusIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { copyAndAddNodeById } from '#lib/db/mutations/index.js';
+	import { copyAndAddNodesById } from '#lib/db/mutations/index.js';
 	import { tick } from 'svelte';
 	import { getNumberOfChildren } from '#lib/db/queries/index.js';
 	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { cn } from '#lib/utils/index.js';
-	import Button from '../ui/button/button.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
 
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
-	let multi_copy = $state<MultiCopy>({
-		valid: true,
-		value: 1,
-		processing: false,
-		might_take_long: false
+
+	let copy_value = $state<number | undefined>(1);
+	let processing = $state(false);
+	const undo_redo_state = getUndoRedoState();
+
+	const raw_count = $derived(
+		typeof copy_value === 'number' && Number.isFinite(copy_value) ? Math.floor(copy_value) : 0
+	);
+	const is_whole_number = $derived(typeof copy_value === 'number' && Number.isInteger(copy_value));
+	const is_valid = $derived(is_whole_number && raw_count >= 1 && raw_count <= MAX_COPY_COUNT);
+	const copy_count = $derived(is_valid ? raw_count : 0);
+	const stepper_count = $derived(countFromInput(copy_value));
+	const descendant_count = $derived(open_dialog && node_id ? getNumberOfChildren(node_id) : 0);
+	const total_items = $derived(copy_count * (1 + descendant_count));
+	const heavy_copy = $derived.by(() => {
+		if (!is_valid) return null;
+		if (total_items >= VERY_LARGE_COPY_ITEMS) {
+			return {
+				title: 'Very large copy',
+				description: `This creates ${total_items.toLocaleString()} items in one operation. It can use a lot of memory and make the app unresponsive, especially on Windows.`
+			};
+		}
+		if (total_items >= LARGE_COPY_ITEMS) {
+			return {
+				title: 'Large copy',
+				description: `This creates ${total_items.toLocaleString()} items. Large copies can take longer and use more memory.`
+			};
+		}
+		return null;
 	});
-	let undo_redo_state = getUndoRedoState();
 
-	async function handleMultiCopy(node_id: string) {
-		if (!multi_copy.valid) {
-			return toast.warning('Invalid copy count, must be greater than 0');
-		}
-		const toast_id = toast.loading(`Copying ${multi_copy.value} ${node_name}...`);
-		multi_copy.processing = true;
-		// Let the spinner paint before the synchronous copy work starts.
+	function resetForm() {
+		copy_value = 1;
+		processing = false;
+	}
+
+	function closeDialog() {
+		resetForm();
+		open_dialog = false;
+	}
+
+	function setCount(value: number) {
+		copy_value = countFromInput(value);
+	}
+
+	async function handleMultiCopy(target_node_id: string) {
+		if (!is_valid || processing) return;
+
+		const count = copy_count;
+		const toast_id = toast.loading(
+			`Copying ${count} ${count === 1 ? 'copy' : 'copies'} of ${node_name}...`
+		);
+		processing = true;
+		// Let the spinner and toast paint before the synchronous batch insert starts.
 		await tick();
-		const copy_count = Number(multi_copy.value);
-		let latest_node = await copyAndAddNodeById(node_id);
+		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		if (latest_node) {
-			if (latest_node.node_type === 'panel') {
-				// check if might_take_some_time
-				const child_count = getNumberOfChildren(node_id);
-				multi_copy.might_take_long = child_count >= 15;
-			} else if (latest_node.node_type === 'load') {
-				// check if might_take_some_time
-				multi_copy.might_take_long = copy_count >= 15;
-			}
-
-			let batch_data = [] as {
-				data: PhaseLoadSchedule;
-				children_nodes?: PhaseLoadSchedule[];
-			}[];
-
-			batch_data = [
-				...batch_data,
-				{ data: latest_node as unknown as PhaseLoadSchedule, children_nodes: [] }
-			];
-
-			for (let i = 1; i < copy_count; i++) {
-				// Yield so the dialog stays responsive on deep hierarchies.
-				await new Promise((resolve) => setTimeout(resolve, 0));
-				latest_node = await copyAndAddNodeById(latest_node.id);
-
-				if (!latest_node) {
-					multi_copy.processing = false;
-					return toast.error('An error occurred while copying nodes.', { id: toast_id });
-				}
-
-				batch_data = [
-					...batch_data,
-					{ data: latest_node as unknown as PhaseLoadSchedule, children_nodes: [] }
-				];
-			}
-
-			undo_redo_state.setActionToUndo({
-				action: 'batch_copy_node',
-				batch_data
-			});
-
-			multi_copy.processing = false;
-			open_dialog = false;
-			toast.success(`[${copy_count}]: ${node_name} copied successfully`, {
-				id: toast_id
-			});
-		} else {
-			multi_copy.processing = false;
-			console.warn('Failed to copy the initial node.');
-			return toast.error('Failed to copy the initial node.', { id: toast_id });
+		const created_nodes = await copyAndAddNodesById(target_node_id, count);
+		if (created_nodes.length !== count) {
+			processing = false;
+			return toast.error('Could not copy this item.', { id: toast_id });
 		}
+
+		undo_redo_state.setActionToUndo({
+			action: 'batch_copy_node',
+			batch_data: created_nodes.map((node) => ({
+				data: node as unknown as PhaseLoadSchedule,
+				children_nodes: []
+			}))
+		});
+
+		processing = false;
+		closeDialog();
+		toast.success(`${count} ${count === 1 ? 'copy' : 'copies'} of ${node_name} added`, {
+			id: toast_id
+		});
 	}
 </script>
 
-<Dialog.Root bind:open={open_dialog}>
-	<Dialog.Content class="sm:max-w-[425px]">
+<Dialog.Root
+	bind:open={open_dialog}
+	onOpenChange={(open) => {
+		if (!open) resetForm();
+	}}
+>
+	<Dialog.Content class="sm:max-w-108">
 		<Dialog.Header>
 			<Dialog.Title>Copy {node_name}</Dialog.Title>
-			<Dialog.Description>Specify the number of {node_name} to be copied.</Dialog.Description>
+			<Dialog.Description>
+				Adds copies next to the original.
+				{#if descendant_count > 0}
+					Each copy includes {descendant_count.toLocaleString()}
+					{descendant_count === 1 ? 'item' : 'items'}.
+				{/if}
+			</Dialog.Description>
 		</Dialog.Header>
-		{#if !multi_copy.valid}
-			<Alert.Root variant="warning">
-				<WarningCircleIcon class="size-4" />
-				<Alert.Description
-					>{multi_copy.error ?? 'Invalid copy count, must be greater than 0'}.</Alert.Description
-				>
-			</Alert.Root>
-		{/if}
-		<div class="grid grid-cols-4 items-center gap-4">
-			<Label for="copy_count" class="text-right">Copy count</Label>
-			<Input
-				id="copy_count"
-				type="number"
-				placeholder="Enter the circuit number"
-				bind:value={multi_copy.value}
-				class={cn('col-span-3', {
-					'border-destructive ring-destructive outline-destructive ring-3': !multi_copy.valid
-				})}
-			/>
-		</div>
+
+		<form
+			id="copy-form"
+			class="mt-5 grid gap-5"
+			onsubmit={(event) => {
+				event.preventDefault();
+				void handleMultiCopy(node_id);
+			}}
+		>
+			<div class="grid gap-2">
+				<div class="flex items-center justify-between gap-3">
+					<Label for="copy_count">Number of copies</Label>
+					<span class="text-muted-foreground text-xs tabular-nums">
+						Up to {MAX_COPY_COUNT.toLocaleString()}
+					</span>
+				</div>
+
+				<div class="flex items-center gap-2">
+					<Button
+						type="button"
+						variant="outline"
+						size="icon-lg"
+						aria-label="Decrease copies"
+						disabled={processing || stepper_count <= 1}
+						onclick={() => setCount(stepper_count - 1)}
+					>
+						<MinusIcon />
+					</Button>
+					<Input
+						id="copy_count"
+						type="number"
+						min={1}
+						max={MAX_COPY_COUNT}
+						step={1}
+						inputmode="numeric"
+						bind:value={copy_value}
+						disabled={processing}
+						invalid={!is_valid}
+						aria-describedby="copy-count-help"
+						onfocus={(event) => event.currentTarget.select()}
+						class="h-10 flex-1 [appearance:textfield] text-center text-lg font-semibold tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+					/>
+					<Button
+						type="button"
+						variant="outline"
+						size="icon-lg"
+						aria-label="Increase copies"
+						disabled={processing || stepper_count >= MAX_COPY_COUNT}
+						onclick={() => setCount(stepper_count + 1)}
+					>
+						<PlusIcon />
+					</Button>
+				</div>
+
+				<p id="copy-count-help" class="text-muted-foreground text-xs" aria-live="polite">
+					{#if !is_valid}
+						Enter a whole number from 1 to {MAX_COPY_COUNT.toLocaleString()}.
+					{:else}
+						{total_items.toLocaleString()}
+						{total_items === 1 ? 'item' : 'items'} will be added.
+					{/if}
+				</p>
+			</div>
+
+			{#if heavy_copy}
+				<Alert.Root variant="warning" class="items-start">
+					<WarningCircleIcon class="mt-0.5 size-4 shrink-0" />
+					<Alert.Description>
+						<span class="font-medium">{heavy_copy.title}.</span>
+						{heavy_copy.description}
+					</Alert.Description>
+				</Alert.Root>
+			{/if}
+		</form>
+
 		<Dialog.Footer>
-			<Button type="submit" onclick={() => handleMultiCopy(node_id)}>
-				<CircleNotchIcon
-					class={cn('mr-1 hidden h-4 w-4 animate-spin', {
-						block: multi_copy.processing
-					})}
-				/>
-				<span>Copy</span>
+			<Button type="button" variant="ghost" disabled={processing} onclick={closeDialog}>
+				Cancel
+			</Button>
+			<Button
+				type="submit"
+				form="copy-form"
+				disabled={!is_valid || processing}
+				loading={processing}
+				loadingLabel="Copying…"
+			>
+				{is_valid ? `Copy ${copy_count}` : 'Copy'}
 			</Button>
 		</Dialog.Footer>
 		<Dialog.Close />
