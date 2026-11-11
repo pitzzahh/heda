@@ -23,7 +23,12 @@
 	import { UndoRedoButtons } from './(components)/index.js';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
 	import type { ButtonState } from '#lib/types/misc/index.js';
-	import { saveCurrentProject, writeEncryptedFile, EXTENSION } from '#lib/helpers/file/index.js';
+	import {
+		allowProjectFolder,
+		saveCurrentProject,
+		writeEncryptedFile,
+		EXTENSION
+	} from '#lib/helpers/file/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
@@ -86,6 +91,8 @@
 			});
 			if (!path) return;
 			const file_path = path.endsWith(`.${EXTENSION}`) ? path : `${path}.${EXTENSION}`;
+			// The dialog granted only the picked path, which may lack the extension.
+			await allowProjectFolder(file_path);
 			await writeEncryptedFile(
 				{ project: current, nodes: getAllChildNodes(current.root_node_id, true) },
 				password,

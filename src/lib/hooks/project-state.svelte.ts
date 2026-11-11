@@ -1,7 +1,7 @@
 import { PersistedState } from 'runed';
 import { setState, getState } from '#lib/state/index.svelte.js';
 import { PROJECT_STATE_CTX } from '#lib/state/constants.js';
-import { exists } from '@tauri-apps/plugin-fs';
+import { allowProjectFolder } from '#lib/helpers/file/index.js';
 import type { RecentProject } from '#lib/types/main/index.js';
 
 type ProjectStateType = {
@@ -136,7 +136,8 @@ export class ProjectState {
 		const checks = await Promise.all(
 			(this.persisted_state.current.recent_projects ?? []).map(async ({ id, project_path }) => {
 				try {
-					return [id, await exists(project_path)] as const;
+					// Also grants the folder so a later reopen can read and save the file.
+					return [id, await allowProjectFolder(project_path)] as const;
 				} catch {
 					// Unreadable path (scope, permissions): keep the last known state.
 					return [id, undefined] as const;
