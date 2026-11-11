@@ -22,7 +22,11 @@
 		type NeedMigration,
 		type NeedPassword
 	} from '#lib/helpers/file/index.js';
-	import { clearSessionPassword, setSessionProtection } from '#lib/db/session.js';
+	import {
+		clearSessionPassword,
+		getSessionPassword,
+		setSessionProtection
+	} from '#lib/db/session.js';
 	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
 	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { PasswordDialog } from '#lib/components/custom/index.js';
@@ -58,10 +62,7 @@
 
 	async function convertLoadedFile(recent_project_data: RecentProject) {
 		try {
-			await convertHedaFileToDevice(
-				recent_project_data.project_path,
-				sessionStorage.getItem('heda-session-password') ?? ''
-			);
+			await convertHedaFileToDevice(recent_project_data.project_path, getSessionPassword() ?? '');
 			setSessionProtection('device');
 			toast.success('File now opens without a password', {
 				description: 'A verified .v2.bak backup was kept next to the file.'

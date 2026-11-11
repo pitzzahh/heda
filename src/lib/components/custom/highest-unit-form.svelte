@@ -22,7 +22,7 @@
 	import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
-	import { setSessionPassword, setSessionProtection } from '#lib/db/session.js';
+	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 	import {
 		getFileName,
@@ -71,8 +71,7 @@
 			};
 			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
-			setSessionPassword(password ?? device_key!);
-			setSessionProtection(password ? 'password' : 'device');
+			setSession(password ?? device_key!, password ? 'password' : 'device');
 
 			let file_path_with_file = await saveDialog({
 				filters: [
