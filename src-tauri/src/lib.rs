@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::SystemTime;
+use std::time::{Duration, Instant, SystemTime};
 
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_fs::FsExt;
@@ -144,6 +144,26 @@ fn take_pending_file_open(state: tauri::State<'_, FileOpenState>) -> Option<Stri
         .take()
 }
 
+/// A close request the webview has not acknowledged yet.
+///
+/// Every close is handed to the webview, which acks it on receipt. If the
+/// webview hangs it never does, and without this the window could not be
+/// closed at all: a further close request after `CLOSE_ACK_TIMEOUT` quits.
+#[derive(Default)]
+struct CloseRequestState {
+    unanswered_since: Mutex<Option<Instant>>,
+}
+
+const CLOSE_ACK_TIMEOUT: Duration = Duration::from_secs(5);
+
+#[tauri::command]
+fn ack_close_request(state: tauri::State<'_, CloseRequestState>) {
+    *state
+        .unanswered_since
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
+}
+
 /// Quits the app. The webview invokes this only after the user resolved the
 /// unsaved-changes prompt for a prevented close request; `exit` skips the
 /// close event, so it cannot re-trigger the prompt.
@@ -184,6 +204,7 @@ pub fn run() {
             }
         }))
         .manage(FileOpenState::default())
+        .manage(CloseRequestState::default())
         .plugin(log_plugin)
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -194,6 +215,7 @@ pub fn run() {
             get_file_metadata,
             get_exe_path,
             take_pending_file_open,
+            ack_close_request,
             close_main_window,
             load_device_key,
             store_device_key
@@ -224,6 +246,18 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                let state = window.state::<CloseRequestState>();
+                let mut unanswered_since = state
+                    .unanswered_since
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                if unanswered_since.is_some_and(|since| since.elapsed() >= CLOSE_ACK_TIMEOUT) {
+                    log::warn!("webview did not answer the close request, quitting");
+                    window.app_handle().exit(0);
+                    return;
+                }
+                unanswered_since.get_or_insert_with(Instant::now);
+                drop(unanswered_since);
                 if let Err(err) = window.emit(WINDOW_CLOSE_REQUESTED, ()) {
                     log::warn!("failed to emit window close request: {err}");
                 }
