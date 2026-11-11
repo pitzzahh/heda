@@ -8,12 +8,24 @@ type PendingTask = {
 };
 
 let worker: Worker | null = null;
-let worker_failed = false;
+// Only set when this runtime cannot construct workers at all; a crashed or hung
+// worker is dropped instead, so the next export spawns a fresh one.
+let worker_unsupported = false;
 let next_id = 0;
 const pending = new Map<number, PendingTask>();
 
+function dropWorker(failure: Error) {
+	worker?.terminate();
+	worker = null;
+	for (const task of pending.values()) {
+		clearTimeout(task.timer);
+		task.reject(failure);
+	}
+	pending.clear();
+}
+
 function getWorker(): Worker | null {
-	if (worker_failed) return null;
+	if (worker_unsupported) return null;
 	if (worker) return worker;
 
 	try {
@@ -28,17 +40,10 @@ function getWorker(): Worker | null {
 			else task.resolve(result as GeneratedWorkbook);
 		};
 		worker.onerror = (event) => {
-			worker_failed = true;
-			const failure = new Error(event.message || 'Export worker failed');
-			for (const task of pending.values()) {
-				clearTimeout(task.timer);
-				task.reject(failure);
-			}
-			pending.clear();
-			worker = null;
+			dropWorker(new Error(event.message || 'Export worker failed'));
 		};
 	} catch {
-		worker_failed = true;
+		worker_unsupported = true;
 		worker = null;
 		return null;
 	}
@@ -67,10 +72,8 @@ export async function generateWorkbookInWorker(
 
 	const id = ++next_id;
 	return new Promise<GeneratedWorkbook>((resolve, reject) => {
-		const timer = setTimeout(() => {
-			pending.delete(id);
-			reject(new Error('Export worker timed out'));
-		}, timeout_ms);
+		// A hung worker would block every later job, so drop it with the task.
+		const timer = setTimeout(() => dropWorker(new Error('Export worker timed out')), timeout_ms);
 
 		pending.set(id, {
 			resolve: resolve as (value: unknown) => void,
