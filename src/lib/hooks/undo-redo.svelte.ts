@@ -19,6 +19,9 @@ type BatchData = {
 	children_nodes?: PhaseLoadSchedule[];
 };
 
+// Each entry holds full node snapshots, so old history is dropped past this depth.
+const MAX_HISTORY = 100;
+
 type Action<T extends PhaseLoadSchedule> = {
 	previous_data?: T;
 	data?: T;
@@ -64,8 +67,14 @@ export class UndoRedoState {
 		this.redo_stack = [];
 	}
 
+	private trimHistory() {
+		if (this.undo_stack.length > MAX_HISTORY) this.undo_stack = this.undo_stack.slice(-MAX_HISTORY);
+		if (this.redo_stack.length > MAX_HISTORY) this.redo_stack = this.redo_stack.slice(-MAX_HISTORY);
+	}
+
 	setActionToUndo(action: Action<PhaseLoadSchedule>) {
-		this.undo_stack = [...(this.undo_stack ? this.undo_stack : []), action];
+		this.trimHistory();
+		this.undo_stack = [...this.undo_stack, action];
 		this.setHasUnsavedActions();
 	}
 
@@ -157,6 +166,7 @@ export class UndoRedoState {
 		field_data?: number;
 		action: Action<PhaseLoadSchedule>;
 	}) {
+		this.trimHistory();
 		overrideField({
 			unoverride: is_undo,
 			field_type,
@@ -172,6 +182,7 @@ export class UndoRedoState {
 	}
 
 	async undo() {
+		this.trimHistory();
 		const last_action = this.undo_stack.pop();
 		if (last_action) {
 			this.setHasUnsavedActions();
@@ -366,6 +377,7 @@ export class UndoRedoState {
 	}
 
 	async redo() {
+		this.trimHistory();
 		const last_action = this.redo_stack.pop();
 		if (last_action) {
 			this.setHasUnsavedActions();
