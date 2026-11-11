@@ -21,6 +21,12 @@ export default defineConfig({
 			}
 		})
 	],
+	// ES output keeps the export worker's `import('exceljs')` as a separate
+	// lazy chunk instead of inlining ~1 MB into the worker entry (the default
+	// worker format is iife, which has no code splitting).
+	worker: {
+		format: 'es'
+	},
 	server: {
 		fs: {
 			allow: ['package.json']

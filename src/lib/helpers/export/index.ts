@@ -1,8 +1,7 @@
 import type { Node } from '#lib/types/db/index.js';
 import { toast } from 'svelte-sonner';
 import type { ExcelExportType } from '#lib/types/misc/index.js';
-import { generateWorkbook } from './generate.js';
-import { generateWorkbookInWorker } from '#lib/workers/compute-client.js';
+import { generateWorkbookInWorker } from '#lib/workers/export-client.js';
 
 export { processOnePhaseExcelPanelBoardSchedule } from './panel-board-sheet.js';
 export { processOnePhaseVoltageDrop } from './voltage-drop-sheet.js';
@@ -31,25 +30,15 @@ export async function exportToExcel(
 	});
 
 	try {
-		let generated;
-		try {
-			const snapshot = (await import('#lib/db/queries/snapshot.js')).loadSnapshot();
-			generated = await generateWorkbookInWorker({
-				type,
-				node_id,
-				highest_unit,
-				file_name: _file_name,
-				nodes: snapshot.nodes,
-				is_dynamic: snapshot.is_dynamic
-			});
-		} catch {
-			generated = await generateWorkbook({
-				type,
-				node_id,
-				highest_unit,
-				file_name: _file_name
-			});
-		}
+		const snapshot = (await import('#lib/db/queries/snapshot.js')).loadSnapshot();
+		const generated = await generateWorkbookInWorker({
+			type,
+			node_id,
+			highest_unit,
+			file_name: _file_name,
+			nodes: snapshot.nodes,
+			is_dynamic: snapshot.is_dynamic
+		});
 
 		const blob = new Blob([generated.buffer], {
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

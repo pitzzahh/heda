@@ -1,20 +1,13 @@
-import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
 import type { ExcelExportType } from '#lib/types/misc/index.js';
 
 self.onmessage = async (event: MessageEvent) => {
 	const { id, type } = event.data ?? {};
 	try {
-		if (type === 'voltage-drops') {
-			const { nodes, is_dynamic } = event.data;
-			const result = computeVoltageDropsFromNodes(nodes, Boolean(is_dynamic));
-			self.postMessage({ id, result });
-			return;
-		}
-
 		if (type === 'export') {
 			const { payload } = event.data;
-			// Dynamically imported so voltage computes never bundle the workbook
-			// generator (and its database imports) into the worker startup.
+			// Dynamic import: ExcelJS (~900 kB) only downloads on the first export,
+			// never while this worker is idle. The ES worker output in vite.config.ts
+			// keeps it in a separate chunk.
 			const { generateWorkbook } = await import('#lib/helpers/export/generate.js');
 			const generated = await generateWorkbook({
 				type: payload.type as ExcelExportType,
