@@ -8,5 +8,8 @@
 <AlertDialogPrimitive.Title
 	{...rest}
 	data-slot="alert-dialog-title"
-	class={cn('text-foreground text-base font-medium', classProp)}
+	class={cn(
+		'text-foreground text-lg leading-snug font-semibold tracking-tight text-balance',
+		classProp
+	)}
 />

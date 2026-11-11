@@ -10,6 +10,6 @@
 	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLDivElement> = $props();
 </script>
 
-<div {...rest} data-slot="dialog-header" class={cn('flex flex-col gap-1.5 pr-8', classProp)}>
+<div {...rest} data-slot="dialog-header" class={cn('flex flex-col gap-2 pr-10', classProp)}>
 	{@render children?.()}
 </div>
