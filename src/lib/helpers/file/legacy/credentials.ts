@@ -6,15 +6,11 @@ export interface LegacyV1Config {
 	salt: string;
 }
 
-interface LegacyV1Env {
-	VITE_LEGACY_FILE_PASSPHRASE?: string;
-	VITE_LEGACY_FILE_SALT?: string;
-}
-
 export function getLegacyV1Config(): LegacyV1Config | null {
-	const env = import.meta.env as LegacyV1Env;
-	const passphrase = env.VITE_LEGACY_FILE_PASSPHRASE;
-	const salt = env.VITE_LEGACY_FILE_SALT;
+	// Read each key directly: Vite then inlines just these two values instead of
+	// the whole env object, and web builds can define them away (vite.config.ts).
+	const passphrase = import.meta.env.VITE_LEGACY_FILE_PASSPHRASE as string | undefined;
+	const salt = import.meta.env.VITE_LEGACY_FILE_SALT as string | undefined;
 	if (!passphrase || !salt) return null;
 	return { passphrase, salt };
 }
