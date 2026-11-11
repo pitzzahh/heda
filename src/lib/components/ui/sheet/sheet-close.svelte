@@ -15,7 +15,7 @@
 	data-slot="sheet-close"
 	aria-label={children ? undefined : 'Close'}
 	class={cn(
-		'text-muted-foreground hover:bg-accent hover:text-accent-foreground grid size-8 place-items-center rounded-lg transition-colors',
+		'grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
 		classProp
 	)}
 >

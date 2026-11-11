@@ -6,7 +6,7 @@ export const letterMorph = tv({
 	slots: {
 		root: '',
 		frame: [
-			'relative inline-block box-content whitespace-nowrap text-start',
+			'relative box-content inline-block text-start whitespace-nowrap',
 			'-my-[0.5em] -mr-[0.5em] -ml-[0.2em] py-[0.5em] pr-[0.5em] pl-[0.2em]',
 			'transition-[width] duration-[var(--duration-spring-snappy)] ease-[var(--ease-spring-snappy)] motion-reduce:transition-none',
 			'[mask-image:linear-gradient(90deg,#000_calc(100%-0.5em),transparent)]'

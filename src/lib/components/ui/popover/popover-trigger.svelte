@@ -9,7 +9,7 @@
 	{...rest}
 	data-slot="popover-trigger"
 	class={cn(
-		'focus-visible:ring-ring inline-flex rounded-lg outline-hidden focus-visible:ring-2',
+		'inline-flex rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-ring',
 		classProp
 	)}
 />

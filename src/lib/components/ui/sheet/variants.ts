@@ -44,8 +44,8 @@ export const sheet = tv({
 		side: {
 			left: { panel: 'inset-y-0 left-0 h-full w-[min(22rem,100vw)]' },
 			right: { panel: 'inset-y-0 right-0 h-full w-[min(22rem,100vw)]' },
-			top: { panel: 'inset-x-0 top-0 w-full max-h-[80vh]' },
-			bottom: { panel: 'inset-x-0 bottom-0 w-full max-h-[80vh] rounded-t-2xl' }
+			top: { panel: 'inset-x-0 top-0 max-h-[80vh] w-full' },
+			bottom: { panel: 'inset-x-0 bottom-0 max-h-[80vh] w-full rounded-t-2xl' }
 		}
 	},
 	compoundVariants: [

@@ -40,7 +40,7 @@
 <div class="flex flex-col gap-4">
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<div class="flex flex-col items-center gap-2">
-			<Label class="text-muted-foreground text-[10px] font-semibold tracking-[0.2em] uppercase"
+			<Label class="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
 				>Theme</Label
 			>
 			<RadioGroup.Root value="" class="grid w-full grid-cols-3 gap-2">
@@ -51,13 +51,13 @@
 		</div>
 
 		<div class="flex flex-col items-center gap-2">
-			<Label class="text-muted-foreground text-[10px] font-semibold tracking-[0.2em] uppercase"
+			<Label class="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
 				>Accent</Label
 			>
 			<div id="colors" class="flex h-full items-center gap-4">
 				{#each themeColors as themeColor (themeColor.value)}
 					<button
-						class="group focus-visible:ring-ring flex cursor-pointer flex-col items-center gap-1.5 rounded-xl p-1.5 outline-hidden transition-colors focus-visible:ring-2"
+						class="group flex cursor-pointer flex-col items-center gap-1.5 rounded-xl p-1.5 outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring"
 						onclick={() => handleChangeThemeColor(themeColor.value)}
 						aria-label="Use {themeColor.name} accent"
 						aria-pressed={themeColor.value === settingsState.themeColor}
@@ -67,12 +67,12 @@
 								themeColor.bg,
 								'size-9 rounded-full shadow-inner transition-transform duration-200 group-hover:scale-110',
 								{
-									'ring-primary ring-offset-background scale-110 ring-2 ring-offset-2':
+									'scale-110 ring-2 ring-primary ring-offset-2 ring-offset-background':
 										themeColor.value === settingsState.themeColor
 								}
 							)}
 						></span>
-						<span class="text-muted-foreground text-[10px] font-medium">{themeColor.name}</span>
+						<span class="text-[10px] font-medium text-muted-foreground">{themeColor.name}</span>
 					</button>
 				{/each}
 			</div>
@@ -83,7 +83,7 @@
 <div class="flex flex-row items-center justify-between gap-3">
 	<div class="space-y-0.5">
 		<Label>Show loads in Unit Hierarchy</Label>
-		<p class="text-muted-foreground text-xs">
+		<p class="text-xs text-muted-foreground">
 			Show or hide loads in the unit hierarchy, minimizing the hierarchy view.
 		</p>
 	</div>
@@ -97,7 +97,7 @@
 <div class="flex flex-row items-center justify-between gap-3">
 	<div class="space-y-0.5">
 		<Label>Enable panel multi copy</Label>
-		<p class="text-muted-foreground text-xs">
+		<p class="text-xs text-muted-foreground">
 			Enable this option to prompt for the number of panels to be copied when copying a panel.
 		</p>
 	</div>
@@ -111,7 +111,7 @@
 <div class="flex flex-row items-center justify-between gap-3">
 	<div class="space-y-0.5">
 		<Label>Enable load multi copy</Label>
-		<p class="text-muted-foreground text-xs">
+		<p class="text-xs text-muted-foreground">
 			Enable this option to prompt for the number of loads to be copied when copying a load.
 		</p>
 	</div>
@@ -149,7 +149,7 @@
 	<Label
 		for={mode}
 		class={cn(
-			'group hover:border-border flex cursor-pointer flex-col gap-1.5 rounded-xl border border-transparent p-1.5 transition-all duration-150',
+			'group flex cursor-pointer flex-col gap-1.5 rounded-xl border border-transparent p-1.5 transition-all duration-150 hover:border-border',
 			active && 'border-primary/40 bg-primary/6 shadow-(--surface-shadow)'
 		)}
 	>
@@ -205,7 +205,7 @@
 		{/if}
 		<span
 			class={cn(
-				'text-muted-foreground flex items-center justify-center gap-1.5 text-[11px] font-medium',
+				'flex items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground',
 				active && 'text-foreground'
 			)}
 		>

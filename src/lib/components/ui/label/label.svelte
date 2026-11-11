@@ -27,7 +27,7 @@
 	{...rest}
 	for={htmlFor}
 	class={cn(
-		'text-foreground inline-flex items-center gap-1 text-sm font-medium',
+		'inline-flex items-center gap-1 text-sm font-medium text-foreground',
 		disabled && 'pointer-events-none opacity-50',
 		classProp
 	)}

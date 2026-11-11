@@ -69,6 +69,6 @@
 	<input
 		type="number"
 		bind:value={sets_value}
-		class="outline-primary w-16 [appearance:textfield] bg-transparent p-2 text-center focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="w-16 [appearance:textfield] bg-transparent p-2 text-center outline-primary focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>

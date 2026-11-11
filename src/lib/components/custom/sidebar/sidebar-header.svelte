@@ -137,10 +137,10 @@
 />
 
 <div
-	class="border-sidebar-border flex h-14 w-full shrink-0 items-center justify-between gap-2 border-b px-2"
+	class="flex h-14 w-full shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2"
 >
 	<div
-		class="border-sidebar-border/60 bg-sidebar-accent/40 flex items-center gap-0.5 rounded-lg border p-0.5"
+		class="flex items-center gap-0.5 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 p-0.5"
 	>
 		{#if !settings_state.auto_save_enabled}
 			<Tooltip.Provider>
@@ -281,7 +281,7 @@
 		</DropdownMenu.Root>
 		{#snippet failed(error, reset)}
 			<div class="grid w-full gap-2 rounded-xl border border-dashed p-3">
-				<p class="text-muted-foreground text-xs">{error}</p>
+				<p class="text-xs text-muted-foreground">{error}</p>
 				<Button onclick={reset} size="sm" variant="outline">Try again</Button>
 			</div>
 		{/snippet}

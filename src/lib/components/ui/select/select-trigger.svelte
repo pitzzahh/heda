@@ -33,7 +33,7 @@
 		fill="none"
 		aria-hidden="true"
 		data-slot="select-icon"
-		class="text-muted-foreground ms-auto size-3.5 shrink-0 transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:duration-(--duration-dropdown) motion-reduce:transition-none"
+		class="ms-auto size-3.5 shrink-0 text-muted-foreground transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:duration-(--duration-dropdown) motion-reduce:transition-none"
 	>
 		<path
 			d="m4 6 4 4 4-4"

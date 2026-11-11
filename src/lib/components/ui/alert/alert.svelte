@@ -46,7 +46,7 @@
 				type="button"
 				aria-label="Dismiss"
 				onclick={close}
-				class="text-muted-foreground hover:text-foreground absolute top-2.5 right-2.5 rounded-md p-1 transition-colors"
+				class="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="size-3.5">
 					<path

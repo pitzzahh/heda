@@ -225,7 +225,7 @@
 			}}
 		>
 			<Sidebar.MenuButton
-				class={cn('hover:bg-accent data-[active=true]:bg-accent relative transition-colors', {
+				class={cn('relative transition-colors hover:bg-accent data-[active=true]:bg-accent', {
 					'bg-accent shadow-[inset_2px_0_0_0_var(--primary)]':
 						params.id && params.id.split('_').at(-1) === node.id,
 					'cursor-not-allowed opacity-50': button_state === 'processing'
@@ -237,7 +237,7 @@
 							<CaretRightIcon
 								{...props}
 								weight="bold"
-								class="text-muted-foreground hover:text-foreground size-4 shrink-0 cursor-pointer transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) data-[state=open]:rotate-90 motion-reduce:transition-none"
+								class="size-4 shrink-0 cursor-pointer text-muted-foreground transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) hover:text-foreground data-[state=open]:rotate-90 motion-reduce:transition-none"
 								onclick={(e) => {
 									e.stopPropagation();
 									collapsibles.toggleCollapsible(node.id);
@@ -277,7 +277,7 @@
 									{node_name}
 								</span>
 								{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
-									<div class="bg-destructive size-2 rounded-full"></div>
+									<div class="size-2 rounded-full bg-destructive"></div>
 								{/if}
 							</AddPanelAndViewTrigger>
 						</div>

@@ -2,8 +2,8 @@ import { tv, type VariantProps } from 'tailwind-variants';
 
 export const button = tv({
 	base: [
-		'relative inline-flex shrink-0 select-none items-center justify-center gap-2',
-		'whitespace-nowrap border border-transparent font-medium text-sm',
+		'relative inline-flex shrink-0 items-center justify-center gap-2 select-none',
+		'border border-transparent text-sm font-medium whitespace-nowrap',
 		// Transform settles slower than colour.
 		'transition-[transform,scale,translate,background-color,border-color,color,box-shadow]',
 		'[transition-duration:var(--duration-slow),var(--duration-slow),var(--duration-slow),var(--duration-instant),var(--duration-instant),var(--duration-instant),var(--duration-instant)] ease-[var(--ease-smooth)]',
@@ -101,9 +101,9 @@ export const button = tv({
 /** Only the shown face sizes the button or adds scroll width. */
 export const buttonFace = tv({
 	slots: {
-		wrap: 'relative grid w-full min-w-0 grid-cols-[minmax(0,1fr)] overflow-x-clip gap-[inherit] [align-items:inherit] [flex-direction:inherit] [justify-content:inherit]',
+		wrap: 'relative grid w-full min-w-0 grid-cols-[minmax(0,1fr)] [flex-direction:inherit] [align-items:inherit] [justify-content:inherit] gap-[inherit] overflow-x-clip',
 		face: [
-			'col-start-1 row-start-1 flex gap-[inherit] whitespace-nowrap [align-items:inherit] [flex-direction:inherit] [justify-content:inherit]',
+			'col-start-1 row-start-1 flex [flex-direction:inherit] [align-items:inherit] [justify-content:inherit] gap-[inherit] whitespace-nowrap',
 			'transition-[opacity,transform,scale,translate,filter] duration-[var(--duration-base)] ease-[var(--ease-ui-out)] motion-reduce:transition-none',
 			'data-[on=false]:pointer-events-none data-[on=false]:absolute data-[on=false]:inset-0 data-[on=false]:translate-y-[3px] data-[on=false]:opacity-0 data-[on=false]:blur-[3px]'
 		]

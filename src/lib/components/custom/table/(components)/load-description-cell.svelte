@@ -91,6 +91,6 @@
 	<input
 		type="text"
 		bind:value={load_description_state}
-		class="outline-primary w-full [appearance:textfield] bg-transparent p-2 text-center focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="w-full [appearance:textfield] bg-transparent p-2 text-center outline-primary focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>

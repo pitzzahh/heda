@@ -55,7 +55,7 @@
 			<div class="flex items-center gap-3">
 				{#if trigger_variant === 'destructive'}
 					<div
-						class="bg-destructive/10 text-destructive grid size-10 shrink-0 place-items-center rounded-xl"
+						class="grid size-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive"
 						aria-hidden="true"
 					>
 						<WarningCircleIcon class="size-5" />

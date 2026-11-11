@@ -110,7 +110,7 @@
 
 <Tooltip.Provider delayDuration={100}>
 	<div
-		class="border-border bg-card flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border pr-4 pb-4 shadow-(--surface-shadow)"
+		class="flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border border-border bg-card pr-4 pb-4 shadow-(--surface-shadow)"
 		{@attach virtual.attach_scroll_element}
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
@@ -120,14 +120,14 @@
 		Inner card chrome off: this box scrolls with the content, so its own
 		border would slide into view as a fake cut-off edge. -->
 		<Table.Root containerClass="overflow-visible rounded-none border-0 bg-transparent">
-			<Table.Header class="bg-secondary sticky top-0 z-10">
+			<Table.Header class="sticky top-0 z-10 bg-secondary">
 				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 					<Table.Row>
 						{#each headerGroup.headers as header, index (header.id)}
 							<Table.Head
 								colspan={header.colSpan}
-								class={cn('text-muted-foreground h-10 align-middle font-semibold', {
-									'border-border/60 border-r': index + 1 < headerGroup.headers.length,
+								class={cn('h-10 align-middle font-semibold text-muted-foreground', {
+									'border-r border-border/60': index + 1 < headerGroup.headers.length,
 									'text-center': header.colSpan > 1
 								})}
 							>
@@ -148,9 +148,9 @@
 					<Table.Row>
 						<Table.Cell colspan={leafColumnCount} class="h-32 border-0">
 							<div class="flex flex-col items-center justify-center gap-1.5 text-center">
-								<TableIcon class="text-muted-foreground/60 size-7" />
-								<p class="text-muted-foreground text-sm font-medium">Nothing here yet</p>
-								<p class="text-muted-foreground/80 max-w-55 text-xs text-balance">
+								<TableIcon class="size-7 text-muted-foreground/60" />
+								<p class="text-sm font-medium text-muted-foreground">Nothing here yet</p>
+								<p class="max-w-55 text-xs text-balance text-muted-foreground/80">
 									Add a load or panel from the hierarchy to populate this schedule.
 								</p>
 							</div>
@@ -183,7 +183,7 @@
 								<td
 									data-slot="table-cell"
 									class={cn(cellClasses, {
-										'border-border/60 border-r': cellIdx + 1 !== cells.length,
+										'border-r border-border/60': cellIdx + 1 !== cells.length,
 										'text-center': cellIdx === 0 || cell.column.id === 'load_description',
 										'min-w-62.5': cell.column.columnDef.header === 'LOAD DESCRIPTION'
 									})}
@@ -207,15 +207,15 @@
 			</Table.Body>
 
 			{#if data.length > 0 && is_footer_shown}
-				<Table.Footer class="bg-muted/40 border-t">
+				<Table.Footer class="border-t bg-muted/40">
 					{#each table.getFooterGroups() as footerGroup, i (i)}
 						{#if i === 0}
 							<Table.Row>
 								{#each footerGroup.headers as header, i (i)}
 									<Table.Head
 										colspan={header.colSpan}
-										class={cn('text-foreground font-bold', {
-											'border-border/60 border-r': i + 1 < footerGroup.headers.length,
+										class={cn('font-bold text-foreground', {
+											'border-r border-border/60': i + 1 < footerGroup.headers.length,
 											'text-center': i === 0,
 											'p-0': header.column.id === 'conductor_sets'
 										})}

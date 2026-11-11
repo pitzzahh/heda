@@ -134,7 +134,7 @@
 			<div class="grid gap-2">
 				<div class="flex items-center justify-between gap-3">
 					<Label for="copy_count">Number of copies</Label>
-					<span class="text-muted-foreground text-xs tabular-nums">
+					<span class="text-xs text-muted-foreground tabular-nums">
 						Up to {MAX_COPY_COUNT.toLocaleString()}
 					</span>
 				</div>
@@ -176,7 +176,7 @@
 					</Button>
 				</div>
 
-				<p id="copy-count-help" class="text-muted-foreground text-xs" aria-live="polite">
+				<p id="copy-count-help" class="text-xs text-muted-foreground" aria-live="polite">
 					{#if !is_valid}
 						Enter a whole number from 1 to {MAX_COPY_COUNT.toLocaleString()}.
 					{:else}

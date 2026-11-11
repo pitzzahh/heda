@@ -48,7 +48,7 @@
 	<div
 		out:fly={{ y: 50, duration: 300 }}
 		in:fly={{ y: 50, duration: 300 }}
-		class="border-border bg-sidebar fixed right-6 bottom-6 z-30 rounded-lg border p-4"
+		class="fixed right-6 bottom-6 z-30 rounded-lg border border-border bg-sidebar p-4"
 	>
 		<div class="flex items-center gap-2">
 			<Button
