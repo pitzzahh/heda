@@ -15,8 +15,8 @@ export async function generateWorkbook(payload: {
 	node_id: string;
 	highest_unit?: Node['highest_unit_form'];
 	file_name?: string;
-	nodes?: Node[];
-	is_dynamic?: boolean;
+	nodes: Node[];
+	is_dynamic: boolean;
 }): Promise<GeneratedWorkbook> {
 	const { default: excel } = await import('exceljs');
 	const workbook = new excel.Workbook();
@@ -29,16 +29,9 @@ export async function generateWorkbook(payload: {
 		throw new Error('No highest unit found');
 	}
 
-	// Dynamic so worker voltage computes never pull the database/Tauri graph
-	// into their startup; the worker always passes `nodes`.
-	const snapshot = payload.nodes
-		? null
-		: ((await import('#lib/db/queries/snapshot.js')).loadSnapshot() as {
-				nodes: Node[];
-				is_dynamic: boolean;
-			});
-	const nodes = payload.nodes ?? snapshot!.nodes;
-	const is_dynamic = payload.nodes ? (payload.is_dynamic ?? false) : snapshot!.is_dynamic;
+	// Callers snapshot the node graph before posting it to the worker, so the
+	// worker never imports the database/Tauri graph.
+	const { nodes, is_dynamic } = payload;
 
 	const phase_label = getOptionLabel(DEFAULT_PHASES, highest_unit?.phase);
 	switch (highest_unit?.phase) {
