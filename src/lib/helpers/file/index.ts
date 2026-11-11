@@ -156,19 +156,6 @@ export async function writeDeviceEncryptedFile<T>(
 	await file.close();
 }
 
-export async function peekFileVersion(file_path: string): Promise<1 | 2 | 3> {
-	return detectFileVersion(new TextDecoder().decode(await readFile(file_path)));
-}
-
-export async function readEncryptedFile<T>(
-	filePath: string,
-	password: string | null,
-	device_key: string | null = null
-): Promise<T> {
-	const raw = new TextDecoder().decode(await readFile(filePath));
-	return decryptFilePayload<T>(raw, password, device_key);
-}
-
 export async function handleLoadFile(
 	complete_file_path?: string | null,
 	_procesing?: () => void,
@@ -194,20 +181,19 @@ export async function handleLoadFile(
 			}
 		}
 
-		let version: 1 | 2 | 3 | null = null;
+		// Read and decode once: version detection, legacy checks and decryption
+		// all work on the same string.
+		let raw: string;
 		try {
-			version = await peekFileVersion(complete_file_path);
+			raw = new TextDecoder().decode(await readFile(complete_file_path));
 		} catch {
-			version = null;
-		}
-		if (version === null) {
 			_idle?.();
 			return toast.warning('Failed to load file', {
 				description: 'The file could not be read.'
 			});
 		}
+		const version = detectFileVersion(raw);
 		if (version === 1) {
-			const raw = new TextDecoder().decode(await readFile(complete_file_path));
 			if (!isLegacyV1Envelope(raw)) {
 				_idle?.();
 				return toast.warning('Failed to load file', {
@@ -236,7 +222,7 @@ export async function handleLoadFile(
 		});
 
 		const device_key = protection === 'device' ? await getDeviceKey() : null;
-		const file_data = await readEncryptedFile<FileExport>(complete_file_path, password, device_key);
+		const file_data = await decryptFilePayload<FileExport>(raw, password, device_key, version);
 		toast.dismiss(load_toast_id);
 
 		const instance_name = await getFileName(complete_file_path);
