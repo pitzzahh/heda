@@ -264,3 +264,28 @@ export function clearCollection<T extends BaseItem<string>>(
 	collection.batch(() => {});
 	collection.emit('removed', last_item);
 }
+
+/**
+ * Removes the items whose id is in `ids` in one pass over the memory array.
+ *
+ * `removeMany` costs a scan and an index rebuild per removed item, and every
+ * per-item `removed` event makes each open cursor requery. Cursors requery on
+ * any `removed` event regardless of the item, so one event after the filter
+ * invalidates them, the snapshot cache and the persistence adapter together.
+ */
+export function removeFromCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	ids: ReadonlySet<string>
+): void {
+	let kept = 0;
+	let last_removed: T | undefined;
+	for (const item of memory) {
+		if (ids.has(item.id)) last_removed = item;
+		else memory[kept++] = item;
+	}
+	if (!last_removed) return;
+	memory.length = kept;
+	collection.batch(() => {});
+	collection.emit('removed', last_removed);
+}

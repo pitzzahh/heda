@@ -1,4 +1,4 @@
-import { getDatabase } from '../index.js';
+import { getDatabase, removeFromCollection } from '../index.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import type { Node } from '#lib/types/db/index.js';
@@ -257,8 +257,8 @@ export function removeNode(
 			throw Error(`Node with ID ${id} not found.`);
 		}
 
-		// Collect the subtree first so the delete is one bulk remove instead
-		// of one removeOne per node.
+		// Collect the subtree first so the delete is one pass over the collection
+		// instead of one removeOne per node.
 		const subtree: Node[] = [];
 		const stack: Node[] = [root];
 		const seen = new Set(visited);
@@ -275,7 +275,11 @@ export function removeNode(
 			}
 		}
 
-		database.nodes.removeMany({ id: { $in: subtree.map((node) => node.id) } });
+		removeFromCollection(
+			database.nodes,
+			database.nodes_memory,
+			new Set(subtree.map((node) => node.id))
+		);
 		for (const node of subtree) {
 			evictNodeFromCache(node.id);
 		}
@@ -290,7 +294,7 @@ export function removeNode(
 }
 
 /**
- * Removes many subtrees in one `removeMany`, sharing a single snapshot.
+ * Removes many subtrees in one pass, sharing a single snapshot.
  * Undo/redo and multi-select delete used to call `removeNode` per id, which
  * rebuilt the snapshot and persisted the whole collection once per node.
  * Roots nested inside an earlier root are skipped instead of failing.
@@ -334,7 +338,7 @@ export function removeNodesById(
 		}
 
 		if (subtree_ids.length > 0) {
-			database.nodes.removeMany({ id: { $in: subtree_ids } });
+			removeFromCollection(database.nodes, database.nodes_memory, new Set(subtree_ids));
 			for (const node_id of subtree_ids) {
 				evictNodeFromCache(node_id);
 			}
