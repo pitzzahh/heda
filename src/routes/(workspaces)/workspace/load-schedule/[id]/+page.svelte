@@ -21,12 +21,13 @@
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { LightningAIcon } from '#lib/assets/icons/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
 	const params = $derived(page.params);
-	const node_id = $derived(params.id!.split('_').at(-1) as string);
+	const node_id = $derived(nodeIdFromRouteId(params.id) as string);
 	const project_state = getProjectState();
 
 	let active_tab = $state('load-sched');

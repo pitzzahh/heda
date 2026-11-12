@@ -24,6 +24,7 @@
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
+	import { loadScheduleRouteId } from '#lib/helpers/navigation/index.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -159,7 +160,7 @@
 			project_state.setProjectLoaded(true);
 			await goto(
 				resolve('/(workspaces)/workspace/load-schedule/[id]', {
-					id: `${data.distribution_unit}_${root_node_id}`
+					id: loadScheduleRouteId(data.distribution_unit, root_node_id)
 				})
 			)
 				.then(() => {

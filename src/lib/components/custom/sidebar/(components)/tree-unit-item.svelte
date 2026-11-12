@@ -45,6 +45,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
+	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { draggable, droppable } from '@thisux/sveltednd';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '#lib/utils/index.js';
@@ -205,12 +206,12 @@
 				if (is_alt_pressed && node.node_type === 'panel') {
 					select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 				} else {
-					const current_id = params.id?.split('_').at(-1);
+					const current_id = nodeIdFromRouteId(params.id);
 					if (current_id !== node.id) {
 						button_state = 'processing';
 						goto(
 							resolve('/(workspaces)/workspace/load-schedule/[id]', {
-								id: node_name + '_' + node.id
+								id: loadScheduleRouteId(node_name, node.id)
 							})
 						).finally(() => (button_state = 'stale'));
 					}
@@ -227,7 +228,7 @@
 			<Sidebar.MenuButton
 				class={cn('relative transition-colors hover:bg-accent data-[active=true]:bg-accent', {
 					'bg-accent shadow-[inset_2px_0_0_0_var(--primary)]':
-						params.id && params.id.split('_').at(-1) === node.id,
+						params.id && nodeIdFromRouteId(params.id) === node.id,
 					'cursor-not-allowed opacity-50': button_state === 'processing'
 				})}
 			>
