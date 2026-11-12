@@ -12,7 +12,7 @@
 
 {#if errors}
 	{#each errors as error (error)}
-		<div class="text-destructive mt-1 flex items-center gap-1.5 text-xs font-medium" role="alert">
+		<div class="mt-1 flex items-center gap-1.5 text-xs font-medium text-destructive" role="alert">
 			<XCircleIcon class="size-3.5 shrink-0" />
 			{error}
 		</div>

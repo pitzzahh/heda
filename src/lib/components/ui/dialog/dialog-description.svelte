@@ -8,5 +8,5 @@
 <DialogPrimitive.Description
 	{...rest}
 	data-slot="dialog-description"
-	class={cn('text-muted-foreground text-sm leading-relaxed text-pretty', classProp)}
+	class={cn('text-sm leading-relaxed text-pretty text-muted-foreground', classProp)}
 />

@@ -19,7 +19,7 @@
 	{...rest}
 	data-slot="context-menu-label"
 	data-inset={inset || undefined}
-	class={cn('text-muted-foreground px-2.5 py-1.5 text-xs font-medium data-[inset]:pl-8', classProp)}
+	class={cn('px-2.5 py-1.5 text-xs font-medium text-muted-foreground data-[inset]:pl-8', classProp)}
 >
 	{@render children?.()}
 </div>

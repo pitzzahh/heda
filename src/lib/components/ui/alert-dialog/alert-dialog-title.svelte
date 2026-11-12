@@ -9,7 +9,7 @@
 	{...rest}
 	data-slot="alert-dialog-title"
 	class={cn(
-		'text-foreground text-lg leading-snug font-semibold tracking-tight text-balance',
+		'text-lg leading-snug font-semibold tracking-tight text-balance text-foreground',
 		classProp
 	)}
 />

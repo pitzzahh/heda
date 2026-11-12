@@ -6,6 +6,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 
 - Web dev: `bun run dev` · production web build: `bun run build` · desktop dev: `bunx tauri dev` · desktop build: `bunx tauri build`
 - Tests (vitest, colocated `*.test.ts`): `bun run test`
+- Formatting: `bun run format` (`bun fmt`, built into bun). Settings live in the `[fmt]` section of `bunfig.toml`; never reintroduce Prettier or its plugins.
 - `.env` holds web-build config only (`BASE_PATH`, loaded by Vite). Tauri builds and all `.heda` files (per-file user passwords) never touch it. See `.env.example`.
 
 ## SvelteKit 3 notes
@@ -70,7 +71,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 
 - Done = ZERO errors and ZERO warnings across every check below. The repo is fully clean. Never ship a finding.
 - Fast first, slow last, each once:
-  1. `bun run lint` (prettier + eslint, repo-wide). Run after edits.
+  1. `bun run lint` (`bun fmt --check` + eslint, repo-wide). Run after edits.
   2. `bun run test` (vitest): the tests covering your change, at minimum.
   3. `bun run check` (svelte-check, slow): ONCE at the end, never after every edit, never `--watch` in agent runs.
 - Bug fixes and behavior changes keep a colocated `*.test.ts` (see `src/lib/utils/format/format.test.ts`); validator changes extend `src/lib/validators/validators.test.ts`.

@@ -8,5 +8,5 @@
 <SheetPrimitive.Description
 	{...rest}
 	data-slot="sheet-description"
-	class={cn('text-muted-foreground text-sm', classProp)}
+	class={cn('text-sm text-muted-foreground', classProp)}
 />

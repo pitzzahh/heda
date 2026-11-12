@@ -6,8 +6,8 @@ export const menu = tv({
 	slots: {
 		surface: 'min-w-44',
 		item: [
-			'relative flex w-full cursor-default select-none items-center justify-start gap-2 rounded-lg px-2.5 py-1.5',
-			"[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+			'relative flex w-full cursor-default items-center justify-start gap-2 rounded-lg px-2.5 py-1.5 select-none',
+			"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 			// rounded-lg is concentric with the rounded-xl p-1 surface. The fill follows the pointer
 			// at once; a press squishes to 0.98 and eases back over 250ms.
 			'text-left text-sm outline-hidden transition-[color,background-color,scale] [transition-duration:var(--duration-instant),var(--duration-instant),var(--duration-slow)] ease-[var(--ease-out-quart)]',
@@ -16,7 +16,7 @@ export const menu = tv({
 			'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
 			'data-[inset]:pl-8'
 		],
-		shortcut: 'ml-auto shrink-0 text-muted-foreground text-xs',
+		shortcut: 'ml-auto shrink-0 text-xs text-muted-foreground',
 		indicator: 'pointer-events-none absolute left-2.5 flex size-3.5 items-center justify-center',
 		// Draw and pop live in motion.css: they key off the row's checked state in both ports.
 		check: 'menu-check size-3.5 shrink-0',
@@ -27,13 +27,13 @@ export const menu = tv({
 			xs: {
 				surface: [
 					anchoredSurface({ size: 'xs' }).surface(),
-					"min-w-36 p-0.5 [&_[role=menuitem]]:rounded-md [&_[role=menuitem]]:px-2 [&_[role=menuitem]]:py-1 [&_[role=menuitem]]:text-xs [&_[role=option]]:rounded-md [&_[role=option]]:px-2 [&_[role=option]]:py-1 [&_[role=option]]:text-xs [&_[role=menuitem]_svg:not([class*='size-'])]:size-3 [&_[role=option]_svg:not([class*='size-'])]:size-3"
+					"min-w-36 p-0.5 [&_[role=menuitem]]:rounded-md [&_[role=menuitem]]:px-2 [&_[role=menuitem]]:py-1 [&_[role=menuitem]]:text-xs [&_[role=menuitem]_svg:not([class*='size-'])]:size-3 [&_[role=option]]:rounded-md [&_[role=option]]:px-2 [&_[role=option]]:py-1 [&_[role=option]]:text-xs [&_[role=option]_svg:not([class*='size-'])]:size-3"
 				]
 			},
 			sm: {
 				surface: [
 					anchoredSurface({ size: 'sm' }).surface(),
-					"min-w-40 p-1 [&_[role=menuitem]]:rounded-md [&_[role=menuitem]]:px-2 [&_[role=menuitem]]:py-1.5 [&_[role=menuitem]]:text-xs [&_[role=option]]:rounded-md [&_[role=option]]:px-2 [&_[role=option]]:py-1.5 [&_[role=option]]:text-xs [&_[role=menuitem]_svg:not([class*='size-'])]:size-3.5 [&_[role=option]_svg:not([class*='size-'])]:size-3.5"
+					"min-w-40 p-1 [&_[role=menuitem]]:rounded-md [&_[role=menuitem]]:px-2 [&_[role=menuitem]]:py-1.5 [&_[role=menuitem]]:text-xs [&_[role=menuitem]_svg:not([class*='size-'])]:size-3.5 [&_[role=option]]:rounded-md [&_[role=option]]:px-2 [&_[role=option]]:py-1.5 [&_[role=option]]:text-xs [&_[role=option]_svg:not([class*='size-'])]:size-3.5"
 				]
 			},
 			default: {
@@ -42,13 +42,13 @@ export const menu = tv({
 			lg: {
 				surface: [
 					anchoredSurface({ size: 'lg' }).surface(),
-					"min-w-48 p-1.5 [&_[role=menuitem]]:px-3 [&_[role=menuitem]]:py-2 [&_[role=option]]:px-3 [&_[role=option]]:py-2 [&_[role=menuitem]_svg:not([class*='size-'])]:size-4 [&_[role=option]_svg:not([class*='size-'])]:size-4"
+					"min-w-48 p-1.5 [&_[role=menuitem]]:px-3 [&_[role=menuitem]]:py-2 [&_[role=menuitem]_svg:not([class*='size-'])]:size-4 [&_[role=option]]:px-3 [&_[role=option]]:py-2 [&_[role=option]_svg:not([class*='size-'])]:size-4"
 				]
 			},
 			xl: {
 				surface: [
 					anchoredSurface({ size: 'xl' }).surface(),
-					"min-w-56 p-1.5 [&_[role=menuitem]]:rounded-xl [&_[role=menuitem]]:px-3 [&_[role=menuitem]]:py-2.5 [&_[role=menuitem]]:text-base [&_[role=option]]:rounded-xl [&_[role=option]]:px-3 [&_[role=option]]:py-2.5 [&_[role=option]]:text-base [&_[role=menuitem]_svg:not([class*='size-'])]:size-4.5 [&_[role=option]_svg:not([class*='size-'])]:size-4.5"
+					"min-w-56 p-1.5 [&_[role=menuitem]]:rounded-xl [&_[role=menuitem]]:px-3 [&_[role=menuitem]]:py-2.5 [&_[role=menuitem]]:text-base [&_[role=menuitem]_svg:not([class*='size-'])]:size-4.5 [&_[role=option]]:rounded-xl [&_[role=option]]:px-3 [&_[role=option]]:py-2.5 [&_[role=option]]:text-base [&_[role=option]_svg:not([class*='size-'])]:size-4.5"
 				]
 			}
 		},

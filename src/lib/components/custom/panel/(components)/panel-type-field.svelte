@@ -75,7 +75,7 @@
 					</Command.Root>
 				</Popover.Content>
 			</Popover.Root>
-			<p class="text-muted-foreground text-[0.8rem]">This is the type for the panel.</p>
+			<p class="text-[0.8rem] text-muted-foreground">This is the type for the panel.</p>
 			<FieldErrors errors={field.errors} />
 		</div>
 	{/snippet}

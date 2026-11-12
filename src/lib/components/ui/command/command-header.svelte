@@ -22,6 +22,6 @@
 		data-slot="command-header"
 		class={cn('flex items-center justify-between gap-3 px-3.5 pt-2.5 pb-1.5', classProp)}
 	>
-		<p class="text-foreground text-sm font-medium">{@render children?.()}</p>
+		<p class="text-sm font-medium text-foreground">{@render children?.()}</p>
 	</div>
 {/if}

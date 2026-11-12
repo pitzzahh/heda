@@ -13,7 +13,7 @@
 <div
 	{...rest}
 	data-slot="dropdown-menu-label"
-	class={cn('text-muted-foreground px-2.5 py-1.5 text-xs font-medium', classProp)}
+	class={cn('px-2.5 py-1.5 text-xs font-medium text-muted-foreground', classProp)}
 >
 	{@render children?.()}
 </div>

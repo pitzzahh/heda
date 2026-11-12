@@ -60,7 +60,7 @@
 <div data-sidebar="menu-item" class="group/menu-item relative w-full">
 	<div use:draggable={{ container: node.id, dragData: node }}>
 		<Sidebar.MenuButton
-			class="hover:bg-accent active:bg-accent/70 flex w-full items-center transition-colors data-[active=true]:bg-transparent"
+			class="flex w-full items-center transition-colors hover:bg-accent active:bg-accent/70 data-[active=true]:bg-transparent"
 			onclick={() => {
 				if (is_alt_pressed) {
 					select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
@@ -77,7 +77,7 @@
 							{typeof node === 'string' ? node : node.load_data?.load_description}
 						</span>
 						{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
-							<div class="bg-destructive size-2 rounded-full"></div>
+							<div class="size-2 rounded-full bg-destructive"></div>
 						{/if}
 					</div>
 				</ContextMenu.Trigger>

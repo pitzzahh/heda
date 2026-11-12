@@ -168,7 +168,7 @@
 					<div class="space-y-2">
 						<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
 						<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
-						<p class="text-muted-foreground text-[0.8rem]">This is the panel name.</p>
+						<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
 						<FieldErrors errors={field.errors} />
 					</div>
 				{/snippet}

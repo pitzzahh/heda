@@ -8,5 +8,5 @@
 <hr
 	{...rest}
 	data-slot="dropdown-menu-separator"
-	class={cn('bg-border -mx-1 my-1 h-px border-0', classProp)}
+	class={cn('-mx-1 my-1 h-px border-0 bg-border', classProp)}
 />

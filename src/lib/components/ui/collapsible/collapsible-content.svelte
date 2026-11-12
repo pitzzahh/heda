@@ -20,7 +20,7 @@
 			class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-[var(--duration-dropdown)] ease-[var(--ease-out-quad)] data-[state=open]:grid-rows-[1fr] data-[state=open]:duration-[var(--duration-collapse)] motion-reduce:transition-none"
 		>
 			<div class="overflow-hidden">
-				<div class={cn('text-muted-foreground px-1 pb-2 text-sm', classProp)}>
+				<div class={cn('px-1 pb-2 text-sm text-muted-foreground', classProp)}>
 					{@render children?.()}
 				</div>
 			</div>

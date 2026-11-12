@@ -8,5 +8,5 @@
 <SheetPrimitive.Title
 	{...rest}
 	data-slot="sheet-title"
-	class={cn('text-foreground text-sm font-semibold', classProp)}
+	class={cn('text-sm font-semibold text-foreground', classProp)}
 />

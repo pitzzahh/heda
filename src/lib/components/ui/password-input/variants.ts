@@ -7,13 +7,13 @@ export const passwordInput = tv({
 		toggle:
 			'grid size-7 place-items-center rounded-md text-muted-foreground outline-hidden hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4.5',
 		slash:
-			'transition-[stroke-dashoffset,opacity] duration-[var(--duration-base)] ease-[var(--ease-ui-out)] [stroke-dasharray:1] [stroke-dashoffset:1] opacity-0 group-data-[revealed=true]/toggle:opacity-100 group-data-[revealed=true]/toggle:[stroke-dashoffset:0] motion-reduce:transition-none',
+			'opacity-0 transition-[stroke-dashoffset,opacity] duration-[var(--duration-base)] ease-[var(--ease-ui-out)] [stroke-dasharray:1] [stroke-dashoffset:1] group-data-[revealed=true]/toggle:opacity-100 group-data-[revealed=true]/toggle:[stroke-dashoffset:0] motion-reduce:transition-none',
 		meter: 'flex items-center gap-3',
 		segments: 'grid flex-1 grid-cols-4 gap-1',
 		segment:
 			'h-1 rounded-full bg-muted transition-[background-color] duration-[var(--duration-base)] ease-[var(--ease-ui-out)] motion-reduce:transition-none',
-		word: 'min-w-16 text-right font-medium text-muted-foreground text-xs',
-		rules: 'grid gap-1 text-muted-foreground text-xs',
+		word: 'min-w-16 text-right text-xs font-medium text-muted-foreground',
+		rules: 'grid gap-1 text-xs text-muted-foreground',
 		rule: 'flex items-center gap-2 transition-colors duration-[var(--duration-fast)] data-[met=true]:text-foreground',
 		tick: 'menu-check size-3.5 shrink-0 text-success',
 		dot: 'size-1 rounded-full bg-current'

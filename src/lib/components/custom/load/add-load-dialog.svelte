@@ -39,7 +39,7 @@
 			<Dialog.Trigger
 				class={buttonVariants({
 					variant: 'outline',
-					className: 'bg-primary text-primary-foreground hover:bg-primary/90 h-6 w-full'
+					className: 'h-6 w-full bg-primary text-primary-foreground hover:bg-primary/90'
 				})}
 			>
 				<PlusCircleIcon class="size-4" />

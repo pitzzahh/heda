@@ -53,13 +53,13 @@
 		<AppSidebar project={workspace.project} root_node={workspace.root_node as Node} />
 		<Sidebar.Inset class="overflow-y-auto">
 			<header
-				class="bg-background/80 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl backdrop-saturate-150 sm:px-4"
+				class="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/80 px-3 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/70 sm:px-4"
 			>
 				<div class="flex min-w-0 items-center gap-2">
 					<Sidebar.Trigger class="-ml-1" />
 					<Separator orientation="vertical" class="mx-1 hidden h-5 sm:block" />
 					<div
-						class="bg-primary/10 text-primary border-primary/15 grid size-8 shrink-0 place-items-center rounded-lg border"
+						class="grid size-8 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/10 text-primary"
 					>
 						<LightningAIcon class="size-4" />
 					</div>
@@ -72,9 +72,9 @@
 							{/if}
 						</p>
 						{#if on_load_schedule}
-							<CaretRightIcon class="text-muted-foreground size-3.5 shrink-0" />
+							<CaretRightIcon class="size-3.5 shrink-0 text-muted-foreground" />
 							<p
-								class="text-muted-foreground hidden text-sm font-medium whitespace-nowrap md:inline"
+								class="hidden text-sm font-medium whitespace-nowrap text-muted-foreground md:inline"
 							>
 								Load Schedule
 							</p>
@@ -93,7 +93,7 @@
 					aria-live="polite"
 				>
 					{#if undo_redo_state.has_unsaved_actions}
-						<span class="bg-warning size-1.5 rounded-full"></span>
+						<span class="size-1.5 rounded-full bg-warning"></span>
 						Unsaved
 					{:else}
 						<CheckCircleIcon class="size-3.5" />
@@ -109,13 +109,13 @@
 				{#snippet failed(error, reset)}
 					<div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center">
 						<div
-							class="bg-destructive/10 text-destructive grid size-14 place-items-center rounded-2xl"
+							class="grid size-14 place-items-center rounded-2xl bg-destructive/10 text-destructive"
 						>
 							<WarningCircleIcon class="size-7" />
 						</div>
 						<div class="grid gap-1">
 							<p class="text-lg font-bold tracking-tight">Something went wrong</p>
-							<p class="text-muted-foreground max-w-md text-sm text-balance">{error}</p>
+							<p class="max-w-md text-sm text-balance text-muted-foreground">{error}</p>
 						</div>
 						<Button onclick={reset} variant="outline">Try again</Button>
 					</div>

@@ -13,7 +13,7 @@
 <div
 	{...rest}
 	data-slot="alert-title"
-	class={cn('text-foreground col-start-2 min-h-4 font-medium tracking-tight', classProp)}
+	class={cn('col-start-2 min-h-4 font-medium tracking-tight text-foreground', classProp)}
 >
 	{@render children?.()}
 </div>

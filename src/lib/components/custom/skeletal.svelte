@@ -32,7 +32,7 @@
 		</div>
 
 		<div class="flex items-center justify-between gap-2">
-			<div class="text-muted-foreground flex-1 text-sm">
+			<div class="flex-1 text-sm text-muted-foreground">
 				<Skeleton class="h-9 w-32 rounded-md" />
 			</div>
 		</div>
