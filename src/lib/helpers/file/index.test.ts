@@ -13,7 +13,8 @@ const {
 	getSessionPassword_mock,
 	getSessionProtection_mock,
 	invoke_mock,
-	load_current_project_mock
+	load_current_project_mock,
+	clear_session_mock
 } = vi.hoisted(() => ({
 	open_mock: vi.fn(),
 	write_mock: vi.fn(),
@@ -27,11 +28,13 @@ const {
 	getSessionPassword_mock: vi.fn(),
 	getSessionProtection_mock: vi.fn(),
 	invoke_mock: vi.fn(),
-	load_current_project_mock: vi.fn()
+	load_current_project_mock: vi.fn(),
+	clear_session_mock: vi.fn()
 }));
 vi.mock('#lib/db/session.js', () => ({
 	getSessionPassword: getSessionPassword_mock,
 	setSession: vi.fn(),
+	clearSessionPassword: clear_session_mock,
 	getSessionProtection: getSessionProtection_mock
 }));
 vi.mock('#lib/helpers/security/device-key.js', () => ({
@@ -249,6 +252,20 @@ describe('handleLoadFile', () => {
 			project: { id: 'p1', project_name: 'Project' },
 			nodes: []
 		});
+	});
+
+	it('drops the cached secret when the file contents are rejected', async () => {
+		const path = '/tmp/device.heda';
+		const raw = await packFileV3(
+			{ project: { id: 'p1', project_name: 'Project' }, nodes: [] },
+			DEVICE_KEY
+		);
+		installFileSystem({ [path]: new TextEncoder().encode(raw) });
+		load_current_project_mock.mockRejectedValue(new Error('Item with same id already exists'));
+
+		await handleLoadFile(path);
+
+		expect(clear_session_mock).toHaveBeenCalledTimes(1);
 	});
 
 	it('grants the project folder before reading the file', async () => {
