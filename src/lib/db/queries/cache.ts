@@ -2,26 +2,24 @@ import type { NodeByIdResult } from '#lib/types/db/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 
-export const computed_load_reuse = new Map<
-	string,
-	{ is_dynamic: boolean; value: PhaseLoadSchedule }
->();
-export const computed_load_array_reuse = new Map<
-	string,
-	{ is_dynamic: boolean; value: PhaseLoadSchedule[] }
->();
-export const voltage_drop_reuse = new Map<string, { is_dynamic: boolean; value: VoltageDrop }>();
-let voltage_drop_array_reuse: { is_dynamic: boolean; value: VoltageDrop[] } | null = null;
+// Per-node results that depend only on the node and its descendants. They
+// survive across revisions; the load snapshot evicts changed nodes and their
+// ancestors (see `invalidateComputed`), so an edit recomputes one branch.
+export const computed_loads = new Map<string, PhaseLoadSchedule>();
+export const node_results = new Map<string, NodeByIdResult>();
+
+// Last value handed to the UI, kept so an unchanged result keeps its identity.
+export const computed_load_arrays = new Map<string, PhaseLoadSchedule[]>();
+export const node_by_id_reuse = new Map<string, NodeByIdResult>();
+
 export const voltage_drop_result_reuse: { revision: number; value: VoltageDrop[] | null } = {
 	revision: -1,
 	value: null
 };
-export const node_by_id_reuse = new Map<string, { is_dynamic: boolean; value: NodeByIdResult }>();
 
 export function isSameValue(a: unknown, b: unknown): boolean {
 	if (Object.is(a, b)) return true;
 	if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-
 	if (Array.isArray(a) || Array.isArray(b)) {
 		if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
 		for (let index = 0; index < a.length; index += 1) {
@@ -29,7 +27,6 @@ export function isSameValue(a: unknown, b: unknown): boolean {
 		}
 		return true;
 	}
-
 	const a_keys = Object.keys(a);
 	const b_keys = Object.keys(b);
 	if (a_keys.length !== b_keys.length) return false;
@@ -41,7 +38,7 @@ export function isSameValue(a: unknown, b: unknown): boolean {
 }
 
 export function reuseIfEqual<T extends object>(previous: T | undefined, next: T): T {
-	if (!previous) return next;
+	if (!previous || previous === next) return next;
 	if (Object.keys(previous).length !== Object.keys(next).length) return next;
 	for (const key of Object.keys(next)) {
 		if (!isSameValue(previous[key as keyof T], next[key as keyof T])) return next;
@@ -58,29 +55,15 @@ export function reuseArrayIfEqual<T>(previous: T[] | undefined, next: T[]): T[] 
 }
 
 export function clearQueryCache(): void {
-	computed_load_reuse.clear();
-	computed_load_array_reuse.clear();
-	voltage_drop_reuse.clear();
-	voltage_drop_array_reuse = null;
+	computed_loads.clear();
+	node_results.clear();
+	computed_load_arrays.clear();
+	node_by_id_reuse.clear();
 	voltage_drop_result_reuse.revision = -1;
 	voltage_drop_result_reuse.value = null;
-	node_by_id_reuse.clear();
 }
 
 export function evictNodeFromCache(node_id: string): void {
-	computed_load_reuse.delete(node_id);
-	computed_load_array_reuse.delete(node_id);
-	voltage_drop_reuse.delete(node_id);
-	voltage_drop_result_reuse.revision = -1;
-	voltage_drop_result_reuse.value = null;
-	node_by_id_reuse.delete(node_id);
-}
-
-export function reuseVoltageDropArray(is_dynamic: boolean, next: VoltageDrop[]): VoltageDrop[] {
-	const value =
-		voltage_drop_array_reuse && voltage_drop_array_reuse.is_dynamic === is_dynamic
-			? reuseArrayIfEqual(voltage_drop_array_reuse.value, next)
-			: next;
-	voltage_drop_array_reuse = { is_dynamic, value };
-	return value;
+	computed_loads.delete(node_id);
+	node_results.delete(node_id);
 }

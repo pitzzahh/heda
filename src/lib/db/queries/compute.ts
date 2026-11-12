@@ -1,4 +1,3 @@
-import { computed_load_reuse, reuseIfEqual } from './cache.js';
 import {
 	computeAdjustedCurrent,
 	computeAmpereTrip,
@@ -123,12 +122,6 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 		} as PhaseLoadSchedule;
 	}
 
-	const previous = computed_load_reuse.get(node.id);
-	const value =
-		previous && previous.is_dynamic === context.is_dynamic
-			? reuseIfEqual(previous.value, computed)
-			: computed;
-	computed_load_reuse.set(node.id, { is_dynamic: context.is_dynamic, value });
-	context.memo.set(node.id, value);
-	return value;
+	context.memo.set(node.id, computed);
+	return computed;
 }
