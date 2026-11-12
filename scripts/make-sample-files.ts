@@ -82,8 +82,6 @@ type SampleSpec = {
 	distribution_unit: string;
 	phase: string;
 	panels: PanelSpec[];
-	/** Also write a password-sealed copy that opens on any device. */
-	with_password_copy?: boolean;
 };
 
 const NODE_DEFAULTS = {
@@ -354,8 +352,7 @@ const SAMPLES: SampleSpec[] = [
 					}
 				]
 			}
-		],
-		with_password_copy: true
+		]
 	},
 	{
 		file_name: 'meridian-office-building.heda',
@@ -657,8 +654,7 @@ const SAMPLES: SampleSpec[] = [
 					}
 				]
 			}
-		],
-		with_password_copy: true
+		]
 	}
 ];
 
@@ -769,13 +765,13 @@ async function main() {
 			await verifyWritten(spec.file_name, raw, null, device_key, spec.project_name);
 			written.push(spec.file_name);
 		}
-		if (spec.with_password_copy || !device_key) {
-			const raw = await packFileV2(file_export, SAMPLE_PASSWORD);
-			const password_name = spec.file_name.replace('.heda', '-password.heda');
-			await writeFile(join(OUTPUT_DIR, password_name), raw, 'utf-8');
-			await verifyWritten(password_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
-			written.push(password_name);
-		}
+		// Every sample also gets a password-sealed copy: it opens on any
+		// device, and it is the only way to try the password path by hand.
+		const raw = await packFileV2(file_export, SAMPLE_PASSWORD);
+		const password_name = spec.file_name.replace('.heda', '-password.heda');
+		await writeFile(join(OUTPUT_DIR, password_name), raw, 'utf-8');
+		await verifyWritten(password_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
+		written.push(password_name);
 
 		const loads = file_export.nodes.filter((node) => node.node_type === 'load').length;
 		const panels = file_export.nodes.filter((node) => node.node_type === 'panel').length;
