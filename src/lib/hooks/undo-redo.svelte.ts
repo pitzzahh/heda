@@ -103,26 +103,19 @@ export class UndoRedoState {
 	): BatchData[] {
 		if (!last_action.batch_data?.length) return [];
 
-		let batch_data = [] as {
-			data: PhaseLoadSchedule;
-			children_nodes?: PhaseLoadSchedule[];
-		}[];
-
 		if (operation === 'add') {
 			// One insert for every subtree; restoring them one node at a time was quadratic.
-			batch_data = restoreNodes(last_action.batch_data).map((node) => ({
+			return restoreNodes(last_action.batch_data).map((node) => ({
 				data: node as unknown as PhaseLoadSchedule,
 				children_nodes: []
 			}));
-		} else {
-			const removed = removeNodesById(last_action.batch_data.map((batch) => batch.data.id));
-			batch_data = removed.map(({ removed_node, children_nodes }) => ({
-				data: removed_node,
-				children_nodes
-			}));
 		}
 
-		return batch_data;
+		const removed = removeNodesById(last_action.batch_data.map((batch) => batch.data.id));
+		return removed.map(({ removed_node, children_nodes }) => ({
+			data: removed_node,
+			children_nodes
+		}));
 	}
 
 	private handleFieldOverride({
