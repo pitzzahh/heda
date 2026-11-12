@@ -21,6 +21,15 @@ export default defineConfig(({ command, mode, isPreview }) => ({
 			}
 		})
 	],
+	// Legacy v1 files only open in the desktop app (the web build has no file
+	// access), so web builds never ship the migration keys.
+	define:
+		command === 'build' && !process.env.TAURI_ENV_PLATFORM
+			? {
+					'import.meta.env.VITE_LEGACY_FILE_PASSPHRASE': '""',
+					'import.meta.env.VITE_LEGACY_FILE_SALT': '""'
+				}
+			: undefined,
 	// ES output keeps the export worker's `import('exceljs')` as a separate
 	// lazy chunk instead of inlining ~1 MB into the worker entry (the default
 	// worker format is iife, which has no code splitting).
