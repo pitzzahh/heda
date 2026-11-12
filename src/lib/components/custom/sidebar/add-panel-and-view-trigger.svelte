@@ -24,6 +24,7 @@
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
 	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { loadScheduleRouteId } from '#lib/helpers/navigation/index.js';
 
 	let {
 		children,
@@ -40,7 +41,11 @@
 
 	function handleClick() {
 		setTimeout(() => {
-			goto(resolve('/(workspaces)/workspace/load-schedule/[id]', { id: panel_name + '_' + id }));
+			goto(
+				resolve('/(workspaces)/workspace/load-schedule/[id]', {
+					id: loadScheduleRouteId(panel_name, id)
+				})
+			);
 		}, 300);
 	}
 </script>

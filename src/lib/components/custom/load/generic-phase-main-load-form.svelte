@@ -41,6 +41,7 @@
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
 	import { convertToNormalText } from '#lib/utils/format/index.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import type { Node } from '#lib/types/db/index.js';
 	import type {
 		LoadType,
@@ -174,7 +175,8 @@
 		submitting = false;
 	}
 
-	const panel_id_from_params = page.params?.id?.split('_')?.at(-1) || ''; //gets the id of the parent node (panel) of the loads
+	// The parent node (panel) of the loads, taken from the route id.
+	const panel_id_from_params = nodeIdFromRouteId(page.params?.id) || '';
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		getInput(form, { path: ['load_type'] })

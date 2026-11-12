@@ -8,8 +8,10 @@
  *
  * Run: `bun scripts/make-sample-files.ts`
  *
- * Device-sealed (v3) files open without a password on this machine. The
- * password-sealed (v2) copies open anywhere with the password below.
+ * The files are sealed with the file password, so they open on any machine
+ * with the password below. A device-sealed copy is written next to each of
+ * them for the machine that ran this script: it opens without a password,
+ * but it is tied to the key in the app's data folder.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -24,6 +26,8 @@ import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES } from '#lib/constants/index.js';
 import type { FileExport } from '#lib/types/main/index.js';
+import type { LoadSpec, Overrides, PanelSpec, SampleSpec } from './sample-types.js';
+import { buildBusinessPark, buildCondominium } from './large-projects.js';
 import type { Node } from '#lib/types/db/index.js';
 
 const LOAD_TYPES = new Set<string>(DEFAULT_LOAD_TYPES.map((option) => option.value));
@@ -33,58 +37,6 @@ const SCRIPT_DIR = new URL('.', import.meta.url).pathname;
 const OUTPUT_DIR = join(SCRIPT_DIR, '..', 'samples');
 const DEVICE_KEY_PATH = join(homedir(), '.local/share/me.araopj.heda/heda-d');
 const SAMPLE_PASSWORD = 'heda-sample-2026';
-
-type Overrides = {
-	at?: number;
-	conductor_size?: number;
-	egc_size?: number;
-	conduit_size?: number;
-	ampere_frames?: number;
-	length?: number;
-	z?: number;
-};
-
-type LoadSpec = {
-	circuit: number;
-	description: string;
-	quantity: number;
-	varies: string;
-	load_type: string;
-	continuous?: boolean;
-	length: number;
-	terminal_temperature?: string;
-	ambient_temperature?: number;
-	conductor_sets?: number;
-	conductor_qty?: number;
-	pole?: string;
-	/** Uses the trip rating instead of the load current for the voltage drop. */
-	use_at_as_current?: boolean;
-	overrides?: Overrides;
-};
-
-type PanelSpec = {
-	circuit: number;
-	name: string;
-	phase: string;
-	length: number;
-	terminal_temperature?: string;
-	ambient_temperature?: number;
-	conductor_sets?: number;
-	conductor_qty?: number;
-	pole?: string;
-	overrides?: Overrides;
-	children: (PanelSpec | LoadSpec)[];
-};
-
-type SampleSpec = {
-	file_name: string;
-	project_name: string;
-	distribution_unit: string;
-	phase: string;
-	panels: PanelSpec[];
-	/** Also write a password-sealed copy that opens on any device. */
-	with_password_copy?: boolean;
-};
 
 const NODE_DEFAULTS = {
 	conductor_sets: 1,
@@ -354,8 +306,7 @@ const SAMPLES: SampleSpec[] = [
 					}
 				]
 			}
-		],
-		with_password_copy: true
+		]
 	},
 	{
 		file_name: 'meridian-office-building.heda',
@@ -657,9 +608,11 @@ const SAMPLES: SampleSpec[] = [
 					}
 				]
 			}
-		],
-		with_password_copy: true
-	}
+		]
+	},
+	// The two large projects: a condominium tower and an enterprise park.
+	buildCondominium(),
+	buildBusinessPark()
 ];
 
 /** Structural checks on the payload, before it is sealed. */
@@ -763,18 +716,23 @@ async function main() {
 		checkStructure(file_export, spec.file_name);
 
 		const written: string[] = [];
+		// The password-sealed copy is the portable one: anyone can open it with
+		// the password below, so this is the file that goes in the repository.
+		const raw = await packFileV2(file_export, SAMPLE_PASSWORD);
+		await writeFile(join(OUTPUT_DIR, spec.file_name), raw, 'utf-8');
+		await verifyWritten(spec.file_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
+		written.push(spec.file_name);
+
+		// The device-sealed copy opens without a password, but only on this
+		// machine: it is tied to the key in the app's data folder, which a
+		// reinstall or another computer does not have. It stays out of the
+		// repository for the same reason.
 		if (device_key) {
-			const raw = await packFileV3(file_export, device_key);
-			await writeFile(join(OUTPUT_DIR, spec.file_name), raw, 'utf-8');
-			await verifyWritten(spec.file_name, raw, null, device_key, spec.project_name);
-			written.push(spec.file_name);
-		}
-		if (spec.with_password_copy || !device_key) {
-			const raw = await packFileV2(file_export, SAMPLE_PASSWORD);
-			const password_name = spec.file_name.replace('.heda', '-password.heda');
-			await writeFile(join(OUTPUT_DIR, password_name), raw, 'utf-8');
-			await verifyWritten(password_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
-			written.push(password_name);
+			const device_raw = await packFileV3(file_export, device_key);
+			const device_name = spec.file_name.replace('.heda', '-device.heda');
+			await writeFile(join(OUTPUT_DIR, device_name), device_raw, 'utf-8');
+			await verifyWritten(device_name, device_raw, null, device_key, spec.project_name);
+			written.push(device_name);
 		}
 
 		const loads = file_export.nodes.filter((node) => node.node_type === 'load').length;
@@ -787,7 +745,7 @@ async function main() {
 		for (const file of written) console.log(`  -> samples/${file}`);
 	}
 
-	console.log(`\nPassword for the "-password" copies: ${SAMPLE_PASSWORD}`);
+	console.log(`\nPassword for the samples: ${SAMPLE_PASSWORD}`);
 }
 
 await main();
