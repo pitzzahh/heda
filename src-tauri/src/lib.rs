@@ -10,26 +10,19 @@ use tauri_plugin_fs::FsExt;
 #[tauri::command]
 fn get_file_name(path: String) -> String {
     let path = Path::new(path.as_str());
-    let filename = path.file_stem().unwrap_or_default();
-    filename.to_str().unwrap().to_string()
+    path.file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned()
 }
 
 #[tauri::command]
 fn get_file_metadata(path: String) -> Result<(u64, SystemTime), String> {
     let path = PathBuf::from(path);
-    match fs::metadata(&path) {
-        Ok(metadata) => Ok((metadata.len(), metadata.modified().unwrap())),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
-fn get_exe_path() -> PathBuf {
-    std::env::current_exe()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf()
+    let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
+    // Some filesystems do not record a modification time.
+    let modified = metadata.modified().map_err(|e| e.to_string())?;
+    Ok((metadata.len(), modified))
 }
 
 /// One random key per installation, used to encrypt `.heda` files without a
@@ -214,7 +207,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_file_name,
             get_file_metadata,
-            get_exe_path,
             take_pending_file_open,
             ack_close_request,
             close_main_window,
