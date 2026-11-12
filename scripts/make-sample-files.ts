@@ -8,8 +8,10 @@
  *
  * Run: `bun scripts/make-sample-files.ts`
  *
- * Device-sealed (v3) files open without a password on this machine. The
- * password-sealed (v2) copies open anywhere with the password below.
+ * The files are sealed with the file password, so they open on any machine
+ * with the password below. A device-sealed copy is written next to each of
+ * them for the machine that ran this script: it opens without a password,
+ * but it is tied to the key in the app's data folder.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -714,19 +716,24 @@ async function main() {
 		checkStructure(file_export, spec.file_name);
 
 		const written: string[] = [];
-		if (device_key) {
-			const raw = await packFileV3(file_export, device_key);
-			await writeFile(join(OUTPUT_DIR, spec.file_name), raw, 'utf-8');
-			await verifyWritten(spec.file_name, raw, null, device_key, spec.project_name);
-			written.push(spec.file_name);
-		}
-		// Every sample also gets a password-sealed copy: it opens on any
-		// device, and it is the only way to try the password path by hand.
+		// The password-sealed copy is the portable one: anyone can open it with
+		// the password below, so this is the file that goes in the repository.
 		const raw = await packFileV2(file_export, SAMPLE_PASSWORD);
-		const password_name = spec.file_name.replace('.heda', '-password.heda');
-		await writeFile(join(OUTPUT_DIR, password_name), raw, 'utf-8');
-		await verifyWritten(password_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
-		written.push(password_name);
+		await writeFile(join(OUTPUT_DIR, spec.file_name), raw, 'utf-8');
+		await verifyWritten(spec.file_name, raw, SAMPLE_PASSWORD, null, spec.project_name);
+		written.push(spec.file_name);
+
+		// The device-sealed copy opens without a password, but only on this
+		// machine: it is tied to the key in the app's data folder, which a
+		// reinstall or another computer does not have. It stays out of the
+		// repository for the same reason.
+		if (device_key) {
+			const device_raw = await packFileV3(file_export, device_key);
+			const device_name = spec.file_name.replace('.heda', '-device.heda');
+			await writeFile(join(OUTPUT_DIR, device_name), device_raw, 'utf-8');
+			await verifyWritten(device_name, device_raw, null, device_key, spec.project_name);
+			written.push(device_name);
+		}
 
 		const loads = file_export.nodes.filter((node) => node.node_type === 'load').length;
 		const panels = file_export.nodes.filter((node) => node.node_type === 'panel').length;
@@ -738,7 +745,7 @@ async function main() {
 		for (const file of written) console.log(`  -> samples/${file}`);
 	}
 
-	console.log(`\nPassword for the "-password" copies: ${SAMPLE_PASSWORD}`);
+	console.log(`\nPassword for the samples: ${SAMPLE_PASSWORD}`);
 }
 
 await main();
