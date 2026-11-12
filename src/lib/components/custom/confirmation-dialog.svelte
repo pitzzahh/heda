@@ -72,7 +72,11 @@
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
 			<AlertDialog.Action
-				onclick={onConfirm}
+				onclick={() => {
+					onConfirm();
+					// AlertDialog.Action never closes the dialog on its own.
+					open_dialog_state = false;
+				}}
 				class={cn(buttonVariants({ variant: trigger_variant }), {
 					'disabled opacity-50 hover:cursor-not-allowed': button_state === 'processing'
 				})}

@@ -95,6 +95,9 @@
 	// Several flows can prompt (file open, Home, window close); one decision
 	// settles all of them so no caller is left hanging.
 	function settleUnsavedChanges(decision: UnsavedDecision) {
+		// bits-ui's AlertDialog.Action does not close the dialog (only Cancel
+		// does), so close it here or it lingers over the page we leave for.
+		dialogs_state.has_unsaved_changes = false;
 		unsaved_resolvers.forEach((resolve_promise) => resolve_promise(decision));
 		unsaved_resolvers.clear();
 	}
@@ -167,7 +170,7 @@
 		queueMicrotask(() => settleUnsavedChanges('cancel'));
 	}}
 >
-	<AlertDialog.Content class="z-[100]">
+	<AlertDialog.Content class="z-100">
 		<AlertDialog.Header class="items-start text-left">
 			<AlertDialog.Title class="text-lg font-semibold tracking-tight"
 				>Unsaved changes found!</AlertDialog.Title
