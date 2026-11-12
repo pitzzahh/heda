@@ -590,13 +590,20 @@ describe('db (signaldb)', () => {
 
 		const database = getDatabase();
 		const remove_many = vi.spyOn(database.nodes, 'removeMany');
+		const removed_events = vi.fn();
+		database.nodes.on('removed', removed_events);
 		const removed = removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
+		database.nodes.off('removed', removed_events);
 
-		expect(remove_many).toHaveBeenCalledTimes(1);
+		// One pass and one event, not removeMany's per-item rebuild and requery.
+		expect(remove_many).not.toHaveBeenCalled();
+		expect(removed_events).toHaveBeenCalledTimes(1);
 		expect(removed).toHaveLength(11);
 		expect(removed.every((entry) => entry.children_nodes.length === 1)).toBe(true);
 		expect(getChildNodesByParentId(root)).toHaveLength(0);
 		expect(getChildNodesByParentId(panel.id)).toHaveLength(0);
+		// The rebuilt indices still resolve the nodes that stayed.
+		expect(getNode(root)?.id).toBe(root);
 
 		remove_many.mockRestore();
 	});
