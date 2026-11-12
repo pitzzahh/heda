@@ -103,13 +103,47 @@ fn is_heda_file(arg: &str) -> bool {
         .is_some_and(|ext| ext.eq_ignore_ascii_case("heda"))
 }
 
+/// Grants the frontend's fs scope the folder of a `.heda` file, not
+/// recursive: the file plus the temp and backup files written next to it on
+/// save, convert and migration. The capability allows no user folders on its
+/// own, so this is how the webview reaches a project file outside a dialog.
+///
+/// The file must exist, or be a path the user just picked in a save dialog
+/// (the dialog grants that path, sometimes without the `.heda` the frontend
+/// appends). Both keep the command from opening arbitrary folders. Returns
+/// whether the file exists; nothing is granted for a missing, unpicked file.
+fn allow_project_folder_for(app: &AppHandle, path: &str) -> Result<bool, String> {
+    let path = Path::new(path);
+    if !is_heda_file(&path.to_string_lossy()) || !path.is_absolute() {
+        return Err("expected an absolute path to a .heda file".to_string());
+    }
+    let exists = path.is_file();
+    let scope = app.fs_scope();
+    let picked = scope.is_allowed(path) || scope.is_allowed(path.with_extension(""));
+    if !exists && !picked {
+        return Ok(false);
+    }
+    let folder = path
+        .parent()
+        .ok_or_else(|| "the file has no parent folder".to_string())?;
+    scope
+        .allow_directory(folder, false)
+        .map_err(|err| err.to_string())?;
+    Ok(exists)
+}
+
+#[tauri::command]
+fn allow_project_folder(app: AppHandle, path: String) -> Result<bool, String> {
+    allow_project_folder_for(&app, &path)
+}
+
 fn deliver_file_open(app: &tauri::AppHandle, path: String) {
     if !is_heda_file(&path) {
         return;
     }
     // OS-delivered paths never pass through the dialog plugin, so grant the
-    // frontend's fs scope explicitly or reads outside $HOME would be denied.
-    if let Err(err) = app.fs_scope().allow_file(&path) {
+    // frontend's fs scope explicitly or the read would be denied.
+    if let Err(err) = allow_project_folder_for(app, &path) {
         log::warn!("failed to allow opened file in fs scope: {err}");
     }
     let state = app.state::<FileOpenState>();
@@ -207,6 +241,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_file_name,
             get_file_metadata,
+            allow_project_folder,
             take_pending_file_open,
             ack_close_request,
             close_main_window,

@@ -30,7 +30,8 @@
 		writeEncryptedFile,
 		EXTENSION,
 		doesFileExists,
-		generateUniqueFileName
+		generateUniqueFileName,
+		allowProjectFolder
 	} from '#lib/helpers/file/index.js';
 	import { LockKeyIcon } from '#lib/assets/icons/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
@@ -92,6 +93,9 @@
 			if (!file_path_with_file.endsWith(`.${EXTENSION}`)) {
 				file_path_with_file += `.${EXTENSION}`;
 			}
+			// The dialog granted only the picked path; the backup and the appended
+			// extension need the folder.
+			await allowProjectFolder(file_path_with_file);
 
 			let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
