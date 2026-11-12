@@ -23,5 +23,7 @@ vite.config.ts.timestamp-*
 release.jks
 release.jks.base64
 
-# Generated sample projects (see scripts/make-sample-files.ts)
-/samples/
+# Generated sample projects (see scripts/make-sample-files.ts). The files
+# themselves are in the repository; the device-sealed copies are not, because
+# they only open on the machine that made them.
+/samples/*-device.heda
