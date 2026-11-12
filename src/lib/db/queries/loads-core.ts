@@ -30,7 +30,8 @@ export function getNodeDepthFromNodes(nodes: Node[], node_id: string): number {
 	const node_by_id = new Map(nodes.map((node) => [node.id, node]));
 	let depth = 1;
 	let current = node_by_id.get(node_id);
-	while (current?.parent_id) {
+	// Bounded: a looping parent chain in a tampered file must not hang the export.
+	while (current?.parent_id && depth <= nodes.length) {
 		depth += 1;
 		current = node_by_id.get(current.parent_id);
 	}

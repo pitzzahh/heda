@@ -1,5 +1,5 @@
-import { node_by_id_reuse, reuseIfEqual } from './cache.js';
-import { loadSnapshot } from './snapshot.js';
+import { node_by_id_reuse, node_results, reuseIfEqual } from './cache.js';
+import { getChildren, loadSnapshot } from './snapshot.js';
 import {
 	computeAdjustedCurrent,
 	computeAmpereTrip,
@@ -39,11 +39,11 @@ export function getAllProjects(fields?: (keyof Project)[]): Project[] {
 }
 
 export function getRootNode(): Node | undefined {
-	return getDatabase().nodes.findOne({ node_type: 'root' }) as Node | undefined;
+	return loadSnapshot().root;
 }
 
 export function getNode(node_id: string): Node | undefined {
-	return getDatabase().nodes.findOne({ id: node_id }) as Node | undefined;
+	return loadSnapshot().node_by_id.get(node_id);
 }
 
 export function checkNodeExists({
@@ -55,7 +55,9 @@ export function checkNodeExists({
 	parent_id: string;
 	node_id?: string;
 }) {
-	const node = getDatabase().nodes.findOne({ parent_id, circuit_number });
+	const node = getChildren(loadSnapshot(), parent_id).find(
+		(child) => child.circuit_number === circuit_number
+	);
 
 	if (node_id && node) return node_id !== node.id;
 
@@ -63,11 +65,12 @@ export function checkNodeExists({
 }
 
 export function getNodeById(target_id: string): NodeByIdResult | null {
-	const snapshot = loadSnapshot(false);
+	const snapshot = loadSnapshot();
 	const is_adjustment_factor_dynamic = snapshot.is_dynamic;
 	const node_by_id = snapshot.node_by_id;
 	const children_by_parent = snapshot.children_by_parent;
-	const memo = new Map<string, NodeByIdResult | null>();
+	// Survives across revisions; the snapshot evicts changed branches.
+	const memo = node_results;
 
 	const computeCommonProperties = ({
 		current,
@@ -115,13 +118,11 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 	};
 
 	const resolve = (node: Node): NodeByIdResult | null => {
-		if (memo.has(node.id)) return memo.get(node.id) ?? null;
+		const memoized = memo.get(node.id);
+		if (memoized) return memoized;
 
 		const data = node_by_id.get(node.id);
-		if (!data) {
-			memo.set(node.id, null);
-			return null;
-		}
+		if (!data) return null;
 
 		const voltage = 230;
 
@@ -205,11 +206,7 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 	if (!target) return null;
 	const computed = resolve(target);
 	if (!computed) return null;
-	const previous = node_by_id_reuse.get(target_id);
-	const value =
-		previous && previous.is_dynamic === snapshot.is_dynamic
-			? reuseIfEqual(previous.value, computed)
-			: computed;
-	node_by_id_reuse.set(target_id, { is_dynamic: snapshot.is_dynamic, value });
+	const value = reuseIfEqual(node_by_id_reuse.get(target_id), computed);
+	node_by_id_reuse.set(target_id, value);
 	return value;
 }

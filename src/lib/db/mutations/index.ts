@@ -2,8 +2,10 @@ export {
 	addNode,
 	copyAndAddNodeById,
 	copyAndAddNodesById,
+	MAX_COPY_NODES,
 	removeNode,
 	removeNodesById,
+	restoreNodes,
 	updateNode,
 	updateNodeParentById
 } from './nodes.js';
