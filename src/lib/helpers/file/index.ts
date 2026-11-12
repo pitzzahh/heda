@@ -16,6 +16,7 @@ import {
 	packFileV3
 } from './format.js';
 import {
+	clearSessionPassword,
 	getSessionPassword,
 	getSessionProtection,
 	setSession,
@@ -253,7 +254,15 @@ export async function handleLoadFile(
 			setSession(password!, 'password');
 		}
 
-		const loaded_project = await loadCurrentProject(file_data);
+		let loaded_project;
+		try {
+			loaded_project = await loadCurrentProject(file_data);
+		} catch (err) {
+			// A rejected file (corrupt or tampered contents) opens nothing, so its
+			// secret must not stay cached in memory or the tab's session mirror.
+			clearSessionPassword();
+			throw err;
+		}
 
 		return {
 			id: loaded_project.id,
