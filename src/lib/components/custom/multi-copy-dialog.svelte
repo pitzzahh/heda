@@ -1,4 +1,6 @@
 <script module lang="ts">
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+
 	type Props = { open_dialog: boolean; node_name: string; node_id: string };
 
 	const MAX_COPY_COUNT = 1000;
@@ -17,10 +19,8 @@
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { copyAndAddNodesById } from '#lib/db/mutations/index.js';
-	import { tick } from 'svelte';
+	import { MAX_COPY_NODES, copyAndAddNodesById } from '#lib/db/mutations/index.js';
 	import { getNumberOfChildren } from '#lib/db/queries/index.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -28,30 +28,34 @@
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
 
 	let copy_value = $state<number | undefined>(1);
-	let processing = $state(false);
 	const undo_redo_state = getUndoRedoState();
 
 	const raw_count = $derived(
 		typeof copy_value === 'number' && Number.isFinite(copy_value) ? Math.floor(copy_value) : 0
 	);
 	const is_whole_number = $derived(typeof copy_value === 'number' && Number.isInteger(copy_value));
-	const is_valid = $derived(is_whole_number && raw_count >= 1 && raw_count <= MAX_COPY_COUNT);
-	const copy_count = $derived(is_valid ? raw_count : 0);
+	const is_count_valid = $derived(is_whole_number && raw_count >= 1 && raw_count <= MAX_COPY_COUNT);
 	const stepper_count = $derived(countFromInput(copy_value));
 	const descendant_count = $derived(open_dialog && node_id ? getNumberOfChildren(node_id) : 0);
+	const max_copies = $derived(
+		Math.min(MAX_COPY_COUNT, Math.floor(MAX_COPY_NODES / (1 + descendant_count)))
+	);
+	const is_too_large = $derived(is_count_valid && raw_count > max_copies);
+	const is_valid = $derived(is_count_valid && !is_too_large);
+	const copy_count = $derived(is_valid ? raw_count : 0);
 	const total_items = $derived(copy_count * (1 + descendant_count));
 	const heavy_copy = $derived.by(() => {
 		if (!is_valid) return null;
 		if (total_items >= VERY_LARGE_COPY_ITEMS) {
 			return {
 				title: 'Very large copy',
-				description: `This creates ${total_items.toLocaleString()} items in one operation. It can use a lot of memory and make the app unresponsive, especially on Windows.`
+				description: `This creates ${total_items.toLocaleString()} items. The copy runs in the background, but a project this size uses more memory and takes longer to save.`
 			};
 		}
 		if (total_items >= LARGE_COPY_ITEMS) {
 			return {
 				title: 'Large copy',
-				description: `This creates ${total_items.toLocaleString()} items. Large copies can take longer and use more memory.`
+				description: `This creates ${total_items.toLocaleString()} items. The copy runs in the background and can take a moment.`
 			};
 		}
 		return null;
@@ -59,7 +63,6 @@
 
 	function resetForm() {
 		copy_value = 1;
-		processing = false;
 	}
 
 	function closeDialog() {
@@ -71,22 +74,24 @@
 		copy_value = countFromInput(value);
 	}
 
+	/**
+	 * Hands the copy to the background: the dialog closes at once, a loading
+	 * toast tracks the job, and the copy itself yields between slices (see
+	 * `copyAndAddNodesById`), so the app stays usable while it runs.
+	 */
 	async function handleMultiCopy(target_node_id: string) {
-		if (!is_valid || processing) return;
+		if (!is_valid) return;
 
 		const count = copy_count;
-		const toast_id = toast.loading(
-			`Copying ${count} ${count === 1 ? 'copy' : 'copies'} of ${node_name}...`
-		);
-		processing = true;
-		// Let the spinner and toast paint before the synchronous batch insert starts.
-		await tick();
-		await new Promise((resolve) => setTimeout(resolve, 0));
+		const name = node_name;
+		const label = `${count} ${count === 1 ? 'copy' : 'copies'} of ${name}`;
+		const toast_id = toast.loading(`Copying ${label}…`);
+		closeDialog();
 
 		const created_nodes = await copyAndAddNodesById(target_node_id, count);
 		if (created_nodes.length !== count) {
-			processing = false;
-			return toast.error('Could not copy this item.', { id: toast_id });
+			toast.error(`Could not copy ${name}.`, { id: toast_id });
+			return;
 		}
 
 		undo_redo_state.setActionToUndo({
@@ -96,12 +101,7 @@
 				children_nodes: []
 			}))
 		});
-
-		processing = false;
-		closeDialog();
-		toast.success(`${count} ${count === 1 ? 'copy' : 'copies'} of ${node_name} added`, {
-			id: toast_id
-		});
+		toast.success(`${label} added`, { id: toast_id });
 	}
 </script>
 
@@ -145,7 +145,7 @@
 						variant="outline"
 						size="icon-lg"
 						aria-label="Decrease copies"
-						disabled={processing || stepper_count <= 1}
+						disabled={stepper_count <= 1}
 						onclick={() => setCount(stepper_count - 1)}
 					>
 						<MinusIcon />
@@ -158,7 +158,6 @@
 						step={1}
 						inputmode="numeric"
 						bind:value={copy_value}
-						disabled={processing}
 						invalid={!is_valid}
 						aria-describedby="copy-count-help"
 						onfocus={(event) => event.currentTarget.select()}
@@ -169,7 +168,7 @@
 						variant="outline"
 						size="icon-lg"
 						aria-label="Increase copies"
-						disabled={processing || stepper_count >= MAX_COPY_COUNT}
+						disabled={stepper_count >= MAX_COPY_COUNT}
 						onclick={() => setCount(stepper_count + 1)}
 					>
 						<PlusIcon />
@@ -177,7 +176,10 @@
 				</div>
 
 				<p id="copy-count-help" class="text-xs text-muted-foreground" aria-live="polite">
-					{#if !is_valid}
+					{#if is_too_large}
+						Too large: at most {max_copies.toLocaleString()}
+						{max_copies === 1 ? 'copy' : 'copies'} of this item fit in one copy.
+					{:else if !is_valid}
 						Enter a whole number from 1 to {MAX_COPY_COUNT.toLocaleString()}.
 					{:else}
 						{total_items.toLocaleString()}
@@ -198,16 +200,8 @@
 		</form>
 
 		<Dialog.Footer>
-			<Button type="button" variant="ghost" disabled={processing} onclick={closeDialog}>
-				Cancel
-			</Button>
-			<Button
-				type="submit"
-				form="copy-form"
-				disabled={!is_valid || processing}
-				loading={processing}
-				loadingLabel="Copying…"
-			>
+			<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+			<Button type="submit" form="copy-form" disabled={!is_valid}>
 				{is_valid ? `Copy ${copy_count}` : 'Copy'}
 			</Button>
 		</Dialog.Footer>

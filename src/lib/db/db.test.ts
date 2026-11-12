@@ -11,17 +11,23 @@ import {
 	coalesceSaves,
 	getDatabase,
 	initializeDatabase,
+	insertIntoCollection,
+	replaceInCollection,
 	withTimeout
 } from './index.js';
 import {
 	addNode,
 	copyAndAddNodeById,
 	copyAndAddNodesById,
+	MAX_COPY_NODES,
 	createProject,
 	loadCurrentProject,
+	overrideField,
 	removeNode,
 	removeNodesById,
 	resetData,
+	restoreNodes,
+	updateLoadDescription,
 	updateNode
 } from './mutations/index.js';
 import {
@@ -29,12 +35,16 @@ import {
 	getChildNodesByParentId,
 	getComputedLoads,
 	getComputedVoltageDrops,
+	getComputedVoltageDropsAsync,
 	getNode,
+	getNodeDepth,
 	getNodeById,
 	getParentNodes,
 	getSnapshotRevision
 } from './queries/index.js';
 import { computeNodeLoad } from './queries/compute.js';
+import { computed_loads } from './queries/cache.js';
+import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
 import { loadSnapshot } from './queries/snapshot.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
@@ -397,8 +407,6 @@ describe('db (signaldb)', () => {
 
 		const sorted = loadSnapshot();
 		expect(loadSnapshot()).toBe(sorted);
-		const unsorted = loadSnapshot(false);
-		expect(loadSnapshot(false)).toBe(unsorted);
 
 		addNode({
 			parent_id: root,
@@ -412,7 +420,6 @@ describe('db (signaldb)', () => {
 			}
 		});
 		expect(loadSnapshot()).not.toBe(sorted);
-		expect(loadSnapshot(false)).not.toBe(unsorted);
 	});
 
 	it('returns the same child array until the next write', async () => {
@@ -489,11 +496,14 @@ describe('db (signaldb)', () => {
 		expect(copied?.parent_id).toBe(root);
 		expect(copied?.circuit_number).toBe(2);
 		const copied_children = getChildNodesByParentId(copied!.id);
+		const original_children = getChildNodesByParentId(panel!.id);
 		expect(copied_children).toHaveLength(2);
-		for (const child of copied_children) {
+		copied_children.forEach((child, index) => {
 			expect(child.parent_id).toBe(copied!.id);
-			expect(child.load_data).not.toBe(getNode(child.id)?.load_data);
-		}
+			expect(child.load_data).toEqual(original_children[index]?.load_data);
+			expect(child.load_data).not.toBe(original_children[index]?.load_data);
+		});
+		expect(getNode(root)?.child_ids).toEqual([panel!.id, copied!.id]);
 		expect(getChildNodesByParentId(panel!.id)).toHaveLength(2);
 	});
 
@@ -534,15 +544,14 @@ describe('db (signaldb)', () => {
 		}
 
 		const database = getDatabase();
-		const insert_many = vi.spyOn(database.nodes, 'insertMany');
-		const update_one = vi.spyOn(database.nodes, 'updateOne');
+		const batch = vi.spyOn(database.nodes, 'batch');
 
 		const copies = await copyAndAddNodesById(panel.id, 100);
 
 		expect(copies).toHaveLength(100);
-		// One persistence-visible batch instead of one per copy.
-		expect(insert_many).toHaveBeenCalledTimes(1);
-		expect(update_one).toHaveBeenCalledTimes(1);
+		// One index rebuild for the insert and one for the parent update,
+		// instead of one per copied node.
+		expect(batch).toHaveBeenCalledTimes(2);
 		expect(database.nodes.find({}).count()).toBe(2 + 30 + 100 * 31);
 		expect(getChildNodesByParentId(root)).toHaveLength(101);
 		expect(new Set(copies.map((copy) => copy.circuit_number)).size).toBe(100);
@@ -551,8 +560,7 @@ describe('db (signaldb)', () => {
 			expect(getChildNodesByParentId(copy.id)).toHaveLength(30);
 		}
 
-		insert_many.mockRestore();
-		update_one.mockRestore();
+		batch.mockRestore();
 	});
 
 	it('removes many subtrees with one bulk delete', async () => {
@@ -729,5 +737,242 @@ describe('db (signaldb)', () => {
 		const hung = new Promise<string>(() => {});
 		const err = await withTimeout(hung, 20).catch((e) => e);
 		expect(err).toBeInstanceOf(StrongholdTimeoutError);
+	});
+});
+
+describe('incremental writes and reads', () => {
+	const panelData = (name: string, circuit_number: number): GenericPhasePanelSchema => ({
+		name,
+		circuit_number,
+		ambient_temperature: 30,
+		length: 10,
+		terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+		phase: default_phases.ONE_PHASE
+	});
+	const loadData = (circuit_number: number, quantity = 1000) =>
+		({
+			load_type: default_load_types.GENERAL_LIGHTING,
+			quantity,
+			varies: '1',
+			load_description: `${quantity} - Lighting ${circuit_number}`,
+			continuous: false,
+			circuit_number,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		}) as never;
+
+	// root → A → A1 → load ; root → B → load
+	async function buildTree() {
+		resetData();
+		const created = await createProject('Incremental', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const a = addNode({ parent_id: root, panel_data: panelData('A', 1) })!;
+		const a1 = addNode({ parent_id: a.id, panel_data: panelData('A1', 1) })!;
+		const deep = addNode({ parent_id: a1.id, load_data: loadData(1) })!;
+		const b = addNode({ parent_id: root, panel_data: panelData('B', 2) })!;
+		const b_load = addNode({ parent_id: b.id, load_data: loadData(1) })!;
+		return { root, a, a1, deep, b, b_load };
+	}
+
+	it('recomputes only the edited branch and its ancestors', async () => {
+		const { root, a, deep, b } = await buildTree();
+		const [before_a, before_b] = getComputedLoads(root);
+		const before_b_loads = getComputedLoads(b.id);
+
+		updateLoadDescription({
+			node_id: deep.id,
+			load_description: '1000 - Renamed',
+			node_type: 'load'
+		});
+		overrideField({ node_id: deep.id, field_data: 100, field_type: 'at' });
+
+		const [after_a, after_b] = getComputedLoads(root);
+		expect(after_a).not.toBe(before_a);
+		// An untouched branch keeps its identity, so its rows never re-render.
+		expect(after_b).toBe(before_b);
+		expect(getComputedLoads(b.id)).toBe(before_b_loads);
+		const a1_row = getComputedLoads(a.id)[0]!;
+		expect(getComputedLoads(a1_row.id)[0]).toMatchObject({
+			at: 100,
+			load_description: '1000 - Renamed'
+		});
+		// Same numbers as a cold computation of the whole tree.
+		const cold = {
+			children_by_parent: loadSnapshot().children_by_parent,
+			is_dynamic: false,
+			memo: new Map()
+		};
+		expect(after_a).toEqual(computeNodeLoad(getNode(a.id)!, cold));
+	});
+
+	it('sees a moved subtree under its new parent in both totals', async () => {
+		const { root, a, a1, b } = await buildTree();
+		const before = getComputedLoads(root);
+		expect(before[0]!.va).toBe(1000);
+		expect(before[1]!.va).toBe(1000);
+
+		updateNode({ id: a1.id, parent_id: b.id, whole_data: { ...getNode(a1.id)!, parent_id: b.id } });
+
+		const [after_a, after_b] = getComputedLoads(root);
+		expect(after_a!.va).toBe(0);
+		expect(after_b!.va).toBe(2000);
+		expect(getNode(a.id)?.child_ids).toEqual([]);
+		expect(getNode(b.id)?.child_ids).toContain(a1.id);
+	});
+
+	it('keeps the parent child list in sync on remove and restore', async () => {
+		const { a, a1, deep } = await buildTree();
+		overrideField({ node_id: deep.id, field_data: 50, field_type: 'at' });
+		const stored_deep = getNode(deep.id)!;
+
+		const removed = removeNode(a1.id)!;
+		expect(getNode(a.id)?.child_ids).toEqual([]);
+
+		// History rows carry computed fields; only stored fields come back.
+		const [restored] = restoreNodes([
+			{
+				data: { ...removed.removed_node, at: 999, va: 1 },
+				children_nodes: removed.children_nodes
+			}
+		]);
+		expect(restored?.id).toBe(a1.id);
+		expect(getNode(a.id)?.child_ids).toEqual([a1.id]);
+		expect(getNode(a1.id)?.child_ids).toEqual([deep.id]);
+		expect(getNode(a1.id)).not.toHaveProperty('at');
+		expect(getNode(a1.id)).not.toHaveProperty('va');
+		// Overrides survive the round trip instead of being reset to defaults.
+		expect(getNode(deep.id)).toEqual(stored_deep);
+		// A second restore of the same nodes is a no-op.
+		expect(restoreNodes([{ data: removed.removed_node }])).toEqual([]);
+	});
+
+	it('undoes a field edit without dropping children added since', async () => {
+		const { a, a1 } = await buildTree();
+		const previous = getNode(a.id)!;
+		updateNode({
+			id: a.id,
+			parent_id: previous.parent_id!,
+			panel_data: { ...panelData('A renamed', 1) }
+		});
+		const extra = addNode({ parent_id: a.id, panel_data: panelData('A2', 2) })!;
+
+		updateNode({ id: a.id, parent_id: previous.parent_id!, whole_data: previous });
+
+		expect(getNode(a.id)?.panel_data?.name).toBe('A');
+		expect(getNode(a.id)?.child_ids).toEqual([a1.id, extra.id]);
+	});
+
+	it('lets other tasks run while a large copy is in progress', async () => {
+		const { a } = await buildTree();
+		let ran_during_copy = false;
+		let copy_done = false;
+		const copying = copyAndAddNodesById(a.id, 1000).then((roots) => {
+			copy_done = true;
+			return roots;
+		});
+		setTimeout(() => (ran_during_copy = !copy_done), 0);
+
+		const roots = await copying;
+		expect(roots).toHaveLength(1000);
+		expect(ran_during_copy).toBe(true);
+		expect(
+			new Set(getChildNodesByParentId(getNode(a.id)!.parent_id!).map((n) => n.circuit_number)).size
+		).toBe(1002);
+	});
+
+	it('computes the same voltage drops in slices as in one pass', async () => {
+		await buildTree();
+		const sliced = await getComputedVoltageDropsAsync();
+		expect(sliced).toEqual(computeVoltageDropsFromNodes(loadSnapshot().nodes, false));
+		expect(getComputedVoltageDrops()).toBe(sliced);
+	});
+
+	it('rejects duplicate ids without writing anything', async () => {
+		const { a } = await buildTree();
+		const database = getDatabase();
+		const before = database.nodes_memory.length;
+		const clash = { ...getNode(a.id)! };
+		expect(() =>
+			insertIntoCollection(database.nodes, database.nodes_memory, [
+				{ ...clash, id: crypto.randomUUID() },
+				clash
+			])
+		).toThrow('same id');
+		expect(database.nodes_memory).toHaveLength(before);
+	});
+
+	it('rejects a tampered file with duplicate ids and keeps the session empty', async () => {
+		const { root } = await buildTree();
+		const project = getDatabase().projects_memory[0]!;
+		const nodes = getDatabase().nodes_memory.slice();
+		await expect(
+			loadCurrentProject({ project, nodes: [...nodes, nodes[1]!] } as never)
+		).rejects.toThrow('same id');
+		expect(getDatabase().projects_memory).toHaveLength(0);
+		expect(getDatabase().nodes_memory).toHaveLength(0);
+		expect(getNode(root)).toBeUndefined();
+	});
+
+	it('terminates on a looping parent chain from a tampered file', async () => {
+		const { a } = await buildTree();
+		const database = getDatabase();
+		replaceInCollection(database.nodes, database.nodes_memory, [
+			{ ...getNode(a.id)!, parent_id: a.id }
+		]);
+		expect(getNodeDepth(a.id)).toBeGreaterThan(0);
+	});
+
+	it('refuses a copy that would exhaust memory', async () => {
+		const { a } = await buildTree();
+		const count = Math.floor(MAX_COPY_NODES / 3) + 1;
+		const before = getDatabase().nodes_memory.length;
+		expect(await copyAndAddNodesById(a.id, count)).toEqual([]);
+		expect(getDatabase().nodes_memory).toHaveLength(before);
+	});
+
+	it('leaves nothing cached when the session ends during a copy', async () => {
+		const { a } = await buildTree();
+		const copying = copyAndAddNodesById(a.id, 50);
+		resetData();
+		expect(await copying).toEqual([]);
+		expect(getDatabase().nodes_memory).toHaveLength(0);
+		expect(computed_loads.size).toBe(0);
+	});
+});
+
+describe('bulk writes and the session file', () => {
+	it('persists bulk inserts and in-place replacements', async () => {
+		type Item = { id: string; value: number };
+		const memory: Item[] = [];
+		const save = vi.fn<(items: Item[]) => Promise<void>>(async () => {});
+		const collection = new Collection<Item>({
+			memory,
+			persistence: coalesceSaves<Item>(
+				{ register: async () => {}, load: async () => ({ items: [] }), save },
+				memory,
+				5
+			)
+		});
+		await collection.isReady();
+
+		insertIntoCollection(collection, memory, [
+			{ id: 'a', value: 1 },
+			{ id: 'b', value: 2 }
+		]);
+		replaceInCollection(collection, memory, [{ id: 'a', value: 3 }]);
+		await vi.waitFor(() => expect(save).toHaveBeenCalled());
+		await new Promise((resolve) => setTimeout(resolve, 30));
+
+		expect(save.mock.calls.at(-1)?.[0]).toEqual([
+			{ id: 'a', value: 3 },
+			{ id: 'b', value: 2 }
+		]);
+		// The id index still resolves replaced items.
+		expect(collection.findOne({ id: 'a' })?.value).toBe(3);
 	});
 });

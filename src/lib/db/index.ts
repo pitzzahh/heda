@@ -1,4 +1,4 @@
-import { Collection, createIndex } from '@signaldb/core';
+import { Collection } from '@signaldb/core';
 import type { BaseItem, Changeset, PersistenceAdapter } from '@signaldb/core';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
@@ -254,7 +254,8 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 			name: 'nodes',
 			memory: nodes_memory,
 			reactivity: svelteReactivityAdapter,
-			indices: [createIndex('parent_id'), createIndex('node_type'), createIndex('circuit_number')],
+			// No secondary indices: SignalDB rebuilds every index on every write, and
+			// all graph reads go through the load snapshot (queries/snapshot.ts).
 			persistence:
 				useTauri && key
 					? coalesceSaves(
@@ -269,8 +270,8 @@ export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 		});
 		await Promise.all([projects.isReady(), nodes.isReady()]);
 		dbInstance = { projects, nodes, projects_memory, nodes_memory };
-		// Child lookups reuse a shared snapshot, so few cursors remain per
-		// visible row. Cap stays well above the default without needing 10k.
+		// Graph reads go through the load snapshot, which listens to collection
+		// events directly, so only a handful of listeners remain.
 		projects.setMaxListeners(1_000);
 		nodes.setMaxListeners(1_000);
 		if (!useTauri) {
@@ -335,4 +336,56 @@ export function removeFromCollection<T extends BaseItem<string>>(
 	memory.length = kept;
 	collection.batch(() => {});
 	collection.emit('removed', last_removed);
+}
+
+/**
+ * Appends items in one pass: one index rebuild instead of SignalDB's
+ * per-insert array scan, then the usual `added` event per item so persistence
+ * and the load snapshot see every new item. Throws, writing nothing, on a
+ * duplicate id.
+ */
+export function insertIntoCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	items: readonly T[]
+): void {
+	if (items.length === 0) return;
+	// Same guard as SignalDB's own insert: a tampered file must not smuggle in
+	// a second node under an existing id. Checked before any write.
+	const ids = new Set(memory.map((item) => item.id));
+	for (const item of items) {
+		if (ids.has(item.id)) throw new Error('Item with same id already exists');
+		ids.add(item.id);
+	}
+	for (const item of items) memory.push(item);
+	collection.batch(() => {});
+	for (const item of items) collection.emit('added', item);
+}
+
+/**
+ * Swaps items in place by id, in one pass and one index rebuild.
+ *
+ * `updateOne` deep-clones the item, copies the whole memory array to find it
+ * and rebuilds every index, so a multi-step edit cost several full passes.
+ * Items are replaced, never mutated, so identity still tells which version is
+ * current. Returns the items that were found.
+ */
+export function replaceInCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	items: readonly T[]
+): T[] {
+	if (items.length === 0) return [];
+	const next_by_id = new Map(items.map((item) => [item.id, item]));
+	const replaced: T[] = [];
+	for (let index = 0; index < memory.length; index += 1) {
+		const next = next_by_id.get((memory[index] as T).id);
+		if (!next) continue;
+		memory[index] = next;
+		replaced.push(next);
+	}
+	if (replaced.length === 0) return [];
+	collection.batch(() => {});
+	for (const item of replaced) collection.emit('changed', item, {});
+	return replaced;
 }

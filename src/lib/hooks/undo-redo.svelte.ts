@@ -2,14 +2,12 @@ import { untrack } from 'svelte';
 import { getState, setState } from '#lib/state/index.svelte.js';
 import { UNDO_REDO_STATE_CTX } from '#lib/state/constants.js';
 import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
 import {
-	addNode,
 	copyAndAddNodeById,
 	overrideField,
 	removeNode,
 	removeNodesById,
+	restoreNodes,
 	updateNode,
 	type FieldType
 } from '#lib/db/mutations/index.js';
@@ -96,30 +94,7 @@ export class UndoRedoState {
 	}
 
 	private addNewNode(node_data: PhaseLoadSchedule, children_nodes?: PhaseLoadSchedule[]) {
-		const added_node = addNode({
-			existing_id: node_data.id,
-			parent_id: node_data.parent_id as string,
-			...(node_data.panel_data && {
-				panel_data: {
-					...node_data.panel_data,
-					circuit_number: node_data.circuit_number
-				} as GenericPhasePanelSchema
-			}),
-			...(node_data.load_data && {
-				load_data: {
-					...node_data.load_data,
-					circuit_number: node_data.circuit_number
-				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' }
-			})
-		});
-
-		if (children_nodes && children_nodes.length > 0) {
-			for (const child_node of children_nodes) {
-				this.addNewNode(child_node);
-			}
-		}
-
-		return added_node;
+		return restoreNodes([{ data: node_data, children_nodes }])[0];
 	}
 
 	private handleBatchOperation(
@@ -134,14 +109,11 @@ export class UndoRedoState {
 		}[];
 
 		if (operation === 'add') {
-			for (const data of last_action.batch_data) {
-				const added_node = this.addNewNode(
-					data.data,
-					data.children_nodes
-				) as unknown as PhaseLoadSchedule;
-
-				batch_data = [...batch_data, { data: added_node, children_nodes: [] }];
-			}
+			// One insert for every subtree; restoring them one node at a time was quadratic.
+			batch_data = restoreNodes(last_action.batch_data).map((node) => ({
+				data: node as unknown as PhaseLoadSchedule,
+				children_nodes: []
+			}));
 		} else {
 			const removed = removeNodesById(last_action.batch_data.map((batch) => batch.data.id));
 			batch_data = removed.map(({ removed_node, children_nodes }) => ({
