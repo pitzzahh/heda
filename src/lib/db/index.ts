@@ -60,7 +60,7 @@ function attachWebSnapshotSave(): void {
 
 function restoreWebSession(): void {
 	if (!hasKeepalive()) return;
-	let raw: string | null = null;
+	let raw: string | null;
 	try {
 		raw = sessionStorageOrNull()?.getItem(SESSION_DATA_KEY) ?? null;
 	} catch {
