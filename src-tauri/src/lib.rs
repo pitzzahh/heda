@@ -214,6 +214,16 @@ pub fn run() {
             store_device_key
         ])
         .setup(|app| {
+            // Built from the bundle version so the title never goes stale.
+            if let Some(window) = app.get_webview_window("main") {
+                let title = format!(
+                    "Hierarchical Electrical Design Analyzer v{}",
+                    app.package_info().version
+                );
+                if let Err(err) = window.set_title(&title) {
+                    log::warn!("failed to set window title: {err}");
+                }
+            }
             let salt_path = app
                 .path()
                 .app_local_data_dir()
