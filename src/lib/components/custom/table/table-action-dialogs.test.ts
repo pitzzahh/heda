@@ -157,6 +157,11 @@ test('delete removes the row and records undo', async () => {
 	flushSync();
 	expect(document.querySelectorAll('tbody tr')).toHaveLength(1);
 	expect(api.has_undo_actions()).toBe(true);
+	// Confirming closes the prompt; it must not linger over the table.
+	expect(
+		document.querySelector('[data-slot="alert-dialog-content"]')?.getAttribute('data-state') ??
+			'closed'
+	).toBe('closed');
 	unmount(component);
 });
 
