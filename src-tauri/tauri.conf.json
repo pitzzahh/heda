@@ -62,13 +62,13 @@
 			"deb": {
 				"desktopTemplate": "linux/heda.desktop.hbs",
 				"files": {
-					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+					"/usr/share/mime/packages/heda.xml": "linux/heda.xml"
 				}
 			},
 			"rpm": {
 				"desktopTemplate": "linux/heda.desktop.hbs",
 				"files": {
-					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+					"/usr/share/mime/packages/heda.xml": "linux/heda.xml"
 				}
 			}
 		},
