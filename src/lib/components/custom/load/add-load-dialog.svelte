@@ -77,7 +77,7 @@
 					</div>
 				</div>
 			</Dialog.Header>
-			<Separator class="mt-0.5" />
+			<Separator class="mb-4" />
 			<GenericPhaseMainLoadForm
 				action="add"
 				closeDialog={() => (open_dialog_state = false)}

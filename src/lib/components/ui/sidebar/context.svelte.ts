@@ -67,13 +67,17 @@ class SidebarState {
 
 				if (newWidth <= SIDEBAR_MAX_WIDTH) {
 					this.sidebarWidth = newWidth;
-					this.localStorage.current = { ...this.localStorage.current, sidebar_width: newWidth };
 				}
 			}
 		};
 
 		const onMouseUp = () => {
 			this.isResizing = false;
+			// Persist once per drag, not on every mousemove.
+			this.localStorage.current = {
+				...this.localStorage.current,
+				sidebar_width: this.sidebarWidth
+			};
 
 			document.body.style.cursor = 'default';
 

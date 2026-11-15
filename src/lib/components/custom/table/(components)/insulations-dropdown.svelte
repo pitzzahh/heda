@@ -65,7 +65,7 @@
 		}
 	}}
 >
-	<Select.Trigger class="w-26.25 text-xs">
+	<Select.Trigger size="sm" class="w-26.25 text-xs">
 		{#if selected_insulation}
 			{selected_insulation}
 		{:else}

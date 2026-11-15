@@ -215,11 +215,11 @@
 		</Field>
 		<Field of={form} path={['phase']}>
 			{#snippet children(field)}
-				<fieldset class="space-y-3">
+				<fieldset class="space-y-2">
 					<legend
-						class="text-[10px] leading-none font-semibold tracking-[0.2em] text-muted-foreground uppercase"
+						class={cn('text-sm leading-none font-medium', field.errors && 'text-destructive')}
 					>
-						Phase System
+						Phase system
 					</legend>
 					<RadioGroup.Root
 						value={field.input ?? ''}
@@ -313,7 +313,7 @@
 			{/snippet}
 		</Field>
 	</div>
-	<Button type="submit" class="mt-5 h-11 w-full" loading={submitting}>
+	<Button type="submit" size="lg" class="mt-5 w-full" loading={submitting}>
 		<LockKeyIcon class="size-4" />
 		Proceed
 	</Button>

@@ -13,7 +13,7 @@
 	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
-	import { buttonVariants } from '#lib/components/ui/button/index.js';
+	import { selectTrigger } from '#lib/components/ui/select/index.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
@@ -78,7 +78,7 @@
 					<Popover.Trigger
 						id={trigger_id}
 						class={cn(
-							buttonVariants({ variant: 'outline' }),
+							selectTrigger(),
 							'w-full min-w-0 justify-between',
 							!field.input && 'text-muted-foreground'
 						)}

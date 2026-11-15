@@ -102,7 +102,7 @@
 						</div>
 					{/if}
 				</div>
-				<Button type="submit" disabled={busy} loading={busy} class="mt-5 h-11 w-full">
+				<Button type="submit" size="lg" disabled={busy} loading={busy} class="mt-5 w-full">
 					{mode === 'unlock' ? 'Unlock file' : 'Set password and save'}
 				</Button>
 			</form>
