@@ -58,8 +58,8 @@
 	},
 	"dependencies": {
 		"@formisch/svelte": "^1.2.0",
-		"@pitzzahh/signaldb-adapter-tauri": "^3.1.0",
-		"@signaldb/core": "1",
+		"@pitzzahh/signaldb-adapter-tauri": "^4.0.0",
+		"@signaldb/core": "^2.0.2",
 		"@signaldb/svelte": "^2.0.0",
 		"@tanstack/table-core": "^8.21.3",
 		"@tanstack/virtual-core": "^3.19.11",

@@ -12,9 +12,6 @@ export type NodeCollection = Collection<Node>;
 export type MyDatabaseCollections = {
 	projects: ProjectCollection;
 	nodes: NodeCollection;
-	/** Backing memory adapters, kept so the session can be cleared in one pass. */
-	projects_memory: Project[];
-	nodes_memory: Node[];
 };
 
 export type NodeByIdResult = Node & {

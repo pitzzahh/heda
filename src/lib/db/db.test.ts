@@ -4,11 +4,11 @@ import {
 	default_load_types,
 	default_phases
 } from '#lib/constants/index.js';
-import { Collection } from '@signaldb/core';
+import { Collection, DefaultDataAdapter } from '@signaldb/core';
+import type { StorageAdapter } from '@signaldb/core';
 import {
 	StrongholdTimeoutError,
 	clearCollection,
-	coalesceSaves,
 	getDatabase,
 	initializeDatabase,
 	insertIntoCollection,
@@ -600,14 +600,12 @@ describe('db (signaldb)', () => {
 
 		const database = getDatabase();
 		const remove_many = vi.spyOn(database.nodes, 'removeMany');
-		const removed_events = vi.fn();
-		database.nodes.on('removed', removed_events);
+		const revision = getSnapshotRevision();
 		const removed = removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
-		database.nodes.off('removed', removed_events);
 
-		// One pass and one event, not removeMany's per-item rebuild and requery.
-		expect(remove_many).not.toHaveBeenCalled();
-		expect(removed_events).toHaveBeenCalledTimes(1);
+		// One bulk delete invalidates the snapshot once, plus once for the parent patch.
+		expect(remove_many).toHaveBeenCalledTimes(1);
+		expect(getSnapshotRevision() - revision).toBe(2);
 		expect(removed).toHaveLength(11);
 		expect(removed.every((entry) => entry.children_nodes.length === 1)).toBe(true);
 		expect(getChildNodesByParentId(root)).toHaveLength(0);
@@ -678,7 +676,7 @@ describe('db (signaldb)', () => {
 		expect(loadSnapshot().nodes).toHaveLength(2);
 
 		const revision = getSnapshotRevision();
-		clearCollection(getDatabase().nodes, getDatabase().nodes_memory);
+		clearCollection(getDatabase().nodes);
 		expect(getDatabase().nodes.find().fetch()).toHaveLength(0);
 		expect(loadSnapshot().nodes).toHaveLength(0);
 		// The snapshot cache is invalidated, not left serving the old nodes.
@@ -686,7 +684,7 @@ describe('db (signaldb)', () => {
 
 		// Clearing an already-empty collection is a no-op.
 		const empty_revision = getSnapshotRevision();
-		clearCollection(getDatabase().nodes, getDatabase().nodes_memory);
+		clearCollection(getDatabase().nodes);
 		expect(getSnapshotRevision()).toBe(empty_revision);
 
 		// The rebuilt id index still resolves fresh inserts.
@@ -695,38 +693,6 @@ describe('db (signaldb)', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		expect(getNode(next!.root_node_id)?.id).toBe(next!.root_node_id);
-	});
-
-	it('writes a burst of mutations to the session file once', async () => {
-		type Item = { id: string; value: number };
-		const memory: Item[] = [];
-		const save = vi.fn<(items: Item[]) => Promise<void>>(async () => {});
-		const collection = new Collection<Item>({
-			memory,
-			persistence: coalesceSaves<Item>(
-				{ register: async () => {}, load: async () => ({ items: [] }), save },
-				memory,
-				5
-			)
-		});
-		await collection.isReady();
-
-		collection.insert({ id: 'a', value: 1 });
-		collection.insert({ id: 'b', value: 2 });
-		collection.updateOne({ id: 'a' }, { $set: { value: 3 } });
-		await vi.waitFor(() => expect(save).toHaveBeenCalled());
-		await new Promise((resolve) => setTimeout(resolve, 30));
-
-		expect(save).toHaveBeenCalledTimes(1);
-		expect(save.mock.calls[0][0]).toEqual([
-			{ id: 'a', value: 3 },
-			{ id: 'b', value: 2 }
-		]);
-
-		// A change after the write still reaches the file.
-		collection.removeOne({ id: 'b' });
-		await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
-		expect(save.mock.calls[1][0]).toEqual([{ id: 'a', value: 3 }]);
 	});
 
 	it('passes fast promises through the Stronghold timeout', async () => {
@@ -895,44 +861,39 @@ describe('incremental writes and reads', () => {
 	it('rejects duplicate ids without writing anything', async () => {
 		const { a } = await buildTree();
 		const database = getDatabase();
-		const before = database.nodes_memory.length;
+		const before = countNodes();
 		const clash = { ...getNode(a.id)! };
 		expect(() =>
-			insertIntoCollection(database.nodes, database.nodes_memory, [
-				{ ...clash, id: crypto.randomUUID() },
-				clash
-			])
+			insertIntoCollection(database.nodes, [{ ...clash, id: crypto.randomUUID() }, clash])
 		).toThrow('same id');
-		expect(database.nodes_memory).toHaveLength(before);
+		expect(countNodes()).toBe(before);
 	});
 
 	it('rejects a tampered file with duplicate ids and keeps the session empty', async () => {
 		const { root } = await buildTree();
-		const project = getDatabase().projects_memory[0]!;
-		const nodes = getDatabase().nodes_memory.slice();
+		const project = getDatabase().projects.findOne({})!;
+		const nodes = getDatabase().nodes.find().fetch();
 		await expect(
 			loadCurrentProject({ project, nodes: [...nodes, nodes[1]!] } as never)
 		).rejects.toThrow('same id');
-		expect(getDatabase().projects_memory).toHaveLength(0);
-		expect(getDatabase().nodes_memory).toHaveLength(0);
+		expect(getDatabase().projects.find().count()).toBe(0);
+		expect(countNodes()).toBe(0);
 		expect(getNode(root)).toBeUndefined();
 	});
 
 	it('terminates on a looping parent chain from a tampered file', async () => {
 		const { a } = await buildTree();
 		const database = getDatabase();
-		replaceInCollection(database.nodes, database.nodes_memory, [
-			{ ...getNode(a.id)!, parent_id: a.id }
-		]);
+		replaceInCollection(database.nodes, [{ ...getNode(a.id)!, parent_id: a.id }]);
 		expect(getNodeDepth(a.id)).toBeGreaterThan(0);
 	});
 
 	it('refuses a copy that would exhaust memory', async () => {
 		const { a } = await buildTree();
 		const count = Math.floor(MAX_COPY_NODES / 3) + 1;
-		const before = getDatabase().nodes_memory.length;
+		const before = countNodes();
 		expect(await copyAndAddNodesById(a.id, count)).toEqual([]);
-		expect(getDatabase().nodes_memory).toHaveLength(before);
+		expect(countNodes()).toBe(before);
 	});
 
 	it('leaves nothing cached when the session ends during a copy', async () => {
@@ -940,35 +901,46 @@ describe('incremental writes and reads', () => {
 		const copying = copyAndAddNodesById(a.id, 50);
 		resetData();
 		expect(await copying).toEqual([]);
-		expect(getDatabase().nodes_memory).toHaveLength(0);
+		expect(countNodes()).toBe(0);
 		expect(computed_loads.size).toBe(0);
 	});
 });
 
 describe('bulk writes and the session file', () => {
-	it('persists bulk inserts and in-place replacements', async () => {
+	it('persists bulk inserts and in-place replacements per operation', async () => {
 		type Item = { id: string; value: number };
-		const memory: Item[] = [];
-		const save = vi.fn<(items: Item[]) => Promise<void>>(async () => {});
-		const collection = new Collection<Item>({
-			memory,
-			persistence: coalesceSaves<Item>(
-				{ register: async () => {}, load: async () => ({ items: [] }), save },
-				memory,
-				5
-			)
-		});
-		await collection.isReady();
+		const stored = new Map<string, Item>();
+		const put = async (items: Item[]) => {
+			for (const item of items) stored.set(item.id, item);
+		};
+		const storage: StorageAdapter<Item, string> = {
+			setup: async () => {},
+			teardown: async () => {},
+			readAll: async () => [...stored.values()],
+			readIds: async (ids) => ids.flatMap((id) => stored.get(id) ?? []),
+			createIndex: async () => {},
+			dropIndex: async () => {},
+			readIndex: async () => new Map(),
+			insert: put,
+			replace: put,
+			remove: async (items) => {
+				for (const item of items) stored.delete(item.id);
+			},
+			removeAll: async () => stored.clear()
+		};
+		const collection = new Collection<Item, string>(
+			'bulk',
+			new DefaultDataAdapter({ storage: () => storage })
+		);
+		await collection.ready();
 
-		insertIntoCollection(collection, memory, [
+		insertIntoCollection(collection, [
 			{ id: 'a', value: 1 },
 			{ id: 'b', value: 2 }
 		]);
-		replaceInCollection(collection, memory, [{ id: 'a', value: 3 }]);
-		await vi.waitFor(() => expect(save).toHaveBeenCalled());
-		await new Promise((resolve) => setTimeout(resolve, 30));
-
-		expect(save.mock.calls.at(-1)?.[0]).toEqual([
+		replaceInCollection(collection, [{ id: 'a', value: 3 }]);
+		await vi.waitFor(() => expect(stored.get('a')?.value).toBe(3));
+		expect([...stored.values()]).toEqual([
 			{ id: 'a', value: 3 },
 			{ id: 'b', value: 2 }
 		]);
@@ -976,3 +948,7 @@ describe('bulk writes and the session file', () => {
 		expect(collection.findOne({ id: 'a' })?.value).toBe(3);
 	});
 });
+
+function countNodes(): number {
+	return getDatabase().nodes.find().count();
+}

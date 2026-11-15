@@ -80,7 +80,8 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 
 ## Database (SignalDB)
 
-- Store: `@signaldb/core` v1 `Collection<Project>` / `Collection<Node>` (see `src/lib/db/index.ts`). Never reintroduce RxDB.
+- Store: `@signaldb/core` v2 `Collection<Project>` / `Collection<Node>` on one `DefaultDataAdapter` (see `src/lib/db/index.ts`). Never reintroduce RxDB.
+- Every write goes through `afterWrite()` or the `*Collection` helpers in `src/lib/db/index.ts`: core 2 emits collection events only after storage lands, so that hook is what keeps the load snapshot in sync within the same tick.
 - Persistence: `@pitzzahh/signaldb-adapter-tauri` in Tauri, pure memory in web dev/preview. Detect via `isTauri()` from `@tauri-apps/api/core`.
 - Session encryption key is a per-session random passphrase kept in a Stronghold vault (`tauri-plugin-stronghold`, argon2 snapshot KDF, registered in `src-tauri` builders + `stronghold:default` capability). The vault password is the session secret (the open file's password, or the device key for device-encrypted files). Never hardcoded, never persisted.
 - Never await Stronghold bare: its Rust memory protection can panic (sandboxed kernels, locked-memory limits) and leave the IPC promise unsettled, hanging the UI at loading. Every vault access races `withTimeout` (5s) and degrades to memory-only on timeout: no retry after a hang, only after an active throw (corrupt vault).

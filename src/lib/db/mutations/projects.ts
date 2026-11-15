@@ -1,4 +1,4 @@
-import { getDatabase, initializeDatabase } from '../index.js';
+import { afterWrite, clearCollection, getDatabase, initializeDatabase } from '../index.js';
 import type { Node, Project } from '#lib/types/db/index.js';
 import { removeNode } from './nodes.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
@@ -19,7 +19,7 @@ export async function createProject(
 			highest_unit_form,
 			child_ids: []
 		});
-		database.nodes.insert(root_node);
+		void afterWrite(database.nodes.insert(root_node));
 
 		const project = withProjectDefaults({
 			id: crypto.randomUUID(),
@@ -29,7 +29,7 @@ export async function createProject(
 				is_adjustment_factor_dynamic: false
 			}
 		});
-		database.projects.insert(project);
+		void afterWrite(database.projects.insert(project));
 
 		return {
 			project: project as Project,
@@ -44,7 +44,7 @@ export function updateProjectSettings(project_id: string, settings: Partial<Proj
 	const database = getDatabase();
 
 	try {
-		database.projects.updateOne({ id: project_id }, { $set: { settings } });
+		void afterWrite(database.projects.updateOne({ id: project_id }, { $set: { settings } }));
 		return database.projects.findOne({ id: project_id });
 	} catch (error) {
 		console.error(`Error in updating project settings: ${JSON.stringify(error)}`);
@@ -56,7 +56,7 @@ export function updateProjectTitle(id: string, project_name: string) {
 
 	try {
 		// Use $set to update the project_name field
-		database.projects.updateOne({ id }, { $set: { project_name } });
+		void afterWrite(database.projects.updateOne({ id }, { $set: { project_name } }));
 		return database.projects.findOne({ id });
 	} catch (err) {
 		console.error(`Error updating project title: ${JSON.stringify(err)}`);
@@ -78,8 +78,7 @@ export function deleteProject(project_id: string) {
 			removeNode(root_node_id);
 		}
 
-		database.projects.removeOne({ id: project_id });
-		database.projects.removeMany({}); // remove the other projects
+		clearCollection(database.projects); // this project and any others
 	} catch (error) {
 		console.error(`Failed to delete project ${project_id}:`, error);
 	}

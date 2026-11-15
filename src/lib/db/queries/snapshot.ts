@@ -1,6 +1,6 @@
 import { untrack } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
-import { getDatabase } from '../index.js';
+import { getDatabase, onSessionWrite } from '../index.js';
 import { clearQueryCache, evictNodeFromCache } from './cache.js';
 import type { Node } from '#lib/types/db/index.js';
 
@@ -34,24 +34,17 @@ function bump(): void {
 	wakeTrackedScopes?.();
 }
 
-// Plain event listeners, not a cursor: a `find({}).observeChanges` cursor
-// re-diffs the whole collection with a deep compare on every single write.
+// A sync write hook, not a cursor (which re-diffs the whole collection on every
+// write) or collection events (which SignalDB 2 emits only after storage lands).
 function ensureListening(): void {
 	if (listening) return;
 	listening = true;
-	const { nodes, projects } = getDatabase();
-	for (const collection of [nodes, projects] as const) {
-		collection.on('added', bump);
-		collection.on('changed', bump);
-		collection.on('removed', bump);
-		collection.on('persistence.received', bump);
-	}
+	onSessionWrite(bump);
 }
 
 function buildSnapshot(previous: LoadSnapshot | null): LoadSnapshot {
 	const database = getDatabase();
-	// The memory arrays hold the live items; `find().fetch()` would only copy them.
-	const nodes = database.nodes_memory.slice();
+	const nodes = database.nodes.find({}, { reactive: false }).fetch();
 	const node_by_id = new Map<string, Node>();
 	const children_by_parent = new Map<string, Node[]>();
 	let root: Node | undefined;
@@ -74,7 +67,9 @@ function buildSnapshot(previous: LoadSnapshot | null): LoadSnapshot {
 		node_by_id,
 		children_by_parent,
 		root,
-		is_dynamic: database.projects_memory[0]?.settings.is_adjustment_factor_dynamic ?? false
+		is_dynamic:
+			database.projects.findOne({}, { reactive: false })?.settings.is_adjustment_factor_dynamic ??
+			false
 	};
 	invalidateComputed(previous, snapshot);
 	return snapshot;
