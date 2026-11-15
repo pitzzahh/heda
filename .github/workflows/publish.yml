@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - '*.*.*'
+    # caches are scoped to the ref that saved them; tags can read main's, never another tag's
+    branches:
+      - main
+    paths:
+      - 'src-tauri/**'
+      - '.github/workflows/publish.yml'
 
 env:
   APP_NAME: 'Hierarchical Electrical Design Analyzer'
@@ -18,12 +24,16 @@ jobs:
         include:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
             args: '--target aarch64-apple-darwin'
+            warm: '--target aarch64-apple-darwin'
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin'
+            warm: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-latest' # deb and rpm bundles; the AppImage is skipped on purpose.
             args: '--bundles deb,rpm'
+            warm: ''
           - platform: 'windows-latest'
             args: ''
+            warm: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -52,11 +62,18 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          # both macOS targets run on one runner type and would otherwise share a key
+          key: ${{ matrix.warm }}
 
       - name: Install frontend dependencies
         run: bun install
 
+      - name: Warm the Rust cache
+        if: github.ref_type == 'branch'
+        run: bunx tauri build --no-bundle ${{ matrix.warm }}
+
       - name: Get Changelog Entry
+        if: github.ref_type == 'tag'
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
         with:
@@ -84,7 +101,7 @@ jobs:
           args: ${{ matrix.args }}
 
       - name: Package Linux tarball
-        if: matrix.platform == 'ubuntu-latest'
+        if: matrix.platform == 'ubuntu-latest' && github.ref_type == 'tag'
         run: |
           PKG=src-tauri/target/release/pkg
           mkdir -p "$PKG"
@@ -106,7 +123,7 @@ jobs:
           ls -lh Hierarchical_Electrical_Design_Analyzer-*.tar.gz
 
       - name: Upload Linux tarball and updater binary to release
-        if: matrix.platform == 'ubuntu-latest'
+        if: matrix.platform == 'ubuntu-latest' && github.ref_type == 'tag'
         # by id: tag lookups skip drafts, so a tag-based upload creates a second public release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,6 +145,7 @@ jobs:
   # installs with a package; point it at the signed plain binary once every job has written latest.json
   linux-updater-entry:
     needs: publish-desktop
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write
