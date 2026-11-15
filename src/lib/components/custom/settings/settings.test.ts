@@ -49,4 +49,20 @@ describe('Settings', () => {
 		expect(document.body.textContent).toContain('App Version');
 		unmount(component);
 	});
+
+	test('ignores an update state stored by an older version', () => {
+		localStorage.setItem(
+			'settings_state',
+			JSON.stringify({ active_setting: 'Updates', app_update: null, update_state: 'no_updates' })
+		);
+		const component = mount(SettingsFixture, { target: document.body });
+		flushSync();
+		document.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		flushSync();
+
+		expect(document.body.textContent).toContain('App Version');
+		expect(document.body.textContent).toContain('Check for updates');
+		expect(document.body.textContent).not.toContain('No updates available');
+		unmount(component);
+	});
 });

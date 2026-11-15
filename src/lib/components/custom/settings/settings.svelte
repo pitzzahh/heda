@@ -35,11 +35,14 @@
 	import { Update } from '@tauri-apps/plugin-updater';
 	import { PreferencesSection, ProjectSection, UpdatesSection } from './(components)/index.js';
 
-	const component_state = new PersistedState<SettingsComponentType>('settings_state', {
-		active_setting: 'Project',
-		app_update: null,
-		update_state: 'stale'
-	});
+	const component_state = new PersistedState<Pick<SettingsComponentType, 'active_setting'>>(
+		'settings_state',
+		{ active_setting: 'Project' }
+	);
+	// Session-only: a persisted 'no_updates' blocked every later check, and an Update object
+	// does not survive JSON, so a stored 'available' could never install.
+	let update_state = $state<SettingsComponentType['update_state']>('stale');
+	let app_update = $state<Update | null>(null);
 
 	// Open/close is session-only: a persisted dialog would reopen on every load.
 	let settings_open = $state(false);
@@ -121,10 +124,7 @@
 						{:else if component_state.current.active_setting === 'Preferences'}
 							<PreferencesSection />
 						{:else if component_state.current.active_setting === 'Updates'}
-							<UpdatesSection
-								bind:update_state={component_state.current.update_state}
-								bind:app_update={component_state.current.app_update}
-							/>
+							<UpdatesSection bind:update_state bind:app_update />
 						{/if}
 					</div>
 				{/key}
