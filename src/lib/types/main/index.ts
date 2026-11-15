@@ -1,18 +1,17 @@
-import type { Project, Node } from "@/db/schema";
+import type { Project, Node } from '#lib/types/db';
+import type * as v from 'valibot';
+import type { HIGHEST_UNIT_SCHEMA } from '#lib/validators';
 
-export type MainPrompt = {
-  new_file: boolean;
-  load_file: boolean;
-}
+export type HighestUnitSchema = v.InferOutput<typeof HIGHEST_UNIT_SCHEMA>;
 
 export type FileExport = {
-  project: Project;
-  nodes: Node[]
-}
+	project: Project;
+	nodes: Node[];
+};
 
 export type RecentProject = {
-  id: string;
-  project_name: string;
-  project_path: string;
-  exists: boolean;
-}
+	id: string;
+	project_name: string;
+	project_path: string;
+	exists: boolean;
+};
