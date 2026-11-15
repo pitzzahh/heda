@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The update download shows its own progress panel with the size downloaded
+  so far, instead of a bar squeezed into the button that could read `NaN%`
+- A failed download or install offers a retry instead of hanging at 0%
+- "Up to date" can be checked again without restarting the app
+
 ## [2.7.1] - 2026-11-15
 
 ### Fixed

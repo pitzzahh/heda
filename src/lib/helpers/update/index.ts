@@ -18,19 +18,20 @@ export async function checkForUpdates() {
 export async function installUpdate(
 	update: Update,
 	_relaunch: boolean,
-	_progress: (progress: number) => void
+	_progress: (downloaded: number, total: number | undefined) => void
 ) {
 	let downloaded = 0;
-	let contentLength = 0;
-	// alternatively we could also call update.download() and update.install() separately
+	let total: number | undefined;
 	await update.downloadAndInstall((event) => {
 		switch (event.event) {
 			case 'Started':
-				contentLength = event.data.contentLength ?? 0;
+				// a server that sends no size reports 0 or nothing; treat both as unknown
+				total = event.data.contentLength || undefined;
+				_progress?.(0, total);
 				break;
 			case 'Progress':
 				downloaded += event.data.chunkLength;
-				_progress?.((downloaded / contentLength) * 100);
+				_progress?.(downloaded, total);
 				break;
 			case 'Finished':
 				break;
