@@ -41,7 +41,7 @@
 		}
 	}}
 >
-	<Select.Trigger class="w-12.5 text-xs">
+	<Select.Trigger size="sm" class="w-12.5 text-xs">
 		{#if selected_pole}
 			{selected_pole}
 		{:else}

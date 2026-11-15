@@ -110,10 +110,10 @@
 		--field: oklch(99.5% 0.002 85);
 		--track: oklch(22% 0.01 160 / 0.15);
 		--control-height-xs: 1.5rem;
-		--control-height-sm: 1.75rem;
-		--control-height-default: 2rem;
-		--control-height-lg: 2.25rem;
-		--control-height-xl: 2.5rem;
+		--control-height-sm: 2rem;
+		--control-height-default: 2.25rem;
+		--control-height-lg: 2.5rem;
+		--control-height-xl: 3rem;
 		--ease-ui-out: cubic-bezier(0.16, 1, 0.3, 1);
 		--ease-ui-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 		--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);

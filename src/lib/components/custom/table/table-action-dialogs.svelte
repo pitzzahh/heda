@@ -114,7 +114,7 @@
 						</div>
 					</div>
 				</Dialog.Header>
-				<Separator class="mt-0.5" />
+				<Separator class="mb-4" />
 				<GenericPhaseMainLoadForm
 					action="edit"
 					selected_parent_id={parent_display?.id}
@@ -135,7 +135,7 @@
 						Override the data of <span class="font-semibold">{node.load_description}</span>
 					</Dialog.Description>
 				</Dialog.Header>
-				<Separator class="mt-0.5" />
+				<Separator class="mb-4" />
 				<OverrideSelectors
 					closeDialog={() => (table_actions.override_open = false)}
 					node_id={node.id}

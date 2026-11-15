@@ -53,7 +53,7 @@
 		<AppSidebar project={workspace.project} root_node={workspace.root_node as Node} />
 		<Sidebar.Inset class="overflow-y-auto">
 			<header
-				class="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/80 px-3 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/70 sm:px-4"
+				class="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-3 sm:px-4"
 			>
 				<div class="flex min-w-0 items-center gap-2">
 					<Sidebar.Trigger class="-ml-1" />

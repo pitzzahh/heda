@@ -10,7 +10,7 @@
 	import { Field } from '@formisch/svelte';
 	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { buttonVariants } from '#lib/components/ui/button/index.js';
+	import { selectTrigger } from '#lib/components/ui/select/index.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
@@ -40,11 +40,7 @@
 				<Label class={cn(field.errors && 'text-destructive')}>Type</Label>
 				<Popover.Trigger
 					id={trigger_id}
-					class={cn(
-						buttonVariants({ variant: 'outline' }),
-						'justify-between',
-						!field.input && 'text-muted-foreground'
-					)}
+					class={cn(selectTrigger(), 'justify-between', !field.input && 'text-muted-foreground')}
 					role="combobox"
 				>
 					{field.input

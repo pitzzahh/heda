@@ -90,7 +90,7 @@
 				</div>
 			</div>
 		</Dialog.Header>
-		<Separator class="mt-0.5" />
+		<Separator class="mb-4" />
 		<svelte:boundary>
 			<GenericPhaseMainPanelForm
 				action="edit"

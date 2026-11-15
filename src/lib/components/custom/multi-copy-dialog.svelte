@@ -125,7 +125,7 @@
 
 		<form
 			id="copy-form"
-			class="mt-5 grid gap-5"
+			class="grid gap-5"
 			onsubmit={(event) => {
 				event.preventDefault();
 				void handleMultiCopy(node_id);
