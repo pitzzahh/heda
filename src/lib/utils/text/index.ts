@@ -1,18 +1,18 @@
 export function convertToNormalText(
-  text: unknown,
-  include_separators: boolean = false,
-  separators: string[] = ['|', '_', '-']
+	text: unknown,
+	include_separators: boolean = false,
+	separators: string[] = ['|', '_', '-']
 ): string {
-  let textStr = String(text);
-  let trimmedText = textStr.trim().replaceAll('_', ' ').replaceAll('-', ' ');
+	const textStr = String(text);
+	let trimmedText = textStr.trim().replaceAll('_', ' ').replaceAll('-', ' ');
 
-  if (include_separators && separators.length > 0) {
-    for (const separator of separators) {
-      trimmedText = trimmedText.replaceAll(separator, ' ');
-    }
-  }
+	if (include_separators && separators.length > 0) {
+		for (const separator of separators) {
+			trimmedText = trimmedText.replaceAll(separator, ' ');
+		}
+	}
 
-  return trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1).toLowerCase();
+	return trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1).toLowerCase();
 }
 
 /**
@@ -22,11 +22,11 @@ export function convertToNormalText(
  * @returns The first token in the path.
  */
 export const extractMainRoute = (path: string): string => {
-  if (path === '/') {
-    return '/';
-  }
+	if (path === '/') {
+		return '/';
+	}
 
-  const tokens = path.split('/').filter((token) => token);
+	const tokens = path.split('/').filter((token) => token);
 
-  return tokens.length > 0 ? `/${tokens[0]}` : '';
+	return tokens.length > 0 ? `/${tokens[0]}` : '';
 };

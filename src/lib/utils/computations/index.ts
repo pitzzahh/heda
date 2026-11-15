@@ -6,8 +6,8 @@ import {
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
 	CONDUIT_TABLE
-} from '@/constants';
-import type { LoadType } from '@/types/load';
+} from '#lib/constants';
+import type { LoadType } from '#lib/types/load';
 
 // load types with the same formula or value
 const common_load_types = [
