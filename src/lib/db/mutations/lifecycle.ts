@@ -1,4 +1,5 @@
 import {
+	afterWrite,
 	clearCollection,
 	getDatabase,
 	initializeDatabase,
@@ -13,8 +14,8 @@ import { withNodeDefaults, withProjectDefaults } from './defaults.js';
 export function resetData(minimumDeletedTime: number = 0) {
 	void minimumDeletedTime;
 	const db = getDatabase();
-	clearCollection(db.projects, db.projects_memory);
-	clearCollection(db.nodes, db.nodes_memory);
+	clearCollection(db.projects);
+	clearCollection(db.nodes);
 	clearQueryCache();
 }
 
@@ -29,17 +30,15 @@ export async function loadCurrentProject(file_export: FileExport): Promise<Proje
 		id: crypto.randomUUID()
 	};
 
-	// Nodes first, in one pass and one index rebuild (`insertMany` scans the
-	// array per item). A file with duplicate ids throws here, before the
+	// Nodes first: a file with duplicate ids throws here, before the
 	// project exists, so a rejected file leaves an empty session behind.
 	insertIntoCollection(
 		db.nodes,
-		db.nodes_memory,
 		nodes.map((node) => withNodeDefaults({ ...node }))
 	);
 
 	const inserted_loaded_project = withProjectDefaults({ ...project });
-	db.projects.insert(inserted_loaded_project);
+	void afterWrite(db.projects.insert(inserted_loaded_project));
 
 	// Verify that the inserted project has the same project_name as the reconstructed project
 	if (inserted_loaded_project.project_name !== reconstructed_project.project_name) {

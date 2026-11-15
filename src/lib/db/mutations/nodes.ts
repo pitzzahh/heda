@@ -22,7 +22,7 @@ export const MAX_COPY_NODES = 100_000;
 /** The live stored node, without touching SignalDB cursors or reactivity. */
 export function findNode(id: string | undefined): Node | undefined {
 	if (!id) return undefined;
-	return getDatabase().nodes_memory.find((node) => node.id === id);
+	return getDatabase().nodes.findOne({ id }, { reactive: false });
 }
 
 /**
@@ -36,7 +36,7 @@ export function patchNodes(patches: [node_id: string, set: Partial<Node>][]): No
 		const current = merged.get(node_id) ?? findNode(node_id);
 		if (current) merged.set(node_id, { ...current, ...set });
 	}
-	return replaceInCollection(database.nodes, database.nodes_memory, [...merged.values()]);
+	return replaceInCollection(database.nodes, [...merged.values()]);
 }
 
 export function patchNode(node_id: string, set: Partial<Node>): Node | undefined {
@@ -74,7 +74,7 @@ export function addNode({
 			child_ids: []
 		});
 		if (findNode(created_node.id)) throw Error(`Node with ID ${created_node.id} already exists`);
-		insertIntoCollection(database.nodes, database.nodes_memory, [created_node]);
+		insertIntoCollection(database.nodes, [created_node]);
 		patchNode(parent_id, { child_ids: [...parent_node_data.child_ids, created_node.id] });
 
 		return created_node;
@@ -93,7 +93,12 @@ export function restoreNodes(
 	entries: { data: PhaseLoadSchedule | Node; children_nodes?: (PhaseLoadSchedule | Node)[] }[]
 ): Node[] {
 	const database = getDatabase();
-	const existing = new Set(database.nodes_memory.map((node) => node.id));
+	const existing = new Set(
+		database.nodes
+			.find({}, { reactive: false })
+			.fetch()
+			.map((node) => node.id)
+	);
 	const restored = new Map<string, Node>();
 	const roots: Node[] = [];
 
@@ -126,7 +131,7 @@ export function restoreNodes(
 		parent_patches.set(node.parent_id, child_ids);
 	}
 
-	insertIntoCollection(database.nodes, database.nodes_memory, [...restored.values()]);
+	insertIntoCollection(database.nodes, [...restored.values()]);
 	patchNodes([...parent_patches].map(([id, child_ids]) => [id, { child_ids }]));
 	return roots.map((root) => restored.get(root.id) as Node);
 }
@@ -263,9 +268,12 @@ export async function copyAndAddNodesById(
 		}
 
 		const used_numbers = new Set(
-			database.nodes_memory
-				.filter((node) => target_parent_id && node.parent_id === target_parent_id)
-				.map((node) => node.circuit_number)
+			target_parent_id
+				? database.nodes
+						.find({ parent_id: target_parent_id }, { reactive: false })
+						.fetch()
+						.map((node) => node.circuit_number)
+				: []
 		);
 		let next_circuit_num = existing_root.circuit_number ?? 1;
 		for (const root of roots) {
@@ -276,7 +284,7 @@ export async function copyAndAddNodesById(
 			next_circuit_num += 1;
 		}
 
-		insertIntoCollection(database.nodes, database.nodes_memory, clones);
+		insertIntoCollection(database.nodes, clones);
 		if (target_parent) {
 			patchNode(target_parent.id, {
 				child_ids: [...target_parent.child_ids, ...roots.map((root) => root.id)]
@@ -433,7 +441,7 @@ export function removeNode(
 		}
 
 		const removed = new Set(subtree.map((node) => node.id));
-		removeFromCollection(database.nodes, database.nodes_memory, removed);
+		removeFromCollection(database.nodes, removed);
 		detachFromParents([root], removed);
 
 		return {
@@ -476,7 +484,7 @@ export function removeNodesById(
 		}
 
 		if (removed.size > 0) {
-			removeFromCollection(database.nodes, database.nodes_memory, removed);
+			removeFromCollection(database.nodes, removed);
 			detachFromParents(roots, removed);
 		}
 
