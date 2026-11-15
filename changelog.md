@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.4] - 2026-11-15
+
+### Changed
+
+- Large projects respond faster: finding, editing, copying and removing
+  panels and loads no longer scans every node in the project, and a bulk
+  copy or delete refreshes the schedule once instead of once per node
+- Saving the session to disk folds a burst of edits into one write and
+  skips a decryption step on each save
+
 ## [2.7.3] - 2026-11-15
 
 ### Fixed
