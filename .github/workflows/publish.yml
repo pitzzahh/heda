@@ -65,6 +65,7 @@ jobs:
           path: ./changelog.md
 
       - name: Build Tauri app and create release
+        id: tauri
         uses: tauri-apps/tauri-action@v1
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -106,9 +107,10 @@ jobs:
 
       - name: Upload Linux tarball to release
         if: matrix.platform == 'ubuntu-latest'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
-          tag: ${{ github.ref }}
-          overwrite: true
+        # by id: tag lookups skip drafts, so a tag-based upload creates a second public release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FILE: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
+        run: >-
+          gh api -X POST -H 'Content-Type: application/gzip' --input "$FILE"
+          "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.tauri.outputs.releaseId }}/assets?name=$FILE"
