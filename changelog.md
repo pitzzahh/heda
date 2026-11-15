@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.7.0] - 2026-11-05
+## [2.7.0] - 2026-11-15
 
 ### Added
 
@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contracts, table columns, toast layout, and the page progress bar
 - Settings now previews appearance with light/dark/system theme tiles and named
   accent swatches
+- `.heda` files open and save without a password by default, sealed with a
+  per-device key; an optional file password still protects files shared
+  between devices
+- Prompt before leaving a project with unsaved changes
 
 ### Changed
 
@@ -29,12 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   open cleanly in every webview
 - Redesigned the home page, workspace shell, sidebar, schedule tables, and dialogs
 - Pinned every Tauri plugin crate to its matching npm minor release
+- The desktop app runs with a content security policy and asks for access to
+  project folders on demand instead of the whole home directory
+- Overwriting a project file keeps a backup next to it
 
 ### Removed
 
 - Android support: the APK job, generated Android project, and mobile capability
   are gone; releases target desktop only
-- Legacy v1 `.heda` files are recognized but no longer openable
 
 ### Fixed
 
@@ -45,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Toast titles and descriptions wrap instead of clipping with an ellipsis
 - Sidebar toolbar aligns with the workspace header and uses single buttons
 - Tree collapse carets render bold, rotate, and no longer navigate on click
+- Legacy v1 `.heda` files are upgraded to the new format when opened in the
+  desktop app
+- Edits made while a save is writing are no longer lost
+- Project names containing a slash open correctly
+- Updated Rust dependencies to patch security advisories in zip, tar, time,
+  tokio, bytes, ring, rand, crossbeam-channel and serde_with
 
 ## [2.6.99] - 2025-07-12
 
