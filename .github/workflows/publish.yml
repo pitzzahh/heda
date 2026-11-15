@@ -105,12 +105,48 @@ jobs:
           tar -czf "Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz" -C "$PKG" heda heda.png heda.desktop heda.xml
           ls -lh Hierarchical_Electrical_Design_Analyzer-*.tar.gz
 
-      - name: Upload Linux tarball to release
+      - name: Upload Linux tarball and updater binary to release
         if: matrix.platform == 'ubuntu-latest'
         # by id: tag lookups skip drafts, so a tag-based upload creates a second public release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FILE: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
-        run: >-
-          gh api -X POST -H 'Content-Type: application/gzip' --input "$FILE"
-          "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.tauri.outputs.releaseId }}/assets?name=$FILE"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TARBALL: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
+          BIN: heda-${{ github.ref_name }}-linux-x86_64
+          UPLOAD: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.tauri.outputs.releaseId }}/assets
+        run: |
+          # the updater installs a plain binary only when it carries no deb/rpm bundle mark
+          grep -aq __TAURI_BUNDLE_TYPE_VAR_UNK src-tauri/target/release/pkg/heda
+          cp src-tauri/target/release/pkg/heda "$BIN"
+          bunx tauri signer sign "$BIN"
+          gh api -X POST -H 'Content-Type: application/gzip' --input "$TARBALL" "$UPLOAD?name=$TARBALL"
+          gh api -X POST -H 'Content-Type: application/octet-stream' --input "$BIN" "$UPLOAD?name=$BIN"
+          gh api -X POST -H 'Content-Type: text/plain' --input "$BIN.sig" "$UPLOAD?name=$BIN.sig"
+
+  # tauri-action points the generic linux-x86_64 entry at the .deb, which overwrites tarball
+  # installs with a package; point it at the signed plain binary once every job has written latest.json
+  linux-updater-entry:
+    needs: publish-desktop
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      R: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Point linux-x86_64 at the plain binary
+        run: |
+          ID=$(gh api "repos/$R/releases" --jq "[.[] | select(.tag_name == \"$TAG\")][0].id")
+          asset() { gh api "repos/$R/releases/$ID/assets" --jq ".[] | select(.name == \"$1\") | .id"; }
+          BIN="heda-$TAG-linux-x86_64"
+          JSON_ID=$(asset latest.json)
+          gh api -H 'Accept: application/octet-stream' "repos/$R/releases/assets/$JSON_ID" > latest.json
+          gh api -H 'Accept: application/octet-stream' "repos/$R/releases/assets/$(asset "$BIN.sig")" > bin.sig
+          jq --rawfile sig bin.sig --arg url "https://github.com/$R/releases/download/$TAG/$BIN" \
+            '.platforms["linux-x86_64"] = {signature: $sig, url: $url}' latest.json > latest.new.json
+          jq -e '.platforms["linux-x86_64"].url | endswith("linux-x86_64")' latest.new.json
+          gh api -X DELETE "repos/$R/releases/assets/$JSON_ID"
+          gh api -X POST -H 'Content-Type: application/json' --input latest.new.json \
+            "https://uploads.github.com/repos/$R/releases/$ID/assets?name=latest.json"

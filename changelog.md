@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-11-15
+
+### Fixed
+
+- Linux installs from the tarball update themselves: the updater now replaces
+  the `heda` binary instead of writing the `.deb` package over it, which left
+  the app unable to start
+- The Linux tarball is attached to the same release as the other bundles
+
 ## [2.7.0] - 2026-11-15
 
 ### Added
