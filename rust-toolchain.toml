@@ -1,0 +1,6 @@
+# Rust 1.100.0 on the Windows runner linked WaitOnAddress and WakeByAddressAll to
+# vertdll.dll (the VBS enclave runtime), so every 2.7.0-2.7.2 Windows build crashed
+# a few seconds after launch. Bump only after a CI build passes the
+# "Check the Windows binary's sync imports" step in .github/workflows/publish.yml.
+[toolchain]
+channel = "1.99.1"

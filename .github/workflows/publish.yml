@@ -10,6 +10,7 @@ on:
     paths:
       - 'src-tauri/**'
       - '.github/workflows/publish.yml'
+      - 'rust-toolchain.toml'
 
 env:
   APP_NAME: 'Hierarchical Electrical Design Analyzer'
@@ -53,9 +54,11 @@ jobs:
       - name: Install npm globally
         run: bun install -g npm
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      # pinned with rust-toolchain.toml: 1.100.0 linked WaitOnAddress to vertdll.dll on Windows
+      - name: Install Rust 1.99.1
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.99.1
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
@@ -99,6 +102,18 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      # vertdll.dll is the VBS enclave runtime; its WaitOnAddress faults in a normal process,
+      # so a binary importing it closes a few seconds after launch (0xC0000005)
+      - name: Check the Windows binary's sync imports
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $bytes = [IO.File]::ReadAllBytes('src-tauri/target/release/heda.exe')
+          $text = [Text.Encoding]::ASCII.GetString($bytes)
+          if ($text.Contains('vertdll.dll')) { throw 'heda.exe imports vertdll.dll and will crash on launch' }
+          if (-not $text.Contains('api-ms-win-core-synch-l1-2-0.dll')) { throw 'heda.exe has no core sync imports' }
+          'heda.exe imports WaitOnAddress from the core sync API set'
 
       - name: Package Linux tarball
         if: matrix.platform == 'ubuntu-latest' && github.ref_type == 'tag'
