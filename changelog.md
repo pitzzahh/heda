@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.5] - 2026-11-15
+
+### Fixed
+
+- Text fields, dropdowns and buttons in forms are the same height, and
+  every dropdown field looks like the inputs beside it
+- Dialog titles and dividers no longer sit on top of the first field
+- The sidebar opens and closes smoothly, and follows the cursor when
+  dragging its edge to resize it
+
 ## [2.7.4] - 2026-11-15
 
 ### Changed
