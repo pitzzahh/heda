@@ -1,100 +1,238 @@
-<script lang="ts" generics="TData, TValue">
-	import { type ColumnDef, getCoreRowModel } from '@tanstack/table-core';
-	import { createSvelteTable, FlexRender } from '$lib/components/ui/data-table/index.js';
-	import * as Table from '$lib/components/ui/table/index.js';
-	import { cn } from '@/utils';
+<script lang="ts" module>
+	import { type ColumnDef } from '@tanstack/table-core';
+	import type { Node } from '#lib/types/db/index.js';
 
 	type DataTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
 		data: TData[];
 		is_footer_shown: boolean;
+		highest_unit?: NonNullable<Node['highest_unit_form']>;
+		is_in_vd_table?: boolean;
 	};
 
-	let { data, columns, is_footer_shown }: DataTableProps<TData, TValue> = $props();
+	const ROW_ESTIMATE_SIZE = 41;
+	const ROW_OVERSCAN = 10;
+	// First paint before the viewport is measured (and jsdom's zero-layout runs):
+	// render a small slice instead of every row.
+	const INITIAL_RENDER_COUNT = 20;
+</script>
+
+<script lang="ts" generics="TData extends { id?: string }, TValue">
+	import { getCoreRowModel } from '@tanstack/table-core';
+	import { VirtualWindow } from '#lib/hooks/virtual-window.svelte.js';
+	import { createSvelteTable, FlexRender } from '#lib/components/ui/data-table/index.js';
+	import * as Table from '#lib/components/ui/table/index.js';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { getTableStyle } from '#lib/components/ui/table/context.js';
+	import { table as tableVariants } from '#lib/components/ui/table/variants.js';
+	import { TableIcon } from '#lib/assets/icons/index.js';
+	import { cn } from '#lib/utils/index.js';
+	import TableActionDialogs from './table-action-dialogs.svelte';
+	import { TableActionsState, setTableActions } from './table-actions.svelte.js';
+
+	let {
+		data,
+		columns,
+		is_footer_shown,
+		highest_unit,
+		is_in_vd_table
+	}: DataTableProps<TData, TValue> = $props();
+
+	setTableActions(new TableActionsState());
+
+	// Bridges the imperative virtual-core instance to Svelte rendering in one
+	// reusable place; see VirtualWindow.
+	const virtual = new VirtualWindow({
+		estimate_size: ROW_ESTIMATE_SIZE,
+		overscan: ROW_OVERSCAN,
+		initial_render_count: INITIAL_RENDER_COUNT,
+		get_item_key: (index) => String((data[index] as TData | undefined)?.id ?? index)
+	});
+
+	// Mounts ResizeObserver/scroll observers and returns virtualizer cleanup on teardown.
+	$effect(() => virtual.mount());
+
+	// Syncs row count/keys and the scroll element; imperative lifecycle calls are required
+	// by virtual-core and do not reassign unrelated component state.
+	$effect(() => virtual.sync(data.length));
+
+	// For large read-only virtualized tables (voltage drop), only feed the
+	// visible window to TanStack so row-model cost scales with the viewport, not
+	// the full dataset. Footers that aggregate over the row model are not used in
+	// this mode.
+	const table_data = $derived.by((): TData[] => {
+		if (!is_in_vd_table) return data;
+		return virtual.visible_items.flatMap((virtualRow) => {
+			const item = data[virtualRow.index];
+			return item ? [item] : [];
+		});
+	});
 
 	const table = createSvelteTable({
 		get data() {
-			return data;
+			return table_data;
 		},
-		columns,
+		get columns() {
+			return columns;
+		},
 		getCoreRowModel: getCoreRowModel()
 	});
+
+	const rows = $derived(table.getRowModel().rows);
+	const leafColumnCount = $derived(
+		Math.max(table.getVisibleLeafColumns().length, table.getAllLeafColumns().length)
+	);
+	const rowClasses = $derived(tableVariants(getTableStyle()()).row());
+	const cellClasses = $derived(tableVariants(getTableStyle()()).cell());
+
+	const visibleRows = $derived.by(() => {
+		if (!is_in_vd_table) {
+			return virtual.visible_items.flatMap((virtualRow) => {
+				const row = rows[virtualRow.index];
+				return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
+			});
+		}
+		// Windowed rows align with visible_items by position.
+		return virtual.visible_items.flatMap((virtualRow, windowIndex) => {
+			const row = rows[windowIndex];
+			return row ? [{ key: String(virtualRow.key), index: virtualRow.index, row }] : [];
+		});
+	});
+	const virtualPadding = $derived({
+		start: virtual.padding_start,
+		end: virtual.padding_end
+	});
+
+	function measureRow(node: Element) {
+		virtual.measure(node);
+	}
 </script>
 
-<div class="rounded-md border">
-	<Table.Root>
-		<Table.Header>
-			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-				<Table.Row>
-					{#each headerGroup.headers as header, index (header.id)}
-						<Table.Head
-							colspan={header.colSpan}
-							class={cn('bg-muted/50 font-semibold', {
-								'border-r': index + 1 < headerGroup.headers.length,
-								'text-center': header.colSpan
-							})}
-						>
-							{#if !header.isPlaceholder}
-								<FlexRender
-									content={header.column.columnDef.header}
-									context={header.getContext()}
-								/>
-							{/if}
-						</Table.Head>
-					{/each}
-				</Table.Row>
-			{/each}
-		</Table.Header>
+<Tooltip.Provider delayDuration={100}>
+	<div
+		class="flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border border-border bg-card pr-4 pb-4 shadow-(--surface-shadow)"
+		{@attach virtual.attach_scroll_element}
+	>
+		<TableActionDialogs {highest_unit} {is_in_vd_table} />
+		<!-- End padding on the scroll box keeps the lanes clear of the bars.
+		scrollbar-gutter does nothing on overlay bars, so the lanes are
+		reserved by hand instead.
+		Inner card chrome off: this box scrolls with the content, so its own
+		border would slide into view as a fake cut-off edge. -->
+		<Table.Root containerClass="overflow-visible rounded-none border-0 bg-transparent">
+			<Table.Header class="sticky top-0 z-10 bg-secondary">
+				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+					<Table.Row>
+						{#each headerGroup.headers as header, index (header.id)}
+							<Table.Head
+								colspan={header.colSpan}
+								class={cn('h-10 align-middle font-semibold text-muted-foreground', {
+									'border-r border-border/60': index + 1 < headerGroup.headers.length,
+									'text-center': header.colSpan > 1
+								})}
+							>
+								{#if !header.isPlaceholder}
+									<FlexRender
+										content={header.column.columnDef.header}
+										context={header.getContext()}
+									/>
+								{/if}
+							</Table.Head>
+						{/each}
+					</Table.Row>
+				{/each}
+			</Table.Header>
 
-		<Table.Body>
-			{#each table.getRowModel().rows as row, index (row.id)}
-				<Table.Row data-state={row.getIsSelected() && 'selected'}>
-					{#each row.getVisibleCells() as cell, cellIdx (cell.id)}
-						<Table.Cell
-							class={cn({
-								'border-r': index + 1 !== row.getVisibleCells().length,
-								'text-center': cellIdx === 0 || cell.column.id === 'load_description',
-								'min-w-[250px]': cell.column.columnDef.header === 'LOAD DESCRIPTION',
-								// 'p-0': cell.column.id === 'conductor_sets',
-							})}
-						>
-							<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+			<Table.Body>
+				{#if rows.length === 0}
+					<Table.Row>
+						<Table.Cell colspan={leafColumnCount} class="h-32 border-0">
+							<div class="flex flex-col items-center justify-center gap-1.5 text-center">
+								<TableIcon class="size-7 text-muted-foreground/60" />
+								<p class="text-sm font-medium text-muted-foreground">Nothing here yet</p>
+								<p class="max-w-55 text-xs text-balance text-muted-foreground/80">
+									Add a load or panel from the hierarchy to populate this schedule.
+								</p>
+							</div>
 						</Table.Cell>
-					{/each}
-				</Table.Row>
-			{:else}
-				<Table.Row>
-					<Table.Cell colspan={columns.length * 3} class="h-24 text-center">No data.</Table.Cell>
-				</Table.Row>
-			{/each}
-		</Table.Body>
+					</Table.Row>
+				{:else}
+					{#if virtualPadding.start > 0}
+						<tr aria-hidden="true">
+							<td
+								colspan={leafColumnCount}
+								class="border-0 p-0"
+								style="height: {virtualPadding.start}px"
+							></td>
+						</tr>
+					{/if}
 
-		{#if data.length > 0 && is_footer_shown}
-			<Table.Footer class="border-t bg-muted/10">
-				{#each table.getFooterGroups() as footerGroup, i (i)}
-					{#if i === 0}
-						<Table.Row>
-							{#each footerGroup.headers as header, i (i)}
-								<Table.Head
-									colspan={header.colSpan}
-									class={cn('bg-muted/50', {
-										'border-r': i + 1 < footerGroup.headers.length,
-										'text-center font-semibold': i === 0,
-										'p-0': header.column.id === 'conductor_sets'
+					{#each visibleRows as visibleRow (visibleRow.key)}
+						{@const row = visibleRow.row}
+						{@const cells = row.getVisibleCells()}
+						<tr
+							{@attach measureRow}
+							data-slot="table-row"
+							data-index={visibleRow.index}
+							data-state={row.getIsSelected() && 'selected'}
+							class={cn(rowClasses, 'even:bg-muted/30', {
+								'bg-primary/5': row.getIsSelected()
+							})}
+						>
+							{#each cells as cell, cellIdx (cell.id)}
+								<td
+									data-slot="table-cell"
+									class={cn(cellClasses, {
+										'border-r border-border/60': cellIdx + 1 !== cells.length,
+										'text-center': cellIdx === 0 || cell.column.id === 'load_description',
+										'min-w-62.5': cell.column.columnDef.header === 'LOAD DESCRIPTION'
 									})}
 								>
-									{#if !header.isPlaceholder}
-										<FlexRender
-											content={header.column.columnDef.footer}
-											context={header.getContext()}
-										/>
-									{/if}
-								</Table.Head>
+									<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+								</td>
 							{/each}
-						</Table.Row>
+						</tr>
+					{/each}
+
+					{#if virtualPadding.end > 0}
+						<tr aria-hidden="true">
+							<td
+								colspan={leafColumnCount}
+								class="border-0 p-0"
+								style="height: {virtualPadding.end}px"
+							></td>
+						</tr>
 					{/if}
-				{/each}
-			</Table.Footer>
-		{/if}
-	</Table.Root>
-</div>
+				{/if}
+			</Table.Body>
+
+			{#if data.length > 0 && is_footer_shown}
+				<Table.Footer class="border-t bg-muted/40">
+					{#each table.getFooterGroups() as footerGroup, i (i)}
+						{#if i === 0}
+							<Table.Row>
+								{#each footerGroup.headers as header, i (i)}
+									<Table.Head
+										colspan={header.colSpan}
+										class={cn('font-bold text-foreground', {
+											'border-r border-border/60': i + 1 < footerGroup.headers.length,
+											'text-center': i === 0,
+											'p-0': header.column.id === 'conductor_sets'
+										})}
+									>
+										{#if !header.isPlaceholder}
+											<FlexRender
+												content={header.column.columnDef.footer}
+												context={header.getContext()}
+											/>
+										{/if}
+									</Table.Head>
+								{/each}
+							</Table.Row>
+						{/if}
+					{/each}
+				</Table.Footer>
+			{/if}
+		</Table.Root>
+	</div>
+</Tooltip.Provider>

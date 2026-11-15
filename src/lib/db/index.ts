@@ -1,27 +1,91 @@
 import { Collection } from '@signaldb/core';
+import type { BaseItem, Changeset, PersistenceAdapter } from '@signaldb/core';
+import svelteReactivityAdapter from '@signaldb/svelte';
 import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
 import { isTauri } from '@tauri-apps/api/core';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { Stronghold } from '@tauri-apps/plugin-stronghold';
-import type { MyDatabaseCollections, Node, Project } from '#lib/types/db';
-import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security';
-import { getSessionPassword } from './session';
+import type { MyDatabaseCollections, Node, Project } from '#lib/types/db/index.js';
+import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security/index.js';
+import { getSessionPassword } from './session.js';
 
 // Session store files. Deliberately nondescript and extensionless so they do
 // not advertise their contents: p = projects, n = nodes, v = vault, k = KDF salt.
 const PROJECTS_FILE = 'heda-p';
 const NODES_FILE = 'heda-n';
 const VAULT_FILE = 'heda-v';
-// Pre-rename corpses, removed best-effort on launch (see databaseInstance).
+// Pre-rename corpses, removed best-effort on launch (see initializeDatabase).
 const LEGACY_FILES = ['heda-projects.json', 'heda-nodes.json', 'heda-vault.hold', 'salt.txt'];
+// Web-only (non-Tauri) keepalive: tab-scoped `sessionStorage` snapshot so a
+// reload in the same window restores the in-memory collections. Cleared when
+// the tab closes; Tauri uses its encrypted files instead.
+const SESSION_DATA_KEY = 'heda-session-data';
 
-/**
- * Session passphrase, kept in a Stronghold vault unlocked by the session
- * secret (the file password). The vault holds per-session random key
- * material; the data key itself is never hardcoded. No session secret
- * (nothing unlocked yet) means memory-only.
- */
+function sessionStorageOrNull(): Storage | null {
+	try {
+		return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+	} catch {
+		return null;
+	}
+}
+
+function hasKeepalive(): boolean {
+	return getSessionPassword() !== null;
+}
+
+let webSnapshotListenerAttached = false;
+
+function attachWebSnapshotSave(): void {
+	if (webSnapshotListenerAttached) return;
+	webSnapshotListenerAttached = true;
+	const save = () => {
+		if (!dbInstance) return;
+		try {
+			const payload = JSON.stringify({
+				projects: dbInstance.projects.find().fetch(),
+				nodes: dbInstance.nodes.find().fetch()
+			});
+			sessionStorageOrNull()?.setItem(SESSION_DATA_KEY, payload);
+		} catch {
+			// Best-effort: quota or private mode just skips the next reload restore.
+		}
+	};
+	try {
+		window.addEventListener('pagehide', save);
+	} catch {
+		// Node tests have no window.
+	}
+}
+
+function restoreWebSession(): void {
+	if (!hasKeepalive()) return;
+	let raw: string | null;
+	try {
+		raw = sessionStorageOrNull()?.getItem(SESSION_DATA_KEY) ?? null;
+	} catch {
+		return;
+	}
+	if (!raw || !dbInstance) return;
+	try {
+		const parsed = JSON.parse(raw) as { projects?: Project[]; nodes?: Node[] };
+		if (parsed.projects?.length) dbInstance.projects.insertMany(parsed.projects);
+		if (parsed.nodes?.length) dbInstance.nodes.insertMany(parsed.nodes);
+	} catch {
+		// Corrupt snapshot: stay on the empty session instead of crashing.
+	}
+}
+
+/** Drop the web keepalive snapshot (called when the user ends the session). */
+export function clearSessionSnapshot(): void {
+	try {
+		sessionStorageOrNull()?.removeItem(SESSION_DATA_KEY);
+	} catch {
+		// Storage unavailable; nothing to clear.
+	}
+}
+
+/** Per-session random key material in a Stronghold vault; never hardcoded, never persisted. */
 async function loadPassphrase(vault_password: string, vault_path: string): Promise<string> {
 	const stronghold = await Stronghold.load(vault_path, vault_password);
 	let client;
@@ -95,52 +159,233 @@ async function sessionKey(): Promise<string | null> {
 	}
 }
 
+// Long enough to fold a multi-step edit into one write, short enough that a
+// same-tab reload rarely misses the last edit.
+const SESSION_SAVE_DELAY_MS = 100;
+
 /**
- * Returns the database instance with all required collections initialized.
- * Session-scoped: previous session files are wiped on launch so every start
- * begins empty, exactly like the previous memory-only database. Outside Tauri
- * (web dev/preview) collections run on pure memory with no persistence.
+ * Makes a burst of mutations cost one session-file write.
+ *
+ * SignalDB calls `save` with a copy of the collection taken at the first
+ * change, then calls it again for every change that arrived meanwhile, and the
+ * adapter rewrites the whole file each time. Waiting briefly and writing the
+ * live memory array catches the rest of the burst; the follow-up save is
+ * skipped when the written copy already holds every changed item. Items are
+ * replaced (never mutated) on update, so identity tells which version was
+ * written.
  */
-export async function databaseInstance(): Promise<MyDatabaseCollections> {
+export function coalesceSaves<T extends BaseItem<string>>(
+	inner: PersistenceAdapter<T, string>,
+	memory: T[],
+	delay_ms = SESSION_SAVE_DELAY_MS
+): PersistenceAdapter<T, string> {
+	let written: Set<T> | null = null;
+	return {
+		...inner,
+		async save(_items, changes) {
+			if (written && isWritten(changes, written)) return;
+			await new Promise((resolve) => setTimeout(resolve, delay_ms));
+			const items = memory.slice();
+			await inner.save(items, changes);
+			written = new Set(items);
+		}
+	};
+}
+
+function isWritten<T>(changes: Changeset<T>, written: Set<T>): boolean {
+	return (
+		changes.added.every((item) => written.has(item)) &&
+		changes.modified.every((item) => written.has(item)) &&
+		changes.removed.every((item) => !written.has(item))
+	);
+}
+
+/**
+ * Session-scoped: fresh launches start empty, same-tab reloads restore.
+ * The only async part of the database; after it settles, `getDatabase()` is sync.
+ */
+export async function initializeDatabase(): Promise<MyDatabaseCollections> {
 	if (dbInstance) return dbInstance;
 	if (dbReady) return dbReady;
 	dbReady = (async () => {
 		const useTauri = isTauri();
+		const sameSession = hasKeepalive();
 		const key = useTauri ? await sessionKey() : null;
 		if (useTauri) {
-			for (const file of [PROJECTS_FILE, NODES_FILE, VAULT_FILE, ...LEGACY_FILES]) {
+			for (const file of LEGACY_FILES) {
 				try {
 					await remove(file, { baseDir: BaseDirectory.AppLocalData });
 				} catch {
 					// A missing file means a fresh session. Nothing to wipe.
 				}
 			}
+			if (!sameSession) {
+				for (const file of [PROJECTS_FILE, NODES_FILE, VAULT_FILE]) {
+					try {
+						await remove(file, { baseDir: BaseDirectory.AppLocalData });
+					} catch {
+						// A missing file means a fresh session. Nothing to wipe.
+					}
+				}
+			}
 		}
+		// The collections default to a plain array as their memory adapter; keep
+		// typed references to those arrays so `clearCollection` can drop every
+		// item in one pass without the O(n²) `removeMany({})` path.
+		const projects_memory: Project[] = [];
 		const projects = new Collection<Project>({
 			name: 'projects',
+			memory: projects_memory,
+			reactivity: svelteReactivityAdapter,
 			persistence:
 				useTauri && key
-					? adapter<Project>(PROJECTS_FILE, {
-							encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
-							decrypt: async (encrypted) =>
-								JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Project[]
-						})
+					? coalesceSaves(
+							adapter<Project>(PROJECTS_FILE, {
+								encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
+								decrypt: async (encrypted) =>
+									JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Project[]
+							}),
+							projects_memory
+						)
 					: undefined
 		});
+		const nodes_memory: Node[] = [];
 		const nodes = new Collection<Node>({
 			name: 'nodes',
+			memory: nodes_memory,
+			reactivity: svelteReactivityAdapter,
+			// No secondary indices: SignalDB rebuilds every index on every write, and
+			// all graph reads go through the load snapshot (queries/snapshot.ts).
 			persistence:
 				useTauri && key
-					? adapter<Node>(NODES_FILE, {
-							encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
-							decrypt: async (encrypted) =>
-								JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Node[]
-						})
+					? coalesceSaves(
+							adapter<Node>(NODES_FILE, {
+								encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
+								decrypt: async (encrypted) =>
+									JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as Node[]
+							}),
+							nodes_memory
+						)
 					: undefined
 		});
 		await Promise.all([projects.isReady(), nodes.isReady()]);
-		dbInstance = { projects, nodes };
+		dbInstance = { projects, nodes, projects_memory, nodes_memory };
+		// Graph reads go through the load snapshot, which listens to collection
+		// events directly, so only a handful of listeners remain.
+		projects.setMaxListeners(1_000);
+		nodes.setMaxListeners(1_000);
+		if (!useTauri) {
+			restoreWebSession();
+			attachWebSnapshotSave();
+		}
 		return dbInstance;
 	})();
 	return dbReady;
+}
+
+/** Sync access; the root layout awaits `initializeDatabase()` first. */
+export function getDatabase(): MyDatabaseCollections {
+	if (!dbInstance) {
+		throw new Error('Database accessed before initializeDatabase() completed');
+	}
+	return dbInstance;
+}
+
+/**
+ * Drops every item from a collection in one shot.
+ *
+ * `Collection.removeMany({})` is O(n²) — it rescans the array and rebuilds the
+ * indices once per item — and emits one `removed` event per item. On a large
+ * project that froze the UI for seconds when leaving the workspace. The memory
+ * array is supplied by the caller (it is the adapter the collection was built
+ * with), so clearing it directly is O(1); `batch` then rebuilds the indices in
+ * one pass and a single `removed` event invalidates observers, cursors and the
+ * persistence adapter together.
+ */
+export function clearCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[]
+): void {
+	if (memory.length === 0) return;
+	const last_item = memory[memory.length - 1];
+	memory.length = 0;
+	collection.batch(() => {});
+	collection.emit('removed', last_item);
+}
+
+/**
+ * Removes the items whose id is in `ids` in one pass over the memory array.
+ *
+ * `removeMany` costs a scan and an index rebuild per removed item, and every
+ * per-item `removed` event makes each open cursor requery. Cursors requery on
+ * any `removed` event regardless of the item, so one event after the filter
+ * invalidates them, the snapshot cache and the persistence adapter together.
+ */
+export function removeFromCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	ids: ReadonlySet<string>
+): void {
+	let kept = 0;
+	let last_removed: T | undefined;
+	for (const item of memory) {
+		if (ids.has(item.id)) last_removed = item;
+		else memory[kept++] = item;
+	}
+	if (!last_removed) return;
+	memory.length = kept;
+	collection.batch(() => {});
+	collection.emit('removed', last_removed);
+}
+
+/**
+ * Appends items in one pass: one index rebuild instead of SignalDB's
+ * per-insert array scan, then the usual `added` event per item so persistence
+ * and the load snapshot see every new item. Throws, writing nothing, on a
+ * duplicate id.
+ */
+export function insertIntoCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	items: readonly T[]
+): void {
+	if (items.length === 0) return;
+	// Same guard as SignalDB's own insert: a tampered file must not smuggle in
+	// a second node under an existing id. Checked before any write.
+	const ids = new Set(memory.map((item) => item.id));
+	for (const item of items) {
+		if (ids.has(item.id)) throw new Error('Item with same id already exists');
+		ids.add(item.id);
+	}
+	for (const item of items) memory.push(item);
+	collection.batch(() => {});
+	for (const item of items) collection.emit('added', item);
+}
+
+/**
+ * Swaps items in place by id, in one pass and one index rebuild.
+ *
+ * `updateOne` deep-clones the item, copies the whole memory array to find it
+ * and rebuilds every index, so a multi-step edit cost several full passes.
+ * Items are replaced, never mutated, so identity still tells which version is
+ * current. Returns the items that were found.
+ */
+export function replaceInCollection<T extends BaseItem<string>>(
+	collection: Collection<T, string>,
+	memory: T[],
+	items: readonly T[]
+): T[] {
+	if (items.length === 0) return [];
+	const next_by_id = new Map(items.map((item) => [item.id, item]));
+	const replaced: T[] = [];
+	for (let index = 0; index < memory.length; index += 1) {
+		const next = next_by_id.get((memory[index] as T).id);
+		if (!next) continue;
+		memory[index] = next;
+		replaced.push(next);
+	}
+	if (replaced.length === 0) return [];
+	collection.batch(() => {});
+	for (const item of replaced) collection.emit('changed', item, {});
+	return replaced;
 }

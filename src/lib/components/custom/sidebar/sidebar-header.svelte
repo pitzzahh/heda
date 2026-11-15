@@ -1,47 +1,63 @@
-<script lang="ts">
-	import { Save, Loader, Sheet, ArrowRightFromLine } from '@/assets/icons';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Button, buttonVariants } from '@/components/ui/button';
-	import { Settings } from '..';
-	import { toast } from 'svelte-sonner';
-	import type { Node } from '@/db/schema';
-	import { UndoRedoButtons } from './(components)';
-	import { exportToExcel } from '@/helpers/export';
-	import type { ButtonState } from '@/types/misc';
-	import type { FileExport } from '@/types/main';
-	import { generateKey, keyToString } from '@/helpers/security';
-	import { writeEncryptedFile } from '@/helpers/file';
-	import { getAllChildNodes, getCurrentProject } from '@/db/queries';
-	import { validateEnv } from '@/utils/validation';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import { getSettingsState } from '@/hooks/settings-state.svelte';
-	import { getProjectState } from '@/hooks/project-state.svelte';
-	import * as DropdownMenu from '@/components/ui/dropdown-menu/index.js';
-	import { Portal } from 'bits-ui';
-	import { cn } from '@/utils';
-	let {
-		root_node,
-		app_pass_phrase,
-		file_encryption_salt
-	}: {
+<script lang="ts" module>
+	import {
+		CheckIcon,
+		CircleNotchIcon,
+		ExportIcon,
+		HouseIcon,
+		LockKeyIcon,
+		FloppyDiskIcon,
+		TableIcon
+	} from '#lib/assets/icons/index.js';
+	import type { Node } from '#lib/types/db/index.js';
+
+	interface Props {
 		root_node: Node;
-		app_pass_phrase: string | null;
-		file_encryption_salt: string | null;
-	} = $props();
+	}
+</script>
+
+<script lang="ts">
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { Settings } from '../index.js';
+	import { toast } from 'svelte-sonner';
+	import { UndoRedoButtons } from './(components)/index.js';
+	import { exportToExcel } from '#lib/helpers/export/index.js';
+	import type { ButtonState } from '#lib/types/misc/index.js';
+	import {
+		allowProjectFolder,
+		saveCurrentProject,
+		writeEncryptedFile,
+		EXTENSION
+	} from '#lib/helpers/file/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
+	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+	import { Portal } from 'bits-ui';
+	import { cn } from '#lib/utils/index.js';
+	import PasswordDialog from '../password-dialog.svelte';
+	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
+	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+	import { untrack } from 'svelte';
+	let { root_node }: Props = $props();
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
-		status: 'idle' as 'idle' | 'processing',
-		can_save: true
+		can_save: true,
+		saving: false
 	});
 
 	const undo_redo_state = getUndoRedoState();
 	const settings_state = getSettingsState();
+	let last_autosaved_version = -1;
 	const project_state = getProjectState();
+	const leave = createLeaveProject();
 
 	async function handleSave() {
+		if (component_state.saving) return;
+		component_state.saving = true;
 		try {
-			if (!validateEnv(app_pass_phrase, file_encryption_salt)) return;
 			if (!project_state.loaded) {
 				console.error('Failed to save, project not yet loaded');
 				return toast.warning('Failed to save, project not yet loaded', {
@@ -49,45 +65,66 @@
 				});
 			}
 
-			const current_project = await getCurrentProject();
-
-			if (!current_project) {
-				console.error('Failed to save, no project found');
-				return toast.warning('Failed to save, no project found', {
-					description: 'This is a system error and should not be here, the error has been logged.'
-				});
+			const saved = await saveCurrentProject(project_state.current_project_path, undo_redo_state);
+			if (saved && !settings_state.auto_save_enabled) {
+				toast.success('Saved successfully');
 			}
-
-			const file_data: FileExport = {
-				project: current_project,
-				nodes: await getAllChildNodes(current_project.root_node_id, true)
-			};
-
-			console.log(`New Data Saved: ${JSON.stringify(file_data)}`);
-
-			await writeEncryptedFile(
-				file_data,
-				keyToString(generateKey(app_pass_phrase!, file_encryption_salt!)),
-				project_state.current_project_path
-			);
-			undo_redo_state.resetUnsavedActions();
-		} catch (err) {
-			console.error(`Failed to save file: ${JSON.stringify(err)}`);
-			toast.error(`Failed to save file: ${(err as any)?.message ?? 'something went wrong'}`, {
-				description: 'An error occurred while saving the file.'
-			});
-		}
-
-		if (!settings_state.auto_save_enabled) {
-			toast.success('Saved successfully');
+		} finally {
+			component_state.saving = false;
 		}
 	}
 
-	$effect(() => {
-		// auto saver
-		if (undo_redo_state.has_unsaved_actions && settings_state.auto_save_enabled) {
-			handleSave();
+	let share_open = $state(false);
+	let share_error = $state<string | null>(null);
+	let share_busy = $state(false);
+
+	// A password-protected copy that anyone with the password can open. The
+	// current file keeps its own protection.
+	async function handleShareSubmit(password: string) {
+		share_busy = true;
+		share_error = null;
+		try {
+			const current = getCurrentProject();
+			if (!current) throw new Error('No project found');
+			const path = await saveDialog({
+				filters: [{ name: 'Heda file', extensions: [EXTENSION] }]
+			});
+			if (!path) return;
+			const file_path = path.endsWith(`.${EXTENSION}`) ? path : `${path}.${EXTENSION}`;
+			// The dialog granted only the picked path, which may lack the extension.
+			await allowProjectFolder(file_path);
+			await writeEncryptedFile(
+				{ project: current, nodes: getAllChildNodes(current.root_node_id, true) },
+				password,
+				file_path,
+				true
+			);
+			share_open = false;
+			toast.success('Password-protected copy saved', {
+				description: 'Anyone with the password can open this file.'
+			});
+		} catch (err) {
+			share_error = (err as Error)?.message ?? 'The copy could not be saved.';
+		} finally {
+			share_busy = false;
 		}
+	}
+
+	// Auto-saver: writes each edit version once. Reading `saving` re-runs it after an
+	// in-flight save, so edits made during that write are saved next; a failed save
+	// is not retried until the next edit.
+	$effect(() => {
+		const version = undo_redo_state.edit_version;
+		if (
+			!undo_redo_state.has_unsaved_actions ||
+			!settings_state.auto_save_enabled ||
+			component_state.saving ||
+			version === last_autosaved_version
+		) {
+			return;
+		}
+		last_autosaved_version = version;
+		untrack(handleSave);
 	});
 </script>
 
@@ -99,123 +136,162 @@
 	}}
 />
 
-<div class="flex w-full items-center justify-between p-2">
-	<div class="flex w-full items-center gap-2">
+<div
+	class="flex h-14 w-full shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2"
+>
+	<div
+		class="flex items-center gap-0.5 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 p-0.5"
+	>
 		{#if !settings_state.auto_save_enabled}
 			<Tooltip.Provider>
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						disabled={!project_state.loaded ||
 							!component_state.can_save ||
-							!undo_redo_state.has_unsaved_actions}
-						class={buttonVariants({ variant: 'default', size: 'sm' })}
-						onclick={handleSave}
+							!undo_redo_state.has_unsaved_actions ||
+							component_state.saving}
+						class={buttonVariants({
+							variant: undo_redo_state.has_unsaved_actions ? 'default' : 'ghost',
+							size: 'sm'
+						})}
+						onclick={() => handleSave()}
 					>
-						<Save class="h-4 w-4" />
-						Save
+						<CircleNotchIcon
+							class={cn('hidden size-4 animate-spin', { block: component_state.saving })}
+						/>
+						{#if undo_redo_state.has_unsaved_actions}
+							<FloppyDiskIcon class={cn('size-4', { hidden: component_state.saving })} />
+							Save
+						{:else}
+							<CheckIcon class={cn('size-4', { hidden: component_state.saving })} />
+							Saved
+						{/if}
 					</Tooltip.Trigger>
-					<Tooltip.Content>Save changes (Ctrl+S)</Tooltip.Content>
+					<Tooltip.Content>
+						{undo_redo_state.has_unsaved_actions ? 'Save changes (Ctrl+S)' : 'All changes saved'}
+					</Tooltip.Content>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		{/if}
 
-		<Tooltip.Provider>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<Settings />
-				</Tooltip.Trigger>
-				<Tooltip.Content>Settings</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
+		<Settings />
 		<UndoRedoButtons />
-	</div>
-	<svelte:boundary>
 		<Tooltip.Provider>
 			<Tooltip.Root>
 				<Tooltip.Trigger
-					disabled={!project_state.loaded}
-					class={cn({
-						'cursor-not-allowed': !project_state.loaded
-					})}
+					class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+					onclick={() => void leave.goHome()}
+					aria-label="Go Home"
 				>
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger
-							disabled={!project_state.loaded}
-							class={buttonVariants({
-								variant: 'outline'
-							})}
-						>
-							<ArrowRightFromLine class="h-4 w-4" />
-						</DropdownMenu.Trigger>
-
-						<Portal>
-							<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
-								<DropdownMenu.Group>
-									<DropdownMenu.GroupHeading class="text-center"
-										>Export options</DropdownMenu.GroupHeading
-									>
-									<DropdownMenu.Separator />
-									<DropdownMenu.Item
-										disabled={component_state.status === 'processing'}
-										onclick={async () => {
-											exportToExcel(
-												'LOAD_SCHEDULE',
-												root_node.id,
-												root_node?.highest_unit_form,
-												project_state.current_project_name,
-												() => (component_state.export_to_excel = 'idle'),
-												() => (component_state.export_to_excel = 'loading')
-											);
-										}}
-									>
-										<Loader
-											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-												block: component_state.status === 'processing'
-											})}
-										/>
-										<Sheet
-											class={cn('mr-0.5 block h-4 w-4', {
-												'opacity-50': component_state.export_to_excel === 'loading'
-											})}
-										/>
-										Export whole project load schedule</DropdownMenu.Item
-									>
-									<DropdownMenu.Item
-										disabled={component_state.status === 'processing'}
-										onclick={async () => {
-											exportToExcel(
-												'VOLTAGE_DROP',
-												root_node.id,
-												root_node?.highest_unit_form,
-												project_state.current_project_name,
-												() => (component_state.export_to_excel = 'idle'),
-												() => (component_state.export_to_excel = 'loading')
-											);
-										}}
-									>
-										<Loader
-											class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
-												block: component_state.status === 'processing'
-											})}
-										/>
-										<Sheet
-											class={cn('mr-0.5 block h-4 w-4', {
-												'opacity-50': component_state.export_to_excel === 'loading'
-											})}
-										/>
-										Export whole project voltage drop
-									</DropdownMenu.Item>
-								</DropdownMenu.Group>
-							</DropdownMenu.Content>
-						</Portal>
-					</DropdownMenu.Root>
+					<HouseIcon class="size-4" />
 				</Tooltip.Trigger>
-				<Tooltip.Content>Export</Tooltip.Content>
+				<Tooltip.Content
+					>{undo_redo_state.has_unsaved_actions
+						? 'Go Home (unsaved changes will prompt)'
+						: 'Go Home'}</Tooltip.Content
+				>
 			</Tooltip.Root>
 		</Tooltip.Provider>
+	</div>
+	<svelte:boundary>
+		<DropdownMenu.Root>
+			<Tooltip.Provider>
+				<Tooltip.Root>
+					<Tooltip.Trigger disabled={!project_state.loaded}>
+						{#snippet child({ props })}
+							<DropdownMenu.Trigger
+								{...props}
+								disabled={!project_state.loaded}
+								class={buttonVariants({
+									variant: 'outline',
+									size: 'icon-sm'
+								})}
+								aria-label="Export options"
+							>
+								<ExportIcon class="size-4" />
+							</DropdownMenu.Trigger>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Export</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
+
+			<Portal>
+				<DropdownMenu.Content class="z-50 flex w-fit flex-col gap-2">
+					<DropdownMenu.Group>
+						<DropdownMenu.Label class="text-center">Export options</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item
+							disabled={component_state.export_to_excel === 'loading'}
+							onclick={async () => {
+								exportToExcel(
+									'LOAD_SCHEDULE',
+									root_node.id,
+									root_node?.highest_unit_form,
+									project_state.current_project_name,
+									() => (component_state.export_to_excel = 'idle'),
+									() => (component_state.export_to_excel = 'loading')
+								);
+							}}
+						>
+							<CircleNotchIcon
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+									block: component_state.export_to_excel === 'loading'
+								})}
+							/>
+							<TableIcon
+								class={cn('mr-0.5 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project load schedule</DropdownMenu.Item
+						>
+						<DropdownMenu.Item
+							disabled={component_state.export_to_excel === 'loading'}
+							onclick={async () => {
+								exportToExcel(
+									'VOLTAGE_DROP',
+									root_node.id,
+									root_node?.highest_unit_form,
+									project_state.current_project_name,
+									() => (component_state.export_to_excel = 'idle'),
+									() => (component_state.export_to_excel = 'loading')
+								);
+							}}
+						>
+							<CircleNotchIcon
+								class={cn('mr-0.5 hidden h-4 w-4 animate-spin', {
+									block: component_state.export_to_excel === 'loading'
+								})}
+							/>
+							<TableIcon
+								class={cn('mr-0.5 block h-4 w-4', {
+									'opacity-50': component_state.export_to_excel === 'loading'
+								})}
+							/>
+							Export whole project voltage drop</DropdownMenu.Item
+						>
+						<DropdownMenu.Item onclick={() => (share_open = true)}>
+							<LockKeyIcon class="mr-0.5 block h-4 w-4" />
+							Export password-protected copy</DropdownMenu.Item
+						>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</Portal>
+		</DropdownMenu.Root>
 		{#snippet failed(error, reset)}
-			<p class="text-sm text-muted-foreground">{error}</p>
-			<Button onclick={reset}>oops! try again</Button>
+			<div class="grid w-full gap-2 rounded-xl border border-dashed p-3">
+				<p class="text-xs text-muted-foreground">{error}</p>
+				<Button onclick={reset} size="sm" variant="outline">Try again</Button>
+			</div>
 		{/snippet}
 	</svelte:boundary>
 </div>
+
+<PasswordDialog
+	bind:open={share_open}
+	mode="create"
+	error={share_error}
+	busy={share_busy}
+	onSubmit={handleShareSubmit}
+/>

@@ -18,22 +18,22 @@ jobs:
         include:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
             args: '--target aarch64-apple-darwin'
-          # - platform: "macos-latest" # for Intel based macs.
-          #   args: "--target x86_64-apple-darwin"
-          # - platform: "ubuntu-22.04"
-          #   args: ""
-          # - platform: "windows-latest"
-          #   args: ""
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-latest' # deb and rpm bundles; the AppImage is skipped on purpose.
+            args: '--bundles deb,rpm'
+          - platform: 'windows-latest'
+            args: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -56,15 +56,6 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
-      - name: CI Upload Windows
-        if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: 'Windows Installers'
-          path: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*.exe
-
       - name: Get Changelog Entry
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
@@ -74,13 +65,15 @@ jobs:
           path: ./changelog.md
 
       - name: Build Tauri app and create release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         if: ${{ github.ref_type == 'tag' }}
         env:
           CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_LEGACY_FILE_PASSPHRASE: ${{ secrets.VITE_LEGACY_FILE_PASSPHRASE }}
+          VITE_LEGACY_FILE_SALT: ${{ secrets.VITE_LEGACY_FILE_SALT }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '${{ env.APP_NAME }} v${{ github.ref_name }}'
@@ -89,106 +82,33 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-  publish-android:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    needs: publish-desktop # Ensure desktop job creates release first
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Cache NDK
-        id: cache-ndk
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/lib/android/sdk/ndk/27.2.12479018
-          key: ndk-${{ runner.os }}-27.2.12479018
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK
-        if: steps.cache-ndk.outputs.cache-hit != 'true'
-        run: sdkmanager "ndk;27.2.12479018"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-
-      - name: Install frontend dependencies
-        run: bun install
-
-      - name: Build app bundle (unsigned)
-        run: bunx tauri android build -v
-        env:
-          NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
-
-      - name: Extract Android signing key (if present)
+      - name: Package Linux tarball
+        if: matrix.platform == 'ubuntu-latest'
         run: |
-          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ]; then
-            echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
-            base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
-          else
-            echo "No ANDROID_RELEASE_KEYSTORE secret present, skipping."
-          fi
+          PKG=src-tauri/target/release/pkg
+          mkdir -p "$PKG"
+          install -m 755 src-tauri/target/release/heda "$PKG/heda"
+          cp src-tauri/icons/icon.png "$PKG/heda.png"
+          tee "$PKG/heda.desktop" <<'EOF'
+          [Desktop Entry]
+          Name=Hierarchical Electrical Design Analyzer
+          Comment=Load schedules, voltage drop and short circuit analysis
+          Exec=heda %f
+          Icon=heda
+          MimeType=application/x-heda;
+          Terminal=false
+          Type=Application
+          Categories=Utility;
+          EOF
+          cp src-tauri/linux/heda.xml "$PKG/heda.xml"
+          tar -czf "Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz" -C "$PKG" heda heda.png heda.desktop heda.xml
+          ls -lh Hierarchical_Electrical_Design_Analyzer-*.tar.gz
 
-      - name: Sign APK (if secrets present)
-        run: |
-          if [ -n "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" ] && \
-             [ -n "${{ secrets.ANDROID_RELEASE_PASSWORD }}" ] && \
-             [ -n "${{ secrets.ANDROID_RELEASE_KEY }}" ] && \
-             [ -n "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}" ]; then
-            ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
-              --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
-              --ks-pass pass:${{ secrets.ANDROID_RELEASE_PASSWORD }} \
-              --key-pass pass:${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }} \
-              --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
-              src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
-          else
-            echo "Some Android signing secrets are missing, skipping signing step."
-          fi
-
-      - name: Get version from tag
-        id: app-version
-        run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-
-      - name: Rename APK file (signed or unsigned)
-        run: |
-          NORMALIZED_APP_NAME=$(echo "${{ env.APP_NAME }}" | tr ' ' '_')
-          echo "Renaming APK..."
-          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
-          if [ -f ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ]; then
-            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
-            echo "Signed APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}.apk"
-          else
-            mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk "./src-tauri/gen/android/app/build/outputs/apk/universal/release/${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
-            echo "Unsigned APK renamed to ${NORMALIZED_APP_NAME}-${{ steps.app-version.outputs.version }}-unsigned.apk"
-          fi
-          ls -l ./src-tauri/gen/android/app/build/outputs/apk/universal/release/
-
-      - name: Upload APK to existing release
+      - name: Upload Linux tarball to release
+        if: matrix.platform == 'ubuntu-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/Hierarchical_Electrical_Design_Analyzer-${{ steps.app-version.outputs.version }}*.apk
-          file_glob: true
+          file: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
           tag: ${{ github.ref }}
           overwrite: true

@@ -1,7 +1,7 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Hierarchical Electrical Design Analyzer",
-	"version": "2.6.99",
+	"version": "2.7.0",
 	"identifier": "me.araopj.heda",
 	"build": {
 		"frontendDist": "../build",
@@ -13,7 +13,7 @@
 		"windows": [
 			{
 				"center": true,
-				"title": "Hierarchical Electrical Design Analyzer v2.6.99",
+				"title": "Hierarchical Electrical Design Analyzer",
 				"width": 950,
 				"height": 650,
 				"minWidth": 950,
@@ -24,7 +24,19 @@
 			}
 		],
 		"security": {
-			"csp": null,
+			"csp": {
+				"default-src": "'self'",
+				"script-src": "'self'",
+				"style-src": "'self' 'unsafe-inline'",
+				"img-src": "'self' data:",
+				"font-src": "'self' data:",
+				"connect-src": "'self' ipc: http://ipc.localhost",
+				"worker-src": "'self'",
+				"object-src": "'none'",
+				"base-uri": "'self'"
+			},
+			"devCsp": null,
+			"dangerousDisableAssetCspModification": ["style-src"],
 			"capabilities": ["default"]
 		}
 	},
@@ -32,6 +44,34 @@
 		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
+		"fileAssociations": [
+			{
+				"ext": ["heda"],
+				"name": "HEDA Project",
+				"description": "Hierarchical Electrical Design Analyzer project",
+				"mimeType": "application/x-heda",
+				"role": "Editor",
+				"rank": "Default",
+				"exportedType": {
+					"identifier": "me.araopj.heda.heda",
+					"conformsTo": ["public.data"]
+				}
+			}
+		],
+		"linux": {
+			"deb": {
+				"desktopTemplate": "linux/heda.desktop.hbs",
+				"files": {
+					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+				}
+			},
+			"rpm": {
+				"desktopTemplate": "linux/heda.desktop.hbs",
+				"files": {
+					"usr/share/mime/packages/heda.xml": "linux/heda.xml"
+				}
+			}
+		},
 		"windows": {
 			"webviewInstallMode": {
 				"type": "embedBootstrapper"
@@ -42,12 +82,7 @@
 			"icons/128x128.png",
 			"icons/128x128@2x.png",
 			"icons/icon.icns",
-			"icons/icon.ico",
-			"icons/android/mipmap-mdpi/ic_launcher.png",
-			"icons/android/mipmap-hdpi/ic_launcher.png",
-			"icons/android/mipmap-xhdpi/ic_launcher.png",
-			"icons/android/mipmap-xxhdpi/ic_launcher.png",
-			"icons/android/mipmap-xxxhdpi/ic_launcher.png"
+			"icons/icon.ico"
 		]
 	},
 	"plugins": {

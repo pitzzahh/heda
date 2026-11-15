@@ -1,8 +1,8 @@
-import type { VoltageDrop } from '@/types/voltage-drop';
+import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent } from '@/components/ui/data-table';
+import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';
-import { ActionsColumnDropdown } from '../(components)';
+import { ActionsColumnDropdown } from '../(components)/index.js';
 
 export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
@@ -32,13 +32,6 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 				accessorKey: 'conductor_size',
 				header: () => 'Size (mm²)',
 				cell: (info) => {
-					// const data = info.row.original;
-					// if (data.adjusted_current > 530 && !data.overrided_conductor_size) {
-					// 	return renderComponent(ErrorCell, {
-					// 		trigger_value: '-',
-					// 		tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
-					// 	});
-					// }
 					return info.getValue();
 				}
 			}
@@ -100,13 +93,11 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 				accessorKey: 'voltage_per_segment',
 				cell: (info) => info.getValue(),
 				header: () => 'Per Segment'
-				// footer: (props) => ""
 			},
 			{
 				accessorKey: 'voltage_at_end_circuit',
 				cell: (info) => info.getValue(),
 				header: () => 'At End Circuit'
-				// footer: (props) => ""
 			}
 		]
 	},

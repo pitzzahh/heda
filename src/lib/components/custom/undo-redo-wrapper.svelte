@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { children } = $props();
 	let undo_redo_state = getUndoRedoState();
@@ -18,14 +18,8 @@
 			}
 		}
 	}
-
-	$effect(() => {
-		window.addEventListener('keydown', handleKeyDown);
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-		};
-	});
 </script>
+
+<svelte:window onkeydown={handleKeyDown} />
 
 {@render children?.()}

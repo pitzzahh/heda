@@ -1,45 +1,51 @@
-<script lang="ts">
-	import * as Dialog from '@/components/ui/dialog/index.js';
-	import { Button, buttonVariants } from '@/components/ui/button/index.js';
-	import type { SuperValidated } from 'sveltekit-superforms';
-	import { GenericPhaseMainLoadForm } from '@/components/custom/load';
-	import { Separator } from '@/components/ui/separator/index.js';
-	import type { Node } from '@/db/schema';
-	import type { GenericPhaseMainLoadSchema } from '@/schema/load';
-	import { getNodeById } from '@/db/queries';
-	import ParentPanelPopover from '../parent-panel-popover.svelte';
-	import { cn } from '@/utils';
+<script lang="ts" module>
+	import type { Node } from '#lib/types/db/index.js';
 
-	let {
-		phase_main_load_form,
-		open_load_dialog = $bindable(false),
-		some_open_state = $bindable(),
-		remove_trigger = false,
-		load_to_edit,
-		highest_unit
-	}: {
-		phase_main_load_form: SuperValidated<GenericPhaseMainLoadSchema>;
+	interface Props {
 		some_open_state?: boolean;
 		open_load_dialog?: boolean;
 		remove_trigger?: boolean;
 		load_to_edit: Node;
 		highest_unit: NonNullable<Node['highest_unit_form']>;
-	} = $props();
+	}
+</script>
 
-	const { phase } = highest_unit;
+<script lang="ts">
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import ParentPanelPopover from '../parent-panel-popover.svelte';
 
+	let {
+		open_load_dialog = $bindable(false),
+		some_open_state = $bindable(),
+		remove_trigger = false,
+		load_to_edit,
+		highest_unit
+	}: Props = $props();
+
+	const phase = $derived(highest_unit.phase);
+
+	const parent_node = $derived(
+		load_to_edit.parent_id ? getNode(load_to_edit.parent_id) : undefined
+	);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
-
-	$effect(() => {
-		if (load_to_edit.parent_id) {
-			getNodeById(load_to_edit.parent_id).then((node) => {
-				selected_parent = {
-					name: node?.highest_unit_form?.distribution_unit || node?.panel_data?.name || '',
-					id: node?.id || ''
-				};
-			});
-		}
-	});
+	const parent_display = $derived(
+		selected_parent ??
+			(parent_node
+				? {
+						name:
+							parent_node.highest_unit_form?.distribution_unit ||
+							parent_node.panel_data?.name ||
+							'',
+						id: parent_node.id
+					}
+				: null)
+	);
 </script>
 
 <Dialog.Root bind:open={open_load_dialog} onOpenChange={(o) => (some_open_state = o === true)}>
@@ -48,28 +54,31 @@
 			>Update Load</Dialog.Trigger
 		>
 	{/if}
-	<Dialog.Content class="max-w-[70%]">
+	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update Load</Dialog.Title>
-			<div class={cn('flex flex-col items-center justify-start')}>
-				<h4 class="mb-1 font-bold">MAIN</h4>
-				<div class="grid w-full grid-cols-2 justify-items-start">
+			<div class="flex flex-col gap-1">
+				<h4 class="text-center font-bold">MAIN</h4>
+				<div class="grid w-full grid-cols-2 gap-4">
 					<div>
 						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Supply From:</h4>
-							{#if selected_parent}
+							{#if parent_display}
 								<ParentPanelPopover
 									current_parent_id={load_to_edit.parent_id || ''}
-									bind:selected_parent
+									selected_parent={parent_display}
+									onselect={(parent) => (selected_parent = parent)}
 									excluded_node_id={load_to_edit.id}
 								/>
 							{/if}
 						</div>
 					</div>
 					<div>
-						<div class="flex gap-1">
+						<div class="flex items-center gap-1">
 							<h4 class="font-semibold">Phase:</h4>
-							<p>{phase ?? 'N/A'}</p>
+							<p>
+								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}
+							</p>
 						</div>
 					</div>
 				</div>
@@ -78,8 +87,7 @@
 		<Separator class="mt-0.5" />
 		<svelte:boundary>
 			<GenericPhaseMainLoadForm
-				{phase_main_load_form}
-				selected_parent_id={selected_parent?.id}
+				selected_parent_id={parent_display?.id}
 				closeDialog={() => (open_load_dialog = false)}
 				node_to_edit={load_to_edit}
 				action="edit"
@@ -89,5 +97,6 @@
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>
+		<Dialog.Close />
 	</Dialog.Content>
 </Dialog.Root>

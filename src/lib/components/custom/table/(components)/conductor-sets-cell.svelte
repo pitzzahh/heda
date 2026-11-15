@@ -1,21 +1,35 @@
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+
+	interface Props {
+		sets: number;
+		node: PhaseLoadSchedule;
+	}
+</script>
+
 <script lang="ts">
 	import { IsFocusWithin } from 'runed';
-	import { updateConductorSets } from '@/db/mutations';
-	import { invalidate } from '$app/navigation';
+	import { updateConductorSets } from '#lib/db/mutations/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
-	let { sets, node }: { sets: number; node: PhaseLoadSchedule } = $props();
-	let sets_value = $state(sets);
+	let { sets, node }: Props = $props();
+	// Snapshot at mount: local edit state.
+	function initialSets() {
+		return sets;
+	}
+	let sets_value = $state(initialSets());
+	let last_sets_prop = initialSets();
 	let formElement = $state<HTMLFormElement>();
 	const focusWithinForm = new IsFocusWithin(() => formElement);
 
 	let undo_redo_state = getUndoRedoState();
 
-	async function saveSetsChanges() {
+	function saveSetsChanges() {
 		try {
-			const updated_set = await updateConductorSets({
+			const previous_node = getNode(node.id);
+			const updated_set = updateConductorSets({
 				node_id: node.id,
 				sets: !sets_value ? 1 : sets_value
 			});
@@ -24,16 +38,23 @@
 			undo_redo_state.setActionToUndo({
 				action: 'update_node',
 				data: updated_set as unknown as PhaseLoadSchedule,
-				previous_data: node
+				previous_data: previous_node as unknown as PhaseLoadSchedule
 			});
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
 			toast.success('Sets updated successfully');
 		} catch (err) {
 			console.error(`An error occured while updating the sets: ${JSON.stringify(err)}`);
 		}
 	}
 
+	// Persists the edit on blur, or reverts the draft when cleared. External prop
+	// changes (undo/redo, refreshes) are adopted first so they aren't re-saved.
 	$effect(() => {
+		if (sets !== last_sets_prop) {
+			last_sets_prop = sets;
+			if (!focusWithinForm.current) sets_value = sets;
+			return;
+		}
+
 		if (!focusWithinForm.current && sets_value !== sets) {
 			if (sets_value && sets_value >= 1) {
 				saveSetsChanges();
@@ -48,6 +69,6 @@
 	<input
 		type="number"
 		bind:value={sets_value}
-		class="w-16 bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+		class="w-16 [appearance:textfield] bg-transparent p-2 text-center outline-primary focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 	/>
 </form>

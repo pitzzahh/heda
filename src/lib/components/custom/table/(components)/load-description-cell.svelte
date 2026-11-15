@@ -1,84 +1,76 @@
-<script lang="ts">
-	import { IsFocusWithin } from 'runed';
-	import { invalidate } from '$app/navigation';
-	import { toast } from 'svelte-sonner';
-	import { updateLoadDescription } from '@/db/mutations';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
 
-	let {
-		load_description,
-		node_id,
-		node_type,
-		node
-	}: {
+	interface Props {
 		load_description: string;
 		node_id: string;
 		node_type: 'panel' | 'load';
-		node: PhaseLoadSchedule;
-	} = $props();
-	let load_description_suffix = load_description.split(' - ').at(-1);
-	let load_description_state = $state(load_description);
-	let formElement = $state<HTMLFormElement>();
-	const focusWithinForm = new IsFocusWithin(() => formElement);
-
-	let undo_redo_state = getUndoRedoState();
-
-	async function saveLoadDescChanges() {
-		try {
-			const updated_node = await updateLoadDescription({
-				node_id,
-				load_description:
-					node_type === 'load'
-						? (load_description.split(' - ').at(0) as string) + ' - ' + load_description_state
-						: load_description_state,
-				node_type
-			});
-			undo_redo_state.setActionToUndo({
-				action: 'update_node',
-				data: updated_node as unknown as PhaseLoadSchedule,
-				previous_data: node
-			});
-			invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-			toast.success('Load description updated successfully');
-		} catch (err) {
-			console.error(`Error: failed to update load description: ${JSON.stringify(err)}`);
-			toast.error('An error occured while updating the load description');
-		}
 	}
 
-	$effect(() => {
-		if (focusWithinForm.current && node_type === 'load') {
-			load_description_state = load_description_suffix as string;
-		}
+	const SEPARATOR = ' - ';
 
-		if (!focusWithinForm.current) {
-			if (
-				node_type === 'panel' &&
-				load_description_state !== load_description &&
-				load_description_state
-			) {
-				saveLoadDescChanges();
-			} else load_description_state = load_description;
-
-			if (
-				node_type === 'load' &&
-				load_description_state !== load_description &&
-				load_description_state !== load_description_suffix &&
-				load_description_state
-			) {
-				saveLoadDescChanges();
-			} else {
-				load_description_state = load_description;
-			}
-		}
-	});
+	/** Loads are stored as "<quantity> - <name>"; only the name is edited in the cell. */
+	function splitDescription(value: string, node_type: Props['node_type']) {
+		const at = node_type === 'load' ? value.indexOf(SEPARATOR) : -1;
+		if (at === -1) return { prefix: null, name: value };
+		return { prefix: value.slice(0, at), name: value.slice(at + SEPARATOR.length) };
+	}
 </script>
 
-<form bind:this={formElement}>
-	<input
-		type="text"
-		bind:value={load_description_state}
-		class="w-full bg-transparent p-2 text-center outline-primary [appearance:textfield] focus:outline [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-	/>
-</form>
+<script lang="ts">
+	import { toast } from 'svelte-sonner';
+	import { updateLoadDescription } from '#lib/db/mutations/index.js';
+	import { getNode } from '#lib/db/queries/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+
+	let { load_description, node_id, node_type }: Props = $props();
+
+	// Non-null only while the input is focused; otherwise the stored value shows.
+	let draft = $state<string | null>(null);
+	const parts = $derived(splitDescription(load_description, node_type));
+
+	const undo_redo_state = getUndoRedoState();
+
+	function commit() {
+		if (draft === null) return;
+		const name = draft.trim();
+		draft = null;
+		if (!name || name === parts.name) return;
+
+		const previous_node = getNode(node_id);
+		const updated_node = updateLoadDescription({
+			node_id,
+			load_description: parts.prefix === null ? name : `${parts.prefix}${SEPARATOR}${name}`,
+			node_type
+		});
+		if (!updated_node || !previous_node) {
+			toast.error(`Could not rename this ${node_type}.`);
+			return;
+		}
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			data: updated_node as unknown as PhaseLoadSchedule,
+			previous_data: previous_node as unknown as PhaseLoadSchedule
+		});
+		toast.success(node_type === 'panel' ? 'Panel name updated' : 'Load description updated');
+	}
+
+	function handleKeydown(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {
+		if (event.key === 'Escape') draft = null;
+		if (event.key === 'Enter' || event.key === 'Escape') {
+			event.preventDefault();
+			event.currentTarget.blur();
+		}
+	}
+</script>
+
+<input
+	type="text"
+	aria-label={node_type === 'panel' ? 'Panel name' : 'Load description'}
+	value={draft ?? load_description}
+	onfocus={() => (draft = parts.name)}
+	oninput={(event) => (draft = event.currentTarget.value)}
+	onblur={commit}
+	onkeydown={handleKeydown}
+	class="w-full bg-transparent p-2 text-center outline-primary focus:outline"
+/>

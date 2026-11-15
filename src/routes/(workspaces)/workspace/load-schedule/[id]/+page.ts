@@ -1,19 +1,20 @@
-import { generic_phase_main_load_schema } from '@/schema/load';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 
 export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];
 };
 
-export const load = async ({ depends, params }) => {
-	depends('app:workspace/load-schedule');
-	if (!params.id.split('_').at(-1)) {
+export const load = async ({ params }) => {
+	// No `depends('app:workspace/load-schedule')`: this load runs only when
+	// `params` change. Tables derive live rows from SignalDB cursors keyed by
+	// the current node id, so a field edit recomputes only the schedule it
+	// touched, never the layout.
+	const node_id = nodeIdFromRouteId(params.id);
+	if (!node_id) {
 		console.warn('Viewing workspace without node_id');
-		goto('/');
+		goto(resolve('/'));
 	}
-	return {
-		phase_main_load_form: await superValidate(zod(generic_phase_main_load_schema))
-	};
+	return {};
 };

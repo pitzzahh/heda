@@ -1,119 +1,209 @@
+<script lang="ts" module>
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+</script>
+
 <script lang="ts">
-	import { DataTable } from '@/components/custom/table';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
+	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
-	import { onePhaseMainOrWyeCols } from '@/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
+	import { DEFAULT_PHASES } from '#lib/constants/index.js';
+	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
-		getComputedVoltageDrops,
+		getComputedVoltageDropsAsync,
+		getNode,
+		getNodeById,
 		getRootNode,
-		getNodeById
-	} from '@/db/queries/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { voltageDropColumns } from '@/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
-	import { Skeletal } from '@/components/custom/index.js';
-	import { getProjectState } from '@/hooks/project-state.svelte';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
+		getSnapshotRevision
+	} from '#lib/db/queries/index.js';
+	import * as Tabs from '#lib/components/ui/tabs/index.js';
+	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
+	import { LightningAIcon } from '#lib/assets/icons/index.js';
+	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
-	import { Skeleton } from '@/components/ui/skeleton';
+	import { resolve } from '$app/paths';
 
-	let { data } = $props();
-
-	const { root_node } = data;
 	const params = $derived(page.params);
-	const node_id = $derived(params.id.split('_').at(-1) as string);
+	const node_id = $derived(nodeIdFromRouteId(params.id) as string);
 	const project_state = getProjectState();
-	const undo_redo_state = getUndoRedoState();
 
+	let active_tab = $state('load-sched');
+	let visited_tabs = $state<Record<string, boolean>>({
+		'load-sched': true,
+		'voltage-drop': false
+	});
+	let voltage_activated = $state(false);
+
+	// Latch activation from the bound tab value so it's reliable regardless of
+	// how the tab changes. One-way state (stays true) — not derivable without
+	// losing the latch, and reacting to UI tab state is an external sync.
+	$effect(() => {
+		if (active_tab === 'voltage-drop') voltage_activated = true;
+	});
+
+	// Datasets stay hot once warmed: the tab panels never unmount, so clearing a
+	// table would rebuild every row on each switch. Drops warm in the
+	// background but the heavy table only mounts once the user visits the tab.
+	const current_node = $derived(getNodeById(node_id));
+	const parent_node = $derived(
+		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
+	);
+	const root_node = $derived(getRootNode());
+	const loads = $derived(getComputedLoads(node_id));
+	let voltage_drops = $state<VoltageDrop[]>([]);
+	let drops_ready = $state(false);
+	let voltage_mounted = $state(false);
+
+	// Column definitions are expensive to rebuild and invalidate TanStack's
+	// row model, so keep them stable across tab switches.
+	const load_columns = $derived(
+		current_node ? onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule) : []
+	);
+	const voltage_drop_columns = voltageDropColumns();
+
+	// Async worker fetch keyed to the revision. Snapshot load and worker clone
+	// are synchronous costs, so dispatch them off the reactive flush to keep the
+	// UI responsive. `revision` is read here to track changes; stale results are
+	// dropped. External async coordination (not derivable state) requires an
+	// effect.
+	$effect(() => {
+		const revision = getSnapshotRevision();
+		const timer = setTimeout(() => {
+			void getComputedVoltageDropsAsync()
+				.then((drops) => {
+					if (getSnapshotRevision() === revision) {
+						voltage_drops = drops;
+						drops_ready = true;
+					}
+				})
+				.catch(() => {
+					drops_ready = true;
+				});
+		}, 0);
+		return () => clearTimeout(timer);
+	});
+
+	// Defer the heavy DataTable mount so the tab switch (skeleton/indicator)
+	// paints before TanStack builds the full row model. External scheduling for
+	// a non-derivable mount gate requires an effect.
+	$effect(() => {
+		if (voltage_activated && drops_ready && !voltage_mounted) {
+			const timer = setTimeout(() => {
+				voltage_mounted = true;
+			}, 0);
+			return () => clearTimeout(timer);
+		}
+	});
+
+	// Pre-mount the hidden voltage table shortly after warm-up so the first
+	// visit only reveals it instead of paying the full mount on the click.
+	// External scheduling for a non-derivable mount gate requires an effect.
+	$effect(() => {
+		if (!drops_ready) return;
+		const timer = setTimeout(() => {
+			voltage_mounted = true;
+		}, 500);
+		return () => clearTimeout(timer);
+	});
+
+	// Redirects home when the schedule opens without a loaded project.
 	$effect(() => {
 		if (!project_state.loaded) {
 			toast.warning('Project not loaded yet. Redirecting to workspaces...', {
 				description: 'Please create a project or load an existing one first.'
 			});
-			goto(`/`);
+			goto(resolve(`/`));
 		}
 	});
 </script>
 
-<div class="flex w-full flex-col gap-2">
-	<div class="grid grid-cols-2">
-		<div>
-			<p class="font-semibold">
-				Distribution Unit: <span class="font-normal">
-					{#await getNodeById(node_id)}
-						<Skeleton class="inline-block h-6 w-[200px]" />
-					{:then current_node}
-						{current_node?.panel_data?.name ??
-							current_node?.highest_unit_form?.distribution_unit ??
-							'NOT FOUND'}
-					{/await}
-				</span>
-			</p>
-			<p class="font-semibold">
-				Phase: <span class="font-normal">
-					{#await getRootNode()}
-						<Skeleton class="inline-block h-6 w-[200px]" />
-					{:then root_node}
-						{root_node?.highest_unit_form?.phase ?? ''}
-					{/await}</span
+<div class="flex min-h-0 w-full flex-1 flex-col gap-4">
+	<div
+		class="flex flex-col gap-4 rounded-2xl border border-border bg-card px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
+	>
+		<div class="flex items-center gap-3 border-b pb-4 lg:border-r lg:border-b-0 lg:pr-5 lg:pb-0">
+			<div
+				class="grid size-11 shrink-0 place-items-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
+			>
+				<LightningAIcon class="size-5" />
+			</div>
+			<div class="grid gap-0.5">
+				<span class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase"
+					>Distribution Unit</span
 				>
-			</p>
+				<span class="text-base leading-5 font-bold tracking-tight">
+					{current_node?.panel_data?.name ??
+						current_node?.highest_unit_form?.distribution_unit ??
+						'NOT FOUND'}
+				</span>
+			</div>
 		</div>
 
-		<p class="font-semibold">
-			Supply From:
-			<span class="font-normal">
-				{#await getNodeById(node_id)}
-					<Skeleton class="inline-block h-6 w-[200px]" />
-				{:then current_node}
-					{@const parent_id = current_node?.parent_id}
-					{#if parent_id}
-						{#await getNodeById(parent_id)}
-							<Skeleton class="inline-block h-6 w-[200px]" />
-						{:then parent_node}
-							{parent_node?.panel_data?.name ||
-								parent_node?.highest_unit_form?.distribution_unit ||
-								'--'}
-						{/await}
-					{:else}
-						--
-					{/if}
-				{/await}
-			</span>
-		</p>
+		<dl class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-0">
+			<div class="grid gap-0.5 lg:border-r lg:px-5">
+				<dt class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+					Phase System
+				</dt>
+				<dd class="text-sm font-medium">
+					{getOptionLabel(DEFAULT_PHASES, root_node?.highest_unit_form?.phase) || '-'}
+				</dd>
+			</div>
+
+			<div class="grid gap-0.5 lg:px-5">
+				<dt class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+					Supply From
+				</dt>
+				<dd class="truncate text-sm font-medium">
+					{parent_node?.panel_data?.name ??
+						parent_node?.highest_unit_form?.distribution_unit ??
+						'-'}
+				</dd>
+			</div>
+		</dl>
 	</div>
-	<Tabs.Root value="load-sched" class="w-full">
+	<Tabs.Root
+		bind:value={active_tab}
+		onValueChange={(value) => {
+			visited_tabs[value] = true;
+		}}
+		class="min-h-0 w-full flex-1"
+	>
 		<Tabs.List class="place-self-end">
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
 		</Tabs.List>
-		<Tabs.Content value="load-sched">
-			{#key undo_redo_state.has_unsaved_actions}
-				{#await Promise.all([getNodeById(node_id), getComputedLoads(node_id as string)])}
-					<Skeletal options_count={10} />
-				{:then [current_node, loads]}
-					<DataTable
-						data={loads && loads.length > 0 ? (loads as PhaseLoadSchedule[]) : []}
-						columns={onePhaseMainOrWyeCols(
-							data.phase_main_load_form,
-							current_node as PhaseLoadSchedule,
-							root_node?.highest_unit_form,
-							loads && loads.length > 0 ? loads.at(-1) : undefined
-						)}
-						is_footer_shown={current_node?.node_type !== 'root'}
-					/>
-				{/await}
-			{/key}
+		<Tabs.Content value="load-sched" class="flex min-h-0 flex-1 flex-col">
+			{#if current_node}
+				<DataTable
+					data={loads}
+					columns={load_columns}
+					highest_unit={root_node?.highest_unit_form}
+					is_footer_shown={current_node.node_type !== 'root'}
+				/>
+			{:else}
+				<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
+					Could not load the schedule.
+				</div>
+			{/if}
 		</Tabs.Content>
-		<Tabs.Content value="voltage-drop">
-			{#key undo_redo_state.has_unsaved_actions}
-				{#await getComputedVoltageDrops()}
-					<Skeletal options_count={10} />
-				{:then voltage_drops}
-					<DataTable data={voltage_drops} is_footer_shown={false} columns={voltageDropColumns()} />
-				{/await}
-			{/key}
+		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
+			{#if voltage_mounted && drops_ready}
+				<DataTable
+					data={voltage_drops}
+					is_footer_shown={false}
+					columns={voltage_drop_columns}
+					is_in_vd_table
+				/>
+			{:else}
+				<div
+					class="grid min-h-0 flex-1 place-items-center rounded-xl border border-border bg-card text-sm text-muted-foreground"
+				>
+					Loading voltage drop…
+				</div>
+			{/if}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>

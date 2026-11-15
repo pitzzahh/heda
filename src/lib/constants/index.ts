@@ -1,92 +1,115 @@
-import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load';
-import { getEnumValues, getEnumKeys } from '#lib/utils/enum';
-import { toLabelKeyArray, toLabelValueArray } from '#lib/utils/mapper';
+import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load/index.js';
+import { getEnumValues, getEnumKeys } from '#lib/utils/enum/index.js';
+import { toLabelValueArray } from '#lib/utils/mapper/index.js';
 
-export const default_terminal_temperatures = {
-	60: '60',
-	75: '75',
-	90: '90',
-	STANDARD_TEMPERATURE: 'Standard Temperature'
+export const default_load_types = {
+	LIGHTING_LOAD: 'lighting_load',
+	CONVENIENCE_OUTLET: 'convenience_outlet',
+	GENERAL_LIGHTING: 'general_lighting',
+	ONE_P_MOTOR__RATED_HORSE_POWER: 'one_phase_motor_horse_power',
+	ONE_P_MOTOR__RATED_CURRENT: 'one_phase_motor_rated_current',
+	HEATING_EQUIPMENT: 'heating_equipment'
 } as const;
+
+export const DEFAULT_LOAD_TYPES = [
+	{ value: default_load_types.LIGHTING_LOAD, label: 'Lighting Load' },
+	{ value: default_load_types.CONVENIENCE_OUTLET, label: 'Convenience Outlet' },
+	{ value: default_load_types.GENERAL_LIGHTING, label: 'General Lighting' },
+	{
+		value: default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER,
+		label: '1P Motor - Rated Horse Power'
+	},
+	{ value: default_load_types.ONE_P_MOTOR__RATED_CURRENT, label: '1P Motor - Rated Current' },
+	{ value: default_load_types.HEATING_EQUIPMENT, label: 'Heating Equipment' }
+] as const;
+
+export const STANDARD_TERMINAL_TEMPERATURE = 'standard';
+
+export const DEFAULT_TERMINAL_TEMPERATURES = [
+	{ value: '60', label: '60' },
+	{ value: '75', label: '75' },
+	{ value: '90', label: '90' },
+	{ value: STANDARD_TERMINAL_TEMPERATURE, label: 'Standard Temperature' }
+] as const;
 
 export const DEFAULT_LOADS = [
 	{
 		description: 'Lighting Outlet (50W)',
 		varies: '50',
 		continuous: true,
-		type: 'Lighting Load'
+		type: default_load_types.LIGHTING_LOAD
 	},
 	{
 		description: 'Lighting Outlet (100W)',
 		varies: '100',
 		continuous: true,
-		type: 'Lighting Load'
+		type: default_load_types.LIGHTING_LOAD
 	},
 	{
 		description: 'Small Appliance Load',
 		varies: '1500',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Laundry Circuit Load',
 		varies: '1500',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Bathroom Branch Circuit',
 		varies: '1500',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Garage Branch Circuit',
 		varies: '1500',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Convenience Outlet (Simplex)',
 		varies: '180',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Convenience Outlet (Duplex)',
 		varies: '180',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Convenience Outlet (Triplex)',
 		varies: '180',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: '4-Gang Convenience Outlet',
 		varies: '360',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: '5-Gang Convenience Outlet',
 		varies: '450',
 		continuous: true,
-		type: 'Convenience Outlet'
+		type: default_load_types.CONVENIENCE_OUTLET
 	},
 	{
 		description: 'Dwelling Unit',
 		varies: '24',
 		continuous: true,
-		type: 'General Lighting'
+		type: default_load_types.GENERAL_LIGHTING
 	},
 	{
 		description: 'Office Buildings',
 		varies: '28',
 		continuous: true,
-		type: 'General Lighting'
+		type: default_load_types.GENERAL_LIGHTING
 	}
 ] as Readonly<DefaultLoad[]>;
 
@@ -97,19 +120,16 @@ export const default_three_phase_types = {
 } as const;
 
 export const default_phases = {
-	ONE_PHASE: '1P',
-	THREE_PHASE_WYE: '3P-Y',
-	THREE_PHASE_DELTA: '3P-Δ'
+	ONE_PHASE: 'one_phase',
+	THREE_PHASE_WYE: 'three_phase_wye',
+	THREE_PHASE_DELTA: 'three_phase_delta'
 } as const;
 
-export const default_load_types = {
-	LIGHTING_LOAD: 'Lighting Load',
-	CONVENIENCE_OUTLET: 'Convenience Outlet',
-	GENERAL_LIGHTING: 'General Lighting',
-	ONE_P_MOTOR__RATED_HORSE_POWER: '1P Motor - Rated Horse Power',
-	ONE_P_MOTOR__RATED_CURRENT: '1P Motor - Rated Current',
-	HEATING_EQUIPMENT: 'Heating Equipment'
-} as const;
+export const DEFAULT_PHASES = [
+	{ value: default_phases.ONE_PHASE, label: '1P' },
+	{ value: default_phases.THREE_PHASE_WYE, label: '3P-Y' },
+	{ value: default_phases.THREE_PHASE_DELTA, label: '3P-Δ' }
+] as const;
 
 export const load_type_to_varies_label = {
 	[default_load_types.LIGHTING_LOAD]: 'Unit Wattage',
@@ -301,33 +321,6 @@ export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_p
 
 export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
 
-export const DEFAULT_PHASES_ENUMS = toLabelValueArray(default_phases);
-
-export const DEFAULT_PHASES_OPTIONS = getEnumValues(default_phases);
-
-export const DEFAULT_TERMINAL_TEMPERATURE_ENUMS = toLabelValueArray(default_terminal_temperatures);
-
-export const DEFAULT_TERMINAL_TEMPERATURE_OPTIONS = getEnumValues(default_terminal_temperatures);
-
-export const DEFAULT_LOAD_TYPES_ENUMS = toLabelValueArray(default_load_types);
-
-export const DEFAULT_LOAD_TYPES_OPTIONS = getEnumValues(default_load_types);
-
-export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_ENUMS = toLabelValueArray(load_type_to_varies_label);
-
-export const DEFAULT_LOAD_TYPE_TO_VARIES_LABEL_OPTIONS = getEnumValues(load_type_to_varies_label);
-
-export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_ENUMS = toLabelValueArray(
-	load_type_to_quantity_label
-);
-
-export const DEFAULT_LOAD_TYPE_TO_QUANTITY_LABEL_OPTIONS = getEnumValues(
-	load_type_to_quantity_label
-);
-
-export const DEFAULT_HP_CURRENT_RELATIONSHIP_ENUMS = toLabelKeyArray(
-	default_hp_current_relationship
-);
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 
 export const FIELD_VALIDATION = {
@@ -354,3 +347,5 @@ export const MIN_WIRE_LENGTH = 1;
 export const MAX_WIRE_LENGTH = 1000;
 export const MIN_VARIES = 0;
 export const MAX_VARIES = 100;
+
+export const AMBIENT_TEMPERATURES = Array.from({ length: 70 }, (_, index) => index + 1);

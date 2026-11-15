@@ -25,6 +25,7 @@ export class LocalStorage<T extends object> {
 	}
 
 	get current(): T {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- establishes a reactive dependency on the version counter
 		this.#version;
 
 		const isValidJSON = (str: string | null): boolean => {
@@ -75,6 +76,7 @@ export class LocalStorage<T extends object> {
 		};
 
 		if ($effect.tracking()) {
+			// Subscribes to cross-tab storage events; effect owns the listener lifecycle.
 			$effect(() => {
 				if (this.#listeners === 0) {
 					window.addEventListener('storage', this.#handler);

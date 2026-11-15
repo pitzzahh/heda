@@ -4,7 +4,7 @@ import type {
 	SETTINGS_SCHEMA,
 	THEME_COLOR_FIELD,
 	THEME_MODE_FIELD
-} from '#lib/validators/settings';
+} from '#lib/validators/settings.js';
 
 export type ThemeColor = v.InferOutput<typeof THEME_COLOR_FIELD>;
 export type Font = v.InferOutput<typeof FONT_FIELD>;

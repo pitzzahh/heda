@@ -7,22 +7,41 @@ import {
 	type ExistsOptions
 } from '@tauri-apps/plugin-fs';
 import {
+	FileDeviceKeyError,
 	FileLegacyError,
 	FilePasswordError,
 	decryptFilePayload,
 	detectFileVersion,
-	packFileV2
-} from './format';
-import { setSessionPassword } from '#lib/db/session';
+	packFileV2,
+	packFileV3
+} from './format.js';
+import {
+	clearSessionPassword,
+	getSessionPassword,
+	getSessionProtection,
+	setSession,
+	type FileProtection
+} from '#lib/db/session.js';
+import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 import { toast } from 'svelte-sonner';
-import type { FileExport, RecentProject } from '#lib/types/main';
-import { loadCurrentProject } from '#lib/db/mutations';
+import type { FileExport, RecentProject } from '#lib/types/main/index.js';
+import { loadCurrentProject } from '#lib/db/mutations/index.js';
+import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { getLegacyV1Config } from './legacy/credentials.js';
+import { isLegacyV1Envelope, legacyV1SaltCandidates } from './legacy/v1.js';
+import { migrateLegacyFile } from './legacy/migration.js';
+import { tauriMigrationFileIO } from './legacy/tauri-io.js';
 
 export interface NeedPassword {
 	need_password: true;
 	file_path: string;
 	invalid: boolean;
+}
+
+export interface NeedMigration {
+	need_migration: true;
+	file_path: string;
 }
 
 export const BASE_DIR = BaseDirectory.Document;
@@ -35,23 +54,12 @@ export interface ParsedFileName {
 	extension: string;
 }
 
-/**
- * Gets the file name without the extension
- * @param path - The full path of the file
- * @param extension - The extension to remove
- * @returns The file name without the extension
- */
 export function getFileNameWithoutExtension(path: string, extension: string = EXTENSION): string {
 	const fileName = path.split('/').pop() || '';
 	const lastDotIndex = fileName.lastIndexOf(`.${extension}`);
 	return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
 }
 
-/**
- * A helper function to get the path of a file.
- * @param filePath the absolute file path.
- * @returns the path of the file.
- */
 export function getFilePath(filePath: string): string {
 	const parts = filePath.split('/');
 	parts.pop();
@@ -80,6 +88,16 @@ export async function getFileName(path: string): Promise<string | undefined> {
 
 		return undefined;
 	}
+}
+
+/**
+ * Lets the fs plugin reach the folder of an existing `.heda` file (the file and
+ * the temp/backup files written next to it). The capability grants no user
+ * folders, so call this before touching a project path outside a dialog.
+ * Resolves `false` when the file does not exist.
+ */
+export async function allowProjectFolder(path: string): Promise<boolean> {
+	return invoke<boolean>('allow_project_folder', { path });
 }
 
 export async function doesFileExists(
@@ -116,19 +134,36 @@ export async function writeEncryptedFile<T>(
 	if (!file_path) {
 		throw new Error('No file to write to');
 	}
-	const file = await openFile(file_path, { write: true, create: true, createNew: new_file });
+	// Truncate: without it a shorter save leaves a stale tail that corrupts the envelope.
+	const file = await openFile(file_path, {
+		write: true,
+		create: true,
+		createNew: new_file,
+		truncate: true
+	});
 	await file.write(new TextEncoder().encode(await packFileV2(data, password)));
 	await file.close();
 }
 
-export async function peekFileVersion(file_path: string): Promise<1 | 2> {
-	return detectFileVersion(new TextDecoder().decode(await readFile(file_path)));
-}
-
-export async function readEncryptedFile<T>(filePath: string, password: string | null): Promise<T> {
-	const raw = new TextDecoder().decode(await readFile(filePath));
-	console.log('File read successfully!');
-	return decryptFilePayload<T>(raw, password);
+// Device-encrypted (v3) write: sealed with this installation's key, so no
+// password is needed to save or reopen. Same truncate guarantee as above.
+export async function writeDeviceEncryptedFile<T>(
+	data: T,
+	device_key: string,
+	file_path: string,
+	new_file: boolean = false
+): Promise<void> {
+	if (!file_path) {
+		throw new Error('No file to write to');
+	}
+	const file = await openFile(file_path, {
+		write: true,
+		create: true,
+		createNew: new_file,
+		truncate: true
+	});
+	await file.write(new TextEncoder().encode(await packFileV3(data, device_key)));
+	await file.close();
 }
 
 export async function handleLoadFile(
@@ -136,7 +171,7 @@ export async function handleLoadFile(
 	_procesing?: () => void,
 	_idle?: () => void,
 	password: string | null = null
-): Promise<RecentProject | NeedPassword | undefined | string | number> {
+): Promise<RecentProject | NeedPassword | NeedMigration | undefined | string | number> {
 	let load_toast_id: string | number | undefined;
 	try {
 		_procesing?.();
@@ -156,25 +191,39 @@ export async function handleLoadFile(
 			}
 		}
 
-		let version: 1 | 2 | null = null;
+		// Read and decode once: version detection, legacy checks and decryption
+		// all work on the same string.
+		let raw: string;
 		try {
-			version = await peekFileVersion(complete_file_path);
+			await allowProjectFolder(complete_file_path);
+			raw = new TextDecoder().decode(await readFile(complete_file_path));
 		} catch {
-			version = null;
-		}
-		if (version === null) {
 			_idle?.();
 			return toast.warning('Failed to load file', {
 				description: 'The file could not be read.'
 			});
 		}
+		const version = detectFileVersion(raw);
 		if (version === 1) {
+			if (!isLegacyV1Envelope(raw)) {
+				_idle?.();
+				return toast.warning('Failed to load file', {
+					description: 'The file is not a valid HEDA file.'
+				});
+			}
+			if (!getLegacyV1Config()) {
+				_idle?.();
+				return toast.warning('Legacy file cannot be upgraded', {
+					description: 'This build does not include the legacy keys needed to open version 1 files.'
+				});
+			}
 			_idle?.();
-			return toast.warning('Unsupported file format', {
-				description: 'This file uses the legacy v1 format, which is no longer supported.'
-			});
+			return { need_migration: true, file_path: complete_file_path };
 		}
-		if (version === 2 && !password) {
+		// Device-encrypted files open with this installation's key; only
+		// password-protected files (shared copies) need a password.
+		const protection: FileProtection = version === 3 ? 'device' : 'password';
+		if (protection === 'password' && !password) {
 			_idle?.();
 			return { need_password: true, file_path: complete_file_path, invalid: false };
 		}
@@ -183,7 +232,8 @@ export async function handleLoadFile(
 			description: 'Please wait while the file is being loaded.'
 		});
 
-		const file_data = await readEncryptedFile<FileExport>(complete_file_path, password);
+		const device_key = protection === 'device' ? await getDeviceKey() : null;
+		const file_data = await decryptFilePayload<FileExport>(raw, password, device_key, version);
 		toast.dismiss(load_toast_id);
 
 		const instance_name = await getFileName(complete_file_path);
@@ -196,23 +246,30 @@ export async function handleLoadFile(
 			});
 		}
 
-		console.log(`Loaded data: ${JSON.stringify(file_data, null, 2)}`);
-		console.log(`Complete file path: ${complete_file_path}`);
-		console.log(`File name: ${instance_name}`);
+		// The secret is proven correct (or is the device key). Cache it before
+		// the first db touch so the session store (Stronghold vault) unlocks.
+		if (protection === 'device' && device_key) {
+			setSession(device_key, 'device');
+		} else {
+			setSession(password!, 'password');
+		}
 
-		// Password proven correct. Cache it before the first db touch so the
-		// session store (Stronghold vault) unlocks with this file's secret.
-		setSessionPassword(password!);
-
-		const loaded_project = await loadCurrentProject(file_data);
-
-		console.log(`Loaded project: ${JSON.stringify(loaded_project, null, 2)}`);
+		let loaded_project;
+		try {
+			loaded_project = await loadCurrentProject(file_data);
+		} catch (err) {
+			// A rejected file (corrupt or tampered contents) opens nothing, so its
+			// secret must not stay cached in memory or the tab's session mirror.
+			clearSessionPassword();
+			throw err;
+		}
 
 		return {
 			id: loaded_project.id,
 			project_name: instance_name,
 			project_path: complete_file_path,
-			exists: true
+			exists: true,
+			protection
 		};
 	} catch (err) {
 		_idle?.();
@@ -224,14 +281,197 @@ export async function handleLoadFile(
 				invalid: err.code === 'invalid'
 			};
 		}
+		if (err instanceof FileDeviceKeyError) {
+			return toast.warning('File was encrypted on another device', {
+				description:
+					"This .heda file uses this device's key and cannot be opened here. Open it on the device that created it, or ask the owner for a password-protected copy."
+			});
+		}
 		if (err instanceof FileLegacyError) {
-			return toast.warning('Unsupported file format', {
-				description: 'This file uses the legacy v1 format, which is no longer supported.'
+			return toast.warning('Legacy file needs an upgrade', {
+				description: 'Open it from the home page to upgrade it.'
 			});
 		}
 		console.error(`Failed to load file: ${JSON.stringify(err, null, 2)}`);
 		toast.error(`Failed to load file: ${(err as Error)?.message ?? 'something went wrong'}`, {
 			description: 'This is a system error and should not be here, the error has been logged.'
 		});
+	}
+}
+
+export interface MigrateHedaFileResult {
+	backup_path: string;
+}
+
+/**
+ * Upgrades one legacy v1 file to the device-encrypted v3 format, or to the
+ * password-protected v2 format when `new_password` is given. The original
+ * bytes are kept as a verified `.v1.bak` next to the file.
+ */
+export async function migrateHedaFile(
+	file_path: string,
+	new_password?: string
+): Promise<MigrateHedaFileResult> {
+	const config = getLegacyV1Config();
+	if (!config) {
+		throw new Error('This build does not include the legacy keys needed to open version 1 files.');
+	}
+	if (new_password !== undefined && new_password.length < 8) {
+		throw new Error('The new file password must be at least 8 characters.');
+	}
+	const device_key = new_password === undefined ? await getDeviceKey() : null;
+
+	const result = await migrateLegacyFile<FileExport>({
+		file_path,
+		...(new_password !== undefined ? { new_password } : { device_key: device_key! }),
+		legacy: {
+			passphrase: config.passphrase,
+			salts: legacyV1SaltCandidates(file_path, config.salt)
+		},
+		io: tauriMigrationFileIO()
+	});
+	return { backup_path: result.backup_path };
+}
+
+/**
+ * Re-encrypts a password-protected v2 file with this device's key, so it
+ * opens without a password from now on. The original is kept as a verified
+ * `.v2.bak` next to the file.
+ */
+export async function convertHedaFileToDevice(
+	file_path: string,
+	password: string
+): Promise<MigrateHedaFileResult> {
+	const io = tauriMigrationFileIO();
+	const original = await io.read(file_path);
+	const raw = new TextDecoder().decode(original);
+	if (detectFileVersion(raw) !== 2) {
+		throw new Error('Only a password-protected file can be converted to device encryption.');
+	}
+	const data = await decryptFilePayload<FileExport>(raw, password);
+	const device_key = await getDeviceKey();
+	const staged = new TextEncoder().encode(await packFileV3(data, device_key));
+	const temp_path = `${file_path}.v3.tmp`;
+
+	await io.write(temp_path, staged);
+	const staged_check = await decryptFilePayload<FileExport>(
+		new TextDecoder().decode(await io.read(temp_path)),
+		null,
+		device_key
+	);
+	if (JSON.stringify(staged_check) !== JSON.stringify(data)) {
+		await io.remove(temp_path);
+		throw new Error('The converted file did not pass verification.');
+	}
+
+	let backup_path = `${file_path}.v2.bak`;
+	for (let suffix = 1; (await io.exists(backup_path)) && suffix < 10_000; suffix++) {
+		backup_path = `${file_path}.v2.bak.${suffix}`;
+	}
+	const bytes_equal = (a: Uint8Array, b: Uint8Array): boolean => {
+		if (a.length !== b.length) return false;
+		let difference = 0;
+		for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
+		return difference === 0;
+	};
+	await io.write(backup_path, original);
+	const backup_check = await io.read(backup_path);
+	if (!bytes_equal(backup_check, original)) {
+		await io.remove(temp_path);
+		throw new Error('A verified backup of the original file could not be created.');
+	}
+
+	try {
+		await io.write(file_path, staged);
+		const committed = await io.read(file_path);
+		if (!bytes_equal(committed, staged)) throw new Error('The written file does not match.');
+		await decryptFilePayload<FileExport>(new TextDecoder().decode(committed), null, device_key);
+	} catch (err) {
+		await io.write(file_path, original);
+		await io.remove(temp_path);
+		throw err;
+	}
+	await io.remove(temp_path).catch(() => undefined);
+	return { backup_path };
+}
+
+// Serializes writes: auto-save, Ctrl+S and the OS file-open flow can overlap.
+let save_queue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Writes the current project to `file_path` and clears the unsaved flag on
+ * success. Returns whether the save went through; failures surface as toasts.
+ *
+ * The project and its nodes are snapshotted here, not when the queued save
+ * runs: the user can go Home (which clears the database) or load another file
+ * while an earlier save is still in flight, and reading the current project at
+ * execution time would write the wrong data to `file_path`.
+ */
+export function saveCurrentProject(
+	file_path: string,
+	undo_redo_state: { edit_version: number; resetUnsavedActions: (saved_version: number) => void }
+): Promise<boolean> {
+	const current_project = getCurrentProject();
+
+	if (!current_project) {
+		console.error('Failed to save, no project found');
+		toast.warning('Failed to save, no project found', {
+			description: 'This is a system error and should not be here, the error has been logged.'
+		});
+		return Promise.resolve(false);
+	}
+
+	const file_data: FileExport = {
+		project: current_project,
+		nodes: getAllChildNodes(current_project.root_node_id, true)
+	};
+	const project_id = current_project.id;
+	// Edits made while this save is queued or writing are not in `file_data`.
+	const edit_version = undo_redo_state.edit_version;
+
+	const run = save_queue.then(() =>
+		performSave(file_path, project_id, file_data, edit_version, undo_redo_state)
+	);
+	save_queue = run.catch(() => undefined);
+	return run;
+}
+
+async function performSave(
+	file_path: string,
+	project_id: string,
+	file_data: FileExport,
+	edit_version: number,
+	undo_redo_state: { edit_version: number; resetUnsavedActions: (saved_version: number) => void }
+): Promise<boolean> {
+	try {
+		// The workspace moved on while this save was queued (Home, another
+		// file). Writing now would clobber the new state, so drop it.
+		if (getCurrentProject()?.id !== project_id) return false;
+
+		const protection = getSessionProtection();
+		if (protection === 'device') {
+			await writeDeviceEncryptedFile(file_data, await getDeviceKey(), file_path);
+		} else {
+			const session_password = getSessionPassword();
+			if (!session_password) {
+				console.error('Failed to save, no session password');
+				toast.warning('Failed to save, no session password', {
+					description: 'Reload the file and try again.'
+				});
+				return false;
+			}
+			await writeEncryptedFile(file_data, session_password, file_path);
+		}
+		// Re-check before clearing: a project loaded while the write was in
+		// flight must keep its own unsaved flag.
+		if (getCurrentProject()?.id !== project_id) return false;
+		undo_redo_state.resetUnsavedActions(edit_version);
+		return true;
+	} catch (err) {
+		console.error(`Failed to save file: ${JSON.stringify(err)}`);
+		toast.error(`Failed to save file: ${(err as Error)?.message ?? 'something went wrong'}`, {
+			description: 'An error occurred while saving the file.'
+		});
+		return false;
 	}
 }

@@ -1,37 +1,5 @@
-<script lang="ts" generics="T extends SuperValidated<GenericPhasePanelSchema>">
-	import { superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { toast } from 'svelte-sonner';
-	import { Input } from '@/components/ui/input/index.js';
-	import { buttonVariants } from '@/components/ui/button/index.js';
-	import * as Popover from '@/components/ui/popover/index.js';
-	import * as Command from '@/components/ui/command/index.js';
-	import * as Alert from '@/components/ui/alert/index.js';
-	import * as Form from '@/components/ui/form/index.js';
-	import { useId } from 'bits-ui';
-	import { tick } from 'svelte';
-	import { cn } from '@/utils';
-	import { ChevronsUpDown, Check, CircleAlert } from '@/assets/icons';
-	import {
-		DEFAULT_TERMINAL_TEMPERATURE_OPTIONS,
-		DEFAULT_PHASES_OPTIONS,
-		DEFAULT_THREE_PHASE_TYPES_OPTIONS
-	} from '@/constants';
-	import { generic_phase_panel_schema, type GenericPhasePanelSchema } from '@/schema/panel';
-	import type { Phase } from '@/types/phase';
-	import { convertToNormalText } from '@/utils/text';
-	import { addNode, updateNode } from '@/db/mutations';
-	import { checkNodeExists } from '@/db/queries';
-	import { invalidate } from '$app/navigation';
-	import type { Node } from '@/db/schema';
-	import type { TerminalTemperature } from '@/types/load';
-	import ScrollArea from '@/components/ui/scroll-area/scroll-area.svelte';
-	import { getUndoRedoState } from '@/hooks/undo-redo.svelte';
-	import type { PhaseLoadSchedule } from '@/types/load/one_phase';
-	import { Collapsibles, getCollapsiblesState } from '@/hooks/node-collapsibles.svelte';
-
+<script lang="ts" module>
 	interface Props {
-		generic_phase_panel_form: T;
 		main_phase: Phase;
 		parent_id?: string;
 		closeDialog: () => void;
@@ -40,9 +8,36 @@
 		selected_parent_id?: string;
 		latest_circuit_node?: Node;
 	}
+</script>
+
+<script lang="ts">
+	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { createForm, Field, getInput, validate } from '@formisch/svelte';
+	import { toast } from 'svelte-sonner';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import FieldErrors from '#lib/components/custom/field-errors.svelte';
+	import * as Alert from '#lib/components/ui/alert/index.js';
+	import { cn } from '#lib/utils/index.js';
+	import { default_phases } from '#lib/constants/index.js';
+	import {
+		AmbientTempField,
+		NumberField,
+		TerminalTempField
+	} from '#lib/components/custom/fields/index.js';
+	import { PanelPhaseField, PanelTypeField } from './(components)/index.js';
+	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
+	import type { Phase } from '#lib/types/phase/index.js';
+	import { addNode, updateNode } from '#lib/db/mutations/index.js';
+	import { checkNodeExists } from '#lib/db/queries/index.js';
+	import type { Node } from '#lib/types/db/index.js';
+	import type { TerminalTemperature } from '#lib/types/load/index.js';
+	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
+	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
-		generic_phase_panel_form,
 		main_phase,
 		parent_id,
 		closeDialog,
@@ -55,422 +50,159 @@
 	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 
-	const form = superForm(generic_phase_panel_form, {
-		SPA: true,
-		validators: zodClient(generic_phase_panel_schema),
-		onUpdate: async ({ form, cancel }) => {
-			// toast the values
-			if (!form.valid) {
-				toast.error('Form is invalid');
-				return;
-			}
-
-			if (parent_id) {
-				is_circuit_number_taken_state.is_circuit_number_taken = await checkNodeExists({
-					circuit_number: form.data.circuit_number,
-					//we want to check if the circuit number is alrdy existing in the parent we want to move in
-					parent_id: selected_parent_id || parent_id,
-					node_id: node_to_edit?.id
-				});
-
-				if (is_circuit_number_taken_state.is_circuit_number_taken) {
-					cancel();
-					toast.warning('Circuit number already exists');
-					is_circuit_number_taken_state.circuit_number = form.data.circuit_number;
-					return;
-				}
-
-				switch (action) {
-					case 'add':
-						const added_node = await addNode({ parent_id, panel_data: form.data });
-						toast.success(`${form.data.name} added successfully`);
-						collapsibles.addNodeId(parent_id);
-						undo_redo_state.setActionToUndo({
-							data: added_node as unknown as PhaseLoadSchedule,
-							action: 'create_node'
-						});
-						break;
-					case 'edit':
-						if (node_to_edit && selected_parent_id) {
-							const updated_node = await updateNode({
-								panel_data: form.data,
-								id: node_to_edit.id,
-								parent_id: selected_parent_id
-							});
-							toast.success('Panel updated successfully');
-							undo_redo_state.setActionToUndo({
-								data: updated_node as unknown as PhaseLoadSchedule,
-								previous_data: node_to_edit as PhaseLoadSchedule,
-								action: 'update_node'
-							});
-						}
-						break;
-				}
-
-				invalidate('app:workspace').then(() => invalidate('app:workspace/load-schedule'));
-				closeDialog();
-			}
-		}
-	});
-	const { form: formData, enhance } = form;
-
-	let open_panel_phase_popover = $state(false);
-	let open_terminal_temp = $state(false);
-	let open_phase_type = $state(false);
-	let open_ambient_temp = $state(false);
-	let is_circuit_number_taken_state = $state({
-		is_circuit_number_taken: false,
-		circuit_number: 0
-	});
-
-	const phase_trigger_id = useId();
-	const panel_phase_type_trigger_id = useId();
-	const terminal_temp_trigger_id = useId();
-	const ambient_temp_trigger_id = useId();
-
-	// We want to refocus the trigger button when the user selects
-	// an item from the list so users can continue navigating the
-	// rest of the form with the keyboard.
-	function closeAndFocusTrigger(trigger_id: string) {
-		open_terminal_temp = false;
-		open_panel_phase_popover = false;
-		open_phase_type = false;
-		open_ambient_temp = false;
-		tick().then(() => {
-			document.getElementById(trigger_id)?.focus();
-		});
-	}
-
-	$effect(() => {
-		if (action !== 'edit') {
-			$formData.circuit_number = (latest_circuit_node?.circuit_number ?? 0) + 1;
-			return;
-		}
-
+	// Snapshot of props at mount: initial form values never track later prop changes.
+	function buildInitialInput() {
+		if (action !== 'edit')
+			// A 1P supply can only feed 1P panels: preselect it since the trigger is locked.
+			return {
+				circuit_number: (latest_circuit_node?.circuit_number ?? 0) + 1,
+				...(main_phase === default_phases.ONE_PHASE ? { phase: default_phases.ONE_PHASE } : {})
+			};
 		if (!node_to_edit || !node_to_edit.panel_data) {
 			// TODO: Log system error
 			toast.warning('Failed to identify the panel to edit', {
 				description: 'This is a system error and should not be here, the error has been logged.'
 			});
+			return {};
+		}
+		return {
+			circuit_number: node_to_edit.circuit_number,
+			name: node_to_edit.panel_data.name ?? 'Unknown',
+			terminal_temperature: node_to_edit.panel_data.terminal_temperature as TerminalTemperature,
+			phase: node_to_edit.panel_data.phase as Phase,
+			ambient_temperature: node_to_edit.panel_data.ambient_temperature,
+			length: node_to_edit.length
+		};
+	}
+
+	const form = createForm({
+		schema: GENERIC_PHASE_PANEL_SCHEMA,
+		initialInput: buildInitialInput()
+	});
+
+	let taken_circuit_number = $state(0);
+	let submitting = $state(false);
+	const is_circuit_number_taken = $derived(
+		taken_circuit_number !== 0 &&
+			getInput(form, { path: ['circuit_number'] }) === taken_circuit_number
+	);
+
+	async function handleSubmit() {
+		if (submitting) return;
+		const result = await validate(form);
+		if (!result.success) {
+			toast.error('Form is invalid');
 			return;
 		}
-		const {
-			circuit_number,
-			length,
-			panel_data: { terminal_temperature, phase, name, ambient_temperature }
-		} = node_to_edit;
+		const data = result.output;
+		submitting = true;
 
-		$formData.circuit_number = circuit_number as number;
-		$formData.name = name ?? 'Unknown';
-		$formData.terminal_temperature = terminal_temperature as TerminalTemperature;
-		$formData.phase = phase as Phase;
-		$formData.ambient_temperature = ambient_temperature;
-		$formData.length = length as number;
-	});
+		if (parent_id) {
+			taken_circuit_number = checkNodeExists({
+				circuit_number: data.circuit_number,
+				//we want to check if the circuit number is alrdy existing in the parent we want to move in
+				parent_id: selected_parent_id || parent_id,
+				node_id: node_to_edit?.id
+			})
+				? data.circuit_number
+				: 0;
+
+			if (is_circuit_number_taken) {
+				toast.warning('Circuit number already exists');
+				submitting = false;
+				return;
+			}
+
+			switch (action) {
+				case 'add': {
+					const added_node = addNode({ parent_id, panel_data: data });
+					toast.success(`${data.name} added successfully`);
+					collapsibles.addNodeId(parent_id);
+					undo_redo_state.setActionToUndo({
+						data: added_node as unknown as PhaseLoadSchedule,
+						action: 'create_node'
+					});
+					break;
+				}
+				case 'edit':
+					if (node_to_edit && selected_parent_id) {
+						const updated_node = updateNode({
+							panel_data: data,
+							id: node_to_edit.id,
+							parent_id: selected_parent_id
+						});
+						toast.success('Panel updated successfully');
+						undo_redo_state.setActionToUndo({
+							data: updated_node as unknown as PhaseLoadSchedule,
+							previous_data: node_to_edit as PhaseLoadSchedule,
+							action: 'update_node'
+						});
+					}
+					break;
+			}
+
+			closeDialog();
+		}
+		submitting = false;
+	}
 </script>
 
-<form method="POST" use:enhance>
-	{#if is_circuit_number_taken_state.is_circuit_number_taken}
+<form
+	onsubmit={(e) => {
+		e.preventDefault();
+		handleSubmit();
+	}}
+>
+	{#if is_circuit_number_taken}
 		<Alert.Root variant="warning">
-			<CircleAlert class="size-4" />
+			<WarningCircleIcon class="size-4" />
 			<Alert.Description
-				>Circuit number: {is_circuit_number_taken_state.circuit_number} is already present.</Alert.Description
+				>Circuit number: {taken_circuit_number} is already present.</Alert.Description
 			>
 		</Alert.Root>
 	{/if}
 	<div class="grid grid-cols-2 gap-2">
-		<div>
-			<Form.Field {form} name="name">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Name</Form.Label>
-						<Input {...props} bind:value={$formData.name} placeholder="Enter panel name" />
-					{/snippet}
-				</Form.Control>
-				<Form.Description>This is the panel name.</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
-			<Form.Field {form} name="circuit_number">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Circuit number</Form.Label>
-						<Input
-							{...props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							bind:value={$formData.circuit_number}
-							placeholder="Enter the circuit number"
-						/>
-					{/snippet}
-				</Form.Control>
-				<Form.Description>
-					This is the circuit number that will determine the circuit number of the wire to the main.
-				</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
-			<Form.Field {form} name="terminal_temperature" class="mt-2.5 flex flex-col">
-				<Popover.Root bind:open={open_terminal_temp}>
-					<Form.Control id={terminal_temp_trigger_id}>
-						{#snippet children({ props })}
-							<Form.Label>Terminal Temperature</Form.Label>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!$formData.terminal_temperature && 'text-muted-foreground'
-								)}
-								role="combobox"
-								{...props}
-							>
-								{$formData.terminal_temperature
-									? convertToNormalText(
-											DEFAULT_TERMINAL_TEMPERATURE_OPTIONS.find(
-												(f) => f === $formData.terminal_temperature
-											)
-										)
-									: 'Select a terminal temperature'}
-								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<input hidden value={$formData.terminal_temperature} name={props.name} />
-						{/snippet}
-					</Form.Control>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-							<Command.Empty>No terminal temp found.</Command.Empty>
-							<Command.Group>
-								{#each DEFAULT_TERMINAL_TEMPERATURE_OPTIONS as terminal_temp}
-									<Command.Item
-										value={terminal_temp}
-										onSelect={() => {
-											$formData.terminal_temperature = terminal_temp;
-											closeAndFocusTrigger(terminal_temp_trigger_id);
-										}}
-										disabled={terminal_temp !== 'Standard Temperature'}
-									>
-										{convertToNormalText(terminal_temp)}
-										<Check
-											class={cn(
-												'ml-auto size-4',
-												terminal_temp !== $formData.terminal_temperature && 'text-transparent'
-											)}
-										/>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-				<Form.Description>
-					This is the terminal temp that will determine the terminal temp of the panel wire to the
-					main.
-				</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
+		<div class="flex flex-col gap-2.5">
+			<Field of={form} path={['name']}>
+				{#snippet children(field)}
+					<div class="space-y-2">
+						<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
+						<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
+						<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
+						<FieldErrors errors={field.errors} />
+					</div>
+				{/snippet}
+			</Field>
+			<NumberField
+				{form}
+				path={['circuit_number']}
+				label="Circuit number"
+				hint="This is the circuit number that will determine the circuit number of the wire to the main."
+				placeholder="Enter the circuit number"
+			/>
+			<TerminalTempField
+				{form}
+				hint="This is the terminal temp that will determine the terminal temp of the panel wire to the main."
+			/>
 		</div>
 
-		<div>
-			{#if main_phase !== '1P'}
-				{@render PanelType()}
-				{@render PanelPhase()}
+		<div class="flex flex-col gap-2.5">
+			{#if main_phase !== default_phases.ONE_PHASE}
+				<PanelTypeField {form} />
+				<PanelPhaseField {form} {main_phase} />
 			{:else}
-				{@render PanelPhase()}
+				<PanelPhaseField {form} {main_phase} />
 			{/if}
-			<Form.Field {form} name="ambient_temperature" class="mt-2.5 flex flex-col">
-				<Popover.Root bind:open={open_ambient_temp}>
-					<Form.Control id={ambient_temp_trigger_id}>
-						{#snippet children({ props })}
-							<Form.Label>Ambient Temperature</Form.Label>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'justify-between',
-									!$formData.ambient_temperature && 'text-muted-foreground'
-								)}
-								role="combobox"
-								{...props}
-							>
-								{$formData.ambient_temperature
-									? $formData.ambient_temperature
-									: 'Select an ambient temperature'}
-								<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-							</Popover.Trigger>
-							<input hidden value={$formData.ambient_temperature} name={props.name} />
-						{/snippet}
-					</Form.Control>
-					<Popover.Content class="w-auto p-0">
-						<Command.Root>
-							<Command.Input autofocus placeholder="Search a terminal temp..." class="h-9" />
-							<Command.Empty>No terminal temp found.</Command.Empty>
-							<Command.Group>
-								<ScrollArea class="h-64 pr-2.5">
-									{#each [...Array.from({ length: 70 }, (_, i) => i + 1)] as ambient_temp}
-										<Command.Item
-											value={ambient_temp.toString()}
-											onSelect={() => {
-												$formData.ambient_temperature = ambient_temp;
-												closeAndFocusTrigger(ambient_temp_trigger_id);
-											}}
-											disabled={ambient_temp !== 30}
-										>
-											{ambient_temp}
-											<Check
-												class={cn(
-													'ml-auto size-4',
-													ambient_temp !== $formData.ambient_temperature && 'text-transparent'
-												)}
-											/>
-										</Command.Item>
-									{/each}
-								</ScrollArea>
-							</Command.Group>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Root>
-				<Form.Description>
-					This is the ambient temp that will determine the ambient temp of the panel wire to the
-					main.
-				</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
+			<AmbientTempField {form} />
 
-			<Form.Field {form} name="length" class="mt-[.19rem] flex flex-col">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Length</Form.Label>
-						<Input
-							{...props}
-							type="number"
-							inputmode="numeric"
-							min={1}
-							bind:value={$formData.length}
-							placeholder="Enter the length"
-						/>
-					{/snippet}
-				</Form.Control>
-				<Form.Description>This is the length of the panel</Form.Description>
-				<Form.FieldErrors />
-			</Form.Field>
+			<NumberField
+				{form}
+				path={['length']}
+				label="Length"
+				hint="This is the length of the panel"
+				placeholder="Enter the length"
+			/>
 		</div>
 	</div>
-	<Form.Button class="w-full" type="submit">Save</Form.Button>
+	<Button type="submit" class="w-full" loading={submitting}>Save</Button>
 </form>
-
-{#snippet PanelType()}
-	<Form.Field {form} name="type" class="mt-2.5 flex flex-col">
-		<Popover.Root bind:open={open_phase_type}>
-			<Form.Control id="phase_trigger_id">
-				{#snippet children({ props })}
-					<Form.Label>Type</Form.Label>
-					<Popover.Trigger
-						class={cn(
-							buttonVariants({ variant: 'outline' }),
-							'justify-between',
-							!$formData.type && 'text-muted-foreground'
-						)}
-						role="combobox"
-						{...props}
-					>
-						{$formData.type
-							? convertToNormalText(
-									DEFAULT_THREE_PHASE_TYPES_OPTIONS.find((f) => f === $formData.type)
-								)
-							: 'Select a panel phase type'}
-						<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-					</Popover.Trigger>
-					<input hidden value={$formData.type} name={props.name} />
-				{/snippet}
-			</Form.Control>
-			<Popover.Content class="w-auto p-0">
-				<Command.Root>
-					<Command.Input autofocus placeholder="Search panel phase type..." class="h-9" />
-					<Command.Empty>No panel phase type found.</Command.Empty>
-					<Command.Group>
-						{#each DEFAULT_THREE_PHASE_TYPES_OPTIONS as phase_type_option}
-							<Command.Item
-								value={phase_type_option}
-								onSelect={() => {
-									$formData.type = phase_type_option;
-									closeAndFocusTrigger(panel_phase_type_trigger_id);
-								}}
-							>
-								{convertToNormalText(phase_type_option)}
-								<Check
-									class={cn(
-										'ml-auto size-4',
-										phase_type_option !== $formData.type && 'text-transparent'
-									)}
-								/>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				</Command.Root>
-			</Popover.Content>
-		</Popover.Root>
-		<Form.Description>This is the type for the panel.</Form.Description>
-		<Form.FieldErrors />
-	</Form.Field>
-{/snippet}
-
-{#snippet PanelPhase()}
-	{@const is_one_phase = main_phase === '1P'}
-	<Form.Field
-		{form}
-		name="phase"
-		class={cn('mt-2.5 flex flex-col', {
-			'cursor-not-allowed': is_one_phase
-		})}
-	>
-		<Popover.Root bind:open={open_panel_phase_popover}>
-			<Form.Control id="panel_phase_trigger_id">
-				{#snippet children({ props })}
-					<Form.Label>Phase</Form.Label>
-					<Popover.Trigger
-						disabled={is_one_phase}
-						class={cn(
-							buttonVariants({ variant: 'outline' }),
-							'justify-between',
-							!$formData.phase && 'text-muted-foreground'
-						)}
-						role="combobox"
-						{...props}
-					>
-						{$formData.phase
-							? DEFAULT_PHASES_OPTIONS.find((f) => f === $formData.phase)
-							: 'Select a phase'}
-						<ChevronsUpDown class="ml-2 size-4 shrink-0 opacity-50" />
-					</Popover.Trigger>
-					<input hidden value={$formData.phase} name={props.name} />
-				{/snippet}
-			</Form.Control>
-			<Popover.Content class="w-auto p-0">
-				<Command.Root>
-					<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
-					<Command.Empty>No panel phase found.</Command.Empty>
-					<Command.Group>
-						{#each DEFAULT_PHASES_OPTIONS as phase_option}
-							<Command.Item
-								value={phase_option}
-								onSelect={() => {
-									$formData.phase = phase_option;
-									closeAndFocusTrigger(phase_trigger_id);
-								}}
-							>
-								{phase_option}
-								<Check
-									class={cn(
-										'ml-auto size-4',
-										phase_option !== $formData.phase && 'text-transparent'
-									)}
-								/>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				</Command.Root>
-			</Popover.Content>
-		</Popover.Root>
-		<Form.Description>This is the phase for the panel.</Form.Description>
-		<Form.FieldErrors />
-	</Form.Field>
-{/snippet}

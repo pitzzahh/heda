@@ -1,22 +1,21 @@
 import * as v from 'valibot';
-import { DEFAULT_PHASES_ENUMS, DEFAULT_TERMINAL_TEMPERATURE_ENUMS } from '#lib/constants';
-
-// TODO: May issue, need to fix, unused function
-export function createEnumPicklist<T extends Record<string, string>>(enumObj: T) {
-	return v.picklist(Object.values(enumObj));
-}
+import {
+	DEFAULT_PHASES,
+	DEFAULT_TERMINAL_TEMPERATURES,
+	STANDARD_TERMINAL_TEMPERATURE
+} from '#lib/constants/index.js';
 
 export const PHASE_FIELD = v.picklist(
-	DEFAULT_PHASES_ENUMS.map((f) => f.value),
+	DEFAULT_PHASES.map((option) => option.value),
 	'You need to select a phase'
 );
 
 export const TERMINAL_TEMPERATURE_FIELD = v.optional(
 	v.picklist(
-		DEFAULT_TERMINAL_TEMPERATURE_ENUMS.map((f) => f.value),
+		DEFAULT_TERMINAL_TEMPERATURES.map((option) => option.value),
 		'Please select a valid terminal temperature.'
 	),
-	'Standard Temperature'
+	STANDARD_TERMINAL_TEMPERATURE
 );
 
 export const CIRCUIT_NUMBER_FIELD = v.pipe(
