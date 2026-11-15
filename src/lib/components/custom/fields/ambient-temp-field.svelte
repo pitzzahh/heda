@@ -76,7 +76,7 @@
 					</Command.Root>
 				</Popover.Content>
 			</Popover.Root>
-			<p class="text-muted-foreground text-[0.8rem]">
+			<p class="text-[0.8rem] text-muted-foreground">
 				This is the ambient temp that will determine the ambient temp of the panel wire to the main.
 			</p>
 			<FieldErrors errors={field.errors} />

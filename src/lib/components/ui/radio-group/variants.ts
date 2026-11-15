@@ -24,7 +24,7 @@ export const radioGroup = tv({
 			},
 			card: {
 				label:
-					'rounded-xl border border-border bg-card px-3.5 py-3 transition-[border-color,scale] duration-(--duration-press) ease-(--ease-ui-out) active:scale-(--press-scale-lg) motion-reduce:transition-none hover:border-border-strong has-checked:border-primary'
+					'rounded-xl border border-border bg-card px-3.5 py-3 transition-[border-color,scale] duration-(--duration-press) ease-(--ease-ui-out) hover:border-border-strong active:scale-(--press-scale-lg) has-checked:border-primary motion-reduce:transition-none'
 			},
 			// Menu-style rows: the checked row is tinted, for pickers inside a popover.
 			// One highlight glides to the checked row instead of each row tinting itself.

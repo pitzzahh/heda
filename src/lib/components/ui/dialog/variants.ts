@@ -31,7 +31,7 @@ export const dialogFrame = tv({
 		],
 		// The icon-only close in the corner; a close with children styles itself.
 		close:
-			'absolute top-4 right-4 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
+			'absolute top-4 right-4 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:transition-none',
 		footer: 'flex items-center justify-end gap-2',
 		body: 'relative overflow-hidden'
 	},
@@ -40,42 +40,42 @@ export const dialogFrame = tv({
 			zoom: {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-scale:var(--modal-enter-scale)]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-scale:var(--modal-enter-scale)]'
 				]
 			},
 			fade: {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-scale:0.99] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-scale:0.99]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-scale:0.99]'
 				]
 			},
 			'slide-up': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-y:1.5rem]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-y:1.5rem]'
 				]
 			},
 			'slide-down': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-y:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-y:-1.5rem]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-y:-1.5rem]'
 				]
 			},
 			'slide-left': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-x:1.5rem]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-x:1.5rem]'
 				]
 			},
 			'slide-right': {
 				popup: [
 					'transition-[opacity,transform] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)]',
-					'data-[state=closed]:opacity-0 data-[state=closed]:[--dialog-x:-1.5rem] data-[state=closed]:duration-[var(--duration-exit)]',
+					'data-[state=closed]:opacity-0 data-[state=closed]:duration-[var(--duration-exit)] data-[state=closed]:[--dialog-x:-1.5rem]',
 					'starting:data-[state=open]:opacity-0 starting:data-[state=open]:[--dialog-x:-1.5rem]'
 				]
 			},
@@ -83,10 +83,10 @@ export const dialogFrame = tv({
 			// stays a transition and the panel stays opaque while folding to its centre.
 			morph: {
 				popup: [
-					'[clip-path:inset(0_0_0_0_round_var(--radius-2xl))] transition-[clip-path] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)] will-change-[clip-path]',
+					'transition-[clip-path] duration-[var(--duration-overlay)] ease-[var(--ease-out-quad)] will-change-[clip-path] [clip-path:inset(0_0_0_0_round_var(--radius-2xl))]',
 					'data-[state=closed]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
 					'starting:data-[state=open]:[clip-path:inset(48%_48%_48%_48%_round_var(--radius-2xl))]',
-					'motion-reduce:[clip-path:none] motion-reduce:will-change-auto'
+					'motion-reduce:will-change-auto motion-reduce:[clip-path:none]'
 				]
 			}
 		},
@@ -99,7 +99,7 @@ export const dialogFrame = tv({
 			default: {
 				panel: 'bg-popover p-6',
 				// Full-bleed action bar: the negative margins cancel the panel padding.
-				footer: '-mx-6 -mb-6 mt-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',
+				footer: '-mx-6 mt-6 -mb-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',
 				body: ''
 			}
 		}

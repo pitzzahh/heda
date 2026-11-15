@@ -24,6 +24,7 @@
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
+	import { loadScheduleRouteId } from '#lib/helpers/navigation/index.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -123,7 +124,7 @@
 						description:
 							'The project file is being backed up. You enabled this feature, to disable it go to settings.'
 					});
-					await copyFile(file_path_with_file, file_path_with_file.replace(EXTENSION, 'heda.bak'));
+					await copyFile(file_path_with_file, `${file_path_with_file}.bak`);
 					toast.info('Project file backed up', {
 						id: toast_id,
 						description:
@@ -159,7 +160,7 @@
 			project_state.setProjectLoaded(true);
 			await goto(
 				resolve('/(workspaces)/workspace/load-schedule/[id]', {
-					id: `${data.distribution_unit}_${root_node_id}`
+					id: loadScheduleRouteId(data.distribution_unit, root_node_id)
 				})
 			)
 				.then(() => {
@@ -216,7 +217,7 @@
 			{#snippet children(field)}
 				<fieldset class="space-y-3">
 					<legend
-						class="text-muted-foreground text-[10px] leading-none font-semibold tracking-[0.2em] uppercase"
+						class="text-[10px] leading-none font-semibold tracking-[0.2em] text-muted-foreground uppercase"
 					>
 						Phase System
 					</legend>
@@ -232,7 +233,7 @@
 									buttonVariants({
 										variant: 'outline',
 										className:
-											'hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary h-11 w-full justify-between px-4 font-medium'
+											'h-11 w-full justify-between px-4 font-medium hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary'
 									}),
 									{
 										'cursor-not-allowed opacity-60': phase_option.value !== default_phases.ONE_PHASE
@@ -248,11 +249,11 @@
 								<span>{phase_option.label}</span>
 								{#if phase_option.value !== default_phases.ONE_PHASE}
 									<span
-										class="text-muted-foreground text-[9px] font-bold tracking-[0.2em] uppercase"
+										class="text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase"
 										>Soon</span
 									>
 								{:else}
-									<span class="text-primary/70 text-[9px] font-bold tracking-[0.2em] uppercase"
+									<span class="text-[9px] font-bold tracking-[0.2em] text-primary/70 uppercase"
 										>Available</span
 									>
 								{/if}

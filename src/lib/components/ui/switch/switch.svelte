@@ -49,7 +49,7 @@
 {#if label}
 	<span class={cn('inline-flex items-center gap-2.5', classProp)}>
 		{@render control()}
-		<label for={id} class={cn('text-foreground text-sm', disabled && 'opacity-50')}>
+		<label for={id} class={cn('text-sm text-foreground', disabled && 'opacity-50')}>
 			{label}
 		</label>
 	</span>

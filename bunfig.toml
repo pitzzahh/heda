@@ -1,0 +1,25 @@
+# Formatter settings for `bun fmt`, which replaces Prettier.
+# The options are Prettier's, under the same names.
+[fmt]
+printWidth = 100
+useTabs = true
+singleQuote = true
+trailingComma = "none"
+ignorePatterns = [
+	"build/",
+	".svelte-kit/",
+	"dist/",
+	"coverage/",
+	"src-tauri/target/",
+	"src-tauri/gen/",
+	# Line-based template output, not source code.
+	"src-tauri/linux/*.hbs",
+	"package-lock.json",
+	"pnpm-lock.yaml",
+	"yarn.lock"
+]
+
+# Sorts the classes in class lists, like Prettier's Tailwind plugin did.
+[fmt.sortTailwindcss]
+# Tailwind 4: the stylesheet that imports Tailwind.
+stylesheet = "./src/app.css"

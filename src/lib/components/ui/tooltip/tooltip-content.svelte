@@ -19,7 +19,7 @@
 		data-slot="tooltip-content"
 		class={cn(
 			ANCHORED,
-			'bg-foreground text-background static z-50 rounded-md px-2 py-1 text-xs shadow-[var(--overlay-shadow)]',
+			'static z-50 rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-[var(--overlay-shadow)]',
 			'data-[state=open]:pointer-events-none',
 			// Tooltips report delayed-open/instant-open, never open. Once one is open, the next skips motion.
 			'data-[state=delayed-open]:scale-100 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:duration-[var(--duration-tooltip)]',

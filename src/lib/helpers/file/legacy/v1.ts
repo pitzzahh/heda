@@ -480,7 +480,7 @@ function decryptBlock(state: number[], rounds: number, inverse: number[]): void 
 			(INV_SBOX[(s0 >>> 16) & 0xff] << 16) |
 			(INV_SBOX[(s1 >>> 8) & 0xff] << 8) |
 			INV_SBOX[s2 & 0xff]) ^
-		inverse[key_row++];
+		inverse[key_row];
 
 	swap = state[1];
 	state[1] = state[3];

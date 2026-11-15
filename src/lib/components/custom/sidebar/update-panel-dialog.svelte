@@ -101,7 +101,7 @@
 				node_to_edit={panel_to_edit}
 			/>
 			{#snippet failed(error, reset)}
-				<p class="text-muted-foreground text-sm">{error}</p>
+				<p class="text-sm text-muted-foreground">{error}</p>
 				<Button onclick={reset}>oops! try again</Button>
 			{/snippet}
 		</svelte:boundary>

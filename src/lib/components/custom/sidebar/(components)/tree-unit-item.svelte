@@ -45,6 +45,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
+	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { draggable, droppable } from '@thisux/sveltednd';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '#lib/utils/index.js';
@@ -205,12 +206,12 @@
 				if (is_alt_pressed && node.node_type === 'panel') {
 					select_nodes_to_delete_state.addOrRemoveNodeId(node.id);
 				} else {
-					const current_id = params.id?.split('_').at(-1);
+					const current_id = nodeIdFromRouteId(params.id);
 					if (current_id !== node.id) {
 						button_state = 'processing';
 						goto(
 							resolve('/(workspaces)/workspace/load-schedule/[id]', {
-								id: node_name + '_' + node.id
+								id: loadScheduleRouteId(node_name, node.id)
 							})
 						).finally(() => (button_state = 'stale'));
 					}
@@ -225,9 +226,9 @@
 			}}
 		>
 			<Sidebar.MenuButton
-				class={cn('hover:bg-accent data-[active=true]:bg-accent relative transition-colors', {
+				class={cn('relative transition-colors hover:bg-accent data-[active=true]:bg-accent', {
 					'bg-accent shadow-[inset_2px_0_0_0_var(--primary)]':
-						params.id && params.id.split('_').at(-1) === node.id,
+						params.id && nodeIdFromRouteId(params.id) === node.id,
 					'cursor-not-allowed opacity-50': button_state === 'processing'
 				})}
 			>
@@ -237,7 +238,7 @@
 							<CaretRightIcon
 								{...props}
 								weight="bold"
-								class="text-muted-foreground hover:text-foreground size-4 shrink-0 cursor-pointer transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) data-[state=open]:rotate-90 motion-reduce:transition-none"
+								class="size-4 shrink-0 cursor-pointer text-muted-foreground transition-[rotate] duration-(--duration-exit) ease-(--ease-ui-out) hover:text-foreground data-[state=open]:rotate-90 motion-reduce:transition-none"
 								onclick={(e) => {
 									e.stopPropagation();
 									collapsibles.toggleCollapsible(node.id);
@@ -277,7 +278,7 @@
 									{node_name}
 								</span>
 								{#if select_nodes_to_delete_state.checkIsIdSelected(node.id)}
-									<div class="bg-destructive size-2 rounded-full"></div>
+									<div class="size-2 rounded-full bg-destructive"></div>
 								{/if}
 							</AddPanelAndViewTrigger>
 						</div>

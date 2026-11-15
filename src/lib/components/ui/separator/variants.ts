@@ -6,7 +6,7 @@ export const separator = tv({
 		variant: {
 			solid: 'bg-border',
 			dashed:
-				'bg-transparent data-[orientation=horizontal]:border-t data-[orientation=vertical]:border-l border-border border-dashed'
+				'border-dashed border-border bg-transparent data-[orientation=horizontal]:border-t data-[orientation=vertical]:border-l'
 		}
 	},
 	defaultVariants: { variant: 'solid' }

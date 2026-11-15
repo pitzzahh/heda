@@ -31,7 +31,7 @@
 	<Sidebar.Content class="min-h-0 overflow-hidden">
 		<Sidebar.Group class="min-h-0 flex-1">
 			<Sidebar.GroupLabel
-				class="text-muted-foreground px-3 text-[10px] font-bold tracking-[0.22em] uppercase"
+				class="px-3 text-[10px] font-bold tracking-[0.22em] text-muted-foreground uppercase"
 			>
 				System Hierarchy
 			</Sidebar.GroupLabel>
@@ -49,7 +49,7 @@
 
 								{#snippet failed(error, reset)}
 									<div class="grid gap-2 rounded-xl border border-dashed p-4 text-center">
-										<p class="text-muted-foreground text-sm">{error}</p>
+										<p class="text-sm text-muted-foreground">{error}</p>
 										<Button onclick={reset} variant="outline" size="sm">Try again</Button>
 									</div>
 								{/snippet}
@@ -58,13 +58,13 @@
 							<div class="grid place-items-center px-4 py-16">
 								<div class="grid w-full max-w-60 justify-items-center gap-4 text-center">
 									<div
-										class="border-sidebar-border text-muted-foreground grid size-16 place-items-center rounded-2xl border border-dashed"
+										class="grid size-16 place-items-center rounded-2xl border border-dashed border-sidebar-border text-muted-foreground"
 									>
 										<DatabaseIcon class="size-7" />
 									</div>
 									<div class="grid gap-1">
 										<p class="text-sm font-bold tracking-tight">No project yet</p>
-										<p class="text-muted-foreground text-xs leading-5">
+										<p class="text-xs leading-5 text-muted-foreground">
 											Create a project to start building the hierarchy.
 										</p>
 									</div>

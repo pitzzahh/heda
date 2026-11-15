@@ -19,6 +19,7 @@
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants/index.js';
 	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { page } from '$app/state';
 
 	let {
@@ -29,7 +30,7 @@
 		panel_id_from_tree
 	}: Props = $props();
 
-	const parent_id = $derived(panel_id_from_tree || page.params.id?.split('_').at(-1) || '');
+	const parent_id = $derived(panel_id_from_tree || nodeIdFromRouteId(page.params.id) || '');
 	const parent_node = $derived(parent_id ? getNode(parent_id) : undefined);
 </script>
 
@@ -39,7 +40,7 @@
 			<Dialog.Trigger
 				class={buttonVariants({
 					variant: 'outline',
-					className: 'bg-primary text-primary-foreground hover:bg-primary/90 h-6 w-full'
+					className: 'h-6 w-full bg-primary text-primary-foreground hover:bg-primary/90'
 				})}
 			>
 				<PlusCircleIcon class="size-4" />

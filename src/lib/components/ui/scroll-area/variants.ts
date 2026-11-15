@@ -10,7 +10,7 @@ export const scrollArea = tv({
 			auto: {},
 			hidden: {
 				viewport:
-					'overflow-x-hidden! overflow-y-auto! [scrollbar-gutter:auto] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+					'[scrollbar-width:none] [scrollbar-gutter:auto] overflow-x-hidden! overflow-y-auto! [&::-webkit-scrollbar]:hidden'
 			}
 		}
 	},

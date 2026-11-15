@@ -101,8 +101,8 @@
 	class={cn(
 		'relative isolate flex w-full max-w-full min-w-0 items-center',
 		vertical && 'w-auto shrink-0',
-		edges.overflow && tabs.variant === 'pill' && 'bg-muted rounded-full',
-		edges.overflow && tabs.variant === 'segment' && 'bg-muted rounded-lg'
+		edges.overflow && tabs.variant === 'pill' && 'rounded-full bg-muted',
+		edges.overflow && tabs.variant === 'segment' && 'rounded-lg bg-muted'
 	)}
 >
 	{#if edges.overflow}

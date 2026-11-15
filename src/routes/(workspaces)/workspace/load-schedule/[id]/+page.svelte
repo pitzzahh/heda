@@ -21,12 +21,13 @@
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { LightningAIcon } from '#lib/assets/icons/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
 	const params = $derived(page.params);
-	const node_id = $derived(params.id!.split('_').at(-1) as string);
+	const node_id = $derived(nodeIdFromRouteId(params.id) as string);
 	const project_state = getProjectState();
 
 	let active_tab = $state('load-sched');
@@ -121,16 +122,16 @@
 
 <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
 	<div
-		class="border-border bg-card flex flex-col gap-4 rounded-2xl border px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
+		class="flex flex-col gap-4 rounded-2xl border border-border bg-card px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
 	>
 		<div class="flex items-center gap-3 border-b pb-4 lg:border-r lg:border-b-0 lg:pr-5 lg:pb-0">
 			<div
-				class="bg-primary/10 text-primary border-primary/15 grid size-11 shrink-0 place-items-center rounded-xl border"
+				class="grid size-11 shrink-0 place-items-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
 			>
 				<LightningAIcon class="size-5" />
 			</div>
 			<div class="grid gap-0.5">
-				<span class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase"
+				<span class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase"
 					>Distribution Unit</span
 				>
 				<span class="text-base leading-5 font-bold tracking-tight">
@@ -143,7 +144,7 @@
 
 		<dl class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-0">
 			<div class="grid gap-0.5 lg:border-r lg:px-5">
-				<dt class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase">
+				<dt class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
 					Phase System
 				</dt>
 				<dd class="text-sm font-medium">
@@ -152,7 +153,7 @@
 			</div>
 
 			<div class="grid gap-0.5 lg:px-5">
-				<dt class="text-muted-foreground text-[9px] font-semibold tracking-[0.24em] uppercase">
+				<dt class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
 					Supply From
 				</dt>
 				<dd class="truncate text-sm font-medium">
@@ -183,7 +184,7 @@
 					is_footer_shown={current_node.node_type !== 'root'}
 				/>
 			{:else}
-				<div class="text-muted-foreground grid min-h-0 flex-1 place-items-center text-sm">
+				<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
 					Could not load the schedule.
 				</div>
 			{/if}
@@ -198,7 +199,7 @@
 				/>
 			{:else}
 				<div
-					class="text-muted-foreground border-border bg-card grid min-h-0 flex-1 place-items-center rounded-xl border text-sm"
+					class="grid min-h-0 flex-1 place-items-center rounded-xl border border-border bg-card text-sm text-muted-foreground"
 				>
 					Loading voltage drop…
 				</div>

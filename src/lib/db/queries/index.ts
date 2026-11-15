@@ -13,7 +13,8 @@ export {
 	getComputedLoads,
 	getNodeDepth,
 	getNumberOfChildren,
-	getParentNodes
+	getParentNodes,
+	warmComputedLoads
 } from './loads.js';
 export { getComputedVoltageDrops, getComputedVoltageDropsAsync } from './voltage-drops.js';
 export { getSnapshotRevision } from './snapshot.js';

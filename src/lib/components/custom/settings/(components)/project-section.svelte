@@ -84,7 +84,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label for="adjustment_factor">Adjustment Factor</Label>
-			<p class="text-muted-foreground text-xs">
+			<p class="text-xs text-muted-foreground">
 				{settingsState.is_adjustment_factor_dynamic
 					? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
 					: 'The adjustment factor for all loads will be set to 100%.'}
@@ -102,7 +102,7 @@
 	<div class="flex flex-row items-center justify-between gap-3">
 		<div class="space-y-0.5">
 			<Label for="auto_save">Auto Save</Label>
-			<p class="text-muted-foreground text-xs">Automatically save the changes in your project</p>
+			<p class="text-xs text-muted-foreground">Automatically save the changes in your project</p>
 		</div>
 		<Switch
 			disabled={!project_state.loaded}
@@ -136,7 +136,7 @@
 		<div class="flex flex-row items-center justify-between gap-3">
 			<div class="space-y-0.5">
 				<Label for="backup_project_file">Backup old project file</Label>
-				<p class="text-muted-foreground text-xs">
+				<p class="text-xs text-muted-foreground">
 					Automatically backup old project file when creating new project and performing replacing
 					it upon project creation.
 				</p>

@@ -19,7 +19,7 @@ export const switchTrack = tv({
 				'before:pointer-events-none before:absolute before:top-1/2 before:left-1/4 before:h-[38%] before:w-0.5 before:-translate-1/2 before:rounded-full before:bg-primary-foreground',
 				'after:pointer-events-none after:absolute after:top-1/2 after:right-1/4 after:aspect-square after:h-[38%] after:translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:border-[1.5px] after:border-muted-foreground',
 				'before:opacity-0 after:opacity-100 aria-checked:before:opacity-100 aria-checked:after:opacity-0',
-				'before:transition-opacity after:transition-opacity before:duration-[var(--duration-fast)] after:duration-[var(--duration-fast)] motion-reduce:before:transition-none motion-reduce:after:transition-none'
+				'before:transition-opacity before:duration-[var(--duration-fast)] after:transition-opacity after:duration-[var(--duration-fast)] motion-reduce:before:transition-none motion-reduce:after:transition-none'
 			]
 		},
 		size: {
@@ -36,7 +36,7 @@ export const switchTrack = tv({
 export const switchThumb = tv({
 	base: [
 		'switch-thumb relative z-1 rounded-full bg-background shadow-xs',
-		'origin-left data-[state=checked]:origin-right group-active/switch:scale-x-[1.15] motion-reduce:group-active/switch:scale-x-100'
+		'origin-left group-active/switch:scale-x-[1.15] data-[state=checked]:origin-right motion-reduce:group-active/switch:scale-x-100'
 	],
 	variants: {
 		variant: { default: '', round: '', marked: '' },

@@ -8,8 +8,8 @@ export const table = tv({
 		body: '',
 		footer: 'font-medium text-muted-foreground',
 		row: 'transition-colors',
-		head: 'text-left align-middle text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap [&:has([role=checkbox])]:pr-0',
-		cell: 'align-middle text-foreground tabular-nums whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+		head: 'text-left align-middle text-[11px] font-semibold tracking-[0.08em] whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0',
+		cell: 'align-middle whitespace-nowrap text-foreground tabular-nums [&:has([role=checkbox])]:pr-0',
 		caption: 'mt-4 text-sm text-muted-foreground'
 	},
 	variants: {
@@ -17,9 +17,9 @@ export const table = tv({
 			default: {
 				container: 'rounded-xl border border-border bg-card',
 				root: 'border-separate border-spacing-0',
-				header: 'bg-secondary/50 [&_th]:border-border [&_th]:border-b [&_th]:whitespace-nowrap',
-				body: '[&_td]:border-border [&_td]:border-b [&_tr:last-child_td]:border-b-0',
-				footer: 'border-border border-t bg-muted/40 tabular-nums [&>tr]:last:border-b-0',
+				header: 'bg-secondary/50 [&_th]:border-b [&_th]:border-border [&_th]:whitespace-nowrap',
+				body: '[&_td]:border-b [&_td]:border-border [&_tr:last-child_td]:border-b-0',
+				footer: 'border-t border-border bg-muted/40 tabular-nums [&>tr]:last:border-b-0',
 				row: 'hover:bg-accent/60 data-[state=selected]:bg-primary/6'
 			},
 			// The header sits on a card rim around an inset body, and
@@ -29,7 +29,7 @@ export const table = tv({
 				root: 'border-separate border-spacing-0',
 				head: 'relative text-xs after:absolute after:end-0 after:top-1/2 after:h-4 after:w-px after:-translate-y-1/2 after:bg-border last:after:hidden',
 				body: [
-					'[&>tr>td]:bg-background [&>tr:not(:last-child)>td]:border-border [&>tr:not(:last-child)>td]:border-b',
+					'[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-border [&>tr>td]:bg-background',
 					'[&>tr:first-child>td:first-child]:rounded-tl-xl [&>tr:first-child>td:last-child]:rounded-tr-xl',
 					'[&>tr:last-child>td:first-child]:rounded-bl-xl [&>tr:last-child>td:last-child]:rounded-br-xl'
 				],

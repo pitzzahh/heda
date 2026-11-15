@@ -39,7 +39,7 @@
 			<span class="block">{label}</span>
 		{/if}
 		{#if description}
-			<span class="text-muted-foreground block text-xs leading-relaxed">{description}</span>
+			<span class="block text-xs leading-relaxed text-muted-foreground">{description}</span>
 		{/if}
 	</span>
 </label>

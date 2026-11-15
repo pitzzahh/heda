@@ -2,9 +2,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
+import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+export default defineConfig(({ command, mode, isPreview }) => ({
 	// Component tests use a per-file `// @vitest-environment jsdom` comment, so the
 	// node unit tests keep running without a DOM. Browser entries resolve under VITEST
 	// (Svelte docs) so `mount` gets the client build. Tailwind is off under VITEST:
@@ -16,11 +17,19 @@ export default defineConfig({
 			preprocess: vitePreprocess(),
 			adapter: adapter(),
 			paths: {
-				base: (process.argv.includes('dev') ? '' : process.env.BASE_PATH) as
-					'' | `/${string}` | undefined
+				base: basePath(command === 'serve' && !isPreview, mode)
 			}
 		})
 	],
+	// Legacy v1 files only open in the desktop app (the web build has no file
+	// access), so web builds never ship the migration keys.
+	define:
+		command === 'build' && !process.env.TAURI_ENV_PLATFORM
+			? {
+					'import.meta.env.VITE_LEGACY_FILE_PASSPHRASE': '""',
+					'import.meta.env.VITE_LEGACY_FILE_SALT': '""'
+				}
+			: undefined,
 	// ES output keeps the export worker's `import('exceljs')` as a separate
 	// lazy chunk instead of inlining ~1 MB into the worker entry (the default
 	// worker format is iife, which has no code splitting).
@@ -35,4 +44,16 @@ export default defineConfig({
 			host: 'localhost'
 		}
 	}
-});
+}));
+
+/**
+ * The web build's base path, from the shell or `.env` (Vite has not loaded
+ * `.env` into `process.env` while this file runs, so read it with `loadEnv`).
+ * Dev servers and desktop builds always use the root: the Tauri CLI sets
+ * `TAURI_ENV_PLATFORM` for its before-commands, and a web base path there
+ * would point the packaged app at assets that do not exist.
+ */
+function basePath(is_dev_server: boolean, mode: string): '' | `/${string}` | undefined {
+	if (is_dev_server || process.env.TAURI_ENV_PLATFORM) return '';
+	return loadEnv(mode, process.cwd(), '').BASE_PATH as `/${string}` | undefined;
+}

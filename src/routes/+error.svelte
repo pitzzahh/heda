@@ -32,7 +32,7 @@
 		<img src={heda_logo_for_light} alt="HEDA logo" class="block h-28 opacity-90 dark:hidden" />
 
 		<div
-			class="border-destructive/20 bg-destructive/10 text-destructive flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-bold tracking-[0.2em] uppercase"
+			class="flex items-center gap-2 rounded-full border border-destructive/20 bg-destructive/10 px-4 py-1.5 text-[11px] font-bold tracking-[0.2em] text-destructive uppercase"
 		>
 			<WarningCircleIcon class="size-4" />
 			Error {page.status}
@@ -42,7 +42,7 @@
 			<h1 class={cn('max-w-4xl font-extrabold tracking-[-0.03em] text-balance', title_size)}>
 				{title}
 			</h1>
-			<p class={cn('text-muted-foreground mx-auto max-w-md', description_size)}>{description}</p>
+			<p class={cn('mx-auto max-w-md text-muted-foreground', description_size)}>{description}</p>
 		</div>
 	</div>
 	{#if with_return_button}
