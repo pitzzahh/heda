@@ -1,18 +1,14 @@
 <script lang="ts">
 	import {
-		CertificateIcon,
-		CircleNotchIcon,
+		FileIcon,
 		FolderOpenIcon,
-		LightningAIcon,
 		LockKeyIcon,
-		MonitorIcon,
 		PlusIcon,
 		TrashIcon,
 		WarningCircleIcon
 	} from '#lib/assets/icons.js';
-	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
-	import * as Alert from '#lib/components/ui/alert/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '#lib/assets/index.js';
 	import { toast } from 'svelte-sonner';
@@ -33,10 +29,8 @@
 	import type { RecentProject } from '#lib/types/main.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getFileOpenState } from '#lib/hooks/file-open.svelte.js';
-	import { cn } from '#lib/utils/index.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { onMount } from 'svelte';
@@ -50,7 +44,9 @@
 	let component_state = $state({
 		status: 'idle' as 'idle' | 'processing'
 	});
-	let load_dialog_open = $state(false);
+	const busy = $derived(component_state.status === 'processing');
+	// Stored oldest first; the home list shows the newest first.
+	const recent_projects = $derived([...(project_state.recent_projects ?? [])].reverse());
 	let unlock_open = $state(false);
 	let unlock_path = $state('');
 	let unlock_error = $state<string | null>(null);
@@ -80,10 +76,9 @@
 			resolve(`/(workspaces)/workspace?load_file=true&project_id=${recent_project_data.id}`)
 		)
 			.then(() => {
-				if (!project_state.recent_projects?.some((p) => p.id === recent_project_data.id)) {
-					project_state.addRecentProject(recent_project_data, true);
-				}
-				project_state.setCurrentProject(recent_project_data);
+				// Re-append so the list (stored oldest first) tracks last-opened order.
+				project_state.removeRecentProject(recent_project_data.id);
+				project_state.addRecentProject(recent_project_data, true);
 
 				project_state.setProjectLoaded(true);
 				if (recent_project_data.protection === 'password') {
@@ -129,7 +124,6 @@
 		);
 		if (isRecentProject(handle_file_result)) {
 			unlock_open = false;
-			load_dialog_open = false;
 			handleLoadFileSuccess(handle_file_result);
 		} else if (isNeedPassword(handle_file_result)) {
 			unlock_path = handle_file_result.file_path;
@@ -161,24 +155,6 @@
 		}
 	}
 
-	const spec_rows = [
-		{
-			icon: CertificateIcon,
-			label: 'Standard',
-			value: 'PEC 2017: Philippine Electrical Code'
-		},
-		{
-			icon: LightningAIcon,
-			label: 'Analysis',
-			value: 'Load schedules · Demand factors · Voltage drop'
-		},
-		{
-			icon: LockKeyIcon,
-			label: 'Storage',
-			value: 'Encrypted .heda project files'
-		}
-	] as const;
-
 	// One-time reset when landing on the home page; tracks nothing, so onMount fits.
 	onMount(() => {
 		project_state.setProjectLoaded(false);
@@ -190,6 +166,7 @@
 		undo_redo_state.resetUnsavedActions();
 		clearSessionPassword();
 		clearSessionSnapshot();
+		void project_state.validateRecentProjects();
 	});
 
 	// Consumes a .heda path the OS asked us to open; clearing it is an event
@@ -202,277 +179,116 @@
 	});
 </script>
 
-<div class="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
-	<!-- Backdrop: faint blueprint grid fading out, plus a soft primary glow. -->
+<div class="relative flex min-h-svh flex-col bg-background text-foreground">
 	<div
 		aria-hidden="true"
 		class="blueprint-grid blueprint-fade pointer-events-none absolute inset-0"
 	></div>
-	<div
-		aria-hidden="true"
-		class="pointer-events-none absolute -top-48 left-[12%] h-128 w-lg rounded-full bg-primary/10 blur-3xl"
-	></div>
 
+	<!-- Same bar as the workspace header, so home and app read as one product. -->
 	<header
-		class="relative z-10 flex items-center justify-between border-b border-border/70 px-5 py-3 sm:px-8"
+		class="relative z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 sm:px-6"
 	>
-		<div class="flex items-center gap-3">
-			<img src={heda_logo_for_dark} alt="" class="hidden h-8 w-8 dark:block" />
-			<img src={heda_logo_for_light} alt="" class="block h-8 w-8 dark:hidden" />
-			<span class="text-sm font-extrabold tracking-[0.28em] uppercase">Heda</span>
-			<span class="hidden text-[10px] font-medium tracking-wide text-muted-foreground lg:inline">
-				Hierarchical Electrical Design Analyzer
-			</span>
+		<div class="flex items-center gap-2.5">
+			<img src={heda_logo_for_dark} alt="" class="hidden size-7 dark:block" />
+			<img src={heda_logo_for_light} alt="" class="block size-7 dark:hidden" />
+			<span class="text-sm font-semibold tracking-tight">HEDA</span>
 		</div>
-		<div class="flex items-center gap-2">
-			<span
-				class="rounded-full border border-border px-3 py-1 font-mono text-[10px] tracking-wider text-muted-foreground"
-				>PEC 2017</span
-			>
-			<span
-				class="hidden rounded-full border border-border px-3 py-1 font-mono text-[10px] tracking-wider text-muted-foreground sm:inline"
-				>v{pj.version}</span
-			>
-		</div>
+		<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
 	</header>
 
 	<main
-		class="relative z-10 mx-auto grid w-full max-w-7xl flex-1 items-center gap-12 px-6 py-12 sm:px-10 lg:grid-cols-12 lg:gap-10 lg:py-0"
+		class="relative z-10 mx-auto grid w-full max-w-5xl flex-1 content-center items-center gap-10 px-6 py-10 lg:grid-cols-2 lg:gap-16"
 	>
-		<div class="lg:col-span-7">
-			<p
-				class="flex items-center gap-3 text-[11px] font-bold tracking-[0.22em] text-primary uppercase"
-			>
-				<span class="inline-block h-px w-10 bg-primary/60"></span>
-				Philippine Electrical Code 2017
-			</p>
-
-			<h1
-				class="mt-5 text-[clamp(5.5rem,17vw,11.5rem)] leading-[0.82] font-extrabold tracking-tighter select-none"
-			>
-				HEDA<span class="text-primary">.</span>
+		<section>
+			<h1 class="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">
+				Hierarchical Electrical Design Analyzer
 			</h1>
-
-			<p class="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">
-				Design hierarchical electrical systems: connected load, demand factors, conductor sizing and
-				voltage drop, in one code-compliant
-				<span class="font-medium text-foreground"> load schedule workspace</span>.
+			<p class="mt-4 max-w-md leading-7 text-muted-foreground">
+				Load schedules, voltage drop and short-circuit checks for your whole panel hierarchy,
+				computed to the Philippine Electrical Code 2017.
 			</p>
 
-			<div class="mt-10 flex flex-wrap items-center gap-3">
-				<Button size="xl" href="/workspace?new_file=true" class="rounded-xl">
-					<PlusIcon class="size-5" />
-					New File
+			<div class="mt-8 flex flex-wrap items-center gap-3">
+				<Button size="lg" href="/workspace?new_file=true">
+					<PlusIcon class="size-4" />
+					New project
 				</Button>
-				<Dialog.Root bind:open={load_dialog_open}>
-					<Dialog.Trigger
-						type="button"
-						onclick={() => project_state.validateRecentProjects()}
-						class={buttonVariants({
-							size: 'xl',
-							variant: 'outline',
-							className: 'rounded-xl'
-						})}
-					>
-						<FolderOpenIcon class="size-5" />
-						Load File
-					</Dialog.Trigger>
-					<Dialog.Content class="sm:max-w-136">
-						<Dialog.Header>
-							<Dialog.Title>Load a project</Dialog.Title>
-							<Dialog.Description>
-								Pick a recent project below, or open a <span class="font-mono">.heda</span> file from
-								your computer.
-							</Dialog.Description>
-						</Dialog.Header>
-						<Button
-							variant="outline"
-							disabled={component_state.status === 'processing'}
-							onclick={() => attemptLoad(undefined)}
-							class="h-13 w-full justify-start gap-3 px-3"
-						>
-							<span
-								class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
-							>
-								<CircleNotchIcon
-									class={cn('hidden size-4 animate-spin', {
-										block: component_state.status === 'processing'
-									})}
-								/>
-								<MonitorIcon
-									class={cn('size-4', {
-										hidden: component_state.status === 'processing'
-									})}
-								/>
-							</span>
-							<span class="flex flex-col items-start leading-tight">
-								<span class="text-sm font-semibold">Browse files…</span>
-								<span class="text-[11px] font-normal text-muted-foreground">
-									Open a .heda file from disk
-								</span>
-							</span>
-						</Button>
-
-						{#if project_state.recent_projects && project_state.recent_projects.length > 0}
-							<div class="flex items-center gap-3 pt-1">
-								<Separator class="flex-1" />
-								<p
-									class="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
-								>
-									Recent
-								</p>
-								<Separator class="flex-1" />
-							</div>
-						{/if}
-						<ScrollArea class="max-h-72 w-full">
-							{#if project_state.recent_projects && project_state?.recent_projects?.length > 0}
-								{#each project_state.recent_projects as project (project.id)}
-									<div class="group flex w-full items-center gap-2 py-1 pr-3">
-										<Button
-											variant={project.exists ? 'outline' : 'warning_soft'}
-											class={cn('h-auto min-h-14 flex-1 justify-start gap-3 px-2 py-2', {
-												'opacity-60': component_state.status === 'processing'
-											})}
-											disabled={!project.exists || component_state.status === 'processing'}
-											onclick={() => attemptLoad(project.project_path)}
-										>
-											<span
-												class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
-											>
-												<MonitorIcon class="size-4" />
-											</span>
-											<span class="flex min-w-0 flex-col items-start leading-tight">
-												<span class="w-full truncate text-left text-sm font-semibold"
-													>{project?.project_name ?? 'unknown'}</span
-												>
-												<span
-													class="w-full truncate text-left text-[11px] font-normal text-muted-foreground"
-													>{project.project_path ?? 'unknown path'}</span
-												>
-												{#if !project.exists}
-													<span
-														class="mt-0.5 text-[10px] font-bold tracking-wider text-warning-strong uppercase"
-														>File not found</span
-													>
-												{/if}
-											</span>
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-											onclick={() => {
-												project_state.removeRecentProject(project.id);
-												toast.info(`${project.project_name ?? 'Project'} removed successfully`);
-											}}
-											aria-label="Remove from recent projects"
-										>
-											<TrashIcon class="size-4" />
-										</Button>
-									</div>
-								{/each}
-							{:else}
-								<Alert.Root variant="info" class="flex w-full items-center">
-									<WarningCircleIcon class="size-4 translate-y-[-0.1rem]" />
-									<Alert.Description>No recent projects found</Alert.Description>
-								</Alert.Root>
-							{/if}
-						</ScrollArea>
-						<Dialog.Close />
-					</Dialog.Content>
-				</Dialog.Root>
+				<Button
+					size="lg"
+					variant="outline"
+					disabled={busy}
+					loading={busy}
+					onclick={() => attemptLoad(undefined)}
+				>
+					<FolderOpenIcon class="size-4" />
+					Open file…
+				</Button>
 			</div>
 
-			<p class="mt-7 flex items-center gap-2 text-xs text-muted-foreground">
+			<p class="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
 				<LockKeyIcon class="size-4 shrink-0" />
-				<span>
-					Every <span class="font-mono text-foreground">.heda</span> file is sealed with your password
-					with AES-256-GCM. Nothing leaves your machine.
-				</span>
+				Projects are saved as encrypted .heda files and never leave this computer.
 			</p>
-		</div>
+		</section>
 
-		<div class="hidden lg:col-span-5 lg:block">
-			<figure
-				class="relative rounded-3xl border border-border bg-card/70 p-8 shadow-(--surface-shadow) backdrop-blur-xs"
-			>
-				<!-- Corner ticks, drawing-sheet style -->
-				<span
-					class="absolute top-3 left-3 size-5 rounded-tl-md border-t-2 border-l-2 border-foreground/30"
-				></span>
-				<span
-					class="absolute top-3 right-3 size-5 rounded-tr-md border-t-2 border-r-2 border-foreground/30"
-				></span>
-				<span
-					class="absolute bottom-3 left-3 size-5 rounded-bl-md border-b-2 border-l-2 border-foreground/30"
-				></span>
-				<span
-					class="absolute right-3 bottom-3 size-5 rounded-br-md border-r-2 border-b-2 border-foreground/30"
-				></span>
-
-				<div
-					class="flex items-center justify-between font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase"
-				>
-					<span>HEDA-001</span>
-					<span>Rev 2.6</span>
-				</div>
-
-				<div class="grid place-items-center py-8">
-					<img src={heda_logo_for_dark} alt="HEDA logo" class="hidden h-44 w-44 dark:block" />
-					<img src={heda_logo_for_light} alt="HEDA logo" class="block h-44 w-44 dark:hidden" />
-					<p
-						class="mt-5 text-center text-[10px] leading-5 font-medium tracking-[0.28em] text-muted-foreground uppercase"
-					>
-						Hierarchical<br />Electrical<br />Design Analyzer
-					</p>
-				</div>
-
-				<div class="divide-y divide-border/80 border-t">
-					{#each spec_rows as row (row.label)}
-						{@const Icon = row.icon}
-						<div class="flex items-center gap-4 py-3.5">
-							<span
-								class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-primary"
-							>
-								<Icon class="size-4" />
-							</span>
-							<span class="flex min-w-0 flex-col">
-								<span
-									class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase"
+		<section
+			aria-labelledby="recent-heading"
+			class="rounded-xl border bg-card shadow-(--surface-shadow)"
+		>
+			<h2 id="recent-heading" class="border-b px-4 py-3 text-sm font-semibold tracking-tight">
+				Recent projects
+			</h2>
+			{#if recent_projects.length}
+				<ScrollArea class="max-h-80">
+					<ul class="p-2">
+						{#each recent_projects as project (project.id)}
+							<li class="group flex items-center gap-1">
+								<Button
+									variant="ghost"
+									class="h-auto min-w-0 flex-1 justify-start gap-3 px-2 py-2"
+									disabled={!project.exists || busy}
+									onclick={() => attemptLoad(project.project_path)}
 								>
-									{row.label}
-								</span>
-								<span class="truncate text-sm font-medium text-foreground">{row.value}</span>
-							</span>
-						</div>
-					{/each}
-				</div>
-
-				<div
-					class="flex items-center justify-between border-t pt-4 font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase"
-				>
-					<span class="flex items-center gap-2">
-						<span class="relative flex size-2">
-							<span
-								class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60"
-							></span>
-							<span class="relative inline-flex size-2 rounded-full bg-success"></span>
-						</span>
-						Local-first
-					</span>
-					<span>AES-256-GCM</span>
-				</div>
-			</figure>
-		</div>
+									<span
+										class="grid size-8 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/10 text-primary"
+									>
+										<FileIcon class="size-4" />
+									</span>
+									<span class="flex min-w-0 flex-col items-start leading-tight">
+										<span class="w-full truncate text-left text-sm font-medium">
+											{project.project_name ?? 'Untitled project'}
+										</span>
+										<span
+											class="w-full truncate text-left text-[11px] font-normal text-muted-foreground"
+										>
+											{project.exists ? project.project_path : 'File not found'}
+										</span>
+									</span>
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="shrink-0 text-muted-foreground opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+									onclick={() => {
+										project_state.removeRecentProject(project.id);
+										toast.info(`${project.project_name ?? 'Project'} removed from recent projects`);
+									}}
+									aria-label="Remove {project.project_name ?? 'project'} from recent projects"
+								>
+									<TrashIcon class="size-4" />
+								</Button>
+							</li>
+						{/each}
+					</ul>
+				</ScrollArea>
+			{:else}
+				<p class="px-4 py-10 text-center text-sm text-muted-foreground">
+					Projects you open or save will appear here.
+				</p>
+			{/if}
+		</section>
 	</main>
-
-	<footer
-		class="relative z-10 flex items-center justify-between gap-4 border-t border-border/70 px-5 py-3 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase sm:px-8"
-	>
-		<span>Heda</span>
-		<span class="hidden md:inline">Load Schedules · Voltage Drop · Conductor Sizing</span>
-		<span class="font-mono normal-case tabular-nums">v{pj.version}</span>
-	</footer>
 
 	<PasswordDialog
 		bind:open={unlock_open}
