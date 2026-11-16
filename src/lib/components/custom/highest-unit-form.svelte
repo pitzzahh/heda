@@ -50,7 +50,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { distribution_unit: 'Transformer', use_password: false }
+		initialInput: { use_password: false }
 	});
 
 	let submitting = $state(false);
@@ -202,13 +202,7 @@
 			{#snippet children(field)}
 				<div class="space-y-2">
 					<Label class={cn(field.errors && 'text-destructive')}>Distribution unit</Label>
-					<Input
-						{...field.props}
-						value={field.input ?? ''}
-						placeholder="Enter the distribution unit name"
-						readonly
-						tabindex={-1}
-					/>
+					<Input {...field.props} value={field.input ?? ''} placeholder="Transformer" />
 					<FieldErrors errors={field.errors} />
 				</div>
 			{/snippet}

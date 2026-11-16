@@ -99,6 +99,20 @@ describe('validators', () => {
 		expect(v.safeParse(EXCEL_EXPORT_TYPE_FIELD, 'VOLTAGE_DROP').success).toBe(true);
 	});
 
+	it('keeps a custom distribution unit name and falls back to Transformer when blank', () => {
+		const name = (distribution_unit?: string) => {
+			const result = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				distribution_unit,
+				phase: default_phases.ONE_PHASE
+			});
+			return result.success ? result.output.distribution_unit : null;
+		};
+		expect(name('  Main Switchboard ')).toBe('Main Switchboard');
+		expect(name('')).toBe('Transformer');
+		expect(name('   ')).toBe('Transformer');
+		expect(name(undefined)).toBe('Transformer');
+	});
+
 	it('rejects invalid inputs', () => {
 		expect(v.safeParse(HIGHEST_UNIT_SCHEMA, { distribution_unit: '', phase: '9P' }).success).toBe(
 			false
