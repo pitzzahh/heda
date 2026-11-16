@@ -19,6 +19,8 @@ export class ProjectState {
 	current_project_path = $state('');
 	exists = $state(false);
 	loaded = $state(false);
+	/** The open tab of the schedule page, mirrored here so the workspace header can show it. */
+	schedule_tab = $state('load-sched');
 
 	constructor(recent_project?: RecentProject) {
 		const _persisted_state = new PersistedState<ProjectStateType>('project_state', {

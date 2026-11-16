@@ -2,7 +2,7 @@
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 	interface Props {
-		current_pole: '1' | '2';
+		current_pole: '1' | '2' | '3';
 		node: PhaseLoadSchedule;
 	}
 </script>
@@ -20,7 +20,7 @@
 
 	let undo_redo_state = getUndoRedoState();
 
-	function handleChangePole(pole: '1' | '2') {
+	function handleChangePole(pole: '1' | '2' | '3') {
 		const previous_node = getNode(node.id);
 		const updated_node = changePole(node.id, pole);
 		undo_redo_state.setActionToUndo({
@@ -49,7 +49,7 @@
 		{/if}
 	</Select.Trigger>
 	<Select.Content class="text-sm">
-		{#each ['1', '2'] as pole (pole)}
+		{#each ['1', '2', '3'] as pole (pole)}
 			<Select.Item value={pole} disabled={selected_pole === pole}>
 				{pole}
 			</Select.Item>

@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 
 // Canonical data shapes for SignalDB documents. Types derive from these schemas
 // (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults
@@ -27,6 +28,8 @@ export const NODE_DOC_SCHEMA = v.object({
 	egc_insulation: v.optional(v.string()),
 	conduit_type: v.optional(v.string()),
 	pole: v.optional(v.string()),
+	/** Override of the circuit-number phase on a 3P-Y panel; absent means the default rotation. */
+	phase_assignment: v.optional(PHASE_ASSIGNMENT_FIELD),
 	kaic: v.optional(v.string()),
 	length: v.optional(v.number()),
 	overrided_length: v.optional(v.number()),
@@ -55,7 +58,9 @@ export const NODE_DOC_SCHEMA = v.object({
 	highest_unit_form: v.optional(
 		v.object({
 			distribution_unit: v.optional(v.string()),
-			phase: v.optional(v.string())
+			phase: v.optional(v.string()),
+			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
+			wye_circuit_defaults: v.optional(v.boolean())
 		})
 	),
 	parent_id: v.optional(v.string()),

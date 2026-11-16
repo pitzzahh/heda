@@ -2,6 +2,7 @@ import { afterWrite, clearCollection, getDatabase, initializeDatabase } from '..
 import type { Node, Project } from '#lib/types/db.js';
 import { removeNode } from './nodes.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
+import { default_phases } from '#lib/constants.js';
 
 export async function createProject(
 	project_name: string,
@@ -16,7 +17,13 @@ export async function createProject(
 		const root_node = withNodeDefaults({
 			id: root_node_id,
 			node_type: 'root',
-			highest_unit_form,
+			// New 3P-Y projects already insert 400Y/230 V defaults: nothing to migrate.
+			highest_unit_form: highest_unit_form && {
+				...highest_unit_form,
+				...(highest_unit_form.phase === default_phases.THREE_PHASE_WYE && {
+					wye_circuit_defaults: true
+				})
+			},
 			child_ids: []
 		});
 		void afterWrite(database.nodes.insert(root_node));

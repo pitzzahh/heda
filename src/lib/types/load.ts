@@ -1,7 +1,9 @@
 import type { Node } from '#lib/types/db.js';
 import type * as v from 'valibot';
 import type {
+	DEFAULT_LOAD_SCHEMA,
 	GENERIC_PHASE_MAIN_LOAD_SCHEMA,
+	LOAD_TYPE_FIELD,
 	QUANTITY_LABEL_FIELD,
 	VARIES_LABEL_FIELD
 } from '#lib/validators/load.js';
@@ -9,7 +11,7 @@ import type { TERMINAL_TEMPERATURE_FIELD } from '#lib/validators/shared.js';
 
 export type GenericPhaseMainLoadSchema = v.InferOutput<typeof GENERIC_PHASE_MAIN_LOAD_SCHEMA>;
 
-export type LoadType = v.InferOutput<typeof GENERIC_PHASE_MAIN_LOAD_SCHEMA>['load_type'];
+export type LoadType = v.InferOutput<typeof LOAD_TYPE_FIELD>;
 
 export type TerminalTemperature = v.InferOutput<typeof TERMINAL_TEMPERATURE_FIELD>;
 
@@ -19,9 +21,4 @@ export type Load = Required<NonNullable<Node['load_data']>>;
 export type VariesLabel = v.InferOutput<typeof VARIES_LABEL_FIELD>;
 export type QuantityLabel = v.InferOutput<typeof QUANTITY_LABEL_FIELD>;
 
-export type DefaultLoad = {
-	description: string;
-	varies: string;
-	continuous: boolean;
-	type: LoadType;
-};
+export type DefaultLoad = v.InferOutput<typeof DEFAULT_LOAD_SCHEMA>;

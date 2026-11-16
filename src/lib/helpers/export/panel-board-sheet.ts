@@ -7,11 +7,127 @@ import {
 	getNodeByIdFromNodes
 } from '#lib/db/queries/loads-core.js';
 import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
-import { DEFAULT_PHASES } from '#lib/constants.js';
+import { DEFAULT_PHASES, PHASE_ASSIGNMENTS, default_phases } from '#lib/constants.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
+import { rowPhaseVa, supplyPhaseOf } from '#lib/utils/computations/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type { ExportProcessResult, Header } from './types.js';
 
-export async function processOnePhaseExcelPanelBoardSchedule(
+type CellValue = string | number | undefined;
+
+/** One header group of the sheet and how each of its columns reads a load row and the totals row. */
+type SheetGroup = Header & {
+	row: (load: PhaseLoadSchedule) => CellValue[];
+	total: (panel: PhaseLoadSchedule) => CellValue[];
+};
+
+const text = (value: number | string | undefined, fallback = 'N/A') =>
+	value === undefined ? fallback : value.toString();
+
+/** Columns of a single-phase panelboard schedule, A–Q. */
+function baseGroups(): SheetGroup[] {
+	return [
+		{
+			text: ' ',
+			cols: 1,
+			subText: 'CKT NO.',
+			sub_cols: ['CRKT NO.'],
+			row: (l) => [l.circuit_number],
+			total: () => ['TOTAL']
+		},
+		{
+			text: ' ',
+			cols: 1,
+			sub_cols: ['LOAD DESCRIPTION'],
+			row: (l) => [l.load_description],
+			total: () => ['MAIN']
+		},
+		{
+			text: ' ',
+			cols: 1,
+			sub_cols: ['VOLTAGE (V)'],
+			row: (l) => [l.voltage],
+			total: (p) => [p.voltage.toString()]
+		},
+		{
+			text: ' ',
+			cols: 1,
+			sub_cols: ['APPARENT POWER (VA)'],
+			row: (l) => [l.va],
+			total: (p) => [p.va.toString()]
+		},
+		{
+			text: ' ',
+			cols: 1,
+			sub_cols: ['CURRENT (A)'],
+			row: (l) => [l.current],
+			total: (p) => [p.current.toString()]
+		},
+		{
+			text: 'CIRCUIT BREAKER',
+			cols: 4,
+			sub_cols: ['AT', 'AF', 'Pole', 'KAIC'],
+			row: (l) => [l.at, l.ampere_frames, l.pole, l.kaic],
+			total: (p) => [p.at.toString(), p.ampere_frames.toString(), text(p.pole), text(p.kaic)]
+		},
+		{
+			text: 'CONDUCTOR',
+			cols: 4,
+			sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'],
+			row: (l) => [l.conductor_sets, l.conductor_qty, l.conductor_size, l.conductor_insulation],
+			total: (p) => [
+				text(p.conductor_sets),
+				text(p.conductor_qty),
+				p.conductor_size.toString(),
+				text(p.conductor_insulation)
+			]
+		},
+		{
+			text: 'EGC',
+			cols: 2,
+			sub_cols: ['Size', 'Insulation'],
+			row: (l) => [l.egc_size, l.egc_insulation],
+			total: (p) => [p.egc_size.toString(), text(p.egc_insulation)]
+		},
+		{
+			text: 'CONDUIT',
+			cols: 2,
+			sub_cols: ['Size', 'Type'],
+			row: (l) => [l.conduit_size, l.conduit_type],
+			total: (p) => [p.conduit_size.toString(), text(p.conduit_type)]
+		}
+	];
+}
+
+/** A 400Y/230 V panel also lists each circuit's phase and VA per phase (PEC 2017 App. D Ex. D6). */
+function wyeGroups(): SheetGroup[] {
+	return [
+		{
+			text: ' ',
+			cols: 1,
+			sub_cols: ['PHASE'],
+			row: (l) => [l.phase],
+			total: () => ['ABC']
+		},
+		{
+			text: 'VA PER PHASE',
+			cols: 3,
+			sub_cols: [...PHASE_ASSIGNMENTS],
+			row: (l) => PHASE_ASSIGNMENTS.map((phase) => rowPhaseVa(l, phase)),
+			total: (p) =>
+				PHASE_ASSIGNMENTS.map((phase) => Number((p.phase_va?.[phase] ?? 0).toFixed(2)).toString())
+		}
+	];
+}
+
+/** The supply line of the schedule header, e.g. "1P + E, 230V, 60Hz". */
+function supplyDescription(phase: string | undefined): string {
+	return phase === default_phases.THREE_PHASE_WYE
+		? `${getOptionLabel(DEFAULT_PHASES, phase)} + N + E, 400Y/230V, 60Hz`
+		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`;
+}
+
+export async function processExcelPanelBoardSchedule(
 	workbook: ExcelJS.Workbook,
 	node_id: string,
 	highest_unit?: Node['highest_unit_form'],
@@ -73,8 +189,13 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	);
 
 	worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
-	worksheet.getCell(`B${startRow + 1}`).value =
-		`: ${getOptionLabel(DEFAULT_PHASES, highest_unit?.phase)} + E, ${230}V, ${60}Hz`;
+	// What this panel distributes: the project's supply at the root, else the panel's own phase.
+	const panel_phase = supplyPhaseOf(current_node) ?? highest_unit?.phase;
+	const groups =
+		panel_phase === default_phases.THREE_PHASE_WYE
+			? [...baseGroups().slice(0, 5), ...wyeGroups(), ...baseGroups().slice(5)]
+			: baseGroups();
+	worksheet.getCell(`B${startRow + 1}`).value = `: ${supplyDescription(panel_phase)}`;
 	worksheet.getCell(`B${startRow + 2}`).value = `: ${from_supply_name}`;
 	worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
 
@@ -84,20 +205,8 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 			worksheet.getCell(cell).font = { bold: true };
 		});
 
-	const table_headers: Header[] = [
-		{ text: ' ', cols: 1, subText: 'CKT NO.', sub_cols: ['CRKT NO.'] },
-		{ text: ' ', cols: 1, sub_cols: ['LOAD DESCRIPTION'] },
-		{ text: ' ', cols: 1, sub_cols: ['VOLTAGE (V)'] },
-		{ text: ' ', cols: 1, sub_cols: ['APPARENT POWER (VA)'] },
-		{ text: ' ', cols: 1, sub_cols: ['CURRENT (A)'] },
-		{ text: 'CIRCUIT BREAKER', cols: 4, sub_cols: ['AT', 'AF', 'Pole', 'KAIC'] },
-		{ text: 'CONDUCTOR', cols: 4, sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'] },
-		{ text: 'EGC', cols: 2, sub_cols: ['Size', 'Insulation'] },
-		{ text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Type'] }
-	];
-
 	let current_header_column = 1;
-	table_headers.forEach((header: Header) => {
+	groups.forEach((header: Header) => {
 		const cell = worksheet.getCell(startRow + 4, current_header_column);
 		cell.value = header.text;
 		cell.font = { bold: true };
@@ -135,28 +244,9 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	let current_load_row = startRow + 6;
 
 	for (const load of loads) {
-		const loadCells = [
-			{ column: 'A', value: load.circuit_number },
-			{ column: 'B', value: load.load_description },
-			{ column: 'C', value: load.voltage },
-			{ column: 'D', value: load.va },
-			{ column: 'E', value: load.current },
-			{ column: 'F', value: load.at },
-			{ column: 'G', value: load.ampere_frames },
-			{ column: 'H', value: load.pole },
-			{ column: 'I', value: load.kaic },
-			{ column: 'J', value: load.conductor_sets },
-			{ column: 'K', value: load.conductor_qty },
-			{ column: 'L', value: load.conductor_size },
-			{ column: 'M', value: load.conductor_insulation },
-			{ column: 'N', value: load.egc_size },
-			{ column: 'O', value: load.egc_insulation },
-			{ column: 'P', value: load.conduit_size },
-			{ column: 'Q', value: load.conduit_type }
-		];
-
-		loadCells.forEach(({ column, value }) => {
-			const cell = worksheet.getCell(`${column}${current_load_row}`);
+		const loadCells = groups.flatMap((group) => group.row(load));
+		loadCells.forEach((value, index) => {
+			const cell = worksheet.getCell(current_load_row, index + 1);
 			cell.value = value;
 			cell.alignment = { vertical: 'middle', horizontal: 'center' };
 			cell.border = { bottom: { style: 'thin' } };
@@ -164,28 +254,10 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 		current_load_row++;
 	}
 
-	const main_columns = [
-		{ column: 'A', value: 'TOTAL' },
-		{ column: 'B', value: 'MAIN' },
-		{ column: 'C', value: computed_current_node!.voltage.toString() },
-		{ column: 'D', value: computed_current_node!.va.toString() },
-		{ column: 'E', value: computed_current_node!.current.toString() },
-		{ column: 'F', value: computed_current_node!.at.toString() },
-		{ column: 'G', value: computed_current_node!.ampere_frames.toString() },
-		{ column: 'H', value: computed_current_node!.pole ?? 'N/A' },
-		{ column: 'I', value: computed_current_node!.kaic ?? 'N/A' },
-		{ column: 'J', value: computed_current_node!.conductor_sets?.toString() ?? 'N/A' },
-		{ column: 'K', value: computed_current_node!.conductor_qty?.toString() ?? 'N/A' },
-		{ column: 'L', value: computed_current_node!.conductor_size.toString() },
-		{ column: 'M', value: computed_current_node!.conductor_insulation ?? 'N/A' },
-		{ column: 'N', value: computed_current_node!.egc_size.toString() },
-		{ column: 'O', value: computed_current_node!.egc_insulation ?? 'N/A' },
-		{ column: 'P', value: computed_current_node!.conduit_size.toString() },
-		{ column: 'Q', value: computed_current_node!.conduit_type ?? 'N/A' }
-	];
+	const main_columns = groups.flatMap((group) => group.total(computed_current_node));
 
-	main_columns.forEach(({ column, value }) => {
-		const cell = worksheet.getCell(`${column}${current_load_row}`);
+	main_columns.forEach((value, index) => {
+		const cell = worksheet.getCell(current_load_row, index + 1);
 		cell.value = value;
 		cell.font = { bold: true };
 		cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -198,13 +270,7 @@ export async function processOnePhaseExcelPanelBoardSchedule(
 	// Process children
 	for (const child of children) {
 		if (child.node_type === 'root' || child.node_type === 'panel') {
-			await processOnePhaseExcelPanelBoardSchedule(
-				workbook,
-				child.id,
-				highest_unit,
-				nodes,
-				is_dynamic
-			);
+			await processExcelPanelBoardSchedule(workbook, child.id, highest_unit, nodes, is_dynamic);
 		}
 	}
 

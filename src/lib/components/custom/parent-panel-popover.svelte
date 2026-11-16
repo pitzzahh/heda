@@ -24,7 +24,7 @@
 
 <Popover.Root bind:open={is_popover_open}>
 	<Popover.Trigger
-		class={cn(buttonVariants({ variant: 'outline' }), 'min-w-[150px]  justify-between')}
+		class={cn(buttonVariants({ variant: 'outline' }), 'min-w-37.5  justify-between')}
 		role="combobox"
 		{...props}
 	>
@@ -32,7 +32,7 @@
 		<CaretUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 	</Popover.Trigger>
 
-	<Popover.Content class="w-auto min-w-[150px] p-0">
+	<Popover.Content class="w-auto min-w-37.5 p-0">
 		<Command.Root>
 			<Command.Input autofocus placeholder="Search a parent panel..." class="h-9" />
 			<Command.Empty>No parent panel found.</Command.Empty>

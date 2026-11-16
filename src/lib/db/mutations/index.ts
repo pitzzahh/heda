@@ -7,7 +7,8 @@ export {
 	removeNodesById,
 	restoreNodes,
 	updateNode,
-	updateNodeParentById
+	updateNodeParentById,
+	restoreNodeFields
 } from './nodes.js';
 export {
 	createProject,
@@ -17,6 +18,8 @@ export {
 } from './projects.js';
 export {
 	changeInsulation,
+	changePhaseAssignment,
+	changePhaseAssignments,
 	changePole,
 	overrideField,
 	updateConductorSets,

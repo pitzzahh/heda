@@ -6,7 +6,12 @@ import {
 	AMPACITY_TO_CONDUCTOR_SIZE,
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
-	CONDUIT_TABLE
+	CONDUIT_TABLE,
+	MOTOR_LOAD_TYPES,
+	SQRT_3,
+	THREE_PHASE_MOTOR_FLC_400V,
+	WYE_LINE_VOLTAGE,
+	default_hp_current_relationship
 } from '#lib/constants.js';
 import type { LoadType } from '#lib/types/load.js';
 
@@ -15,8 +20,33 @@ const common_load_types = [
 	default_load_types.LIGHTING_LOAD,
 	default_load_types.CONVENIENCE_OUTLET,
 	default_load_types.GENERAL_LIGHTING,
-	default_load_types.HEATING_EQUIPMENT
+	default_load_types.HEATING_EQUIPMENT,
+	default_load_types.THREE_P_EQUIPMENT
 ] as const;
+
+const three_phase_motor_types: readonly string[] = [
+	default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+	default_load_types.THREE_P_MOTOR__RATED_CURRENT
+];
+
+/**
+ * Motors picked by horsepower are stored as their full-load current; this maps
+ * the current back to the horsepower so the picker can show it on edit. Other
+ * load types pass through.
+ */
+export function horsepowerOfCurrent(
+	load_type: string | undefined,
+	varies: string | undefined
+): string | undefined {
+	const table: Readonly<Record<string, string>> | undefined =
+		load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER
+			? default_hp_current_relationship
+			: load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
+				? THREE_PHASE_MOTOR_FLC_400V
+				: undefined;
+	if (!table || varies === undefined) return varies;
+	return Object.keys(table).find((hp) => Number(table[hp]) === Number(varies));
+}
 
 type CommonLoadTypes = (typeof common_load_types)[number];
 
@@ -34,6 +64,11 @@ export function computeVoltAmpere({
 	if (is_varies_number) {
 		if (common_load_types.includes(load_type as CommonLoadTypes)) {
 			return quantity * varies;
+		}
+
+		// Three-phase motors: VA = 1.732 × 400 V × full-load current (PEC 2017 App. D Ex. D6 6.3).
+		if (three_phase_motor_types.includes(load_type)) {
+			return quantity * SQRT_3 * WYE_LINE_VOLTAGE * varies;
 		}
 
 		// load types with separate formula
@@ -80,9 +115,7 @@ export function computeConductorSize({
 	current: number;
 	is_adjustment_factor_dynamic: boolean;
 }) {
-	const is_motor_load =
-		load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER ||
-		load_type === default_load_types.ONE_P_MOTOR__RATED_CURRENT;
+	const is_motor_load = MOTOR_LOAD_TYPES.includes(load_type);
 	const adjusted_current = computeAdjustedCurrent({
 		set,
 		ambient_temp,
@@ -200,3 +233,5 @@ export function getConduitSize(conductor_size: number, total_num_of_conductors: 
 
 	return column_index === -1 ? column_index : CONDUIT_TABLE.conduit_columns[column_index];
 }
+
+export * from './three-phase.js';

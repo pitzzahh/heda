@@ -128,7 +128,7 @@
 
 	{#key node.id}
 		<Dialog.Root bind:open={table_actions.override_open}>
-			<Dialog.Content class="max-w-[450px]">
+			<Dialog.Content class="max-w-112.5">
 				<Dialog.Header>
 					<Dialog.Title>Override</Dialog.Title>
 					<Dialog.Description>

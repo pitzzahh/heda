@@ -1,5 +1,5 @@
 import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load.js';
-import { getEnumValues, getEnumKeys } from '#lib/utils/enum.js';
+import { getEnumKeys } from '#lib/utils/enum.js';
 import { toLabelValueArray } from '#lib/utils/mapper.js';
 
 export const default_load_types = {
@@ -8,7 +8,10 @@ export const default_load_types = {
 	GENERAL_LIGHTING: 'general_lighting',
 	ONE_P_MOTOR__RATED_HORSE_POWER: 'one_phase_motor_horse_power',
 	ONE_P_MOTOR__RATED_CURRENT: 'one_phase_motor_rated_current',
-	HEATING_EQUIPMENT: 'heating_equipment'
+	HEATING_EQUIPMENT: 'heating_equipment',
+	THREE_P_MOTOR__RATED_HORSE_POWER: 'three_phase_motor_horse_power',
+	THREE_P_MOTOR__RATED_CURRENT: 'three_phase_motor_rated_current',
+	THREE_P_EQUIPMENT: 'three_phase_equipment'
 } as const;
 
 export const DEFAULT_LOAD_TYPES = [
@@ -20,8 +23,38 @@ export const DEFAULT_LOAD_TYPES = [
 		label: '1P Motor - Rated Horse Power'
 	},
 	{ value: default_load_types.ONE_P_MOTOR__RATED_CURRENT, label: '1P Motor - Rated Current' },
-	{ value: default_load_types.HEATING_EQUIPMENT, label: 'Heating Equipment' }
+	{ value: default_load_types.HEATING_EQUIPMENT, label: 'Heating Equipment' },
+	{
+		value: default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+		label: '3P Motor - Rated Horse Power'
+	},
+	{ value: default_load_types.THREE_P_MOTOR__RATED_CURRENT, label: '3P Motor - Rated Current' },
+	{ value: default_load_types.THREE_P_EQUIPMENT, label: '3P Equipment' }
 ] as const;
+
+/** Three-phase loads: line-to-line at 400 V on a 400Y/230 V system (PEC 2017 App. D Ex. D6; motors per Table 4.30.14.4, 400 V column). */
+export const THREE_PHASE_LOAD_TYPES: readonly string[] = [
+	default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+	default_load_types.THREE_P_MOTOR__RATED_CURRENT,
+	default_load_types.THREE_P_EQUIPMENT
+];
+
+/** Motor load types of either phase, for motor-specific sizing and fault contribution. */
+export const MOTOR_LOAD_TYPES: readonly string[] = [
+	default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER,
+	default_load_types.ONE_P_MOTOR__RATED_CURRENT,
+	default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+	default_load_types.THREE_P_MOTOR__RATED_CURRENT
+];
+
+// PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400Y/230 V, three-phase 4-wire.
+/** The phases of a 400Y/230 V system, in order. */
+export const PHASE_ASSIGNMENTS = ['A', 'B', 'C'] as const;
+
+export const WYE_LINE_VOLTAGE = 400;
+export const WYE_PHASE_VOLTAGE = 230;
+// PEC 2017 App. D Ex. D6 6.3 and D14 step 9.4 use 1.732 for √3.
+export const SQRT_3 = 1.732;
 
 export const STANDARD_TERMINAL_TEMPERATURE = 'standard';
 
@@ -131,13 +164,24 @@ export const DEFAULT_PHASES = [
 	{ value: default_phases.THREE_PHASE_DELTA, label: '3P-Δ' }
 ] as const;
 
+/**
+ * Panel phases heda computes: a 400Y/230 V supply feeds 3P-Y panels or 230 V
+ * single-phase ones (PEC 2017 App. D Ex. D6). Delta is not supported yet.
+ */
+export const SUPPORTED_PANEL_PHASES = DEFAULT_PHASES.filter(
+	(option) => option.value !== default_phases.THREE_PHASE_DELTA
+);
+
 export const load_type_to_varies_label = {
 	[default_load_types.LIGHTING_LOAD]: 'Unit Wattage',
 	[default_load_types.CONVENIENCE_OUTLET]: 'Unit Wattage',
 	[default_load_types.GENERAL_LIGHTING]: 'Unit Load',
 	[default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER]: 'Horsepower Rating',
 	[default_load_types.ONE_P_MOTOR__RATED_CURRENT]: 'Current Rating',
-	[default_load_types.HEATING_EQUIPMENT]: 'Unit Wattage'
+	[default_load_types.HEATING_EQUIPMENT]: 'Unit Wattage',
+	[default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER]: 'Horsepower Rating',
+	[default_load_types.THREE_P_MOTOR__RATED_CURRENT]: 'Current Rating',
+	[default_load_types.THREE_P_EQUIPMENT]: 'Unit Wattage'
 } as const satisfies Record<LoadType, VariesLabel>;
 
 export const load_type_to_quantity_label = {
@@ -155,7 +199,10 @@ export const load_type_z_value = {
 	[default_load_types.GENERAL_LIGHTING]: 1.25,
 	[default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
 	[default_load_types.ONE_P_MOTOR__RATED_CURRENT]: 2.5,
-	[default_load_types.HEATING_EQUIPMENT]: 1.5
+	[default_load_types.HEATING_EQUIPMENT]: 1.5,
+	[default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
+	[default_load_types.THREE_P_MOTOR__RATED_CURRENT]: 2.5,
+	[default_load_types.THREE_P_EQUIPMENT]: 1.25
 } as const satisfies Record<LoadType, number>;
 
 export const default_hp_current_relationship = {
@@ -171,6 +218,36 @@ export const default_hp_current_relationship = {
 	'5': '28',
 	'7 1/2': '40',
 	'10': '50'
+} as const;
+
+// PEC 2017 Table 4.30.14.4: full-load current of three-phase induction motors, 400 V column (A).
+export const THREE_PHASE_MOTOR_FLC_400V = {
+	'1/2': '1.3',
+	'3/4': '1.8',
+	'1': '2.3',
+	'1 1/2': '3.3',
+	'2': '4.3',
+	'3': '6.1',
+	'5': '9.7',
+	'7 1/2': '14',
+	'10': '18',
+	'15': '27',
+	'20': '34',
+	'25': '44',
+	'30': '51',
+	'40': '66',
+	'50': '83',
+	'60': '103',
+	'75': '128',
+	'100': '165',
+	'125': '208',
+	'150': '240',
+	'200': '320',
+	'250': '403',
+	'300': '482',
+	'350': '560',
+	'400': '636',
+	'500': '786'
 } as const;
 
 // FOR CONDUCTOR SIZING
@@ -318,8 +395,6 @@ export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(
 ).map(([hp, current]) => ({ hp, current }));
 
 export const DEFAULT_THREE_PHASE_TYPES_ENUMS = toLabelValueArray(default_three_phase_types);
-
-export const DEFAULT_THREE_PHASE_TYPES_OPTIONS = getEnumValues(default_three_phase_types);
 
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS = getEnumKeys(default_hp_current_relationship);
 

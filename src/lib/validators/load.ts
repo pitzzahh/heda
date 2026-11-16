@@ -20,6 +20,19 @@ export const VARIES_LABEL_FIELD = v.picklist([
 
 export const QUANTITY_LABEL_FIELD = v.picklist(['Floor area']);
 
+export const LOAD_TYPE_FIELD = v.picklist(
+	DEFAULT_LOAD_TYPES.map((option) => option.value),
+	'Please select a valid load type.'
+);
+
+/** A preset in the load description picker. */
+export const DEFAULT_LOAD_SCHEMA = v.object({
+	description: v.string(),
+	varies: v.string(),
+	continuous: v.boolean(),
+	type: LOAD_TYPE_FIELD
+});
+
 export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
 	v.object({
 		circuit_number: CIRCUIT_NUMBER_FIELD,
@@ -30,15 +43,18 @@ export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
 		load_description: LOAD_DESCRIPTION_FIELD,
 		varies: v.string('This field is required'),
 		continuous: CONTINUOUS_FIELD,
-		load_type: v.picklist(
-			DEFAULT_LOAD_TYPES.map((option) => option.value),
-			'Please select a valid load type.'
-		)
+		load_type: LOAD_TYPE_FIELD
 	}),
 	v.rawCheck(({ dataset, addIssue }) => {
 		if (!dataset.typed) return;
 		const data = dataset.value;
-		if (!data || data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER) return;
+		// Horsepower is picked from a table and replaced by its full-load current on submit.
+		if (
+			!data ||
+			data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER ||
+			data.load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
+		)
+			return;
 		const path = (key: 'varies'): [ObjectPathItem] => [
 			{ type: 'object', origin: 'value', input: data, key, value: data[key] }
 		];

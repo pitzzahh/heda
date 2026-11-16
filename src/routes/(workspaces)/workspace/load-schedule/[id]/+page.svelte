@@ -4,9 +4,12 @@
 </script>
 
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
-	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
+	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
+	import { threePhaseWyeCols } from '#lib/components/custom/table/three-phase-wye-cols.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
@@ -37,6 +40,11 @@
 	});
 	let voltage_activated = $state(false);
 
+	// A fresh page starts on its first tab; tell the workspace header, which outlives the page.
+	onMount(() => {
+		project_state.schedule_tab = active_tab;
+	});
+
 	// Latch activation from the bound tab value so it's reliable regardless of
 	// how the tab changes. One-way state (stays true) — not derivable without
 	// losing the latch, and reacting to UI tab state is an external sync.
@@ -59,8 +67,16 @@
 
 	// Column definitions are expensive to rebuild and invalidate TanStack's
 	// row model, so keep them stable across tab switches.
+	// A 400Y/230 V panel (or a wye root) lists each circuit's phase and VA per phase.
+	const is_wye_schedule = $derived(
+		supplyPhaseOf(current_node ?? undefined) === default_phases.THREE_PHASE_WYE
+	);
 	const load_columns = $derived(
-		current_node ? onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule) : []
+		current_node
+			? is_wye_schedule
+				? threePhaseWyeCols(current_node as PhaseLoadSchedule)
+				: onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule)
+			: []
 	);
 	const voltage_drop_columns = voltageDropColumns();
 
@@ -149,6 +165,9 @@
 				</dt>
 				<dd class="text-sm font-medium">
 					{getOptionLabel(DEFAULT_PHASES, root_node?.highest_unit_form?.phase) || '-'}
+					{#if root_node?.highest_unit_form?.phase === default_phases.THREE_PHASE_WYE}
+						<span class="text-muted-foreground">· 400Y/230 V</span>
+					{/if}
 				</dd>
 			</div>
 
@@ -168,6 +187,7 @@
 		bind:value={active_tab}
 		onValueChange={(value) => {
 			visited_tabs[value] = true;
+			project_state.schedule_tab = value;
 		}}
 		class="min-h-0 w-full flex-1"
 	>

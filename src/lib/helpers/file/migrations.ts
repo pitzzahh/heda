@@ -8,6 +8,7 @@ import {
 } from '#lib/constants.js';
 import type { Node } from '#lib/types/db.js';
 import type { FileExport } from '#lib/types/main.js';
+import { circuitDefaults } from '#lib/db/mutations/defaults.js';
 
 // Old files stored labels; normalize to canonical values on load.
 const LEGACY_PHASES: Record<string, string> = {
@@ -94,6 +95,27 @@ function migrateNode(node: Node): Node {
 	return changed ? { ...node, panel_data, load_data, highest_unit_form } : node;
 }
 
+/**
+ * 3P-Y roots could be created in late 2024, before three-phase support; their
+ * circuits kept the single-phase defaults (2-pole, 2 conductors). Rewrite those
+ * untouched defaults to the 400Y/230 V ones (see `circuitDefaults`).
+ */
+function migrateWyeDefaults(nodes: Node[]): Node[] {
+	const root_form = nodes.find((node) => node.node_type === 'root')?.highest_unit_form;
+	const system_phase = root_form?.phase;
+	// Once only: after it, 2-pole/2-wire on a 3P-Y file is the user's own choice.
+	if (system_phase !== default_phases.THREE_PHASE_WYE || root_form?.wye_circuit_defaults) {
+		return nodes;
+	}
+	return nodes.map((node) =>
+		node.node_type === 'root'
+			? { ...node, highest_unit_form: { ...node.highest_unit_form, wye_circuit_defaults: true } }
+			: node.pole === '2' && node.conductor_qty === 2
+				? { ...node, ...circuitDefaults(node, system_phase) }
+				: node
+	);
+}
+
 export function migrateFileExport(file_export: FileExport): FileExport {
-	return { ...file_export, nodes: file_export.nodes.map(migrateNode) };
+	return { ...file_export, nodes: migrateWyeDefaults(file_export.nodes.map(migrateNode)) };
 }

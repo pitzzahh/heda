@@ -1,10 +1,15 @@
 import type * as v from 'valibot';
-import type { PHASE_FIELD } from '#lib/validators/shared.js';
-import type { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
+import type {
+	CIRCUIT_PHASE_FIELD,
+	PHASE_ASSIGNMENT_FIELD,
+	PHASE_FIELD,
+	PHASE_VA_SCHEMA
+} from '#lib/validators/shared.js';
 
 export type Phase = v.InferOutput<typeof PHASE_FIELD>;
 
-export type PhaseType = Exclude<
-	v.InferOutput<typeof GENERIC_PHASE_PANEL_SCHEMA>['type'],
-	null | undefined
->;
+export type PhaseAssignment = v.InferOutput<typeof PHASE_ASSIGNMENT_FIELD>;
+
+export type CircuitPhase = v.InferOutput<typeof CIRCUIT_PHASE_FIELD>;
+
+export type PhaseVa = v.InferOutput<typeof PHASE_VA_SCHEMA>;

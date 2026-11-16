@@ -1,13 +1,5 @@
+import type * as v from 'valibot';
+import type { VOLTAGE_DROP_RESULT_SCHEMA } from '#lib/validators/voltage-drop.js';
 import type { PhaseLoadSchedule } from './schedule.js';
 
-export type VoltageDrop = {
-	from_node_name: string;
-	to_node_name: string;
-	z: number;
-	length: number;
-	actual_z: number;
-	voltage_per_segment: number;
-	voltage_at_end_circuit: number;
-	voltage_at_receiving_end: number;
-	percent_voltage_drop: number;
-} & PhaseLoadSchedule;
+export type VoltageDrop = v.InferOutput<typeof VOLTAGE_DROP_RESULT_SCHEMA> & PhaseLoadSchedule;

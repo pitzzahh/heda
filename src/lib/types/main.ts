@@ -1,20 +1,15 @@
-import type { Project, Node } from '#lib/types/db.js';
 import type * as v from 'valibot';
 import type { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
+import type {
+	FILE_EXPORT_SCHEMA,
+	FILE_PROTECTION_FIELD,
+	RECENT_PROJECT_SCHEMA
+} from '#lib/validators/file.js';
 
 export type HighestUnitSchema = v.InferOutput<typeof HIGHEST_UNIT_SCHEMA>;
 
-export type FileExport = {
-	project: Project;
-	nodes: Node[];
-};
+export type FileExport = v.InferOutput<typeof FILE_EXPORT_SCHEMA>;
 
-export type FileProtection = 'device' | 'password';
+export type FileProtection = v.InferOutput<typeof FILE_PROTECTION_FIELD>;
 
-export type RecentProject = {
-	id: string;
-	project_name: string;
-	project_path: string;
-	exists: boolean;
-	protection?: FileProtection;
-};
+export type RecentProject = v.InferOutput<typeof RECENT_PROJECT_SCHEMA>;

@@ -3,8 +3,8 @@ import { toast } from 'svelte-sonner';
 import type { ExcelExportType } from '#lib/types/misc.js';
 import { generateWorkbookInWorker } from '#lib/workers/export-client.js';
 
-export { processOnePhaseExcelPanelBoardSchedule } from './panel-board-sheet.js';
-export { processOnePhaseVoltageDrop } from './voltage-drop-sheet.js';
+export { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
+export { processVoltageDropSheet } from './voltage-drop-sheet.js';
 
 export async function exportToExcel(
 	type: ExcelExportType,

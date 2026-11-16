@@ -28,7 +28,10 @@ import {
 	resetData,
 	restoreNodes,
 	updateLoadDescription,
-	updateNode
+	updateNode,
+	changePhaseAssignment,
+	changePhaseAssignments,
+	updateNodeParentById
 } from './mutations/index.js';
 import {
 	checkNodeExists,
@@ -42,6 +45,7 @@ import {
 	getParentNodes,
 	getSnapshotRevision
 } from './queries/index.js';
+import { patchNode } from './mutations/nodes.js';
 import { computeNodeLoad } from './queries/compute.js';
 import { computed_loads } from './queries/cache.js';
 import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
@@ -137,9 +141,8 @@ describe('db (signaldb)', () => {
 		});
 		const parents = getParentNodes();
 		expect(parents.map((p) => p.name).sort()).toEqual(['LP-1', 'Transformer'].sort());
-		const excluded = getParentNodes(root);
-		expect(excluded).toHaveLength(1);
-		expect(excluded[0]?.name).toBe('LP-1');
+		// LP-1 sits under the root, so it is never offered as the root's own parent.
+		expect(getParentNodes(root)).toEqual([]);
 	});
 
 	it('loads a project export and sorts children by circuit number', async () => {
@@ -851,6 +854,15 @@ describe('incremental writes and reads', () => {
 		).toBe(1002);
 	});
 
+	it('keeps the single-phase voltage drop formula: 2·I·Z over 230 V', async () => {
+		await buildTree();
+		for (const drop of getComputedVoltageDrops()) {
+			const current = getComputedLoads(drop.parent_id!).find((l) => l.id === drop.id)!.current;
+			expect(drop.voltage_per_segment).toBeCloseTo(2 * current * drop.actual_z, 4);
+			expect(drop.voltage_at_receiving_end).toBeCloseTo(230 - drop.voltage_at_end_circuit, 10);
+		}
+	});
+
 	it('computes the same voltage drops in slices as in one pass', async () => {
 		await buildTree();
 		const sliced = await getComputedVoltageDropsAsync();
@@ -946,6 +958,324 @@ describe('bulk writes and the session file', () => {
 		]);
 		// The id index still resolves replaced items.
 		expect(collection.findOne({ id: 'a' })?.value).toBe(3);
+	});
+});
+
+describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
+	const wyePanel = (name: string, circuit_number: number): GenericPhasePanelSchema => ({
+		name,
+		circuit_number,
+		ambient_temperature: 30,
+		length: 10,
+		terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+		phase: default_phases.THREE_PHASE_WYE
+	});
+	const onePhasePanel = (name: string, circuit_number: number): GenericPhasePanelSchema => ({
+		...wyePanel(name, circuit_number),
+		phase: default_phases.ONE_PHASE
+	});
+	const load = (circuit_number: number, load_type: string, varies: string, length = 10) =>
+		({
+			load_type,
+			quantity: 1,
+			varies,
+			load_description: `Load ${circuit_number}`,
+			continuous: false,
+			circuit_number,
+			length,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		}) as never;
+
+	async function wyeProject() {
+		resetData();
+		const created = await createProject('Wye', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.THREE_PHASE_WYE
+		});
+		return created!.root_node_id;
+	}
+
+	// root ─ MDP (3P-Y) ─┬─ 1: 1 840 VA lighting   → A (D7's 1-Hp acu, 8 A × 230 V)
+	//                    ├─ 3: 1 500 VA lighting   → B
+	//                    ├─ 5: 1 500 VA lighting   → C
+	//                    ├─ 7: 6 000 VA 3P equipment (D6 package ACU) → ABC
+	//                    ├─ 9: 44 A 3P motor (25 HP, Table 4.30.14.4 @ 400 V) → ABC
+	//                    └─ 11: LP-1 (1P) ─ 1: 2 300 VA lighting → LP-1 on C
+	async function buildWyeTree() {
+		const root = await wyeProject();
+		const mdp = addNode({ parent_id: root, panel_data: wyePanel('MDP', 1) })!;
+		const a = addNode({
+			parent_id: mdp.id,
+			load_data: load(1, default_load_types.LIGHTING_LOAD, '1840')
+		})!;
+		const b = addNode({
+			parent_id: mdp.id,
+			load_data: load(3, default_load_types.LIGHTING_LOAD, '1500')
+		})!;
+		const c = addNode({
+			parent_id: mdp.id,
+			load_data: load(5, default_load_types.LIGHTING_LOAD, '1500')
+		})!;
+		const acu = addNode({
+			parent_id: mdp.id,
+			load_data: load(7, default_load_types.THREE_P_EQUIPMENT, '6000')
+		})!;
+		const motor = addNode({
+			parent_id: mdp.id,
+			load_data: load(9, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '44')
+		})!;
+		const lp1 = addNode({ parent_id: mdp.id, panel_data: onePhasePanel('LP-1', 11) })!;
+		const lp1_load = addNode({
+			parent_id: lp1.id,
+			load_data: load(1, default_load_types.LIGHTING_LOAD, '2300')
+		})!;
+		return { root, mdp, a, b, c, acu, motor, lp1, lp1_load };
+	}
+
+	it('sets poles and conductor count per circuit type on insert', async () => {
+		const { mdp, a, acu, motor, lp1, lp1_load } = await buildWyeTree();
+		expect([mdp.pole, mdp.conductor_qty]).toEqual(['3', 4]); // D6/D8: 3 phase + neutral, 3-pole
+		expect([acu.pole, acu.conductor_qty]).toEqual(['3', 3]); // D6: 3-wire
+		expect([motor.pole, motor.conductor_qty]).toEqual(['3', 3]); // D9: three wires
+		for (const single of [a, lp1, lp1_load]) {
+			expect([single.pole, single.conductor_qty]).toEqual(['1', 2]); // D6: 2-wire, 1-pole
+		}
+	});
+
+	it('keeps single-phase defaults on a single-phase project', async () => {
+		resetData();
+		const created = await createProject('One', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const node = addNode({ parent_id: created!.root_node_id, panel_data: onePhasePanel('LP', 1) })!;
+		expect([node.pole, node.conductor_qty]).toEqual(['2', 2]);
+	});
+
+	it('balances single-phase loads by circuit number and sizes on the higher current', async () => {
+		const { root, mdp } = await buildWyeTree();
+		const [row] = getComputedLoads(root);
+		expect(row?.voltage).toBe(400);
+		expect(row?.phase).toBe('ABC');
+
+		const loads = new Map(getComputedLoads(mdp.id).map((l) => [l.circuit_number, l]));
+		expect(loads.get(1)).toMatchObject({ phase: 'A', voltage: 230, current: 8 });
+		expect(loads.get(3)?.phase).toBe('B');
+		expect(loads.get(5)?.phase).toBe('C');
+		expect(loads.get(7)).toMatchObject({ phase: 'ABC', voltage: 400 });
+		expect(loads.get(7)?.current).toBeCloseTo(6_000 / 692.8, 2);
+		expect(loads.get(9)).toMatchObject({ phase: 'ABC', voltage: 400, current: 44 });
+		expect(loads.get(11)).toMatchObject({ phase: 'C', voltage: 230, current: 10 });
+
+		const motor_va = 44 * 400 * 1.732;
+		const share = (6_000 + motor_va) / 3;
+		expect(row?.phase_va?.A).toBeCloseTo(1_840 + share, 6);
+		expect(row?.phase_va?.B).toBeCloseTo(1_500 + share, 6);
+		expect(row?.phase_va?.C).toBeCloseTo(1_500 + 2_300 + share, 6);
+
+		const total = 1_840 + 1_500 + 1_500 + 6_000 + motor_va + 2_300;
+		expect(row?.va).toBeCloseTo(total, 6);
+		// D6 6.3 balanced formula vs the most loaded phase (C) at 230 V.
+		expect(row?.balanced_current).toBeCloseTo(total / 692.8, 2);
+		expect(row?.current).toBeCloseTo((1_500 + 2_300 + share) / 230, 2);
+		expect(row!.current).toBeGreaterThan(row!.balanced_current!);
+	});
+
+	it('agrees with the sidebar/header computation', async () => {
+		const { mdp } = await buildWyeTree();
+		const by_id = getNodeById(mdp.id)!;
+		const computed = computeNodeLoad(getNode(mdp.id)!, {
+			children_by_parent: loadSnapshot().children_by_parent,
+			is_dynamic: false,
+			memo: new Map()
+		});
+		expect(by_id.phase_va).toEqual(computed.phase_va);
+		expect(by_id.current).toBe(computed.current);
+		expect(by_id.balanced_current).toBe(computed.balanced_current);
+		expect(by_id.voltage).toBe(400);
+	});
+
+	it('moves a circuit to another phase and back', async () => {
+		const { mdp, a } = await buildWyeTree();
+		const before = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
+
+		changePhaseAssignment(a.id, 'C');
+		const moved = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
+		expect(moved.A).toBeCloseTo(before.A - 1_840, 6);
+		expect(moved.C).toBeCloseTo(before.C + 1_840, 6);
+		expect(getComputedLoads(mdp.id).find((l) => l.id === a.id)?.phase).toBe('C');
+
+		changePhaseAssignment(a.id, undefined);
+		expect(getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va).toEqual(before);
+	});
+
+	it('refuses three-phase circuits under a single-phase panel', async () => {
+		const { mdp, motor, lp1 } = await buildWyeTree();
+		expect(
+			addNode({
+				parent_id: lp1.id,
+				load_data: load(3, default_load_types.THREE_P_EQUIPMENT, '3000')
+			})
+		).toBeUndefined();
+		expect(
+			updateNode({
+				id: motor.id,
+				parent_id: lp1.id,
+				load_data: getNode(motor.id)!.load_data as never
+			})
+		).toBeUndefined();
+		expect(getNode(motor.id)!.parent_id).toBe(mdp.id);
+		// MDP feeds three-phase circuits, so it cannot turn single-phase.
+		expect(
+			updateNode({
+				id: mdp.id,
+				parent_id: getNode(mdp.id)!.parent_id!,
+				panel_data: onePhasePanel('MDP', 1)
+			})
+		).toBeUndefined();
+		expect(getParentNodes(motor.id).map((parent) => parent.name)).not.toContain('LP-1');
+		// A panel is never offered its own subtree.
+		expect(getParentNodes(mdp.id).map((parent) => parent.name)).not.toContain('LP-1');
+	});
+
+	it('gives a load the pole and wire count of its new type, unless the user changed them', async () => {
+		const { mdp, a, b } = await buildWyeTree();
+		const to3p = (id: string, circuit: number) =>
+			updateNode({
+				id,
+				parent_id: mdp.id,
+				load_data: load(circuit, default_load_types.THREE_P_EQUIPMENT, '3000')
+			})!;
+		expect([to3p(a.id, 1).pole, getNode(a.id)!.conductor_qty]).toEqual(['3', 3]);
+		const back = updateNode({
+			id: a.id,
+			parent_id: mdp.id,
+			load_data: load(1, default_load_types.LIGHTING_LOAD, '1840')
+		})!;
+		expect([back.pole, back.conductor_qty]).toEqual(['1', 2]);
+
+		patchNode(b.id, { conductor_qty: 3 });
+		const kept = to3p(b.id, 3);
+		expect([kept.pole, kept.conductor_qty]).toEqual(['1', 3]);
+	});
+
+	it('drag and drop refuses moves that break the tree or the supply', async () => {
+		const { root, mdp, motor, lp1, lp1_load } = await buildWyeTree();
+		const refused = (id: string, parent: string) => {
+			const before = getNode(id)!.parent_id;
+			const result = updateNodeParentById({ id, parent_id: before }, parent);
+			expect(result.error).toBeTruthy();
+			expect(getNode(id)!.parent_id).toBe(before);
+		};
+		refused(motor.id, lp1.id); // a 3P motor on a 1P panel (D6)
+		refused(mdp.id, mdp.id); // onto itself
+		refused(mdp.id, lp1.id); // into its own sub-panel
+		refused(root, mdp.id); // the root never moves
+		refused(lp1.id, lp1_load.id); // loads supply nothing
+	});
+
+	it('drag and drop renumbers a taken circuit and drops the old phase pick', async () => {
+		const { root, mdp, a } = await buildWyeTree();
+		changePhaseAssignment(a.id, 'C');
+		// MDP is circuit 1 on the root, and so is load A on MDP.
+		const result = updateNodeParentById({ id: a.id, parent_id: mdp.id }, root);
+		expect(result.error).toBeUndefined();
+		expect(result.renumbered_to).toBe(2);
+		expect(getNode(a.id)).toMatchObject({ parent_id: root, circuit_number: 2 });
+		expect(getNode(a.id)!.phase_assignment).toBeUndefined();
+		expect(getNode(root)!.child_ids).toContain(a.id);
+		expect(getNode(mdp.id)!.child_ids).not.toContain(a.id);
+	});
+
+	it('keeps the drop of loads under feeders that drop nothing', async () => {
+		const { mdp, lp1, lp1_load } = await buildWyeTree();
+		patchNode(mdp.id, { length: 0 });
+		patchNode(lp1.id, { length: 0 });
+		const rows = new Map(
+			computeVoltageDropsFromNodes(loadSnapshot().nodes, false).map((row) => [row.id, row])
+		);
+		expect(rows.get(lp1.id)!.voltage_at_end_circuit).toBe(0);
+		const load = rows.get(lp1_load.id)!;
+		expect(load.voltage_per_segment).toBeGreaterThan(0);
+		expect(load.voltage_at_end_circuit).toBe(load.voltage_per_segment);
+	});
+
+	it('undoing a move puts the phase pick back', async () => {
+		const { root, mdp, a } = await buildWyeTree();
+		changePhaseAssignment(a.id, 'C');
+		const before = getNode(a.id)!;
+		updateNodeParentById({ id: a.id, parent_id: mdp.id }, root);
+		expect(getNode(a.id)!.phase_assignment).toBeUndefined();
+		// Undo restores the whole stored snapshot (UndoRedoState's update_node path).
+		updateNode({ id: a.id, whole_data: before, parent_id: mdp.id });
+		expect(getNode(a.id)).toMatchObject({ parent_id: mdp.id, phase_assignment: 'C' });
+	});
+
+	it('a copy follows its new circuit number, not the original phase pick', async () => {
+		const { mdp, a } = await buildWyeTree();
+		changePhaseAssignment(a.id, 'C');
+		const [copy] = await copyAndAddNodesById(a.id, 1);
+		expect(copy!.parent_id).toBe(mdp.id);
+		expect(copy!.phase_assignment).toBeUndefined();
+		expect(getNode(a.id)!.phase_assignment).toBe('C');
+	});
+
+	it('rebalances several circuits in one write', async () => {
+		const { mdp, a, b, c } = await buildWyeTree();
+		changePhaseAssignments([
+			[a.id, 'B'],
+			[b.id, 'C'],
+			[c.id, 'A']
+		]);
+		const phases = new Map(getComputedLoads(mdp.id).map((l) => [l.id, l.phase]));
+		expect([phases.get(a.id), phases.get(b.id), phases.get(c.id)]).toEqual(['B', 'C', 'A']);
+	});
+
+	describe('voltage drop, PEC 2017 App. D Ex. D15 (k = 1.732 for three-phase)', () => {
+		it('(a) 295 A over 15.2 m of 250 mm² in steel conduit → 1.428 V', async () => {
+			const root = await wyeProject();
+			const feeder = addNode({
+				parent_id: root,
+				load_data: load(1, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '295', 15.2)
+			})!;
+			// D15 uses √(R² + X²) of Table 10.1.1.9: 0.029 Ω and 0.048 Ω per 305 m.
+			overrideField({ node_id: feeder.id, field_data: Math.hypot(0.029, 0.048), field_type: 'z' });
+			const [drop] = getComputedVoltageDrops();
+			expect(drop?.current).toBe(295);
+			// heda rounds the run impedance to 4 decimals (0.0028 Ω), so 1.4306 V vs the book's 1.428 V.
+			expect(drop?.voltage_per_segment).toBeCloseTo(1.428, 2);
+			expect(drop?.percent_voltage_drop).toBeCloseTo((drop!.voltage_per_segment / 400) * 100, 4);
+		});
+
+		it('(b) 20 A over 30.5 m of 5.5 mm² in steel conduit → 4.163 V', async () => {
+			const root = await wyeProject();
+			const motor = addNode({
+				parent_id: root,
+				load_data: load(1, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '20', 30.5)
+			})!;
+			overrideField({ node_id: motor.id, field_data: Math.hypot(1.2, 0.063), field_type: 'z' });
+			const [drop] = getComputedVoltageDrops();
+			expect(drop?.voltage_per_segment).toBeCloseTo(4.163, 2);
+		});
+
+		it('carries the percent drop of a 400 V feeder into a 230 V branch', async () => {
+			const { mdp, a } = await buildWyeTree();
+			const drops = new Map(getComputedVoltageDrops().map((d) => [d.id, d]));
+			const feeder = drops.get(mdp.id)!;
+			const branch = drops.get(a.id)!;
+			expect(feeder.voltage_at_receiving_end).toBeCloseTo(400 - feeder.voltage_at_end_circuit, 10);
+			// Branch end = feeder drop rescaled to 230 V + the branch's own 2·I·Z.
+			expect(branch.voltage_at_end_circuit).toBeCloseTo(
+				(feeder.voltage_at_end_circuit / 400) * 230 + branch.voltage_per_segment,
+				4
+			);
+			expect(branch.percent_voltage_drop).toBeCloseTo(
+				feeder.percent_voltage_drop + (branch.voltage_per_segment / 230) * 100,
+				3
+			);
+		});
 	});
 });
 

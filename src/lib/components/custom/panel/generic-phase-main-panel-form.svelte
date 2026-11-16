@@ -26,11 +26,12 @@
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
-	import { PanelPhaseField, PanelTypeField } from './(components)/index.js';
+	import { PanelPhaseField } from './(components)/index.js';
 	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
-	import { checkNodeExists } from '#lib/db/queries/index.js';
+	import { checkNodeExists, getNode } from '#lib/db/queries/index.js';
+	import { supplyError } from '#lib/utils/computations/index.js';
 	import type { Node } from '#lib/types/db.js';
 	import type { TerminalTemperature } from '#lib/types/load.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
@@ -113,6 +114,17 @@
 				return;
 			}
 
+			const supply_error = supplyError({
+				node: { node_type: 'panel', panel_data: data },
+				parent: getNode(selected_parent_id || parent_id),
+				children: node_to_edit?.child_ids.flatMap((child_id) => getNode(child_id) ?? [])
+			});
+			if (supply_error) {
+				toast.error(supply_error);
+				submitting = false;
+				return;
+			}
+
 			switch (action) {
 				case 'add': {
 					const added_node = addNode({ parent_id, panel_data: data });
@@ -187,12 +199,8 @@
 		</div>
 
 		<div class="flex flex-col gap-2.5">
-			{#if main_phase !== default_phases.ONE_PHASE}
-				<PanelTypeField {form} />
-				<PanelPhaseField {form} {main_phase} />
-			{:else}
-				<PanelPhaseField {form} {main_phase} />
-			{/if}
+			<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
+			<PanelPhaseField {form} {main_phase} />
 			<AmbientTempField {form} />
 
 			<NumberField

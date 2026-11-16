@@ -1,8 +1,14 @@
 import { beforeAll, describe, expect, test } from 'vitest';
 import { STANDARD_TERMINAL_TEMPERATURE, default_phases } from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
-import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
-import { getChildNodesByParentId } from '#lib/db/queries/index.js';
+import {
+	addNode,
+	changePhaseAssignments,
+	createProject,
+	resetData
+} from '#lib/db/mutations/index.js';
+import { getChildNodesByParentId, getNode } from '#lib/db/queries/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { UndoRedoState } from './undo-redo.svelte.js';
 
 beforeAll(async () => {
@@ -38,6 +44,53 @@ describe('UndoRedoState', () => {
 
 		undo_redo_state.undo();
 		expect(getChildNodesByParentId(root)).toHaveLength(1);
+	});
+
+	test('undoes and redoes a rebalance of several circuits as one step', async () => {
+		resetData();
+		const undo_redo_state = new UndoRedoState();
+		const created = await createProject('Wye', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.THREE_PHASE_WYE
+		});
+		const root = created!.root_node_id;
+		const [a, b] = [1, 3].map((circuit_number) =>
+			addNode({
+				parent_id: root,
+				load_data: {
+					load_type: 'LIGHTING_LOAD',
+					quantity: 1,
+					varies: '100',
+					load_description: `L${circuit_number}`,
+					continuous: false,
+					circuit_number,
+					length: 10,
+					ambient_temperature: 30,
+					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+					config_preference: 'CUSTOM'
+				} as never
+			})!
+		);
+		const previous = [getNode(a!.id)!, getNode(b!.id)!];
+		changePhaseAssignments([
+			[a!.id, 'C'],
+			[b!.id, 'C']
+		]);
+		undo_redo_state.setActionToUndo({
+			action: 'batch_update',
+			batch_data: previous.map((node) => ({ data: node as unknown as PhaseLoadSchedule }))
+		});
+
+		await undo_redo_state.undo();
+		expect([getNode(a!.id)!.phase_assignment, getNode(b!.id)!.phase_assignment]).toEqual([
+			undefined,
+			undefined
+		]);
+		await undo_redo_state.redo();
+		expect([getNode(a!.id)!.phase_assignment, getNode(b!.id)!.phase_assignment]).toEqual([
+			'C',
+			'C'
+		]);
 	});
 
 	test('a save only clears the unsaved flag if no edit landed after its snapshot', () => {

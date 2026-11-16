@@ -18,6 +18,7 @@
 	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import type { Phase } from '#lib/types/phase.js';
+	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
 	import { cn } from '#lib/utils/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { getNode } from '#lib/db/queries/index.js';
@@ -34,11 +35,11 @@
 		panel_to_edit
 	}: Props = $props();
 
-	const phase = $derived(highest_unit.phase);
-
 	const parent_node = $derived(
 		panel_to_edit.parent_id ? getNode(panel_to_edit.parent_id) : undefined
 	);
+	// What the parent feeds: the project's supply at the root, else the parent panel's phase.
+	const phase = $derived(supplyPhaseOf(parent_node) ?? highest_unit.phase);
 	let selected_parent = $state<{ name: string; id: string } | null>(null);
 	const parent_display = $derived(
 		selected_parent ??

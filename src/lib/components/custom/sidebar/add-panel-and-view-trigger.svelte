@@ -21,6 +21,7 @@
 	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import type { Phase } from '#lib/types/phase.js';
+	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
@@ -36,8 +37,9 @@
 		latest_circuit_node
 	}: Props = $props();
 
-	const phase = $derived(highest_unit.phase);
 	const parent_node = $derived(getNode(parent_id));
+	// What the parent feeds: the project's supply at the root, else the parent panel's phase.
+	const phase = $derived(supplyPhaseOf(parent_node) ?? highest_unit.phase);
 
 	function handleClick() {
 		setTimeout(() => {

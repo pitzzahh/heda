@@ -91,4 +91,44 @@ describe('migrateFileExport', () => {
 		expect(migrated.nodes[1].panel_data?.phase).toBe('future_phase');
 		expect(migrated.nodes[2].load_data?.load_type).toBe('future_load');
 	});
+
+	it('rewrites untouched single-phase defaults in a 3P-Y file', () => {
+		const file_export = createFileExport();
+		file_export.nodes[0].highest_unit_form!.phase = '3P-Y';
+		for (const node of file_export.nodes.slice(1)) {
+			node.pole = '2';
+			node.conductor_qty = 2;
+		}
+		const migrated = migrateFileExport(file_export);
+		// LP-1 is a 3P-Y panel: 3-pole, 3 phase + neutral; the lighting load is 1P line-to-neutral.
+		expect([migrated.nodes[1].pole, migrated.nodes[1].conductor_qty]).toEqual(['3', 4]);
+		expect([migrated.nodes[2].pole, migrated.nodes[2].conductor_qty]).toEqual(['1', 2]);
+		expect(migrated.nodes[0].pole).toBeUndefined();
+	});
+
+	it('rewrites 3P-Y defaults only once, so a later 2-pole pick survives reopening', () => {
+		const file_export = createFileExport();
+		file_export.nodes[0].highest_unit_form!.phase = default_phases.THREE_PHASE_WYE;
+		const migrated = migrateFileExport(file_export);
+		expect(migrated.nodes[0].highest_unit_form?.wye_circuit_defaults).toBe(true);
+
+		// The user then picks 2-pole, 2 wires, saves and reopens.
+		migrated.nodes[2].pole = '2';
+		migrated.nodes[2].conductor_qty = 2;
+		const reopened = migrateFileExport(migrated);
+		expect([reopened.nodes[2].pole, reopened.nodes[2].conductor_qty]).toEqual(['2', 2]);
+	});
+
+	it('keeps poles a user changed in a 3P-Y file, and single-phase files as they are', () => {
+		const wye = createFileExport();
+		wye.nodes[0].highest_unit_form!.phase = default_phases.THREE_PHASE_WYE;
+		wye.nodes[2].pole = '2';
+		wye.nodes[2].conductor_qty = 3;
+		expect(migrateFileExport(wye).nodes[2].pole).toBe('2');
+
+		const single = createFileExport();
+		single.nodes[2].pole = '2';
+		single.nodes[2].conductor_qty = 2;
+		expect(migrateFileExport(single).nodes[2].pole).toBe('2');
+	});
 });

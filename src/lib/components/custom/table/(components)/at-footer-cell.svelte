@@ -15,10 +15,10 @@
 
 <Tooltip.Root>
 	<Tooltip.Trigger>
-		<p class={cn('flex items-center gap-[7px]', has_greater_child_at && 'text-destructive')}>
+		<p class={cn('flex items-center gap-1.75', has_greater_child_at && 'text-destructive')}>
 			{at}
 			<InfoIcon
-				class={cn('size-[14px]', {
+				class={cn('size-3.5', {
 					hidden: !has_greater_child_at
 				})}
 			/>

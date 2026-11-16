@@ -210,7 +210,7 @@
 	></div>
 	<div
 		aria-hidden="true"
-		class="pointer-events-none absolute -top-48 left-[12%] h-128 w-128 rounded-full bg-primary/10 blur-3xl"
+		class="pointer-events-none absolute -top-48 left-[12%] h-128 w-lg rounded-full bg-primary/10 blur-3xl"
 	></div>
 
 	<header
@@ -248,7 +248,7 @@
 			</p>
 
 			<h1
-				class="mt-5 text-[clamp(5.5rem,17vw,11.5rem)] leading-[0.82] font-extrabold tracking-[-0.05em] select-none"
+				class="mt-5 text-[clamp(5.5rem,17vw,11.5rem)] leading-[0.82] font-extrabold tracking-tighter select-none"
 			>
 				HEDA<span class="text-primary">.</span>
 			</h1>
@@ -277,7 +277,7 @@
 						<FolderOpenIcon class="size-5" />
 						Load File
 					</Dialog.Trigger>
-					<Dialog.Content class="sm:max-w-[34rem]">
+					<Dialog.Content class="sm:max-w-136">
 						<Dialog.Header>
 							<Dialog.Title>Load a project</Dialog.Title>
 							<Dialog.Description>
@@ -373,7 +373,7 @@
 								{/each}
 							{:else}
 								<Alert.Root variant="info" class="flex w-full items-center">
-									<WarningCircleIcon class="size-4 -translate-y-[0.1rem]" />
+									<WarningCircleIcon class="size-4 translate-y-[-0.1rem]" />
 									<Alert.Description>No recent projects found</Alert.Description>
 								</Alert.Root>
 							{/if}
@@ -394,7 +394,7 @@
 
 		<div class="hidden lg:col-span-5 lg:block">
 			<figure
-				class="relative rounded-3xl border border-border bg-card/70 p-8 shadow-[var(--surface-shadow)] backdrop-blur-xs"
+				class="relative rounded-3xl border border-border bg-card/70 p-8 shadow-(--surface-shadow) backdrop-blur-xs"
 			>
 				<!-- Corner ticks, drawing-sheet style -->
 				<span

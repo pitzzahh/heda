@@ -39,10 +39,8 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'voltage',
 		header: 'VOLTAGE (V)',
-		footer: (props) => {
-			// render the voltage of first index since all voltage cells are the same
-			return props.table.getFilteredRowModel().rows.at(0)?.original.voltage;
-		}
+		// The panel's own voltage: on a 3P-Y panel its rows mix 230 V and 400 V circuits.
+		footer: () => current_node.voltage
 	},
 	{
 		accessorKey: 'va',
@@ -111,7 +109,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				cell: (info) => {
 					const data = info.row.original;
 					return renderComponent(PoleDropdown, {
-						current_pole: data.pole as '1' | '2',
+						current_pole: data.pole as '1' | '2' | '3',
 						node: data
 					});
 				},
@@ -119,7 +117,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 				header: () => 'Pole',
 				footer: () => {
 					return renderComponent(PoleDropdown, {
-						current_pole: current_node.pole as '1' | '2',
+						current_pole: current_node.pole as '1' | '2' | '3',
 						node: current_node
 					});
 				}

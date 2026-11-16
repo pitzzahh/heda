@@ -58,7 +58,11 @@
 </script>
 
 <div data-sidebar="menu-item" class="group/menu-item relative w-full">
-	<div use:draggable={{ container: node.id, dragData: node }}>
+	<!-- The row is a button, and sveltednd never drags from inside one unless a handle is set. -->
+	<div
+		data-tree-drag
+		use:draggable={{ container: node.id, dragData: node, handle: '[data-tree-drag]' }}
+	>
 		<Sidebar.MenuButton
 			class="flex w-full items-center transition-colors hover:bg-accent active:bg-accent/70 data-[active=true]:bg-transparent"
 			onclick={() => {

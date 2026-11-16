@@ -2,6 +2,8 @@
 // transform the icons we use. Names keep the `Icon` postfix.
 export { default as ArrowLineRightIcon } from 'phosphor-svelte/lib/ArrowLineRightIcon';
 export { default as ArrowUUpLeftIcon } from 'phosphor-svelte/lib/ArrowUUpLeftIcon';
+export { default as ArrowCounterClockwiseIcon } from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon';
+export { default as ScalesIcon } from 'phosphor-svelte/lib/ScalesIcon';
 export { default as ArrowUUpRightIcon } from 'phosphor-svelte/lib/ArrowUUpRightIcon';
 export { default as ArrowsCounterClockwiseIcon } from 'phosphor-svelte/lib/ArrowsCounterClockwiseIcon';
 export { default as CaretDownIcon } from 'phosphor-svelte/lib/CaretDownIcon';

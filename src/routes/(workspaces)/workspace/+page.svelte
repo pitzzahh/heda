@@ -9,7 +9,7 @@
 
 <div class="grid h-full w-full place-content-center p-6">
 	<div
-		class="grid w-full max-w-md place-items-center gap-5 rounded-3xl border border-dashed border-border bg-card/60 px-8 py-10 text-center shadow-[var(--surface-shadow)]"
+		class="grid w-full max-w-md place-items-center gap-5 rounded-3xl border border-dashed border-border bg-card/60 px-8 py-10 text-center shadow-(--surface-shadow)"
 	>
 		<div class="relative">
 			<div

@@ -236,18 +236,19 @@
 											'h-11 w-full justify-between px-4 font-medium hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary'
 									}),
 									{
-										'cursor-not-allowed opacity-60': phase_option.value !== default_phases.ONE_PHASE
+										'cursor-not-allowed opacity-60':
+											phase_option.value === default_phases.THREE_PHASE_DELTA
 									}
 								)}
 							>
-								<!-- Currently only single-phase supply is supported -->
+								<!-- 1P and 3P-Y (400Y/230 V) are supported; delta is not yet -->
 								<RadioGroup.Item
 									value={phase_option.value}
-									disabled={phase_option.value !== default_phases.ONE_PHASE}
+									disabled={phase_option.value === default_phases.THREE_PHASE_DELTA}
 									class="sr-only"
 								/>
 								<span>{phase_option.label}</span>
-								{#if phase_option.value !== default_phases.ONE_PHASE}
+								{#if phase_option.value === default_phases.THREE_PHASE_DELTA}
 									<span
 										class="text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase"
 										>Soon</span
