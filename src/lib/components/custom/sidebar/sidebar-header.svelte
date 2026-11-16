@@ -7,8 +7,8 @@
 		LockKeyIcon,
 		FloppyDiskIcon,
 		TableIcon
-	} from '#lib/assets/icons/index.js';
-	import type { Node } from '#lib/types/db/index.js';
+	} from '#lib/assets/icons.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		root_node: Node;
@@ -22,7 +22,7 @@
 	import { toast } from 'svelte-sonner';
 	import { UndoRedoButtons } from './(components)/index.js';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
-	import type { ButtonState } from '#lib/types/misc/index.js';
+	import type { ButtonState } from '#lib/types/misc.js';
 	import {
 		allowProjectFolder,
 		saveCurrentProject,

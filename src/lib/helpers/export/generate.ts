@@ -1,7 +1,7 @@
-import type { Node } from '#lib/types/db/index.js';
-import type { ExcelExportType } from '#lib/types/misc/index.js';
-import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
-import { convertToNormalText, getOptionLabel } from '#lib/utils/format/index.js';
+import type { Node } from '#lib/types/db.js';
+import type { ExcelExportType } from '#lib/types/misc.js';
+import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
+import { convertToNormalText, getOptionLabel } from '#lib/utils/format.js';
 import { processOnePhaseExcelPanelBoardSchedule } from './panel-board-sheet.js';
 import { processOnePhaseVoltageDrop } from './voltage-drop-sheet.js';
 

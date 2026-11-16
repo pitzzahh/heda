@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 	}
 }));
 
-import { forwardConsoleToLog, formatLogArg } from './index.js';
+import { forwardConsoleToLog, formatLogArg } from './log.js';
 
 afterEach(() => {
 	vi.restoreAllMocks();

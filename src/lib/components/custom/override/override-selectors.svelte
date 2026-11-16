@@ -4,7 +4,7 @@
 		AMPACITY_TO_CONDUCTOR_SIZE,
 		AMPERE_TRIP_TO_COPPER,
 		CONDUIT_TABLE
-	} from '#lib/constants/index.js';
+	} from '#lib/constants.js';
 
 	interface Props {
 		node_id: string;
@@ -53,7 +53,7 @@
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	let {
 		node_id,
 		closeDialog,

@@ -8,14 +8,14 @@
 
 <script lang="ts">
 	import { Field } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import { DEFAULT_THREE_PHASE_TYPES_OPTIONS } from '#lib/constants/index.js';
-	import { convertToNormalText } from '#lib/utils/format/index.js';
+	import { DEFAULT_THREE_PHASE_TYPES_OPTIONS } from '#lib/constants.js';
+	import { convertToNormalText } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';

@@ -12,7 +12,7 @@
 </script>
 
 <script lang="ts">
-	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '#lib/components/ui/separator/index.js';
@@ -28,29 +28,29 @@
 		load_type_to_varies_label,
 		default_hp_current_relationship,
 		load_type_to_quantity_label
-	} from '#lib/constants/index.js';
+	} from '#lib/constants.js';
 	import {
 		AmbientTempField,
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
 	import { LoadDescriptionField, LoadTypeField, VariesField } from './(components)/index.js';
-	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load/index.js';
-	import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
+	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load.js';
+	import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 	import { page } from '$app/state';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
-	import { convertToNormalText } from '#lib/utils/format/index.js';
-	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import { convertToNormalText } from '#lib/utils/format.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
+	import type { Node } from '#lib/types/db.js';
 	import type {
 		LoadType,
 		QuantityLabel,
 		TerminalTemperature,
 		VariesLabel
-	} from '#lib/types/load/index.js';
+	} from '#lib/types/load.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {

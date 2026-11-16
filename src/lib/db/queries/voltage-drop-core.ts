@@ -1,8 +1,8 @@
 import { computeNodeLoad, type LoadComputationContext } from './compute.js';
 import { buildChildrenByParent } from './loads-core.js';
-import { ALTERNATING_CURRENT_REACTANCE } from '#lib/constants/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import { ALTERNATING_CURRENT_REACTANCE } from '#lib/constants.js';
+import type { Node } from '#lib/types/db.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 /**
  * Pure, DB-free voltage-drop computation. Safe to run in a worker or on the

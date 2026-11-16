@@ -3,7 +3,7 @@ import {
 	DEFAULT_PHASES,
 	DEFAULT_TERMINAL_TEMPERATURES,
 	STANDARD_TERMINAL_TEMPERATURE
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 
 export const PHASE_FIELD = v.picklist(
 	DEFAULT_PHASES.map((option) => option.value),

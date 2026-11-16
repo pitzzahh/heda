@@ -1,4 +1,4 @@
-import type { LabelValuePair, LabelKeyPair } from '#lib/types/generic/index.js';
+import type { LabelValuePair, LabelKeyPair } from '#lib/types/generic.js';
 
 export function toLabelValueArray<T extends Record<string, string>>(data: T): LabelValuePair<T>[] {
 	return Object.keys(data).map((key) => ({

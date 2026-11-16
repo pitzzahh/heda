@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import { type ColumnDef } from '@tanstack/table-core';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	type DataTableProps<TData, TValue> = {
 		columns: ColumnDef<TData, TValue>[];
@@ -25,7 +25,7 @@
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { getTableStyle } from '#lib/components/ui/table/context.js';
 	import { table as tableVariants } from '#lib/components/ui/table/variants.js';
-	import { TableIcon } from '#lib/assets/icons/index.js';
+	import { TableIcon } from '#lib/assets/icons.js';
 	import { cn } from '#lib/utils/index.js';
 	import TableActionDialogs from './table-action-dialogs.svelte';
 	import { TableActionsState, setTableActions } from './table-actions.svelte.js';

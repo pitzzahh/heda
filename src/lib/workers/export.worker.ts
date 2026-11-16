@@ -1,4 +1,4 @@
-import type { ExcelExportType } from '#lib/types/misc/index.js';
+import type { ExcelExportType } from '#lib/types/misc.js';
 
 self.onmessage = async (event: MessageEvent) => {
 	const { id, type } = event.data ?? {};

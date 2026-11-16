@@ -25,7 +25,7 @@
 </script>
 
 <script lang="ts">
-	import { GearIcon, MagicWandIcon, MonitorIcon, RssIcon } from '#lib/assets/icons/index.js';
+	import { GearIcon, MagicWandIcon, MonitorIcon, RssIcon } from '#lib/assets/icons.js';
 	import { PersistedState } from 'runed';
 	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';

@@ -10,7 +10,7 @@
 
 <script lang="ts">
 	import { Field, setInput } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
@@ -18,7 +18,7 @@
 	import * as Command from '#lib/components/ui/command/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import { DEFAULT_LOADS } from '#lib/constants/index.js';
+	import { DEFAULT_LOADS } from '#lib/constants.js';
 	import { cn } from '#lib/utils/index.js';
 	import { toast } from 'svelte-sonner';
 	import { useId } from 'bits-ui';

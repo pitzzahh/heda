@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from 'vitest';
-import { STANDARD_TERMINAL_TEMPERATURE, default_phases } from '#lib/constants/index.js';
+import { STANDARD_TERMINAL_TEMPERATURE, default_phases } from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
 import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
 import { getChildNodesByParentId } from '#lib/db/queries/index.js';

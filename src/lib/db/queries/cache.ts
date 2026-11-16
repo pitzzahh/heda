@@ -1,6 +1,6 @@
-import type { NodeByIdResult } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import type { NodeByIdResult } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 // Per-node results that depend only on the node and its descendants. They
 // survive across revisions; the load snapshot evicts changed nodes and their

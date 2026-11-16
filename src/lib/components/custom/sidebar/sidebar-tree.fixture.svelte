@@ -17,7 +17,7 @@
 		setCollapsiblesState
 	} from '#lib/hooks/node-collapsibles.svelte.js';
 	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 	import SidebarTree from './sidebar-tree.svelte';
 
 	settings_state = setSettingsState('light');

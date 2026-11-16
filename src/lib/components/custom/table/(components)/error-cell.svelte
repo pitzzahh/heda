@@ -6,7 +6,7 @@
 </script>
 
 <script lang="ts">
-	import { InfoIcon } from '#lib/assets/icons/index.js';
+	import { InfoIcon } from '#lib/assets/icons.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 
 	let { trigger_value, tooltip_content }: Props = $props();

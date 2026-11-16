@@ -1,5 +1,5 @@
 import type ExcelJS from 'exceljs';
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import {
 	buildChildrenByParent,
 	getComputedLoadsFromNodes,
@@ -7,8 +7,8 @@ import {
 	getNodeByIdFromNodes
 } from '#lib/db/queries/loads-core.js';
 import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
-import { DEFAULT_PHASES } from '#lib/constants/index.js';
-import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format/index.js';
+import { DEFAULT_PHASES } from '#lib/constants.js';
+import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
 import type { ExportProcessResult, Header } from './types.js';
 
 export async function processOnePhaseExcelPanelBoardSchedule(

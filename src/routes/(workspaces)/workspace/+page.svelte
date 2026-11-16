@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LightningAIcon, TableIcon } from '#lib/assets/icons/index.js';
+	import { LightningAIcon, TableIcon } from '#lib/assets/icons.js';
 
 	const shortcuts = [
 		{ keys: ['Ctrl', 'S'], label: 'Save the project' },

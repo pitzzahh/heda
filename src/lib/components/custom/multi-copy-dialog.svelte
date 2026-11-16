@@ -1,5 +1,5 @@
 <script module lang="ts">
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 	type Props = { open_dialog: boolean; node_name: string; node_id: string };
 
@@ -14,7 +14,7 @@
 </script>
 
 <script lang="ts">
-	import { MinusIcon, PlusIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { MinusIcon, PlusIcon, WarningCircleIcon } from '#lib/assets/icons.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';

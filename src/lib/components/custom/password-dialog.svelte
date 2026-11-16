@@ -14,7 +14,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { cn } from '#lib/utils/index.js';
-	import { LockKeyIcon, WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { LockKeyIcon, WarningCircleIcon } from '#lib/assets/icons.js';
 
 	let { open = $bindable(false), mode, error = null, busy = false, onSubmit }: Props = $props();
 

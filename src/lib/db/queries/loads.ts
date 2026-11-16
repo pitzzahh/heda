@@ -7,8 +7,8 @@ import {
 	type LoadSnapshot
 } from './snapshot.js';
 import { computeNodeLoad, type LoadComputationContext } from './compute.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export function getChildNodesByParentId(parent_id: string): Node[] {
 	// O(1) after one snapshot build per revision; the array keeps its identity

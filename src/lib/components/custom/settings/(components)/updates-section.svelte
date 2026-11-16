@@ -12,10 +12,10 @@
 </script>
 
 <script lang="ts">
-	import { CircleNotchIcon, PackageIcon } from '#lib/assets/icons/index.js';
+	import { CircleNotchIcon, PackageIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
-	import { checkForUpdates, installUpdate } from '#lib/helpers/update/index.js';
+	import { checkForUpdates, installUpdate } from '#lib/helpers/update.js';
 	import * as pj from '../../../../../../package.json';
 	import { cn } from '#lib/utils/index.js';
 	import { toast } from 'svelte-sonner';

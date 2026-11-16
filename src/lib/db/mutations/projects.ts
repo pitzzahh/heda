@@ -1,5 +1,5 @@
 import { afterWrite, clearCollection, getDatabase, initializeDatabase } from '../index.js';
-import type { Node, Project } from '#lib/types/db/index.js';
+import type { Node, Project } from '#lib/types/db.js';
 import { removeNode } from './nodes.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
 

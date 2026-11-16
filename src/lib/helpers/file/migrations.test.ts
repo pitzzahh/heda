@@ -3,8 +3,8 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
-import type { FileExport } from '#lib/types/main/index.js';
+} from '#lib/constants.js';
+import type { FileExport } from '#lib/types/main.js';
 import { migrateFileExport } from './migrations.js';
 
 function createFileExport(): FileExport {

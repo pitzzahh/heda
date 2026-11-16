@@ -1,6 +1,6 @@
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import type * as v from 'valibot';
-import type { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
+import type { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
 
 export type GenericPhasePanelSchema = v.InferOutput<typeof GENERIC_PHASE_PANEL_SCHEMA>;
 

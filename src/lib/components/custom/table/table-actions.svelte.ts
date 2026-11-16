@@ -1,6 +1,6 @@
 import { createContext } from 'svelte';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 export type TableActionNode = VoltageDrop | PhaseLoadSchedule;
 

@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import type { Node, Project } from '#lib/types/db/index.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { Node, Project } from '#lib/types/db.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import type { DragDropState } from '@thisux/sveltednd';
 
 	interface Props {
@@ -25,7 +25,7 @@
 		SidebarIcon,
 		SquaresFourIcon,
 		TrashIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 	import * as Collapsible from '#lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
@@ -45,7 +45,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
-	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import { draggable, droppable } from '@thisux/sveltednd';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '#lib/utils/index.js';

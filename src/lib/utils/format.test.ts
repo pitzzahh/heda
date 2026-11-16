@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertToNormalText, formatFraction, getOptionLabel } from './index.js';
+import { convertToNormalText, formatFraction, getOptionLabel } from './format.js';
 
 describe('formatFraction', () => {
 	it('renders mixed fractions', () => {

@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { createLeftMostBaseColumns, createRightMostBaseColumns } from '../base-columns.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import { ConductorSetsCell, InsulationsDropdown, ErrorCell } from '../(components)/index.js';
 

@@ -3,7 +3,7 @@ import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const { installUpdate } = vi.hoisted(() => ({ installUpdate: vi.fn() }));
-vi.mock('#lib/helpers/update/index.js', () => ({ checkForUpdates: vi.fn(), installUpdate }));
+vi.mock('#lib/helpers/update.js', () => ({ checkForUpdates: vi.fn(), installUpdate }));
 vi.mock('svelte-sonner', () => ({ toast: { warning: vi.fn(), info: vi.fn(), success: vi.fn() } }));
 
 import UpdatesSection from './updates-section.svelte';

@@ -1,13 +1,13 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 </script>
 
 <script lang="ts">
 	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
-	import { DEFAULT_PHASES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
@@ -19,9 +19,9 @@
 	} from '#lib/db/queries/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
-	import { LightningAIcon } from '#lib/assets/icons/index.js';
+	import { LightningAIcon } from '#lib/assets/icons.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
-	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';

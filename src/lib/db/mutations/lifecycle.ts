@@ -5,8 +5,8 @@ import {
 	initializeDatabase,
 	insertIntoCollection
 } from '../index.js';
-import type { Project } from '#lib/types/db/index.js';
-import type { FileExport } from '#lib/types/main/index.js';
+import type { Project } from '#lib/types/db.js';
+import type { FileExport } from '#lib/types/main.js';
 import { clearQueryCache, warmComputedLoads } from '../queries/index.js';
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';

@@ -3,15 +3,15 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 import * as v from 'valibot';
 import { HIGHEST_UNIT_SCHEMA } from './index.js';
 import {
 	GENERIC_PHASE_MAIN_LOAD_SCHEMA,
 	QUANTITY_LABEL_FIELD,
 	VARIES_LABEL_FIELD
-} from './load/index.js';
-import { GENERIC_PHASE_PANEL_SCHEMA } from './panel/index.js';
+} from './load.js';
+import { GENERIC_PHASE_PANEL_SCHEMA } from './panel.js';
 import { NODE_DOC_SCHEMA, PROJECT_DOC_SCHEMA } from './db.js';
 import { SETTINGS_SCHEMA } from './settings.js';
 import { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from './misc.js';

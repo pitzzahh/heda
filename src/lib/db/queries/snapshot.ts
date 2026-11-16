@@ -2,7 +2,7 @@ import { untrack } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 import { getDatabase, onSessionWrite } from '../index.js';
 import { clearQueryCache, evictNodeFromCache } from './cache.js';
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 
 export type LoadSnapshot = {
 	nodes: Node[];

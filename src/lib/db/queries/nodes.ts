@@ -9,13 +9,8 @@ import {
 	getEgcSize
 } from '#lib/utils/computations/index.js';
 import { getDatabase } from '../index.js';
-import type { LoadType } from '#lib/types/load/index.js';
-import type {
-	ComputeCommonProperties,
-	Node,
-	NodeByIdResult,
-	Project
-} from '#lib/types/db/index.js';
+import type { LoadType } from '#lib/types/load.js';
+import type { ComputeCommonProperties, Node, NodeByIdResult, Project } from '#lib/types/db.js';
 
 export function getCurrentProject(project_id?: string): Project | undefined {
 	return getDatabase().projects.findOne(project_id ? { id: project_id } : {}) as

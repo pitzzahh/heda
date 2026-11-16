@@ -1,6 +1,6 @@
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 
 export const entries = () => {
 	return [{ id: 'some-id' }, { id: 'other-id' }];

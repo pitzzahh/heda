@@ -4,10 +4,10 @@ import {
 	removeFromCollection,
 	replaceInCollection
 } from '../index.js';
-import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { peekSnapshot, type LoadSnapshot } from '../queries/snapshot.js';
 import { computed_loads, evictNodeFromCache } from '../queries/cache.js';
 import { computeLoadsInSlices, nextTask } from '../queries/loads.js';

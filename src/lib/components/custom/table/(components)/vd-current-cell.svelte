@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import { RepeatIcon } from '#lib/assets/icons/index.js';
-	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+	import { RepeatIcon } from '#lib/assets/icons.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 	interface Props {
 		current: number;

@@ -3,7 +3,7 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 import { Collection, DefaultDataAdapter } from '@signaldb/core';
 import type { StorageAdapter } from '@signaldb/core';
 import {
@@ -46,8 +46,8 @@ import { computeNodeLoad } from './queries/compute.js';
 import { computed_loads } from './queries/cache.js';
 import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
 import { loadSnapshot } from './queries/snapshot.js';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
-import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
 
 beforeAll(async () => {
 	await initializeDatabase();

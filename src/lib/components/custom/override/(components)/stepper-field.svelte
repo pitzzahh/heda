@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-	import { CaretDownIcon, CaretUpIcon } from '#lib/assets/icons/index.js';
+	import { CaretDownIcon, CaretUpIcon } from '#lib/assets/icons.js';
 	import RemoveOverrideButton from './remove-override-button.svelte';
 
 	let { selected_value, is_overridden, on_decrement, on_increment, on_remove_override }: Props =

@@ -1,6 +1,6 @@
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import { toast } from 'svelte-sonner';
-import type { ExcelExportType } from '#lib/types/misc/index.js';
+import type { ExcelExportType } from '#lib/types/misc.js';
 import { generateWorkbookInWorker } from '#lib/workers/export-client.js';
 
 export { processOnePhaseExcelPanelBoardSchedule } from './panel-board-sheet.js';

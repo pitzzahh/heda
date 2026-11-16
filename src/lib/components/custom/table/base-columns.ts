@@ -1,6 +1,6 @@
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import type { ColumnDef } from '@tanstack/table-core';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import {
 	PoleDropdown,
 	LoadDescriptionCell,

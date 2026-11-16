@@ -8,7 +8,7 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 	import UndoRedoWrapper from '#lib/components/custom/undo-redo-wrapper.svelte';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
@@ -19,7 +19,7 @@
 		CheckCircleIcon,
 		LightningAIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 	import { cn } from '#lib/utils/index.js';
 
 	let { data, children } = $props();

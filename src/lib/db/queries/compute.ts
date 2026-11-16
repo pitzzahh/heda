@@ -6,9 +6,9 @@ import {
 	getConduitSize,
 	getEgcSize
 } from '#lib/utils/computations/index.js';
-import type { LoadType } from '#lib/types/load/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { LoadType } from '#lib/types/load.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export type LoadComputationContext = {
 	children_by_parent: Map<string, Node[]>;

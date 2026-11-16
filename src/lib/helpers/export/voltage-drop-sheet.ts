@@ -1,6 +1,6 @@
 import type ExcelJS from 'exceljs';
 import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import type { ExportProcessResult, Header } from './types.js';
 
 export async function processOnePhaseVoltageDrop(

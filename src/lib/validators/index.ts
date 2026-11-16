@@ -1,8 +1,8 @@
 import * as v from 'valibot';
 import { PASSWORD_FIELD, PHASE_FIELD } from './shared.js';
 
-export * from './load/index.js';
-export * from './panel/index.js';
+export * from './load.js';
+export * from './panel.js';
 export * from './db.js';
 export * from './misc.js';
 export * from './settings.js';

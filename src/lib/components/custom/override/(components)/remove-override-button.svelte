@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-	import { XIcon } from '#lib/assets/icons/index.js';
+	import { XIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 

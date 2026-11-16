@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	let fixture_node: Node | undefined;
 

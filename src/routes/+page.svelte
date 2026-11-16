@@ -9,7 +9,7 @@
 		PlusIcon,
 		TrashIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
@@ -30,7 +30,7 @@
 	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
 	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { PasswordDialog } from '#lib/components/custom/index.js';
-	import type { RecentProject } from '#lib/types/main/index.js';
+	import type { RecentProject } from '#lib/types/main.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Separator } from '#lib/components/ui/separator/index.js';

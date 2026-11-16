@@ -1,8 +1,8 @@
-import type { Node, Project } from '#lib/types/db/index.js';
+import type { Node, Project } from '#lib/types/db.js';
 import type { UndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 import type { Collapsibles } from '#lib/hooks/node-collapsibles.svelte.js';
 import type { SelectNodesToDelete } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { deleteProject, removeNode } from '#lib/db/mutations/index.js';
 
 export function deleteNodeAndRecordUndo(

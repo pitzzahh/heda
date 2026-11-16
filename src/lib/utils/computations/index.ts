@@ -7,8 +7,8 @@ import {
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
 	CONDUIT_TABLE
-} from '#lib/constants/index.js';
-import type { LoadType } from '#lib/types/load/index.js';
+} from '#lib/constants.js';
+import type { LoadType } from '#lib/types/load.js';
 
 // load types with the same formula or value
 const common_load_types = [

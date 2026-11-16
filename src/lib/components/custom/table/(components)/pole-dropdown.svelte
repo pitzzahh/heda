@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 	interface Props {
 		current_pole: '1' | '2';

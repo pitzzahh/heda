@@ -11,7 +11,7 @@
 <script lang="ts">
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
-	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 	import VdCurrentCell from './vd-current-cell.svelte';
 
 	fixture_state = setUndoRedoState();

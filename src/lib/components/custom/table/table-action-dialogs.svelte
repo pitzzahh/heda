@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		highest_unit?: NonNullable<Node['highest_unit_form']>;
@@ -13,8 +13,8 @@
 	import GenericPhaseMainLoadForm from '#lib/components/custom/load/generic-phase-main-load-form.svelte';
 	import { ConfirmationDialog, MultiCopyDialog } from '#lib/components/custom/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
-	import { DEFAULT_PHASES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 	import ParentPanelPopover from '#lib/components/custom/parent-panel-popover.svelte';
 	import { cn } from '#lib/utils/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
@@ -23,8 +23,8 @@
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { getTableActions } from './table-actions.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-	import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 	let { highest_unit, is_in_vd_table }: Props = $props();
 

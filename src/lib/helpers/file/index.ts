@@ -24,7 +24,7 @@ import {
 } from '#lib/db/session.js';
 import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 import { toast } from 'svelte-sonner';
-import type { FileExport, RecentProject } from '#lib/types/main/index.js';
+import type { FileExport, RecentProject } from '#lib/types/main.js';
 import { loadCurrentProject } from '#lib/db/mutations/index.js';
 import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';

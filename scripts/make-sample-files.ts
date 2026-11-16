@@ -24,11 +24,11 @@ import {
 } from '#lib/helpers/file/format.js';
 import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
-import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES } from '#lib/constants/index.js';
-import type { FileExport } from '#lib/types/main/index.js';
+import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES } from '#lib/constants.js';
+import type { FileExport } from '#lib/types/main.js';
 import type { LoadSpec, Overrides, PanelSpec, SampleSpec } from './sample-types.js';
 import { buildBusinessPark, buildCondominium } from './large-projects.js';
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 
 const LOAD_TYPES = new Set<string>(DEFAULT_LOAD_TYPES.map((option) => option.value));
 const PHASES = new Set<string>(DEFAULT_PHASES.map((option) => option.value));

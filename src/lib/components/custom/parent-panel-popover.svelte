@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';

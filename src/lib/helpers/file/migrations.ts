@@ -5,9 +5,9 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { FileExport } from '#lib/types/main/index.js';
+} from '#lib/constants.js';
+import type { Node } from '#lib/types/db.js';
+import type { FileExport } from '#lib/types/main.js';
 
 // Old files stored labels; normalize to canonical values on load.
 const LEGACY_PHASES: Record<string, string> = {

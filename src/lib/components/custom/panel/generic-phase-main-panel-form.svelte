@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
@@ -20,21 +20,21 @@
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { cn } from '#lib/utils/index.js';
-	import { default_phases } from '#lib/constants/index.js';
+	import { default_phases } from '#lib/constants.js';
 	import {
 		AmbientTempField,
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
 	import { PanelPhaseField, PanelTypeField } from './(components)/index.js';
-	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel/index.js';
-	import type { Phase } from '#lib/types/phase/index.js';
+	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
+	import type { Phase } from '#lib/types/phase.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
 	import { checkNodeExists } from '#lib/db/queries/index.js';
-	import type { Node } from '#lib/types/db/index.js';
-	import type { TerminalTemperature } from '#lib/types/load/index.js';
+	import type { Node } from '#lib/types/db.js';
+	import type { TerminalTemperature } from '#lib/types/load.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {

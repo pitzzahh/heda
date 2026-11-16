@@ -1,8 +1,8 @@
 <script lang="ts" module>
-	import { PlusIcon, DatabaseIcon } from '#lib/assets/icons/index.js';
+	import { PlusIcon, DatabaseIcon } from '#lib/assets/icons.js';
 	import type { ComponentProps } from 'svelte';
 	import type { Root as SidebarRoot } from '#lib/components/ui/sidebar/index.js';
-	import type { Project, Node } from '#lib/types/db/index.js';
+	import type { Project, Node } from '#lib/types/db.js';
 
 	type Props = ComponentProps<typeof SidebarRoot> & {
 		project?: Project;

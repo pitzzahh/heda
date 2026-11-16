@@ -1,12 +1,12 @@
 import * as v from 'valibot';
-import { DEFAULT_THREE_PHASE_TYPES_ENUMS } from '#lib/constants/index.js';
+import { DEFAULT_THREE_PHASE_TYPES_ENUMS } from '#lib/constants.js';
 import {
 	AMBIENT_TEMPERATURE_FIELD,
 	CIRCUIT_NUMBER_FIELD,
 	LENGTH_FIELD,
 	PHASE_FIELD,
 	TERMINAL_TEMPERATURE_FIELD
-} from '../shared.js';
+} from './shared.js';
 
 export const GENERIC_PHASE_PANEL_SCHEMA = v.object({
 	name: v.pipe(

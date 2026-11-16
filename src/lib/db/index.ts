@@ -6,7 +6,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { Stronghold } from '@tauri-apps/plugin-stronghold';
-import type { MyDatabaseCollections, Node, Project } from '#lib/types/db/index.js';
+import type { MyDatabaseCollections, Node, Project } from '#lib/types/db.js';
 import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security/index.js';
 import { getSessionPassword } from './session.js';
 

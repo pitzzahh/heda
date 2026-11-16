@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		node: Node;
@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { CopyIcon, PencilIcon, PlugChargingIcon, TrashIcon } from '#lib/assets/icons/index.js';
+	import { CopyIcon, PencilIcon, PlugChargingIcon, TrashIcon } from '#lib/assets/icons.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
 	import ConfirmationDialog from '#lib/components/custom/confirmation-dialog.svelte';

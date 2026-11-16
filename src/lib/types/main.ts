@@ -1,4 +1,4 @@
-import type { Project, Node } from '#lib/types/db/index.js';
+import type { Project, Node } from '#lib/types/db.js';
 import type * as v from 'valibot';
 import type { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
 

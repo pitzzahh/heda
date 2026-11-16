@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { DEFAULT_LOAD_TYPES, default_load_types, FIELD_VALIDATION } from '#lib/constants/index.js';
+import { DEFAULT_LOAD_TYPES, default_load_types, FIELD_VALIDATION } from '#lib/constants.js';
 import type { ObjectPathItem } from 'valibot';
 import {
 	AMBIENT_TEMPERATURE_FIELD,
@@ -9,7 +9,7 @@ import {
 	LOAD_DESCRIPTION_FIELD,
 	QUANTITY_FIELD,
 	TERMINAL_TEMPERATURE_FIELD
-} from '../shared.js';
+} from './shared.js';
 
 export const VARIES_LABEL_FIELD = v.picklist([
 	'Unit Wattage',

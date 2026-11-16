@@ -1,4 +1,4 @@
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';

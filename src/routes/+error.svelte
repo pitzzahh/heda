@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { heda_logo_for_dark, heda_logo_for_light } from '#lib/assets/index.js';
-	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { cn } from '#lib/utils/index.js';
 
 	let title = $state(`${page.status}: ${page.error?.message}`);

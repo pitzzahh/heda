@@ -11,7 +11,7 @@
 
 <script lang="ts">
 	import { Field } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
@@ -22,8 +22,8 @@
 	import {
 		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
 		default_hp_current_relationship
-	} from '#lib/constants/index.js';
-	import { formatFraction } from '#lib/utils/format/index.js';
+	} from '#lib/constants.js';
+	import { formatFraction } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';

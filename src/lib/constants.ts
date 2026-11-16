@@ -1,6 +1,6 @@
-import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load/index.js';
-import { getEnumValues, getEnumKeys } from '#lib/utils/enum/index.js';
-import { toLabelValueArray } from '#lib/utils/mapper/index.js';
+import type { DefaultLoad, LoadType, QuantityLabel, VariesLabel } from '#lib/types/load.js';
+import { getEnumValues, getEnumKeys } from '#lib/utils/enum.js';
+import { toLabelValueArray } from '#lib/utils/mapper.js';
 
 export const default_load_types = {
 	LIGHTING_LOAD: 'lighting_load',

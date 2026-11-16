@@ -8,7 +8,7 @@
 
 <script lang="ts">
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
-	import { CopyIcon, TrashIcon } from '#lib/assets/icons/index.js';
+	import { CopyIcon, TrashIcon } from '#lib/assets/icons.js';
 	import TreeActionsMenu from './tree-actions-menu.svelte';
 </script>
 

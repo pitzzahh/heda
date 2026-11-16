@@ -1,7 +1,7 @@
 import { untrack } from 'svelte';
 import { getState, setState } from '#lib/state/index.svelte.js';
 import { UNDO_REDO_STATE_CTX } from '#lib/state/constants.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import {
 	copyAndAddNodeById,
 	overrideField,

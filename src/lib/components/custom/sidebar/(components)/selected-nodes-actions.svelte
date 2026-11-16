@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { TrashIcon, XCircleIcon } from '#lib/assets/icons/index.js';
+	import { TrashIcon, XCircleIcon } from '#lib/assets/icons.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { removeNodesById } from '#lib/db/mutations/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';

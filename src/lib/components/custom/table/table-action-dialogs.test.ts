@@ -26,7 +26,7 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 import Fixture from './table-action-dialogs.fixture.svelte';
 
 vi.stubGlobal(

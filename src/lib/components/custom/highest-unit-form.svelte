@@ -18,13 +18,13 @@
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import { cn } from '#lib/utils/index.js';
 	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
-	import type { Phase } from '#lib/types/phase/index.js';
-	import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
+	import type { Phase } from '#lib/types/phase.js';
+	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
-	import { loadScheduleRouteId } from '#lib/helpers/navigation/index.js';
+	import { loadScheduleRouteId } from '#lib/helpers/navigation.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -34,13 +34,13 @@
 		generateUniqueFileName,
 		allowProjectFolder
 	} from '#lib/helpers/file/index.js';
-	import { LockKeyIcon } from '#lib/assets/icons/index.js';
+	import { LockKeyIcon } from '#lib/assets/icons.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { remove, copyFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-	import type { FileExport } from '#lib/types/main/index.js';
+	import type { FileExport } from '#lib/types/main.js';
 
 	let { closeDialog }: Props = $props();
 

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		highest_unit: NonNullable<Node['highest_unit_form']>;
@@ -17,12 +17,12 @@
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
-	import type { Phase } from '#lib/types/phase/index.js';
+	import type { Phase } from '#lib/types/phase.js';
 	import { cn } from '#lib/utils/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { getNode } from '#lib/db/queries/index.js';
-	import { DEFAULT_PHASES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 
 	let {
 		parent_id,

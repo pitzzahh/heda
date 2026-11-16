@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadScheduleRouteId, nodeIdFromRouteId } from './index.js';
+import { loadScheduleRouteId, nodeIdFromRouteId } from './navigation.js';
 
 describe('loadScheduleRouteId', () => {
 	it('puts the node id after the name', () => {

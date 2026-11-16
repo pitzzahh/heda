@@ -1,4 +1,4 @@
-import type { PhaseLoadSchedule } from '../load/one_phase/index.js';
+import type { PhaseLoadSchedule } from './schedule.js';
 
 export type VoltageDrop = {
 	from_node_name: string;

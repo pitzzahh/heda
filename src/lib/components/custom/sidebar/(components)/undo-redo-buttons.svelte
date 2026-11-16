@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowUUpLeftIcon, ArrowUUpRightIcon, CircleNotchIcon } from '#lib/assets/icons/index.js';
+	import { ArrowUUpLeftIcon, ArrowUUpRightIcon, CircleNotchIcon } from '#lib/assets/icons.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';

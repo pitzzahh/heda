@@ -1,4 +1,4 @@
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import type { GeneratedWorkbook } from '#lib/helpers/export/generate.js';
 
 type PendingTask = {

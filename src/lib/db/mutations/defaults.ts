@@ -1,4 +1,4 @@
-import type { Node, Project } from '#lib/types/db/index.js';
+import type { Node, Project } from '#lib/types/db.js';
 import { NODE_DOC_SCHEMA } from '#lib/validators/db.js';
 
 // The store applies no defaults itself, so every insertion path merges these
