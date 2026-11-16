@@ -6,6 +6,9 @@ export { default as ArrowCounterClockwiseIcon } from 'phosphor-svelte/lib/ArrowC
 export { default as ScalesIcon } from 'phosphor-svelte/lib/ScalesIcon';
 export { default as ArrowUUpRightIcon } from 'phosphor-svelte/lib/ArrowUUpRightIcon';
 export { default as ArrowsCounterClockwiseIcon } from 'phosphor-svelte/lib/ArrowsCounterClockwiseIcon';
+export { default as ArrowSquareInIcon } from 'phosphor-svelte/lib/ArrowSquareInIcon';
+export { default as ArrowSquareOutIcon } from 'phosphor-svelte/lib/ArrowSquareOutIcon';
+export { default as AppWindowIcon } from 'phosphor-svelte/lib/AppWindowIcon';
 export { default as CaretDownIcon } from 'phosphor-svelte/lib/CaretDownIcon';
 export { default as CaretRightIcon } from 'phosphor-svelte/lib/CaretRightIcon';
 export { default as CaretUpDownIcon } from 'phosphor-svelte/lib/CaretUpDownIcon';
