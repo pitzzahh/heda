@@ -3,6 +3,7 @@ import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.
 import { default_phases } from '#lib/constants.js';
 import type { Node } from '#lib/types/db.js';
 import type { ExportProcessResult, Header } from './types.js';
+import { fitColumnWidths } from './column-widths.js';
 
 export async function processVoltageDropSheet(
 	workbook: ExcelJS.Workbook,
@@ -97,17 +98,7 @@ export async function processVoltageDropSheet(
 		current_load_row++;
 	}
 
-	for (let i = 0; i < worksheet.columns.length; i += 1) {
-		let dataMax = 0;
-		const column = worksheet.columns[i];
-		for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
-			const columnLength = String(column.values?.[j] ?? '').length;
-			if (columnLength > dataMax) {
-				dataMax = columnLength;
-			}
-		}
-		column.width = dataMax < 10 ? 10 : dataMax;
-	}
+	fitColumnWidths(worksheet);
 
 	return { valid: true };
 }
