@@ -6,6 +6,7 @@ export * from './panel.js';
 export * from './db.js';
 export * from './misc.js';
 export * from './settings.js';
+export * from './short-circuit.js';
 export * from './schedule.js';
 export * from './voltage-drop.js';
 export * from './file.js';

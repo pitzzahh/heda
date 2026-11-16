@@ -1,4 +1,5 @@
 import { findNode, patchNode, patchNodes } from './nodes.js';
+import type { ShortCircuitSource } from '#lib/types/short-circuit.js';
 import type { FieldType } from '#lib/types/misc.js';
 import type { PhaseAssignment } from '#lib/types/phase.js';
 
@@ -102,6 +103,17 @@ export function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 		return patchNode(node_id, { is_at_used_as_currents_value: is_use });
 	} catch (err) {
 		console.error(`Error changing data: ${JSON.stringify(err)}`);
+	}
+}
+
+/** Stores the PEC 2017 App. D Ex. D14 source data on the root node, keeping its other unit fields. */
+export function updateShortCircuitSource(root_id: string, source: ShortCircuitSource) {
+	try {
+		const root = findNode(root_id);
+		if (root?.node_type !== 'root') return undefined;
+		return patchNode(root_id, { highest_unit_form: { ...root.highest_unit_form, ...source } });
+	} catch (err) {
+		console.error(`Error updating short-circuit source: ${JSON.stringify(err)}`);
 	}
 }
 

@@ -1,7 +1,8 @@
 <script lang="ts" module>
 	const SCHEDULE_TAB_LABELS: Record<string, string> = {
 		'load-sched': 'Load Schedule',
-		'voltage-drop': 'Voltage Drop'
+		'voltage-drop': 'Voltage Drop',
+		'short-circuit': 'Short Circuit'
 	};
 </script>
 

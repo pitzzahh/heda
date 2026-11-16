@@ -1,6 +1,7 @@
 <script lang="ts" module>
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
+	import type { ShortCircuit } from '#lib/types/short-circuit.js';
 </script>
 
 <script lang="ts">
@@ -14,6 +15,8 @@
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
+		getComputedShortCircuits,
+		peekComputedShortCircuits,
 		getComputedVoltageDropsAsync,
 		getNode,
 		getNodeById,
@@ -22,6 +25,8 @@
 	} from '#lib/db/queries/index.js';
 	import * as Tabs from '#lib/components/ui/tabs/index.js';
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
+	import { shortCircuitColumns } from '#lib/components/custom/table/short-circuit-cols/index.js';
+	import { ShortCircuitSourceForm } from '#lib/components/custom/short-circuit/index.js';
 	import { LightningAIcon } from '#lib/assets/icons.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
@@ -36,7 +41,8 @@
 	let active_tab = $state('load-sched');
 	let visited_tabs = $state<Record<string, boolean>>({
 		'load-sched': true,
-		'voltage-drop': false
+		'voltage-drop': false,
+		'short-circuit': false
 	});
 	let voltage_activated = $state(false);
 
@@ -60,6 +66,14 @@
 		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
 	);
 	const root_node = $derived(getRootNode());
+	const source_key = $derived(
+		[
+			root_node?.id,
+			root_node?.highest_unit_form?.utility_sc_kva,
+			root_node?.highest_unit_form?.transformer_kva,
+			root_node?.highest_unit_form?.transformer_z_percent
+		].join('|')
+	);
 	const loads = $derived(getComputedLoads(node_id));
 	let voltage_drops = $state<VoltageDrop[]>([]);
 	let drops_ready = $state(false);
@@ -79,6 +93,17 @@
 			: []
 	);
 	const voltage_drop_columns = voltageDropColumns();
+	const short_circuit_columns = shortCircuitColumns<ShortCircuit>();
+
+	// Recomputes on each snapshot revision only while the tab shows; hidden, the
+	// table keeps the last result instead of walking the whole tree on every edit.
+	const short_circuits = $derived(
+		active_tab === 'short-circuit'
+			? getComputedShortCircuits()
+			: visited_tabs['short-circuit']
+				? peekComputedShortCircuits()
+				: ([] as ShortCircuit[])
+	);
 
 	// Async worker fetch keyed to the revision. Snapshot load and worker clone
 	// are synchronous costs, so dispatch them off the reactive flush to keep the
@@ -194,6 +219,7 @@
 		<Tabs.List class="place-self-end">
 			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
 			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
+			<Tabs.Trigger value="short-circuit">Short Circuit</Tabs.Trigger>
 		</Tabs.List>
 		<Tabs.Content value="load-sched" class="flex min-h-0 flex-1 flex-col">
 			{#if current_node}
@@ -223,6 +249,22 @@
 				>
 					Loading voltage drop…
 				</div>
+			{/if}
+		</Tabs.Content>
+		<Tabs.Content value="short-circuit" class="flex min-h-0 flex-1 flex-col gap-4">
+			{#if root_node}
+				<!-- Remount on undo/redo too, so the inputs never show a source that was undone. -->
+				{#key source_key}
+					<ShortCircuitSourceForm root={root_node} />
+				{/key}
+			{/if}
+			{#if visited_tabs['short-circuit']}
+				<DataTable
+					data={short_circuits}
+					is_footer_shown={false}
+					columns={short_circuit_columns}
+					is_in_vd_table
+				/>
 			{/if}
 		</Tabs.Content>
 	</Tabs.Root>

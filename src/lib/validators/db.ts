@@ -1,4 +1,9 @@
 import * as v from 'valibot';
+import {
+	TRANSFORMER_KVA_FIELD,
+	TRANSFORMER_Z_PERCENT_FIELD,
+	UTILITY_SC_KVA_FIELD
+} from './short-circuit.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 
 // Canonical data shapes for SignalDB documents. Types derive from these schemas
@@ -59,6 +64,9 @@ export const NODE_DOC_SCHEMA = v.object({
 		v.object({
 			distribution_unit: v.optional(v.string()),
 			phase: v.optional(v.string()),
+			utility_sc_kva: v.optional(UTILITY_SC_KVA_FIELD),
+			transformer_kva: v.optional(TRANSFORMER_KVA_FIELD),
+			transformer_z_percent: v.optional(TRANSFORMER_Z_PERCENT_FIELD),
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
 			wye_circuit_defaults: v.optional(v.boolean())
 		})

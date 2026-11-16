@@ -234,4 +234,5 @@ export function getConduitSize(conductor_size: number, total_num_of_conductors: 
 	return column_index === -1 ? column_index : CONDUIT_TABLE.conduit_columns[column_index];
 }
 
+export * from './short-circuit.js';
 export * from './three-phase.js';

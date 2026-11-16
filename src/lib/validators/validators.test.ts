@@ -15,6 +15,11 @@ import { GENERIC_PHASE_PANEL_SCHEMA } from './panel.js';
 import { NODE_DOC_SCHEMA, PROJECT_DOC_SCHEMA } from './db.js';
 import { SETTINGS_SCHEMA } from './settings.js';
 import { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from './misc.js';
+import {
+	INTERRUPTING_RATING_STATUS_FIELD,
+	SHORT_CIRCUIT_RESULT_SCHEMA,
+	SHORT_CIRCUIT_SOURCE_SCHEMA
+} from './short-circuit.js';
 import { CIRCUIT_PHASE_FIELD, PHASE_ASSIGNMENT_FIELD, PHASE_VA_SCHEMA } from './shared.js';
 import {
 	COMPUTE_COMMON_PROPERTIES_SCHEMA,
@@ -174,6 +179,56 @@ describe('validators', () => {
 			expect(panel.output.ambient_temperature).toBe(30);
 			expect(panel.output.terminal_temperature).toBe(STANDARD_TERMINAL_TEMPERATURE);
 		}
+	});
+
+	it('validates the short-circuit source (PEC 2017 App. D Ex. D14)', () => {
+		const d14 = { utility_sc_kva: 1_000_000, transformer_kva: 300, transformer_z_percent: 5 };
+		expect(v.safeParse(SHORT_CIRCUIT_SOURCE_SCHEMA, d14).success).toBe(true);
+		expect(
+			v.safeParse(SHORT_CIRCUIT_SOURCE_SCHEMA, { ...d14, transformer_z_percent: 100 }).success
+		).toBe(true);
+		for (const invalid of [
+			{ ...d14, utility_sc_kva: 0 },
+			{ ...d14, transformer_kva: -300 },
+			{ ...d14, transformer_z_percent: 0 },
+			{ ...d14, transformer_z_percent: 100.1 },
+			{ ...d14, transformer_kva: '300' },
+			{ utility_sc_kva: 1_000_000, transformer_kva: 300 }
+		]) {
+			expect(v.safeParse(SHORT_CIRCUIT_SOURCE_SCHEMA, invalid).success).toBe(false);
+		}
+	});
+
+	it('keeps the source optional on stored root nodes but validates it when present', () => {
+		const root = { id: 'r', node_type: 'root', child_ids: [] };
+		expect(
+			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { phase: 'one_phase' } }).success
+		).toBe(true);
+		expect(
+			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { transformer_kva: 0 } }).success
+		).toBe(false);
+	});
+
+	it('describes short-circuit rows and their status', () => {
+		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'under_rated').success).toBe(true);
+		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'unknown').success).toBe(false);
+		const row = {
+			from_node_name: 'Transformer',
+			to_node_name: 'LP-1',
+			length: 20,
+			conductor_z_ohm: 0.0645,
+			conductor_z_pu: 0.1219,
+			motor_z_pu: null,
+			supply_z_pu: 0.0251,
+			supply_fault_current: 17_322,
+			node_fault_current: 2_959,
+			interrupting_rating_ka: 5,
+			status: 'under_rated'
+		};
+		expect(v.safeParse(SHORT_CIRCUIT_RESULT_SCHEMA, row).success).toBe(true);
+		expect(
+			v.safeParse(SHORT_CIRCUIT_RESULT_SCHEMA, { ...row, supply_fault_current: undefined }).success
+		).toBe(false);
 	});
 
 	it('validates 3P-Y phases', () => {

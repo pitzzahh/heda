@@ -24,6 +24,7 @@ export {
 	overrideField,
 	updateConductorSets,
 	updateLoadDescription,
+	updateShortCircuitSource,
 	useAtAsCurrentsValue,
 	type FieldType
 } from './fields.js';

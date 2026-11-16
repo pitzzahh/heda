@@ -37,7 +37,9 @@ vi.mock('#lib/db/queries/index.js', () => ({
 	getComputedLoads: () => [{ id: 'load-1' }],
 	getComputedVoltageDrops: () => [{ id: 'vd-1' }],
 	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }]),
-	getSnapshotRevision: () => 0
+	getSnapshotRevision: () => 0,
+	getComputedShortCircuits: () => [],
+	peekComputedShortCircuits: () => []
 }));
 
 vi.mock('#lib/components/custom/table/index.js', async () => ({

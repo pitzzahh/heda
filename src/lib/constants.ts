@@ -362,6 +362,47 @@ export const ALTERNATING_CURRENT_REACTANCE: Record<number, number> = {
 	500: 0.032
 };
 
+// PEC 2017 Ch. 10 Table 10.1.1.9: AC resistance and reactance of 600 V cables,
+// 3-phase, 60 Hz, 75°C, three single conductors in conduit, in ohms to neutral
+// per 305 m. Uncoated copper only.
+// shortcut: copper columns only; add the aluminum columns when aluminum conductors are supported.
+export const CONDUCTOR_RESISTANCE_REACTANCE: Record<
+	number,
+	{ xl: number; xl_steel: number; r_pvc: number; r_aluminum: number; r_steel: number }
+> = {
+	2.0: { xl: 0.058, xl_steel: 0.073, r_pvc: 3.1, r_aluminum: 3.1, r_steel: 3.1 },
+	3.5: { xl: 0.054, xl_steel: 0.068, r_pvc: 2.0, r_aluminum: 2.0, r_steel: 2.0 },
+	5.5: { xl: 0.05, xl_steel: 0.063, r_pvc: 1.2, r_aluminum: 1.2, r_steel: 1.2 },
+	8.0: { xl: 0.052, xl_steel: 0.065, r_pvc: 0.78, r_aluminum: 0.78, r_steel: 0.78 },
+	14: { xl: 0.051, xl_steel: 0.064, r_pvc: 0.49, r_aluminum: 0.49, r_steel: 0.49 },
+	22: { xl: 0.048, xl_steel: 0.06, r_pvc: 0.31, r_aluminum: 0.31, r_steel: 0.31 },
+	30: { xl: 0.045, xl_steel: 0.057, r_pvc: 0.19, r_aluminum: 0.2, r_steel: 0.2 },
+	38: { xl: 0.046, xl_steel: 0.057, r_pvc: 0.15, r_aluminum: 0.16, r_steel: 0.16 },
+	50: { xl: 0.044, xl_steel: 0.055, r_pvc: 0.12, r_aluminum: 0.13, r_steel: 0.12 },
+	60: { xl: 0.043, xl_steel: 0.054, r_pvc: 0.1, r_aluminum: 0.1, r_steel: 0.1 },
+	80: { xl: 0.042, xl_steel: 0.052, r_pvc: 0.077, r_aluminum: 0.082, r_steel: 0.079 },
+	100: { xl: 0.041, xl_steel: 0.051, r_pvc: 0.062, r_aluminum: 0.067, r_steel: 0.063 },
+	125: { xl: 0.041, xl_steel: 0.052, r_pvc: 0.052, r_aluminum: 0.057, r_steel: 0.054 },
+	150: { xl: 0.041, xl_steel: 0.051, r_pvc: 0.044, r_aluminum: 0.049, r_steel: 0.045 },
+	175: { xl: 0.04, xl_steel: 0.05, r_pvc: 0.038, r_aluminum: 0.043, r_steel: 0.039 },
+	200: { xl: 0.04, xl_steel: 0.049, r_pvc: 0.033, r_aluminum: 0.038, r_steel: 0.035 },
+	250: { xl: 0.039, xl_steel: 0.048, r_pvc: 0.027, r_aluminum: 0.032, r_steel: 0.029 },
+	325: { xl: 0.039, xl_steel: 0.048, r_pvc: 0.023, r_aluminum: 0.028, r_steel: 0.025 },
+	375: { xl: 0.038, xl_steel: 0.048, r_pvc: 0.019, r_aluminum: 0.024, r_steel: 0.021 },
+	400: { xl: 0.038, xl_steel: 0.048, r_pvc: 0.019, r_aluminum: 0.024, r_steel: 0.021 },
+	500: { xl: 0.037, xl_steel: 0.046, r_pvc: 0.015, r_aluminum: 0.019, r_steel: 0.018 }
+};
+
+// PEC 2017 2.40.7.4(C): only breakers rated other than 5 000 A must show their interrupting
+// rating, so heda takes a breaker with no rating entered as 5,000 A.
+export const UNMARKED_BREAKER_INTERRUPTING_RATING_KA = 5;
+
+// PEC 2017 App. D Ex. D14 step 8: average induction motor impedance (per IEEE Std 141), on the motor's own kVA.
+export const MOTOR_IMPEDANCE_PU = 0.25;
+
+// PEC 2017 App. D Ex. D14 step 3: source short-circuit level of the Metro Manila grid.
+export const METRO_MANILA_UTILITY_SC_KVA = 1_000_000;
+
 export const CONDUIT_TABLE = {
 	conduit_columns: [16, 21, 27, 35, 41, 53, 63, 78, 91, 103, 128, 155],
 	conductor_rows: [

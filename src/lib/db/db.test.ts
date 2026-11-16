@@ -29,6 +29,7 @@ import {
 	restoreNodes,
 	updateLoadDescription,
 	updateNode,
+	updateShortCircuitSource,
 	changePhaseAssignment,
 	changePhaseAssignments,
 	updateNodeParentById
@@ -37,6 +38,7 @@ import {
 	checkNodeExists,
 	getChildNodesByParentId,
 	getComputedLoads,
+	getComputedShortCircuits,
 	getComputedVoltageDrops,
 	getComputedVoltageDropsAsync,
 	getNode,
@@ -48,6 +50,7 @@ import {
 import { patchNode } from './mutations/nodes.js';
 import { computeNodeLoad } from './queries/compute.js';
 import { computed_loads } from './queries/cache.js';
+import { computeShortCircuitsFromNodes } from './queries/short-circuit-core.js';
 import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
 import { loadSnapshot } from './queries/snapshot.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
@@ -868,6 +871,30 @@ describe('incremental writes and reads', () => {
 		const sliced = await getComputedVoltageDropsAsync();
 		expect(sliced).toEqual(computeVoltageDropsFromNodes(loadSnapshot().nodes, false));
 		expect(getComputedVoltageDrops()).toBe(sliced);
+	});
+
+	it('stores the short-circuit source on the root and recomputes fault currents', async () => {
+		const { root, a } = await buildTree();
+		const before = getComputedShortCircuits();
+		expect(before.every((row) => row.status === 'no_source')).toBe(true);
+		expect(getComputedShortCircuits()).toBe(before);
+
+		const source = { utility_sc_kva: 1_000_000, transformer_kva: 100, transformer_z_percent: 2.5 };
+		const updated = updateShortCircuitSource(root, source);
+		expect(updated?.highest_unit_form).toEqual({
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE,
+			...source
+		});
+		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();
+		expect(getNode(a.id)?.highest_unit_form).toBeUndefined();
+
+		const after = getComputedShortCircuits();
+		expect(after).not.toBe(before);
+		expect(after).toEqual(computeShortCircuitsFromNodes(loadSnapshot().nodes, false));
+		// PEC 2017 App. D Ex. D13 transformer on the 1000 MVA grid: 434.78 A / 0.0251 pu.
+		const first = after.find((row) => row.id === a.id)!;
+		expect(Math.round(first.supply_fault_current!)).toBe(17_322);
 	});
 
 	it('rejects duplicate ids without writing anything', async () => {
