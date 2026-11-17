@@ -247,14 +247,16 @@ jobs:
         run: bun install
 
       - name: Write the release keystore
+        # the 2025 release key: KEYSTORE is the base64 .jks, KEY its alias
         env:
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEYSTORE: ${{ secrets.ANDROID_RELEASE_KEYSTORE }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
         run: |
           KS="$RUNNER_TEMP/release.jks"
-          echo "$ANDROID_KEYSTORE" | base64 -d > "$KS"
-          printf 'storeFile=%s\npassword=%s\nkeyAlias=%s\n' "$KS" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" \
+          echo "$KEYSTORE" | base64 -d > "$KS"
+          printf 'storeFile=%s\npassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KS" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" \
             > src-tauri/gen/android/keystore.properties
 
       - name: Build the APK

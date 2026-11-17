@@ -39,7 +39,8 @@ android {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("password")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("password")
+                // keyPassword is optional: most keystores reuse the store password
+                keyPassword = keystoreProperties.getProperty("keyPassword") ?: keystoreProperties.getProperty("password")
             }
         }
     }
