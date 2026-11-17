@@ -24,7 +24,8 @@
 			"identifier": "fs:scope",
 			"allow": ["$APPLOCALDATA/*"]
 		},
-		"dialog:default"
+		"dialog:default",
+		"opener:default"
 	],
 	"platforms": ["macOS", "windows", "linux"]
 }
