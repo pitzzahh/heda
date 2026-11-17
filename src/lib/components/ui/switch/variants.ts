@@ -36,6 +36,9 @@ export const switchTrack = tv({
 export const switchThumb = tv({
 	base: [
 		'switch-thumb relative z-1 rounded-full bg-background shadow-xs',
+		// Glides with the track's colour change instead of snapping; translate and scale stay on
+		// the compositor, so a save kicked off by the toggle cannot stall the slide.
+		'transition-[translate,scale] duration-[var(--duration-base)] ease-[var(--ease-ui-out)] motion-reduce:transition-none',
 		'origin-left group-active/switch:scale-x-[1.15] data-[state=checked]:origin-right motion-reduce:group-active/switch:scale-x-100'
 	],
 	variants: {
