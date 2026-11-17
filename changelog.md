@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-11-17
+
+### Added
+
+- Three-phase wye (400Y/230 V) panels and loads, with phase-by-phase
+  schedules, feeder sizing that checks the balanced and most loaded phase,
+  and an action to balance single-phase circuits across A, B and C
+- Three-phase motors fed line to line at 400 V, with full-load currents from
+  PEC 2017 Table 4.30.14.4
+- A Short Circuit tab that computes available fault current at each node and
+  flags breakers rated below it
+- Schedule tabs can move into their own windows and dock back, so a table can
+  sit on a second screen while the sidebar keeps editing
+- Recent projects on the home page, and an editable distribution unit name at
+  project creation
+- A Show in folder action on export and save notifications, and a save dialog
+  for Excel exports on desktop so the destination is chosen up front
+
+### Changed
+
+- Excel exports size columns once per sheet instead of once per cell, so large
+  projects no longer time out in the export worker
+- The home page follows the workspace top bar and shows its branding once
+
+### Fixed
+
+- Breaker, conductor, heating, conduit fill and voltage drop tables follow
+  PEC 2017, with old conduit overrides moved to the current raceway sizes on
+  open
+- Exports no longer fail with a DataCloneError after the workbook is built
+
 ## [2.7.5] - 2026-11-15
 
 ### Fixed
