@@ -137,7 +137,8 @@ jobs:
           releaseDraft: true
           # GitHub never serves a pre-release as "latest", so the updater keeps stable installs on stable
           prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
-          args: ${{ matrix.args }}
+          # previews check the preview feed, so preview installs stay on preview and stable on stable
+          args: ${{ matrix.args }} ${{ needs.version.outputs.prerelease == 'true' && '--config src-tauri/tauri.preview.conf.json' || '' }}
 
       # vertdll.dll is the VBS enclave runtime; its WaitOnAddress faults in a normal process,
       # so a binary importing it closes a few seconds after launch (0xC0000005)
@@ -321,3 +322,13 @@ jobs:
           ID=$(gh api "repos/$R/releases" --jq "[.[] | select(.tag_name == \"$TAG\")][0].id")
           gh api -X PATCH "repos/$R/releases/$ID" -F draft=false -F prerelease=true -f make_latest=false \
             --jq '"published \(.tag_name): \(.html_url)"'
+
+      # GitHub has no "latest pre-release" URL, so preview builds read latest.json from a fixed preview-channel release
+      - name: Update the preview feed
+        run: |
+          gh release view preview-channel -R "$R" >/dev/null 2>&1 \
+            || gh release create preview-channel -R "$R" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title 'Preview update feed' --notes 'Update feed for preview builds. Download installers from the versioned pre-releases.'
+          gh release download "$TAG" -R "$R" -p latest.json -D feed
+          jq -e --arg v "$TAG" '.version == $v' feed/latest.json
+          gh release upload preview-channel feed/latest.json -R "$R" --clobber
