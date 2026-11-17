@@ -12,7 +12,7 @@
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 	import TreeDeleteDialog from './tree-delete-dialog.svelte';
 
 	fixture_state = setUndoRedoState();

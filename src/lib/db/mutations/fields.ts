@@ -1,7 +1,9 @@
-import { findNode, patchNode } from './nodes.js';
+import { findNode, patchNode, patchNodes } from './nodes.js';
+import type { ShortCircuitSource } from '#lib/types/short-circuit.js';
+import type { FieldType } from '#lib/types/misc.js';
+import type { PhaseAssignment } from '#lib/types/phase.js';
 
-export type FieldType =
-	'egc_size' | 'conductor_size' | 'at' | 'conduit_size' | 'ampere_frames' | 'length' | 'z';
+export type { FieldType };
 
 const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	egc_size: 'overrided_egc_size',
@@ -101,5 +103,35 @@ export function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
 		return patchNode(node_id, { is_at_used_as_currents_value: is_use });
 	} catch (err) {
 		console.error(`Error changing data: ${JSON.stringify(err)}`);
+	}
+}
+
+/** Stores the PEC 2017 App. D Ex. D14 source data on the root node, keeping its other unit fields. */
+export function updateShortCircuitSource(root_id: string, source: ShortCircuitSource) {
+	try {
+		const root = findNode(root_id);
+		if (root?.node_type !== 'root') return undefined;
+		return patchNode(root_id, { highest_unit_form: { ...root.highest_unit_form, ...source } });
+	} catch (err) {
+		console.error(`Error updating short-circuit source: ${JSON.stringify(err)}`);
+	}
+}
+
+/** Overrides the circuit-number phase of a circuit on a 3P-Y panel; undefined restores the default. */
+export function changePhaseAssignment(node_id: string, phase: PhaseAssignment | undefined) {
+	try {
+		return patchNode(node_id, { phase_assignment: phase });
+	} catch (err) {
+		console.error(`Error changing phase assignment: ${JSON.stringify(err)}`);
+	}
+}
+
+/** Sets the phase of several circuits in one write; `undefined` clears an override. */
+export function changePhaseAssignments(changes: [node_id: string, PhaseAssignment | undefined][]) {
+	try {
+		return patchNodes(changes.map(([node_id, phase]) => [node_id, { phase_assignment: phase }]));
+	} catch (err) {
+		console.error(`Error changing phase assignments: ${JSON.stringify(err)}`);
+		return [];
 	}
 }

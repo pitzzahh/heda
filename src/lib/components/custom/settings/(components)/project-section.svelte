@@ -5,12 +5,7 @@
 </script>
 
 <script lang="ts">
-	import {
-		CheckSquareIcon,
-		FileIcon,
-		HouseIcon,
-		WarningCircleIcon
-	} from '#lib/assets/icons/index.js';
+	import { CheckSquareIcon, FileIcon, HouseIcon, WarningCircleIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';

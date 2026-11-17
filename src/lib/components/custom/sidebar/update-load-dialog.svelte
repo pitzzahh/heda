@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		some_open_state?: boolean;
@@ -16,8 +16,8 @@
 	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
-	import { DEFAULT_PHASES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 
 	let {

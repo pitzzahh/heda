@@ -2,13 +2,26 @@ import * as v from 'valibot';
 import {
 	DEFAULT_PHASES,
 	DEFAULT_TERMINAL_TEMPERATURES,
+	PHASE_ASSIGNMENTS,
 	STANDARD_TERMINAL_TEMPERATURE
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 
 export const PHASE_FIELD = v.picklist(
 	DEFAULT_PHASES.map((option) => option.value),
 	'You need to select a phase'
 );
+
+/** Phase of a single-phase circuit on a 400Y/230 V panel (PEC 2017 App. D Ex. D6 6.1). */
+export const PHASE_ASSIGNMENT_FIELD = v.picklist(
+	PHASE_ASSIGNMENTS,
+	'Please select phase A, B or C.'
+);
+
+/** Phases a circuit draws from on a 400Y/230 V panel: one of A/B/C, or all three. */
+export const CIRCUIT_PHASE_FIELD = v.picklist(['A', 'B', 'C', 'ABC']);
+
+/** VA carried by each phase of a 3P-Y panel. */
+export const PHASE_VA_SCHEMA = v.object({ A: v.number(), B: v.number(), C: v.number() });
 
 export const TERMINAL_TEMPERATURE_FIELD = v.optional(
 	v.picklist(

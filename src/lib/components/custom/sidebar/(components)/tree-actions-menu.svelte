@@ -6,7 +6,7 @@
 		PlusCircleIcon,
 		SquaresFourIcon,
 		TrashIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 
 	type TooltipIcon =
 		| typeof CopyIcon
@@ -31,7 +31,7 @@
 </script>
 
 <script lang="ts">
-	import { DotsThreeIcon } from '#lib/assets/icons/index.js';
+	import { DotsThreeIcon } from '#lib/assets/icons.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { useSidebar } from '#lib/components/ui/sidebar/context.svelte.js';

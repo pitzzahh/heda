@@ -1,3 +1,11 @@
+<script lang="ts" module>
+	const SCHEDULE_TAB_LABELS: Record<string, string> = {
+		'load-sched': 'Load Schedule',
+		'voltage-drop': 'Voltage Drop',
+		'short-circuit': 'Short Circuit'
+	};
+</script>
+
 <script lang="ts">
 	import { AppSidebar } from '#lib/components/custom/sidebar/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
@@ -8,18 +16,27 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 	import UndoRedoWrapper from '#lib/components/custom/undo-redo-wrapper.svelte';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { getCurrentProject, getRootNode } from '#lib/db/queries/index.js';
+	import {
+		getComputedLoads,
+		getCurrentProject,
+		getNodeById,
+		getRootNode
+	} from '#lib/db/queries/index.js';
+	import { BalancePhasesMenu } from '#lib/components/custom/table/(components)/index.js';
+	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
+	import { default_phases } from '#lib/constants.js';
 	import { page } from '$app/state';
 	import {
 		CaretRightIcon,
 		CheckCircleIcon,
 		LightningAIcon,
 		WarningCircleIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 	import { cn } from '#lib/utils/index.js';
 
 	let { data, children } = $props();
@@ -32,6 +49,17 @@
 
 	const on_load_schedule = $derived(page.url.pathname.includes('load-schedule'));
 	const project_id = $derived(page.url.searchParams.get('project_id') ?? undefined);
+
+	// The circuits of the open schedule when it is 3P-Y and its Load Schedule tab shows, for the
+	// header's Phases menu.
+	const wye_schedule_loads = $derived.by(() => {
+		const on_load_tab = on_load_schedule && project_state.schedule_tab === 'load-sched';
+		const node_id = on_load_tab ? nodeIdFromRouteId(page.params.id) : undefined;
+		if (!node_id) return [];
+		const is_wye =
+			supplyPhaseOf(getNodeById(node_id) ?? undefined) === default_phases.THREE_PHASE_WYE;
+		return is_wye ? getComputedLoads(node_id) : [];
+	});
 
 	// Live workspace rows: the SignalDB cursor subscribes to collection changes
 	// inside this derived, so a mutation recomputes only this layout.
@@ -76,29 +104,34 @@
 							<p
 								class="hidden text-sm font-medium whitespace-nowrap text-muted-foreground md:inline"
 							>
-								Load Schedule
+								{SCHEDULE_TAB_LABELS[project_state.schedule_tab] ?? 'Load Schedule'}
 							</p>
 						{/if}
 					</div>
 				</div>
 
-				<div
-					class={cn(
-						'hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:flex',
-						undo_redo_state.has_unsaved_actions
-							? 'border-warning/30 bg-warning/10 text-warning-strong'
-							: 'border-success/30 bg-success/10 text-success-strong'
-					)}
-					role="status"
-					aria-live="polite"
-				>
-					{#if undo_redo_state.has_unsaved_actions}
-						<span class="size-1.5 rounded-full bg-warning"></span>
-						Unsaved
-					{:else}
-						<CheckCircleIcon class="size-3.5" />
-						Saved
+				<div class="flex shrink-0 items-center gap-2">
+					{#if wye_schedule_loads.length > 0}
+						<BalancePhasesMenu loads={wye_schedule_loads} />
 					{/if}
+					<div
+						class={cn(
+							'hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:flex',
+							undo_redo_state.has_unsaved_actions
+								? 'border-warning/30 bg-warning/10 text-warning-strong'
+								: 'border-success/30 bg-success/10 text-success-strong'
+						)}
+						role="status"
+						aria-live="polite"
+					>
+						{#if undo_redo_state.has_unsaved_actions}
+							<span class="size-1.5 rounded-full bg-warning"></span>
+							Unsaved
+						{:else}
+							<CheckCircleIcon class="size-3.5" />
+							Saved
+						{/if}
+					</div>
 				</div>
 			</header>
 

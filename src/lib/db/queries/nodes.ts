@@ -5,17 +5,17 @@ import {
 	computeAmpereTrip,
 	computeConductorSize,
 	computeVoltAmpere,
+	circuitPhase,
 	getConduitSize,
-	getEgcSize
+	getEgcSize,
+	isThreePhaseCircuit,
+	panelTotals,
+	threePhaseCurrent
 } from '#lib/utils/computations/index.js';
+import { WYE_LINE_VOLTAGE } from '#lib/constants.js';
 import { getDatabase } from '../index.js';
-import type { LoadType } from '#lib/types/load/index.js';
-import type {
-	ComputeCommonProperties,
-	Node,
-	NodeByIdResult,
-	Project
-} from '#lib/types/db/index.js';
+import type { LoadType } from '#lib/types/load.js';
+import type { ComputeCommonProperties, Node, NodeByIdResult, Project } from '#lib/types/db.js';
 
 export function getCurrentProject(project_id?: string): Project | undefined {
 	return getDatabase().projects.findOne(project_id ? { id: project_id } : {}) as
@@ -124,20 +124,21 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 		const data = node_by_id.get(node.id);
 		if (!data) return null;
 
-		const voltage = 230;
+		// Same voltage and phase rules as computeNodeLoad (PEC 2017 2.20.1.5(A); App. D Ex. D6).
+		const is_three_phase = isThreePhaseCircuit(data);
+		const voltage = is_three_phase ? WYE_LINE_VOLTAGE : 230;
+		const phase = circuitPhase(data);
 
 		if (data.node_type === 'panel') {
 			const child_nodes = children_by_parent.get(data.id) ?? [];
-			let total_va = 0;
-			let total_current = 0;
-
-			for (const child_node of child_nodes) {
-				const child_data = resolve(child_node);
-				if (child_data) {
-					total_va += child_data.va || 0;
-					total_current += child_data.current || 0;
-				}
-			}
+			const {
+				va: total_va,
+				current: total_current,
+				...wye
+			} = panelTotals(
+				data,
+				child_nodes.flatMap((child_node) => resolve(child_node) ?? [])
+			);
 
 			const common = computeCommonProperties({
 				va: total_va,
@@ -156,6 +157,8 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 				...data,
 				load_description: data.panel_data?.name || '',
 				voltage,
+				phase,
+				...wye,
 				va: total_va,
 				ampere_frames: data.overrided_ampere_frames || common.at,
 				current: parseFloat(total_current.toFixed(2)),
@@ -172,7 +175,7 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 				quantity: data.load_data?.quantity ?? 0,
 				varies: Number(data.load_data?.varies) || 0
 			}) || 0;
-		const current = va / voltage;
+		const current = is_three_phase ? threePhaseCurrent(va) : va / voltage;
 
 		const common = computeCommonProperties({
 			va,
@@ -192,6 +195,7 @@ export function getNodeById(target_id: string): NodeByIdResult | null {
 			...data,
 			load_description: data.load_data?.load_description || '',
 			voltage,
+			phase,
 			va,
 			ampere_frames: data.overrided_ampere_frames || common.at,
 			current: parseFloat(current.toFixed(2)),

@@ -2,6 +2,13 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+const { schedule, project_state, onePhaseMainOrWyeCols, threePhaseWyeCols } = vi.hoisted(() => ({
+	schedule: { panel_phase: 'one_phase' },
+	project_state: { loaded: true, schedule_tab: 'voltage-drop' },
+	onePhaseMainOrWyeCols: vi.fn(() => []),
+	threePhaseWyeCols: vi.fn(() => [])
+}));
+
 vi.mock('$app/state', () => ({
 	page: { params: { id: 'panel_node1' } }
 }));
@@ -15,7 +22,7 @@ vi.mock('$app/paths', () => ({
 }));
 
 vi.mock('#lib/hooks/project-state.svelte.js', () => ({
-	getProjectState: () => ({ loaded: true })
+	getProjectState: () => project_state
 }));
 
 vi.mock('#lib/db/queries/index.js', () => ({
@@ -23,14 +30,16 @@ vi.mock('#lib/db/queries/index.js', () => ({
 		id,
 		node_type: 'panel',
 		parent_id: null,
-		panel_data: { name: 'LP-A' }
+		panel_data: { name: 'LP-A', phase: schedule.panel_phase }
 	}),
 	getNode: () => undefined,
 	getRootNode: () => ({ highest_unit_form: { phase: 'one_phase' } }),
 	getComputedLoads: () => [{ id: 'load-1' }],
 	getComputedVoltageDrops: () => [{ id: 'vd-1' }],
 	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }]),
-	getSnapshotRevision: () => 0
+	getSnapshotRevision: () => 0,
+	getComputedShortCircuits: () => [],
+	peekComputedShortCircuits: () => []
 }));
 
 vi.mock('#lib/components/custom/table/index.js', async () => ({
@@ -38,7 +47,11 @@ vi.mock('#lib/components/custom/table/index.js', async () => ({
 }));
 
 vi.mock('#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js', () => ({
-	onePhaseMainOrWyeCols: () => []
+	onePhaseMainOrWyeCols
+}));
+
+vi.mock('#lib/components/custom/table/three-phase-wye-cols.js', () => ({
+	threePhaseWyeCols
 }));
 
 vi.mock('#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js', () => ({
@@ -60,6 +73,8 @@ vi.stubGlobal(
 afterEach(() => {
 	document.body.innerHTML = '';
 	vi.useRealTimers();
+	schedule.panel_phase = 'one_phase';
+	vi.clearAllMocks();
 });
 
 function stub_rows(footer: string) {
@@ -92,6 +107,23 @@ async function settle_mount() {
 describe('load schedule page', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
+	});
+
+	test('uses the single-phase columns for a 1P panel', () => {
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		expect(onePhaseMainOrWyeCols).toHaveBeenCalled();
+		expect(threePhaseWyeCols).not.toHaveBeenCalled();
+		unmount(component);
+	});
+
+	test('uses the phase and VA-per-phase columns for a 3P-Y panel', () => {
+		schedule.panel_phase = 'three_phase_wye';
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		expect(threePhaseWyeCols).toHaveBeenCalled();
+		expect(onePhaseMainOrWyeCols).not.toHaveBeenCalled();
+		unmount(component);
 	});
 
 	test('warms voltage drops in the background without mounting the hidden table', async () => {
@@ -138,6 +170,18 @@ describe('load schedule page', () => {
 		click_trigger('Load Schedule');
 		expect(stub_rows('true')?.getAttribute('data-rows')).toBe('1');
 		expect(stub_rows('false')?.getAttribute('data-rows')).toBe('1');
+		unmount(component);
+	});
+
+	test('tells the workspace header which tab is open, starting from the first', () => {
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		// A stale tab from an earlier page is replaced on mount.
+		expect(project_state.schedule_tab).toBe('load-sched');
+		click_trigger('Voltage Drop');
+		expect(project_state.schedule_tab).toBe('voltage-drop');
+		click_trigger('Load Schedule');
+		expect(project_state.schedule_tab).toBe('load-sched');
 		unmount(component);
 	});
 

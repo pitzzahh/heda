@@ -1,6 +1,6 @@
 import { computeNodeLoad, type LoadComputationContext } from './compute.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export function buildChildrenByParent(nodes: Node[]): Map<string, Node[]> {
 	const children_by_parent = new Map<string, Node[]>();

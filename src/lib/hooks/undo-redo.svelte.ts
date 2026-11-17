@@ -1,16 +1,19 @@
 import { untrack } from 'svelte';
 import { getState, setState } from '#lib/state/index.svelte.js';
 import { UNDO_REDO_STATE_CTX } from '#lib/state/constants.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+import type { Node } from '#lib/types/db.js';
 import {
 	copyAndAddNodeById,
 	overrideField,
 	removeNode,
 	removeNodesById,
+	restoreNodeFields,
 	restoreNodes,
 	updateNode,
 	type FieldType
 } from '#lib/db/mutations/index.js';
+import { getNode } from '#lib/db/queries/index.js';
 
 type BatchData = {
 	data: PhaseLoadSchedule;
@@ -31,6 +34,7 @@ type Action<T extends PhaseLoadSchedule> = {
 		| 'copy_node'
 		| 'batch_delete'
 		| 'batch_copy_node'
+		| 'batch_update'
 		| 'override_at'
 		| 'override_af'
 		| 'override_conduit_size'
@@ -116,6 +120,14 @@ export class UndoRedoState {
 			data: removed_node,
 			children_nodes
 		}));
+	}
+
+	/** Puts back the stored snapshots of a `batch_update` in one write, and returns what they replaced for the other stack. */
+	private swapBatchUpdate(last_action: Action<PhaseLoadSchedule>): BatchData[] {
+		const snapshots = (last_action.batch_data ?? []).map(({ data }) => data as unknown as Node);
+		const replaced = snapshots.flatMap((snapshot) => getNode(snapshot.id) ?? []);
+		restoreNodeFields(snapshots);
+		return replaced.map((node) => ({ data: node as unknown as PhaseLoadSchedule }));
 	}
 
 	private handleFieldOverride({
@@ -221,6 +233,14 @@ export class UndoRedoState {
 						];
 					}
 
+					break;
+				}
+
+				case 'batch_update': {
+					this.redo_stack = [
+						...this.redo_stack,
+						{ ...last_action, batch_data: this.swapBatchUpdate(last_action) }
+					];
 					break;
 				}
 
@@ -416,6 +436,14 @@ export class UndoRedoState {
 					this.undo_stack = [
 						...this.undo_stack,
 						{ ...last_action, data: added_copied_node as unknown as PhaseLoadSchedule }
+					];
+					break;
+				}
+
+				case 'batch_update': {
+					this.undo_stack = [
+						...this.undo_stack,
+						{ ...last_action, batch_data: this.swapBatchUpdate(last_action) }
 					];
 					break;
 				}

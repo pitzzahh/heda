@@ -5,9 +5,10 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { FileExport } from '#lib/types/main/index.js';
+} from '#lib/constants.js';
+import type { Node } from '#lib/types/db.js';
+import type { FileExport } from '#lib/types/main.js';
+import { circuitDefaults } from '#lib/db/mutations/defaults.js';
 
 // Old files stored labels; normalize to canonical values on load.
 const LEGACY_PHASES: Record<string, string> = {
@@ -94,6 +95,71 @@ function migrateNode(node: Node): Node {
 	return changed ? { ...node, panel_data, load_data, highest_unit_form } : node;
 }
 
+/**
+ * 3P-Y roots could be created in late 2024, before three-phase support; their
+ * circuits kept the single-phase defaults (2-pole, 2 conductors). Rewrite those
+ * untouched defaults to the 400Y/230 V ones (see `circuitDefaults`).
+ */
+function migrateWyeDefaults(nodes: Node[]): Node[] {
+	const root_form = nodes.find((node) => node.node_type === 'root')?.highest_unit_form;
+	const system_phase = root_form?.phase;
+	// Once only: after it, 2-pole/2-wire on a 3P-Y file is the user's own choice.
+	if (system_phase !== default_phases.THREE_PHASE_WYE || root_form?.wye_circuit_defaults) {
+		return nodes;
+	}
+	return nodes.map((node) =>
+		node.node_type === 'root'
+			? { ...node, highest_unit_form: { ...node.highest_unit_form, wye_circuit_defaults: true } }
+			: node.pole === '2' && node.conductor_qty === 2
+				? { ...node, ...circuitDefaults(node, system_phase) }
+				: node
+	);
+}
+
+// Conduit overrides saved before the PEC 2017 audit used the Appendix C metric designators;
+// each maps to the same trade size under its PEC 2017 Table 10.1.1.4 raceway size.
+const LEGACY_CONDUIT_SIZES: Record<number, number> = {
+	16: 15,
+	21: 20,
+	27: 25,
+	35: 32,
+	41: 40,
+	53: 50,
+	63: 65,
+	78: 80,
+	91: 90,
+	103: 100,
+	128: 130,
+	129: 130,
+	155: 150
+};
+
+/**
+ * A file saved before the PEC 2017 sizing tables (breaker ratings, 38 mm² at 60°C,
+ * heating at 125%, Ch. 10 conduit fill) that has circuits whose sizes now change on open.
+ */
+export function needsPec2017Notice(file_export: FileExport): boolean {
+	const root = file_export.nodes.find((node) => node.node_type === 'root');
+	return !root?.highest_unit_form?.pec_2017_sizing && file_export.nodes.length > 1;
+}
+
+/** Once only: renames old conduit overrides and marks the file as sized by PEC 2017. */
+function migratePec2017Sizing(nodes: Node[]): Node[] {
+	const root = nodes.find((node) => node.node_type === 'root');
+	if (!root || root.highest_unit_form?.pec_2017_sizing) return nodes;
+	return nodes.map((node) => {
+		if (node.node_type === 'root') {
+			return { ...node, highest_unit_form: { ...node.highest_unit_form, pec_2017_sizing: true } };
+		}
+		const conduit_size =
+			node.overrided_conduit_size && LEGACY_CONDUIT_SIZES[node.overrided_conduit_size];
+		return conduit_size ? { ...node, overrided_conduit_size: conduit_size } : node;
+	});
+}
+
 export function migrateFileExport(file_export: FileExport): FileExport {
-	return { ...file_export, nodes: file_export.nodes.map(migrateNode) };
+	return {
+		...file_export,
+		nodes: migratePec2017Sizing(migrateWyeDefaults(file_export.nodes.map(migrateNode)))
+	};
 }

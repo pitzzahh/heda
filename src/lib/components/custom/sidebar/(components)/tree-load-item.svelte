@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		node: Node;
@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { CopyIcon, PencilIcon, PlugChargingIcon, TrashIcon } from '#lib/assets/icons/index.js';
+	import { CopyIcon, PencilIcon, PlugChargingIcon, TrashIcon } from '#lib/assets/icons.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
 	import ConfirmationDialog from '#lib/components/custom/confirmation-dialog.svelte';
@@ -58,7 +58,11 @@
 </script>
 
 <div data-sidebar="menu-item" class="group/menu-item relative w-full">
-	<div use:draggable={{ container: node.id, dragData: node }}>
+	<!-- The row is a button, and sveltednd never drags from inside one unless a handle is set. -->
+	<div
+		data-tree-drag
+		use:draggable={{ container: node.id, dragData: node, handle: '[data-tree-drag]' }}
+	>
 		<Sidebar.MenuButton
 			class="flex w-full items-center transition-colors hover:bg-accent active:bg-accent/70 data-[active=true]:bg-transparent"
 			onclick={() => {

@@ -17,4 +17,5 @@ export {
 	warmComputedLoads
 } from './loads.js';
 export { getComputedVoltageDrops, getComputedVoltageDropsAsync } from './voltage-drops.js';
+export { getComputedShortCircuits, peekComputedShortCircuits } from './short-circuits.js';
 export { getSnapshotRevision } from './snapshot.js';

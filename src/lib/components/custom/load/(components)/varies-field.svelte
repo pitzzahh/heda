@@ -6,12 +6,14 @@
 		form: FormStore;
 		load_type: FormLoadTypeOption | undefined;
 		varies_label: string;
+		/** Horsepower → full-load current table for the selected motor type. */
+		hp_currents: Readonly<Record<string, string>>;
 	}
 </script>
 
 <script lang="ts">
 	import { Field } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
@@ -19,16 +21,18 @@
 	import * as Command from '#lib/components/ui/command/index.js';
 	import { ScrollArea } from '#lib/components/ui/scroll-area/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import {
-		DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS,
-		default_hp_current_relationship
-	} from '#lib/constants/index.js';
-	import { formatFraction } from '#lib/utils/format/index.js';
+	import { formatFraction } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 
-	let { form, load_type, varies_label }: Props = $props();
+	let { form, load_type, varies_label, hp_currents }: Props = $props();
+
+	// Object keys list integers ('1', '10') before fractions ('1/2'); full-load
+	// current rises with horsepower, so sorting by it restores the table order.
+	const hp_options = $derived(
+		Object.keys(hp_currents).sort((a, b) => Number(hp_currents[a]) - Number(hp_currents[b]))
+	);
 
 	let open = $state(false);
 	const trigger_id = useId();
@@ -60,10 +64,7 @@
 						disabled={load_type === 'DEFAULT'}
 						role="combobox"
 					>
-						{@const varies_output =
-							default_hp_current_relationship[
-								field.input as keyof typeof default_hp_current_relationship
-							]}
+						{@const varies_output = hp_currents[field.input as string]}
 						{#if field.input}
 							<p class="min-w-0 flex-1 truncate text-left">
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -- formatFraction escapes input; only matched digits reach the markup -->
@@ -87,7 +88,7 @@
 							<Command.Empty>No {varies_label.toLowerCase()} found.</Command.Empty>
 							<Command.Group>
 								<ScrollArea class="h-64 pr-2.5">
-									{#each DEFAULT_HP_CURRENT_RELATIONSHIP_OPTIONS as hp_current_rating (hp_current_rating)}
+									{#each hp_options as hp_current_rating (hp_current_rating)}
 										<Command.Item
 											value={hp_current_rating}
 											onSelect={() => {

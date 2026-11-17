@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Node, Project } from '#lib/types/db/index.js';
+	import type { Node, Project } from '#lib/types/db.js';
 	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
 
 	interface Props {

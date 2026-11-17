@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SidebarIcon } from '#lib/assets/icons/index.js';
+	import { SidebarIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { cn } from '#lib/utils/index.js';
 	import type { ComponentProps } from 'svelte';

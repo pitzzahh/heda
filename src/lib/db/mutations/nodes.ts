@@ -4,14 +4,21 @@ import {
 	removeFromCollection,
 	replaceInCollection
 } from '../index.js';
-import type { GenericPhasePanelSchema } from '#lib/types/panel/index.js';
-import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
+import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { peekSnapshot, type LoadSnapshot } from '../queries/snapshot.js';
 import { computed_loads, evictNodeFromCache } from '../queries/cache.js';
-import { computeLoadsInSlices, nextTask } from '../queries/loads.js';
-import { toStoredNode, withNodeDefaults } from './defaults.js';
+import { computeLoadsInSlices, isWithinSubtree, nextTask } from '../queries/loads.js';
+import { supplyError } from '#lib/utils/computations/index.js';
+import {
+	circuitDefaults,
+	poleAndQtyDefaults,
+	toRestoredNode,
+	toStoredNode,
+	withNodeDefaults
+} from './defaults.js';
 
 // Work done between yields while copying, so a frame never waits on the copy.
 const COPY_SLICE_MS = 8;
@@ -62,8 +69,14 @@ export function addNode({
 		if (!parent_node_data) {
 			throw Error(`Parent node with ID ${parent_id} not found`);
 		}
+		const supply_error = supplyError({
+			node: { node_type: load_data ? 'load' : 'panel', panel_data, load_data },
+			parent: parent_node_data
+		});
+		if (supply_error) throw Error(supply_error);
 
 		const created_node = withNodeDefaults({
+			...circuitDefaults({ panel_data, load_data }, systemPhase(parent_node_data)),
 			id: existing_id || crypto.randomUUID(),
 			node_type: load_data ? 'load' : 'panel',
 			length: load_data?.length || panel_data?.length,
@@ -81,6 +94,17 @@ export function addNode({
 	} catch (err) {
 		console.error(`Error adding node: ${JSON.stringify(err)}`);
 	}
+}
+
+/** The supply phase of the whole project, read from the root above `node`. */
+export function systemPhase(node: Node): string | undefined {
+	let current: Node | undefined = node;
+	// Bounded: a looping parent chain in a tampered file must not spin forever.
+	for (let depth = 0; current && depth < 10_000; depth += 1) {
+		if (current.node_type === 'root') return current.highest_unit_form?.phase;
+		current = findNode(current.parent_id);
+	}
+	return undefined;
 }
 
 /**
@@ -158,6 +182,13 @@ function collectSubtree(snapshot: LoadSnapshot, node_id: string): Node[] {
 	return subtree;
 }
 
+/**
+ * What a circuit loses when it lands on another panel (a move, or a copy). A
+ * phase picked on the old panel means nothing on the new one, so it goes back
+ * to its circuit-number default. Undo restores whole snapshots and skips this.
+ */
+const MOVED_CIRCUIT: Partial<Node> = { phase_assignment: undefined };
+
 function cloneSubtree(
 	snapshot: LoadSnapshot,
 	subtree: Node[],
@@ -180,7 +211,9 @@ function cloneSubtree(
 			load_data: node.load_data ? structuredClone(node.load_data) : undefined,
 			child_ids: (snapshot.children_by_parent.get(node.id) ?? [])
 				.map((child) => id_map.get(child.id) as string)
-				.filter(Boolean)
+				.filter(Boolean),
+			// The copy gets a new circuit number; its children keep theirs inside the copied panel.
+			...(is_root ? MOVED_CIRCUIT : {})
 		});
 		if (is_root) root = clone;
 		return clone;
@@ -217,6 +250,11 @@ export async function copyAndAddNodesById(
 		}
 
 		const target_parent_id = sub_parent_id || existing_root.parent_id;
+		const supply_error = supplyError({
+			node: existing_root,
+			parent: snapshot.node_by_id.get(target_parent_id ?? '')
+		});
+		if (supply_error) throw Error(supply_error);
 		const subtree = collectSubtree(snapshot, node_id);
 		if (subtree.length * copy_count > MAX_COPY_NODES) {
 			throw Error(`Copy would create more than ${MAX_COPY_NODES} nodes`);
@@ -325,7 +363,7 @@ export function updateNode({
 
 		const set: Partial<Node> = whole_data
 			? {
-					...toStoredNode(whole_data),
+					...toRestoredNode(whole_data),
 					panel_data: whole_data.panel_data ? structuredClone(whole_data.panel_data) : undefined,
 					load_data: whole_data.load_data ? structuredClone(whole_data.load_data) : undefined,
 					// Undo restores the node's own fields; its children are tracked separately.
@@ -338,6 +376,28 @@ export function updateNode({
 					circuit_number: load_data?.circuit_number || panel_data?.circuit_number,
 					load_data: load_data as Node['load_data']
 				};
+
+		if (!whole_data) {
+			const next = { ...existing_node, ...set };
+			const supply_error =
+				(parent_id !== existing_node.parent_id && moveError(existing_node, findNode(parent_id))) ||
+				supplyError({
+					node: next,
+					parent: findNode(parent_id),
+					children: existing_node.child_ids.flatMap((child_id) => findNode(child_id) ?? [])
+				});
+			if (supply_error) throw Error(supply_error);
+			// A new load type or panel phase takes its own pole and wire count, unless the user changed them.
+			const system_phase = systemPhase(existing_node);
+			const before = poleAndQtyDefaults(existing_node, system_phase);
+			if (
+				existing_node.pole === before.pole &&
+				existing_node.conductor_qty === before.conductor_qty
+			) {
+				Object.assign(set, poleAndQtyDefaults(next, system_phase));
+			}
+			if (parent_id !== existing_node.parent_id) Object.assign(set, MOVED_CIRCUIT);
+		}
 
 		const patches: [string, Partial<Node>][] = [[id, set]];
 		if (parent_id !== existing_node.parent_id) {
@@ -495,13 +555,56 @@ export function removeNodesById(
 	}
 }
 
+/** Why `node` cannot move under `parent`, else null. */
+export function moveError(node: Node, parent: Node | undefined): string | null {
+	if (!parent || parent.node_type === 'load') return 'Only a panel can supply a circuit.';
+	if (parent.id === node.id || isWithinSubtree(findNode, parent, node.id)) {
+		return 'A panel cannot move into itself or a panel below it.';
+	}
+	return supplyError({ node, parent });
+}
+
+/**
+ * Moves a node under another panel (sidebar drag and drop). Refused moves come
+ * back as `error`. A circuit number already used on the new panel is replaced
+ * with the next free one, reported as `renumbered_to`.
+ */
+/** Puts several stored snapshots back in one write (undo of a batch edit); children stay as they are. */
+export function restoreNodeFields(snapshots: Node[]): Node[] {
+	return patchNodes(
+		snapshots.flatMap((snapshot): [string, Partial<Node>][] => {
+			const existing = findNode(snapshot.id);
+			return existing
+				? [[snapshot.id, { ...toRestoredNode(snapshot), child_ids: existing.child_ids }]]
+				: [];
+		})
+	);
+}
+
 export function updateNodeParentById(
 	node_to_update: {
 		id: string;
 		parent_id?: string;
 	},
 	new_parent: string
-) {
-	patchNodes(reparentPatches(node_to_update.id, node_to_update.parent_id, new_parent));
-	return findNode(node_to_update.id);
+): { node?: Node; error?: string; renumbered_to?: number } {
+	const node = findNode(node_to_update.id);
+	if (!node) return { error: 'Circuit not found.' };
+	const parent = findNode(new_parent);
+	const error = moveError(node, parent);
+	if (error) return { error };
+
+	const used = new Set(
+		(parent?.child_ids ?? []).flatMap((child_id) =>
+			child_id === node.id ? [] : [findNode(child_id)?.circuit_number]
+		)
+	);
+	const renumbered_to = used.has(node.circuit_number)
+		? Math.max(0, ...[...used].map((number) => number ?? 0)) + 1
+		: undefined;
+	const patches = reparentPatches(node.id, node.parent_id, new_parent);
+	patches.push([node.id, MOVED_CIRCUIT]);
+	if (renumbered_to !== undefined) patches.push([node.id, { circuit_number: renumbered_to }]);
+	patchNodes(patches);
+	return { node: findNode(node.id), renumbered_to };
 }

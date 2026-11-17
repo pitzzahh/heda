@@ -3,8 +3,8 @@
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
 		AMPERE_TRIP_TO_COPPER,
-		CONDUIT_TABLE
-	} from '#lib/constants/index.js';
+		CONDUIT_SIZES
+	} from '#lib/constants.js';
 
 	interface Props {
 		node_id: string;
@@ -37,7 +37,7 @@
 		.sort((a, b) => a - b);
 	const egc_size_last_index = egc_sizes.length - 1;
 
-	const conduit_sizes = CONDUIT_TABLE.conduit_columns;
+	const conduit_sizes = CONDUIT_SIZES;
 	const conduit_size_last_index = conduit_sizes.length - 1;
 
 	const at_last_index = standard_ampere_ratings.length - 1;
@@ -53,7 +53,7 @@
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	let {
 		node_id,
 		closeDialog,

@@ -10,7 +10,7 @@
 
 <script lang="ts">
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import InsulationsDropdown from './insulations-dropdown.svelte';
 
 	fixture_state = setUndoRedoState();

@@ -12,7 +12,7 @@
 </script>
 
 <script lang="ts">
-	import { WarningCircleIcon } from '#lib/assets/icons/index.js';
+	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { Separator } from '#lib/components/ui/separator/index.js';
@@ -27,30 +27,37 @@
 		default_load_types,
 		load_type_to_varies_label,
 		default_hp_current_relationship,
-		load_type_to_quantity_label
-	} from '#lib/constants/index.js';
+		default_phases,
+		load_type_to_quantity_label,
+		THREE_PHASE_MOTOR_FLC_400V
+	} from '#lib/constants.js';
+	import {
+		horsepowerOfCurrent,
+		supplyError,
+		supplyPhaseOf
+	} from '#lib/utils/computations/index.js';
 	import {
 		AmbientTempField,
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
 	import { LoadDescriptionField, LoadTypeField, VariesField } from './(components)/index.js';
-	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load/index.js';
-	import type { GenericPhaseMainLoadSchema } from '#lib/types/load/index.js';
+	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load.js';
+	import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 	import { page } from '$app/state';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
-	import { checkNodeExists } from '#lib/db/queries/index.js';
-	import { convertToNormalText } from '#lib/utils/format/index.js';
-	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import { checkNodeExists, getNode } from '#lib/db/queries/index.js';
+	import { convertToNormalText } from '#lib/utils/format.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
+	import type { Node } from '#lib/types/db.js';
 	import type {
 		LoadType,
 		QuantityLabel,
 		TerminalTemperature,
 		VariesLabel
-	} from '#lib/types/load/index.js';
+	} from '#lib/types/load.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
@@ -81,7 +88,7 @@
 			terminal_temperature: node_to_edit.load_data.terminal_temperature as TerminalTemperature,
 			load_type: node_to_edit.load_data.load_type as LoadType,
 			quantity: node_to_edit.load_data.quantity,
-			varies: node_to_edit.load_data.varies,
+			varies: horsepowerOfCurrent(node_to_edit.load_data.load_type, node_to_edit.load_data.varies),
 			continuous: node_to_edit.load_data.continuous,
 			length: node_to_edit.length
 		};
@@ -124,6 +131,16 @@
 				return;
 			}
 
+			const supply_error = supplyError({
+				node: { node_type: 'load', load_data: data },
+				parent: getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params)
+			});
+			if (supply_error) {
+				toast.error(supply_error);
+				submitting = false;
+				return;
+			}
+
 			if (load_type) {
 				const load_description = `${data.quantity} - ${data.load_description}`;
 				const load_data = {
@@ -136,6 +153,11 @@
 							default_hp_current_relationship[
 								data.varies as keyof typeof default_hp_current_relationship
 							]
+					}),
+					// PEC 2017 Table 4.30.14.4, 400 V column: stored as full-load current, like 1P motors.
+					...(data.load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER && {
+						varies:
+							THREE_PHASE_MOTOR_FLC_400V[data.varies as keyof typeof THREE_PHASE_MOTOR_FLC_400V]
 					})
 				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 				switch (action) {
@@ -177,6 +199,16 @@
 
 	// The parent node (panel) of the loads, taken from the route id.
 	const panel_id_from_params = nodeIdFromRouteId(page.params?.id) || '';
+	// Three-phase loads need a 400Y/230 V panel (PEC 2017 App. D Ex. D6, a 400/230 V three-phase service).
+	const allow_three_phase = $derived(
+		supplyPhaseOf(getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params)) ===
+			default_phases.THREE_PHASE_WYE
+	);
+	const hp_currents = $derived(
+		getInput(form, { path: ['load_type'] }) === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
+			? THREE_PHASE_MOTOR_FLC_400V
+			: default_hp_current_relationship
+	);
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
 		getInput(form, { path: ['load_type'] })
@@ -288,8 +320,8 @@
 				label={quantity_label}
 				placeholder="Enter {convertToNormalText(quantity_label)}"
 			/>
-			<VariesField {form} {load_type} varies_label={variesLabel} />
-			<LoadTypeField {form} {load_type} />
+			<VariesField {form} {load_type} varies_label={variesLabel} {hp_currents} />
+			<LoadTypeField {form} {load_type} {allow_three_phase} />
 			<Field of={form} path={['continuous']}>
 				{#snippet children(field)}
 					<div class="flex min-w-0 flex-col gap-2">

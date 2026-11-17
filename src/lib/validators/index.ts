@@ -1,18 +1,23 @@
 import * as v from 'valibot';
 import { PASSWORD_FIELD, PHASE_FIELD } from './shared.js';
 
-export * from './load/index.js';
-export * from './panel/index.js';
+export * from './load.js';
+export * from './panel.js';
 export * from './db.js';
 export * from './misc.js';
 export * from './settings.js';
+export * from './short-circuit.js';
+export * from './schedule.js';
+export * from './voltage-drop.js';
+export * from './file.js';
 
 export const HIGHEST_UNIT_SCHEMA = v.pipe(
 	v.object({
+		// A blank name falls back to the form's placeholder, "Transformer".
 		distribution_unit: v.optional(
 			v.pipe(
 				v.string(),
-				v.check((val) => !!val, 'A distribution unit is required.')
+				v.transform((val) => val.trim() || 'Transformer')
 			),
 			'Transformer'
 		),

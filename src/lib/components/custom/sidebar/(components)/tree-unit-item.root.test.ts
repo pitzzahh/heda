@@ -33,7 +33,7 @@ vi.stubGlobal('matchMedia', () => ({
 }));
 
 import RootItemFixture, { get_fixture_node } from './tree-unit-item.root.fixture.svelte';
-import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 
 afterEach(() => {
 	document.body.innerHTML = '';

@@ -5,7 +5,7 @@ import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
-} from '#lib/constants/index.js';
+} from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
 import { addNode, createProject, overrideField, resetData } from '#lib/db/mutations/index.js';
 import { getComputedLoads } from '#lib/db/queries/index.js';

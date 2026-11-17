@@ -7,8 +7,9 @@ import {
 	type LoadSnapshot
 } from './snapshot.js';
 import { computeNodeLoad, type LoadComputationContext } from './compute.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import { supplyError } from '#lib/utils/computations/index.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export function getChildNodesByParentId(parent_id: string): Node[] {
 	// O(1) after one snapshot build per revision; the array keeps its identity
@@ -17,8 +18,16 @@ export function getChildNodesByParentId(parent_id: string): Node[] {
 }
 
 export function getParentNodes(excluded_id?: string): { name: string; id: string }[] {
-	return loadSnapshot().nodes.flatMap((node) => {
+	const snapshot = loadSnapshot();
+	const excluded = snapshot.node_by_id.get(excluded_id ?? '');
+	return snapshot.nodes.flatMap((node) => {
 		if (node.id === excluded_id || (node.node_type !== 'panel' && node.node_type !== 'root')) {
+			return [];
+		}
+		// Only panels that can supply it (a three-phase circuit needs 3P-Y).
+		if (excluded && supplyError({ node: excluded, parent: node })) return [];
+		// Never under its own subtree: that would cut the branch off the root.
+		if (excluded_id && isWithinSubtree((id) => snapshot.node_by_id.get(id), node, excluded_id)) {
 			return [];
 		}
 		if (node.panel_data) {
@@ -29,6 +38,21 @@ export function getParentNodes(excluded_id?: string): { name: string; id: string
 		}
 		return [];
 	});
+}
+
+/** Whether `node` sits somewhere below `ancestor_id`. */
+export function isWithinSubtree(
+	lookup: (id: string) => Node | undefined,
+	node: Node,
+	ancestor_id: string
+): boolean {
+	let current: Node | undefined = node;
+	// Bounded: a looping parent chain in a tampered file must not spin forever.
+	for (let depth = 0; current && depth < 10_000; depth += 1) {
+		if (current.parent_id === ancestor_id) return true;
+		current = lookup(current.parent_id ?? '');
+	}
+	return false;
 }
 
 /** The shared, revision-surviving computation context for the live snapshot. */

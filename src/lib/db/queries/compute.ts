@@ -3,12 +3,17 @@ import {
 	computeAmpereTrip,
 	computeConductorSize,
 	computeVoltAmpere,
+	circuitPhase,
 	getConduitSize,
-	getEgcSize
+	getEgcSize,
+	isThreePhaseCircuit,
+	panelTotals,
+	threePhaseCurrent
 } from '#lib/utils/computations/index.js';
-import type { LoadType } from '#lib/types/load/index.js';
-import type { Node } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+import { WYE_LINE_VOLTAGE } from '#lib/constants.js';
+import type { LoadType } from '#lib/types/load.js';
+import type { Node } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export type LoadComputationContext = {
 	children_by_parent: Map<string, Node[]>;
@@ -20,7 +25,11 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 	const memoized = context.memo.get(node.id);
 	if (memoized) return memoized;
 
-	const voltage = 230;
+	// Single-phase circuits run at 230 V; three-phase ones line-to-line at 400 V
+	// (PEC 2017 2.20.1.5(A); App. D Ex. D6).
+	const is_three_phase = isThreePhaseCircuit(node);
+	const voltage = is_three_phase ? WYE_LINE_VOLTAGE : 230;
+	const phase = circuitPhase(node);
 	const conductor_set = node.conductor_sets as number;
 	const conductor_qty = node.conductor_qty as number;
 	const load_data = node.load_data;
@@ -33,7 +42,7 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 			quantity: load_data?.quantity ?? 0,
 			varies: Number(load_data?.varies) || 0
 		}) || 0;
-	const current = va / voltage;
+	const current = is_three_phase ? threePhaseCurrent(va) : va / voltage;
 	const at = node.overrided_at || computeAmpereTrip(current, load_data?.load_type as LoadType);
 	const conductor_size =
 		node.overrided_conductor_size ||
@@ -65,8 +74,7 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 		const panel_loads = (context.children_by_parent.get(node.id) ?? []).map((child) =>
 			computeNodeLoad(child, context)
 		);
-		const total_va = panel_loads.reduce((total, load) => total + (load.va || 0), 0);
-		const total_current = panel_loads.reduce((total, load) => total + (load.current || 0), 0);
+		const { va: total_va, current: total_current, ...wye } = panelTotals(node, panel_loads);
 		const main_at = node.overrided_at || computeAmpereTrip(total_current);
 		const main_current = parseFloat(total_current.toFixed(2));
 		const main_conductor_size =
@@ -97,6 +105,8 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 			...node,
 			load_description: panel_data.name || '',
 			voltage,
+			phase,
+			...wye,
 			va: total_va,
 			at: main_at,
 			current: main_current,
@@ -111,6 +121,7 @@ export function computeNodeLoad(node: Node, context: LoadComputationContext): Ph
 			...node,
 			load_description: load_data?.load_description || '',
 			voltage,
+			phase,
 			va,
 			at,
 			current: parseFloat(current.toFixed(2)),

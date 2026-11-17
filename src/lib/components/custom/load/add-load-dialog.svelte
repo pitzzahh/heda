@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import { PlusCircleIcon } from '#lib/assets/icons/index.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import { PlusCircleIcon } from '#lib/assets/icons.js';
+	import type { Node } from '#lib/types/db.js';
 
 	interface Props {
 		highest_unit?: NonNullable<Node['highest_unit_form']>;
@@ -17,9 +17,9 @@
 	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
 	import Separator from '#lib/components/ui/separator/separator.svelte';
 	import { getNode } from '#lib/db/queries/index.js';
-	import { DEFAULT_PHASES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
-	import { nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+	import { DEFAULT_PHASES } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
+	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import { page } from '$app/state';
 
 	let {

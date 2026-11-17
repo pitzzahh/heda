@@ -1,6 +1,6 @@
 [package]
 name = "heda"
-version = "0.1.0"
+version = "2.8.0"
 description = "An intuitive and powerful tool designed for electrical engineers to streamline crucial design and analysis processes. Whether you're planning loads, analyzing circuits, or ensuring system safety, HEDA has you covered."
 authors = ["pitzzahh", "isipisii"]
 license = ""
@@ -26,6 +26,7 @@ tauri-plugin-log = "~2.10.1"
 tauri-plugin-fs = "~2.7.1"
 tauri-plugin-process = "~2.4.0"
 tauri-plugin-dialog = "~2.8.4"
+tauri-plugin-opener = "~2.7.3"
 tauri-plugin-single-instance = "~2.5.5"
 tauri-plugin-stronghold = "~2.4.0"
 tauri-plugin-updater = "~2.14.1"

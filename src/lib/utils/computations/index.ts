@@ -6,17 +6,48 @@ import {
 	AMPACITY_TO_CONDUCTOR_SIZE,
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
-	CONDUIT_TABLE
-} from '#lib/constants/index.js';
-import type { LoadType } from '#lib/types/load/index.js';
+	CONDUIT_FILL_AREAS,
+	THHN_CONDUCTOR_AREAS,
+	MOTOR_LOAD_TYPES,
+	SQRT_3,
+	THREE_PHASE_MOTOR_FLC_400V,
+	WYE_LINE_VOLTAGE,
+	default_hp_current_relationship
+} from '#lib/constants.js';
+import type { LoadType } from '#lib/types/load.js';
 
 // load types with the same formula or value
 const common_load_types = [
 	default_load_types.LIGHTING_LOAD,
 	default_load_types.CONVENIENCE_OUTLET,
 	default_load_types.GENERAL_LIGHTING,
-	default_load_types.HEATING_EQUIPMENT
+	default_load_types.HEATING_EQUIPMENT,
+	default_load_types.THREE_P_EQUIPMENT
 ] as const;
+
+const three_phase_motor_types: readonly string[] = [
+	default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+	default_load_types.THREE_P_MOTOR__RATED_CURRENT
+];
+
+/**
+ * Motors picked by horsepower are stored as their full-load current; this maps
+ * the current back to the horsepower so the picker can show it on edit. Other
+ * load types pass through.
+ */
+export function horsepowerOfCurrent(
+	load_type: string | undefined,
+	varies: string | undefined
+): string | undefined {
+	const table: Readonly<Record<string, string>> | undefined =
+		load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER
+			? default_hp_current_relationship
+			: load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
+				? THREE_PHASE_MOTOR_FLC_400V
+				: undefined;
+	if (!table || varies === undefined) return varies;
+	return Object.keys(table).find((hp) => Number(table[hp]) === Number(varies));
+}
 
 type CommonLoadTypes = (typeof common_load_types)[number];
 
@@ -34,6 +65,11 @@ export function computeVoltAmpere({
 	if (is_varies_number) {
 		if (common_load_types.includes(load_type as CommonLoadTypes)) {
 			return quantity * varies;
+		}
+
+		// Three-phase motors: VA = 1.732 × 400 V × full-load current (PEC 2017 App. D Ex. D6 6.3).
+		if (three_phase_motor_types.includes(load_type)) {
+			return quantity * SQRT_3 * WYE_LINE_VOLTAGE * varies;
 		}
 
 		// load types with separate formula
@@ -80,9 +116,7 @@ export function computeConductorSize({
 	current: number;
 	is_adjustment_factor_dynamic: boolean;
 }) {
-	const is_motor_load =
-		load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER ||
-		load_type === default_load_types.ONE_P_MOTOR__RATED_CURRENT;
+	const is_motor_load = MOTOR_LOAD_TYPES.includes(load_type);
 	const adjusted_current = computeAdjustedCurrent({
 		set,
 		ambient_temp,
@@ -176,27 +210,35 @@ export function getEgcSize(at: number) {
 	return range?.size ?? -1;
 }
 
+/**
+ * Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds `total_num_of_conductors`
+ * THHN conductors of `conductor_size`; -1 when none of Table 10.1.1.4's sizes does.
+ */
 export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
 	if (conductor_size > 530) {
 		return 'Error';
 	}
 
-	const row = CONDUIT_TABLE.conductor_rows.find((row) => row.conductor_size === conductor_size);
+	const conductor_area = THHN_CONDUCTOR_AREAS[conductor_size];
 
-	if (!row) {
+	if (!conductor_area) {
 		return 'Invalid conductor size';
 	}
 
-	let nearest_value = Infinity;
-	let column_index = -1;
+	const fill_key =
+		total_num_of_conductors === 1 ? 'one' : total_num_of_conductors === 2 ? 'two' : 'over_two';
+	const row = CONDUIT_FILL_AREAS.find(
+		(row) => maxConductorsInArea(row[fill_key], conductor_area) >= total_num_of_conductors
+	);
 
-	for (let i = 0; i < row.values.length; i++) {
-		const value = row.values[i];
-		if (value >= total_num_of_conductors && value < nearest_value) {
-			nearest_value = value;
-			column_index = i;
-		}
-	}
-
-	return column_index === -1 ? column_index : CONDUIT_TABLE.conduit_columns[column_index];
+	return row?.size ?? -1;
 }
+
+/** PEC 2017 Ch. 10 Note 7: a fractional count of 0.8 or more rounds up to the next whole conductor. */
+export function maxConductorsInArea(fill_area: number, conductor_area: number) {
+	// + 0.2 lifts x.8 and above to the next whole number; 1e-9 absorbs float error (48 / 10 → 4.7999…).
+	return Math.floor(fill_area / conductor_area + 0.2 + 1e-9);
+}
+
+export * from './short-circuit.js';
+export * from './three-phase.js';

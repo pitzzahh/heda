@@ -1,6 +1,7 @@
-import type { NodeByIdResult } from '#lib/types/db/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import type { NodeByIdResult } from '#lib/types/db.js';
+import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+import type { ShortCircuit } from '#lib/types/short-circuit.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 // Per-node results that depend only on the node and its descendants. They
 // survive across revisions; the load snapshot evicts changed nodes and their
@@ -13,6 +14,11 @@ export const computed_load_arrays = new Map<string, PhaseLoadSchedule[]>();
 export const node_by_id_reuse = new Map<string, NodeByIdResult>();
 
 export const voltage_drop_result_reuse: { revision: number; value: VoltageDrop[] | null } = {
+	revision: -1,
+	value: null
+};
+
+export const short_circuit_result_reuse: { revision: number; value: ShortCircuit[] | null } = {
 	revision: -1,
 	value: null
 };
@@ -61,6 +67,8 @@ export function clearQueryCache(): void {
 	node_by_id_reuse.clear();
 	voltage_drop_result_reuse.revision = -1;
 	voltage_drop_result_reuse.value = null;
+	short_circuit_result_reuse.revision = -1;
+	short_circuit_result_reuse.value = null;
 }
 
 export function evictNodeFromCache(node_id: string): void {

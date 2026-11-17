@@ -12,7 +12,7 @@
 		size = 'default',
 		...rest
 	}: PopoverPrimitive.ContentProps & {
-		/** Portal target; defaults to the body. Pass a fullscreen element so the popover stays visible. */
+		/** Portal target; defaults to BitsConfig's (the body, or a popout window's body). Pass a fullscreen element so the popover stays visible. */
 		container?: HTMLElement | null;
 		size?: PopoverSize;
 	} = $props();
@@ -20,7 +20,7 @@
 	const styles = $derived(popover({ size }));
 </script>
 
-<PopoverPrimitive.Portal to={container ?? 'body'}>
+<PopoverPrimitive.Portal to={container ?? undefined}>
 	<PopoverPrimitive.Content
 		{sideOffset}
 		{align}

@@ -1,29 +1,38 @@
 <script lang="ts" module>
 	import type { FormStore } from '@formisch/svelte';
-	import type { LoadType } from '#lib/types/load/index.js';
+	import type { LoadType } from '#lib/types/load.js';
 	import type { FormLoadTypeOption } from '../generic-phase-main-load-form.svelte';
 
 	interface Props {
 		form: FormStore;
 		load_type: FormLoadTypeOption | undefined;
+		/** Three-phase load types are offered only on a 3P-Y panel. */
+		allow_three_phase: boolean;
 	}
 </script>
 
 <script lang="ts">
 	import { Field } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import { DEFAULT_LOAD_TYPES } from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_LOAD_TYPES } from '#lib/constants.js';
+	import { isThreePhaseLoadType } from '#lib/utils/computations/index.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';
 
-	let { form, load_type }: Props = $props();
+	let { form, load_type, allow_three_phase }: Props = $props();
+
+	const load_type_options = $derived(
+		allow_three_phase
+			? DEFAULT_LOAD_TYPES
+			: DEFAULT_LOAD_TYPES.filter((option) => !isThreePhaseLoadType(option.value))
+	);
 
 	let open = $state(false);
 	const trigger_id = useId();
@@ -68,7 +77,7 @@
 						<Command.Input autofocus placeholder="Search a load type..." class="h-9" />
 						<Command.Empty>No load type found.</Command.Empty>
 						<Command.Group>
-							{#each DEFAULT_LOAD_TYPES as load_type_option (load_type_option.value)}
+							{#each load_type_options as load_type_option (load_type_option.value)}
 								<Command.Item
 									value={load_type_option.value}
 									onSelect={() => {

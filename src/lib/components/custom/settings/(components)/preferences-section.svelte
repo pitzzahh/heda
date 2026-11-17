@@ -1,9 +1,9 @@
 <script lang="ts" module>
-	import type { Font, Settings } from '#lib/types/settings/index.js';
+	import type { Font, Settings } from '#lib/types/settings.js';
 </script>
 
 <script lang="ts">
-	import { CircleHalfIcon, MoonIcon, SunIcon } from '#lib/assets/icons/index.js';
+	import { CircleHalfIcon, MoonIcon, SunIcon } from '#lib/assets/icons.js';
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';

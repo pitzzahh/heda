@@ -17,7 +17,7 @@
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import { setSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { setSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-	import type { Node } from '#lib/types/db/index.js';
+	import type { Node } from '#lib/types/db.js';
 	import TreeLoadItem from './tree-load-item.svelte';
 
 	setSettingsState('light').setShowLoadsOnUnitHeirarchy(true);

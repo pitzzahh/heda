@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { FormStore } from '@formisch/svelte';
-	import type { TerminalTemperature } from '#lib/types/load/index.js';
+	import type { TerminalTemperature } from '#lib/types/load.js';
 
 	interface Props {
 		form: FormStore;
@@ -10,17 +10,14 @@
 
 <script lang="ts">
 	import { Field } from '@formisch/svelte';
-	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons/index.js';
+	import { CaretUpDownIcon, CheckIcon } from '#lib/assets/icons.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { selectTrigger } from '#lib/components/ui/select/index.js';
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import {
-		DEFAULT_TERMINAL_TEMPERATURES,
-		STANDARD_TERMINAL_TEMPERATURE
-	} from '#lib/constants/index.js';
-	import { getOptionLabel } from '#lib/utils/format/index.js';
+	import { DEFAULT_TERMINAL_TEMPERATURES, STANDARD_TERMINAL_TEMPERATURE } from '#lib/constants.js';
+	import { getOptionLabel } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
 	import { tick } from 'svelte';

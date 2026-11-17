@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
-	import { default_phases } from '#lib/constants/index.js';
+	import { default_phases } from '#lib/constants.js';
 	import GenericPhaseMainPanelForm from './generic-phase-main-panel-form.svelte';
 
 	setUndoRedoState();

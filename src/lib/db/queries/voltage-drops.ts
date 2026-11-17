@@ -2,7 +2,7 @@ import { computed_loads, voltage_drop_result_reuse } from './cache.js';
 import { getSnapshotRevision, loadSnapshot, peekSnapshot, type LoadSnapshot } from './snapshot.js';
 import { walkVoltageDrops } from './voltage-drop-core.js';
 import { nextTask } from './loads.js';
-import type { VoltageDrop } from '#lib/types/voltage-drop/index.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 // Work done per task before yielding back to the event loop.
 const SLICE_MS = 8;

@@ -50,7 +50,6 @@ describe('GenericPhaseMainPanelForm', () => {
 			'Name',
 			'Circuit number',
 			'Terminal Temperature',
-			'Type',
 			'Phase',
 			'Ambient Temperature',
 			'Length'
@@ -58,6 +57,16 @@ describe('GenericPhaseMainPanelForm', () => {
 			expect(text).toContain(label);
 		}
 		expect(disabled_trigger()).toBeNull();
+		unmount(component);
+	});
+
+	test('a 3P-Y supply offers 1P and 3P-Y panels without the old type picker', () => {
+		const component = mount(PanelFormFixture, { target: document.body });
+		flushSync();
+		// The phase already says wye, so the WYE/DELTA/ALGO type picker is gone.
+		expect(document.body.textContent).not.toContain('Select a panel phase type');
+		const trigger = document.querySelector<HTMLButtonElement>('button[role="combobox"]');
+		expect(trigger?.disabled).toBe(false);
 		unmount(component);
 	});
 

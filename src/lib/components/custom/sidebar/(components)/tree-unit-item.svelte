@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import type { Node, Project } from '#lib/types/db/index.js';
-	import type { PhaseLoadSchedule } from '#lib/types/load/one_phase/index.js';
+	import type { Node, Project } from '#lib/types/db.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import type { DragDropState } from '@thisux/sveltednd';
 
 	interface Props {
@@ -25,7 +25,7 @@
 		SidebarIcon,
 		SquaresFourIcon,
 		TrashIcon
-	} from '#lib/assets/icons/index.js';
+	} from '#lib/assets/icons.js';
 	import * as Collapsible from '#lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
@@ -34,7 +34,7 @@
 	import UpdatePanelDialog from '../update-panel-dialog.svelte';
 	import AddLoadDialog from '#lib/components/custom/load/add-load-dialog.svelte';
 	import TreeActionsMenu from './tree-actions-menu.svelte';
-	import { getChildNodesByParentId } from '#lib/db/queries/index.js';
+	import { getChildNodesByParentId, getNode } from '#lib/db/queries/index.js';
 	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
 	import { updateNodeParentById } from '#lib/db/mutations/index.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
@@ -45,7 +45,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
-	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation/index.js';
+	import { loadScheduleRouteId, nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import { draggable, droppable } from '@thisux/sveltednd';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '#lib/utils/index.js';
@@ -157,30 +157,36 @@
 
 	function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, targetContainer } = state;
-		if (!targetContainer || _node.id === draggedItem.parent_id) {
-			toast.warning(
-				`Cannot move load ${getNodeName(draggedItem)} to same previous ${getNodeName(_node)} panel`
-			);
+		// A press without a move drops a row on itself: nothing to do.
+		if (_node.id !== targetContainer || _node.id === draggedItem.id) return;
+		if (_node.id === draggedItem.parent_id) {
+			toast.info(`${getNodeName(draggedItem)} is already on ${getNodeName(_node)}`);
 			return;
 		}
-		if (_node.id === targetContainer) {
-			toast.info(`Setting ${getNodeName(draggedItem)} panel to ${getNodeName(_node)}`);
-			const updated_node = updateNodeParentById(
-				{
-					id: draggedItem.id,
-					parent_id: draggedItem.parent_id
-				},
-				targetContainer
-			);
-			undo_redo_state.setActionToUndo({
-				action: 'update_node',
-				data: updated_node as unknown as PhaseLoadSchedule,
-				previous_data: draggedItem as PhaseLoadSchedule
+		const previous_node = getNode(draggedItem.id);
+		const {
+			node: moved_node,
+			error,
+			renumbered_to
+		} = updateNodeParentById({ id: draggedItem.id, parent_id: draggedItem.parent_id }, _node.id);
+		if (error || !moved_node) {
+			toast.error(`Cannot move ${getNodeName(draggedItem)} to ${getNodeName(_node)}`, {
+				description: error
 			});
-			toast.success(`${getNodeName(draggedItem)} updated successfully`);
 			return;
 		}
-		return;
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			data: moved_node as unknown as PhaseLoadSchedule,
+			previous_data: (previous_node ?? draggedItem) as unknown as PhaseLoadSchedule
+		});
+		collapsibles.addNodeId(_node.id);
+		toast.success(`${getNodeName(draggedItem)} moved to ${getNodeName(_node)}`, {
+			description:
+				renumbered_to === undefined
+					? undefined
+					: `Its circuit number was taken there, so it is now circuit ${renumbered_to}.`
+		});
 	}
 
 	function getNodeName(_node?: Node) {
@@ -249,10 +255,14 @@
 				{/if}
 				<ContextMenu.Root bind:open={menu_open}>
 					<ContextMenu.Trigger class="flex w-full items-center justify-between">
+						<!-- Inside the row button: without a handle sveltednd refuses to start the drag. -->
 						<div
+							data-tree-drag
 							use:draggable={{
-								container: node?.panel_data?.name ?? 'unknown_panel',
-								dragData: node
+								container: node.id,
+								dragData: node,
+								handle: '[data-tree-drag]',
+								disabled: node.node_type === 'root'
 							}}
 						>
 							<AddPanelAndViewTrigger

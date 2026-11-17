@@ -8,7 +8,7 @@
 	import { invoke, isTauri } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { error } from '@tauri-apps/plugin-log';
-	import { forwardConsoleToLog } from '#lib/helpers/log/index.js';
+	import { forwardConsoleToLog } from '#lib/helpers/log.js';
 	import { toast } from 'svelte-sonner';
 	import { Toaster } from '#lib/components/ui/toast/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';

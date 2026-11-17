@@ -40,7 +40,7 @@ Object.defineProperty(Element.prototype, 'animate', {
 	configurable: true
 });
 
-import { DEFAULT_LOADS } from '#lib/constants/index.js';
+import { DEFAULT_LOADS } from '#lib/constants.js';
 import LoadFormFixture from './generic-phase-main-load-form.fixture.svelte';
 
 afterEach(() => {

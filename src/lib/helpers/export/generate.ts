@@ -1,9 +1,9 @@
-import type { Node } from '#lib/types/db/index.js';
-import type { ExcelExportType } from '#lib/types/misc/index.js';
-import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
-import { convertToNormalText, getOptionLabel } from '#lib/utils/format/index.js';
-import { processOnePhaseExcelPanelBoardSchedule } from './panel-board-sheet.js';
-import { processOnePhaseVoltageDrop } from './voltage-drop-sheet.js';
+import type { Node } from '#lib/types/db.js';
+import type { ExcelExportType } from '#lib/types/misc.js';
+import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
+import { convertToNormalText, getOptionLabel } from '#lib/utils/format.js';
+import { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
+import { processVoltageDropSheet } from './voltage-drop-sheet.js';
 
 export interface GeneratedWorkbook {
 	buffer: ArrayBuffer;
@@ -36,16 +36,17 @@ export async function generateWorkbook(payload: {
 	const phase_label = getOptionLabel(DEFAULT_PHASES, highest_unit?.phase);
 	switch (highest_unit?.phase) {
 		case default_phases.ONE_PHASE:
+		case default_phases.THREE_PHASE_WYE:
 			workbook.subject = `${phase_label} ${convertToNormalText(payload.type, true)}`;
 			workbook.category = [
 				phase_label,
 				`${convertToNormalText(payload.type, true)}`,
 				'Export'
 			].join(',');
-			workbook.description = 'Load schedule for 1 phase load schedule';
+			workbook.description = `${phase_label} ${convertToNormalText(payload.type, true)}`;
 			switch (payload.type) {
 				case 'LOAD_SCHEDULE': {
-					const result = await processOnePhaseExcelPanelBoardSchedule(
+					const result = await processExcelPanelBoardSchedule(
 						workbook,
 						payload.node_id,
 						highest_unit,
@@ -58,7 +59,7 @@ export async function generateWorkbook(payload: {
 					break;
 				}
 				case 'VOLTAGE_DROP': {
-					const result = await processOnePhaseVoltageDrop(workbook, nodes, is_dynamic);
+					const result = await processVoltageDropSheet(workbook, nodes, is_dynamic);
 					if (!result.valid) {
 						throw new Error(result.message ?? 'Failed to process voltage drop');
 					}
@@ -66,13 +67,15 @@ export async function generateWorkbook(payload: {
 				}
 			}
 			break;
-		case default_phases.THREE_PHASE_WYE:
 		case default_phases.THREE_PHASE_DELTA:
-			throw new Error('Three phase load schedule is not yet supported');
+			throw new Error('Three-phase delta load schedule is not yet supported');
 		default:
 			throw new Error('Unknown phase');
 	}
 
-	const buffer = await workbook.xlsx.writeBuffer();
-	return { buffer: buffer as ArrayBuffer, title: workbook.title };
+	// ExcelJS returns a Buffer (a Uint8Array, possibly a view into a larger pool),
+	// not the ArrayBuffer its types claim. The worker transfers this to the page,
+	// and only a real, exactly sized ArrayBuffer can be transferred.
+	const bytes = await workbook.xlsx.writeBuffer();
+	return { buffer: new Uint8Array(bytes).buffer, title: workbook.title };
 }

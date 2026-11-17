@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { Node } from '#lib/types/db/index.js';
+import type { Node } from '#lib/types/db.js';
 import { flattenVisibleTree } from './tree-rows.js';
 
 function panel(id: string, parent_id: string): Node {

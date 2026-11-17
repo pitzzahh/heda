@@ -1,3 +1,5 @@
+import type { FileProtection } from '#lib/types/main.js';
+
 // Session-only secrets. Plain module (no runes) so node tests can import it.
 // The file password (or device key) lives here between unlock and close; it
 // is never persisted. The secret is also mirrored to `sessionStorage`
@@ -12,7 +14,7 @@ const SESSION_KEY = 'heda-session';
 // Written by earlier builds; only removed now.
 const LEGACY_KEYS = ['heda-session-password', 'heda-file-protection'];
 
-export type FileProtection = 'device' | 'password';
+export type { FileProtection };
 
 type StoredSession = { secret: string; protection: FileProtection };
 

@@ -2,7 +2,7 @@ import { PersistedState } from 'runed';
 import { setState, getState } from '#lib/state/index.svelte.js';
 import { PROJECT_STATE_CTX } from '#lib/state/constants.js';
 import { allowProjectFolder } from '#lib/helpers/file/index.js';
-import type { RecentProject } from '#lib/types/main/index.js';
+import type { RecentProject } from '#lib/types/main.js';
 
 type ProjectStateType = {
 	recent_projects?: RecentProject[];
@@ -19,6 +19,8 @@ export class ProjectState {
 	current_project_path = $state('');
 	exists = $state(false);
 	loaded = $state(false);
+	/** The open tab of the schedule page, mirrored here so the workspace header can show it. */
+	schedule_tab = $state('load-sched');
 
 	constructor(recent_project?: RecentProject) {
 		const _persisted_state = new PersistedState<ProjectStateType>('project_state', {

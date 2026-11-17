@@ -24,8 +24,9 @@ import {
 } from '#lib/db/session.js';
 import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 import { toast } from 'svelte-sonner';
-import type { FileExport, RecentProject } from '#lib/types/main/index.js';
+import type { FileExport, RecentProject } from '#lib/types/main.js';
 import { loadCurrentProject } from '#lib/db/mutations/index.js';
+import { needsPec2017Notice } from './migrations.js';
 import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getLegacyV1Config } from './legacy/credentials.js';
@@ -171,7 +172,14 @@ export async function handleLoadFile(
 	_procesing?: () => void,
 	_idle?: () => void,
 	password: string | null = null
-): Promise<RecentProject | NeedPassword | NeedMigration | undefined | string | number> {
+): Promise<
+	| (RecentProject & { pec_2017_migrated: boolean })
+	| NeedPassword
+	| NeedMigration
+	| undefined
+	| string
+	| number
+> {
 	let load_toast_id: string | number | undefined;
 	try {
 		_procesing?.();
@@ -254,6 +262,7 @@ export async function handleLoadFile(
 			setSession(password!, 'password');
 		}
 
+		const pec_2017_migrated = needsPec2017Notice(file_data);
 		let loaded_project;
 		try {
 			loaded_project = await loadCurrentProject(file_data);
@@ -269,7 +278,8 @@ export async function handleLoadFile(
 			project_name: instance_name,
 			project_path: complete_file_path,
 			exists: true,
-			protection
+			protection,
+			pec_2017_migrated
 		};
 	} catch (err) {
 		_idle?.();

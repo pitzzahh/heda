@@ -18,13 +18,14 @@
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import { cn } from '#lib/utils/index.js';
 	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
-	import type { Phase } from '#lib/types/phase/index.js';
-	import { DEFAULT_PHASES, default_phases } from '#lib/constants/index.js';
+	import type { Phase } from '#lib/types/phase.js';
+	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
-	import { loadScheduleRouteId } from '#lib/helpers/navigation/index.js';
+	import { loadScheduleRouteId } from '#lib/helpers/navigation.js';
+	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -34,13 +35,13 @@
 		generateUniqueFileName,
 		allowProjectFolder
 	} from '#lib/helpers/file/index.js';
-	import { LockKeyIcon } from '#lib/assets/icons/index.js';
+	import { LockKeyIcon } from '#lib/assets/icons.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { remove, copyFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-	import type { FileExport } from '#lib/types/main/index.js';
+	import type { FileExport } from '#lib/types/main.js';
 
 	let { closeDialog }: Props = $props();
 
@@ -50,7 +51,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { distribution_unit: 'Transformer', use_password: false }
+		initialInput: { use_password: false }
 	});
 
 	let submitting = $state(false);
@@ -164,7 +165,9 @@
 				})
 			)
 				.then(() => {
-					toast.success(`${project_state.current_project_name} created successfully`);
+					toast.success(`${project_state.current_project_name} created successfully`, {
+						action: showInFolderAction(file_path_with_file)
+					});
 				})
 				.catch((err) => {
 					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
@@ -202,13 +205,7 @@
 			{#snippet children(field)}
 				<div class="space-y-2">
 					<Label class={cn(field.errors && 'text-destructive')}>Distribution unit</Label>
-					<Input
-						{...field.props}
-						value={field.input ?? ''}
-						placeholder="Enter the distribution unit name"
-						readonly
-						tabindex={-1}
-					/>
+					<Input {...field.props} value={field.input ?? ''} placeholder="Transformer" />
 					<FieldErrors errors={field.errors} />
 				</div>
 			{/snippet}
@@ -236,18 +233,19 @@
 											'h-11 w-full justify-between px-4 font-medium hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary'
 									}),
 									{
-										'cursor-not-allowed opacity-60': phase_option.value !== default_phases.ONE_PHASE
+										'cursor-not-allowed opacity-60':
+											phase_option.value === default_phases.THREE_PHASE_DELTA
 									}
 								)}
 							>
-								<!-- Currently only single-phase supply is supported -->
+								<!-- 1P and 3P-Y (400Y/230 V) are supported; delta is not yet -->
 								<RadioGroup.Item
 									value={phase_option.value}
-									disabled={phase_option.value !== default_phases.ONE_PHASE}
+									disabled={phase_option.value === default_phases.THREE_PHASE_DELTA}
 									class="sr-only"
 								/>
 								<span>{phase_option.label}</span>
-								{#if phase_option.value !== default_phases.ONE_PHASE}
+								{#if phase_option.value === default_phases.THREE_PHASE_DELTA}
 									<span
 										class="text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase"
 										>Soon</span

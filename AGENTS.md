@@ -17,6 +17,8 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 
 ## Imports & aliases
 
+- No folder that holds only an `index.ts`: a single module is a flat file (`#lib/validators/voltage-drop.ts`, `#lib/types/schedule.ts`, `#lib/constants.ts`). Folders with `index.ts` barrels are only for groups of several files (components, `utils/computations/`).
+
 - `#lib/*` → `./src/lib/*`, `#routes/*` → `./src/routes/*` (see `imports` in `package.json` + `paths` in `tsconfig.json`). Always use aliases, never deep relative paths across folders, EXCEPT inside `new URL()` (e.g. `new Worker`), where `#` starts a URL fragment and breaks Vite resolution: use a relative path there.
 - Valibot is always `import * as v from "valibot"`, and only inside `src/lib/validators/`.
 - Icons come only from `#lib/assets/icons`, which re-exports phosphor-svelte with the `Icon` postfix via deep imports (`export { default as XIcon } from 'phosphor-svelte/lib/XIcon'`, which skips the 3000-export barrel). Never import icon components from anywhere else; never reintroduce `lucide-svelte`.
@@ -26,7 +28,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 - `src/lib/validators/` contains ONLY Valibot schemas and shared field consts. Nothing else lives there, and no schema lives anywhere else. Never define `v.object`/`v.pipe`/field schemas inline in `+page.ts`, `+layout.ts`, or components; import them.
 - NO type aliases, interfaces, or `v.InferOutput` in validators/ (enforced: `grep -rnE "InferOutput|export (type|interface)" src/lib/validators/` must be empty). Types live in `lib/types` (below).
 - NO value imports from `"valibot"` outside `src/lib/validators/**`. `import type` is allowed ONLY in `src/lib/types/**` for `v.InferOutput` derivation (enforced: `grep -rnE 'from ["'"'"']valibot["'"'"']' src | grep -v "src/lib/validators/" | grep -vE "^src/lib/types/[^:]*:[0-9]*:import type"` must be empty). Validate only through Formisch; never call `v.parse`/`v.safeParse` in components or load functions. If a non-Formisch caller ever needs direct parsing, its helper lives in validators/ (none exist today).
-- One domain file per area (`load/`, `panel/`, …) plus a shared module `src/lib/validators/shared.ts` for reusable fields. Reuse before duplicating.
+- One flat domain file per area (`load.ts`, `panel.ts`, …) plus a shared module `src/lib/validators/shared.ts` for reusable fields. Reuse before duplicating.
 - Exported schema/field consts are `UPPER_SNAKE_CASE`:
   ```ts
   // shared.ts
@@ -35,7 +37,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
   import { NAME_FIELD } from './shared';
   export const GENERIC_PHASE_PANEL_SCHEMA = v.object({ name: NAME_FIELD });
   ```
-- Re-export every domain file from `src/lib/validators/index.ts`. Import from the domain file (`#lib/validators/panel`), not the barrel, in load functions and components.
+- Re-export every domain file from `src/lib/validators/index.ts`. Import from the domain file (`#lib/validators/panel.js`), not the barrel, in load functions and components.
 
 ## Types (lib/types)
 
@@ -74,7 +76,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
   1. `bun run lint` (`bun fmt --check` + eslint, repo-wide). Run after edits.
   2. `bun run test` (vitest): the tests covering your change, at minimum.
   3. `bun run check` (svelte-check, slow): ONCE at the end, never after every edit, never `--watch` in agent runs.
-- Bug fixes and behavior changes keep a colocated `*.test.ts` (see `src/lib/utils/format/format.test.ts`); validator changes extend `src/lib/validators/validators.test.ts`.
+- Bug fixes and behavior changes keep a colocated `*.test.ts` (see `src/lib/utils/format.test.ts`); validator changes extend `src/lib/validators/validators.test.ts`.
 - `validators.test.ts` (inside `validators/`) is the one place outside Formisch allowed to call `v.safeParse`.
 - Never run `vite build` to validate code, except when touching Vite/adapter/prerender-affecting config (the one area `check` cannot see). No `svelte-kit sync` except as part of `bun run check`.
 

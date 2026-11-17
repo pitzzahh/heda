@@ -1,5 +1,5 @@
 <script module lang="ts">
-	import type { Node, Project } from '#lib/types/db/index.js';
+	import type { Node, Project } from '#lib/types/db.js';
 
 	interface Props {
 		node: Node;
