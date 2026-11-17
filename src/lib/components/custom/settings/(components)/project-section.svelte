@@ -20,6 +20,7 @@
 	import { updateProjectSettings } from '#lib/db/mutations/index.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 
 	let { close_settings }: Props = $props();
 
@@ -60,6 +61,9 @@
 		leave.resetSession();
 		dialogs_state.highestUnit = true;
 	}
+
+	// Android names new projects itself and never replaces a file, so there is nothing to back up.
+	const show_backup = !isAndroidApp();
 </script>
 
 <div class="flex flex-col gap-2">
@@ -109,51 +113,53 @@
 			}}
 		/>
 	</div>
-	<Separator class="my-1 w-full" />
-	<div class="flex flex-col gap-2">
-		<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'success' : 'warning'}>
-			{#if settingsState.backup_project_file_if_exists}
-				<CheckSquareIcon class="size-4" />
-			{:else}
-				<WarningCircleIcon class="size-4" />
-			{/if}
-
-			<Alert.Description>
+	{#if show_backup}
+		<Separator class="my-1 w-full" />
+		<div class="flex flex-col gap-2">
+			<Alert.Root variant={settingsState.backup_project_file_if_exists ? 'success' : 'warning'}>
 				{#if settingsState.backup_project_file_if_exists}
-					Old project file will be backed up when creating new project and replacing it upon project
-					creation.
+					<CheckSquareIcon class="size-4" />
 				{:else}
-					Old project file will not be backed up when creating new project and replacing it upon
-					project creation.
+					<WarningCircleIcon class="size-4" />
 				{/if}
-			</Alert.Description>
-		</Alert.Root>
-		<div class="flex flex-row items-center justify-between gap-3">
-			<div class="space-y-0.5">
-				<Label for="backup_project_file">Backup old project file</Label>
-				<p class="text-xs text-muted-foreground">
-					Automatically backup old project file when creating new project and performing replacing
-					it upon project creation.
-				</p>
+
+				<Alert.Description>
+					{#if settingsState.backup_project_file_if_exists}
+						Old project file will be backed up when creating new project and replacing it upon
+						project creation.
+					{:else}
+						Old project file will not be backed up when creating new project and replacing it upon
+						project creation.
+					{/if}
+				</Alert.Description>
+			</Alert.Root>
+			<div class="flex flex-row items-center justify-between gap-3">
+				<div class="space-y-0.5">
+					<Label for="backup_project_file">Backup old project file</Label>
+					<p class="text-xs text-muted-foreground">
+						Automatically backup old project file when creating new project and performing replacing
+						it upon project creation.
+					</p>
+				</div>
+				<Switch
+					id="backup_project_file"
+					checked={settingsState.backup_project_file_if_exists}
+					onCheckedChange={(value) => {
+						settingsState.setBackupProjectFileIfExists(value);
+						if (value) {
+							toast.success(`Backup project file enabled successfully`, {
+								description:
+									'Old project file will be backed up when creating new project and replacing it upon project creation.'
+							});
+						} else {
+							toast.warning(`Backup project file disabled successfully`, {
+								description:
+									'Old project file will not be backed up when creating new project and replacing it upon project creation.'
+							});
+						}
+					}}
+				/>
 			</div>
-			<Switch
-				id="backup_project_file"
-				checked={settingsState.backup_project_file_if_exists}
-				onCheckedChange={(value) => {
-					settingsState.setBackupProjectFileIfExists(value);
-					if (value) {
-						toast.success(`Backup project file enabled successfully`, {
-							description:
-								'Old project file will be backed up when creating new project and replacing it upon project creation.'
-						});
-					} else {
-						toast.warning(`Backup project file disabled successfully`, {
-							description:
-								'Old project file will not be backed up when creating new project and replacing it upon project creation.'
-						});
-					}
-				}}
-			/>
 		</div>
-	</div>
+	{/if}
 </div>

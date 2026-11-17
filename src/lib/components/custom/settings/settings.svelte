@@ -33,6 +33,7 @@
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { Update } from '@tauri-apps/plugin-updater';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import { PreferencesSection, ProjectSection, UpdatesSection } from './(components)/index.js';
 
 	const component_state = new PersistedState<Pick<SettingsComponentType, 'active_setting'>>(
@@ -46,6 +47,12 @@
 
 	// Open/close is session-only: a persisted dialog would reopen on every load.
 	let settings_open = $state(false);
+
+	// The Android app has no in-app updater: it updates through a new APK.
+	const show_updates = !isAndroidApp();
+	const nav_items = show_updates
+		? settings_links.nav
+		: settings_links.nav.filter((item) => item.name !== 'Updates');
 </script>
 
 <Dialog.Root bind:open={settings_open}>
@@ -75,7 +82,7 @@
 					<Sidebar.Group>
 						<Sidebar.GroupContent>
 							<Sidebar.Menu>
-								{#each settings_links.nav as item (item.name)}
+								{#each nav_items as item (item.name)}
 									<Sidebar.MenuItem>
 										<Sidebar.MenuButton
 											isActive={item.name === component_state.current.active_setting}
@@ -104,7 +111,7 @@
 				>
 					<!-- Phones: the side nav is hidden, so the sections switch here. -->
 					<nav class="flex gap-1 overflow-x-auto px-4 md:hidden" aria-label="Settings sections">
-						{#each settings_links.nav as item (item.name)}
+						{#each nav_items as item (item.name)}
 							<button
 								type="button"
 								class={buttonVariants({
@@ -145,7 +152,7 @@
 							<ProjectSection close_settings={() => (settings_open = false)} />
 						{:else if component_state.current.active_setting === 'Preferences'}
 							<PreferencesSection />
-						{:else if component_state.current.active_setting === 'Updates'}
+						{:else if component_state.current.active_setting === 'Updates' && show_updates}
 							<UpdatesSection bind:update_state bind:app_update />
 						{/if}
 					</div>

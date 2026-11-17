@@ -113,6 +113,24 @@ describe('validators', () => {
 		expect(name(undefined)).toBe('Transformer');
 	});
 
+	it('trims an optional project name and caps its length', () => {
+		const parse = (project_name?: string) =>
+			v.safeParse(HIGHEST_UNIT_SCHEMA, { phase: default_phases.ONE_PHASE, project_name });
+		const output = (project_name?: string) => {
+			const result = parse(project_name);
+			return result.success ? result.output.project_name : null;
+		};
+		expect(output('  Mall expansion ')).toBe('Mall expansion');
+		expect(output('')).toBe('');
+		expect(output(undefined)).toBeUndefined();
+		expect(output('a'.repeat(100))).toBe('a'.repeat(100));
+		const too_long = parse('a'.repeat(101));
+		expect(too_long.success).toBe(false);
+		if (!too_long.success) {
+			expect(too_long.issues[0].path?.[0].key).toBe('project_name');
+		}
+	});
+
 	it('rejects invalid inputs', () => {
 		expect(v.safeParse(HIGHEST_UNIT_SCHEMA, { distribution_unit: '', phase: '9P' }).success).toBe(
 			false

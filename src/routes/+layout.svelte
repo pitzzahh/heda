@@ -5,6 +5,8 @@
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { onBackButtonPress } from '@tauri-apps/api/app';
 	import { invoke, isTauri } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { error } from '@tauri-apps/plugin-log';
@@ -26,6 +28,8 @@
 	import { WINDOW_CLOSE_REQUESTED } from '#lib/helpers/file/close-request.js';
 	import { saveCurrentProject } from '#lib/helpers/file/index.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
+	import { closeTopLayer, hasOpenLayer, planBackAction } from '#lib/helpers/back-button.js';
 
 	let { children } = $props();
 
@@ -60,6 +64,16 @@
 		let disposed = false;
 		let unlisten: (() => void) | undefined;
 		let unlisten_close: (() => void) | undefined;
+		let unlisten_back: (() => void) | undefined;
+		if (isAndroidApp()) {
+			onBackButtonPress(() => void handleBackButton())
+				.then((listener) => {
+					const unregister = () => void listener.unregister().catch(() => undefined);
+					if (disposed) unregister();
+					else unlisten_back = unregister;
+				})
+				.catch((err) => error(`Failed to listen for the back button: ${err}`));
+		}
 		listen<string>(FILE_OPEN_EVENT, (event) => requestFileOpen(event.payload))
 			.then((fn) => {
 				if (disposed) fn();
@@ -89,8 +103,23 @@
 			disposed = true;
 			unlisten?.();
 			unlisten_close?.();
+			unlisten_back?.();
 		};
 	});
+
+	// Android back button: see `#lib/helpers/back-button.ts` for why each case is ours.
+	async function handleBackButton() {
+		const plan = planBackAction({
+			layer_open: hasOpenLayer(document),
+			pathname: page.url.pathname,
+			home_path: resolve('/'),
+			workspace_path: resolve('/(workspaces)/workspace')
+		});
+		if (plan === 'close_layer') return closeTopLayer(document);
+		if (plan === 'leave_project') return leave.goHome();
+		if (plan === 'go_home') return goto(resolve('/'));
+		await invoke('close_main_window');
+	}
 
 	// Several flows can prompt (file open, Home, window close); one decision
 	// settles all of them so no caller is left hanging.

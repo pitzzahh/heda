@@ -1,3 +1,10 @@
+<script lang="ts" module>
+	import type { LibraryProject } from '#lib/types/main.js';
+	import type { ImportResult } from '#lib/helpers/file/library.js';
+
+	const MODIFIED = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+</script>
+
 <script lang="ts">
 	import {
 		FileIcon,
@@ -25,7 +32,14 @@
 	} from '#lib/db/session.js';
 	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
 	import { clearSessionSnapshot } from '#lib/db/index.js';
-	import { PasswordDialog } from '#lib/components/custom/index.js';
+	import { ConfirmationDialog, PasswordDialog } from '#lib/components/custom/index.js';
+	import {
+		IMPORT_REJECTIONS,
+		deleteLibraryProject,
+		importIntoLibrary,
+		listLibraryProjects
+	} from '#lib/helpers/file/library.js';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import type { RecentProject } from '#lib/types/main.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -55,6 +69,10 @@
 	let migrate_path = $state('');
 	let migrate_error = $state<string | null>(null);
 	let migrate_busy = $state(false);
+	// Android: the projects in the app's own folder, listed instead of recent files.
+	let library = $state<LibraryProject[]>([]);
+	let delete_target = $state<LibraryProject | null>(null);
+	let delete_open = $state(false);
 
 	async function convertLoadedFile(recent_project_data: RecentProject) {
 		try {
@@ -149,6 +167,54 @@
 		}
 	}
 
+	async function refreshLibrary() {
+		try {
+			library = await listLibraryProjects();
+		} catch (err) {
+			console.error(`Could not list the projects on this device: ${String(err)}`);
+		}
+	}
+
+	async function importFile() {
+		component_state.status = 'processing';
+		let result: ImportResult;
+		try {
+			result = await importIntoLibrary();
+		} catch (err) {
+			console.error(`Failed to import file: ${String(err)}`);
+			return toast.error('Failed to import file', {
+				description: (err as Error)?.message ?? 'Something went wrong.'
+			});
+		} finally {
+			component_state.status = 'idle';
+		}
+		if (result.status === 'cancelled') {
+			return toast.warning('No file selected', {
+				description: 'Cannot proceed, no file is selected.'
+			});
+		}
+		if (result.status === 'rejected') {
+			const { title, description } = IMPORT_REJECTIONS[result.reason];
+			return toast.warning(title, { description });
+		}
+		// Listed now, so it shows even if the password prompt is dismissed.
+		await refreshLibrary();
+		await attemptLoad(result.path);
+	}
+
+	async function deleteProject(project: LibraryProject) {
+		try {
+			await deleteLibraryProject(project.path);
+			toast.success(`${project.name} deleted`);
+		} catch (err) {
+			toast.error(`Could not delete ${project.name}`, {
+				description: (err as Error)?.message ?? 'Something went wrong.'
+			});
+		} finally {
+			await refreshLibrary();
+		}
+	}
+
 	async function handleMigrationSubmit() {
 		const path = migrate_path;
 		migrate_busy = true;
@@ -180,6 +246,7 @@
 		clearSessionPassword();
 		clearSessionSnapshot();
 		void project_state.validateRecentProjects();
+		if (android) void refreshLibrary();
 	});
 
 	// Consumes a .heda path the OS asked us to open; clearing it is an event
@@ -190,6 +257,8 @@
 		open_file_state.pending_path = null;
 		void attemptLoad(path);
 	});
+
+	const android = isAndroidApp();
 </script>
 
 <div class="relative flex min-h-svh flex-col bg-background text-foreground">
@@ -232,16 +301,18 @@
 					variant="outline"
 					disabled={busy}
 					loading={busy}
-					onclick={() => attemptLoad(undefined)}
+					onclick={() => (android ? importFile() : attemptLoad(undefined))}
 				>
 					<FolderOpenIcon class="size-4" />
-					Open file…
+					{android ? 'Import file…' : 'Open file…'}
 				</Button>
 			</div>
 
 			<p class="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
 				<LockKeyIcon class="size-4 shrink-0" />
-				Projects are saved as encrypted .heda files and never leave this computer.
+				{android
+					? 'Projects are saved as encrypted .heda files on this device. Export a password-protected copy to share one.'
+					: 'Projects are saved as encrypted .heda files and never leave this computer.'}
 			</p>
 		</section>
 
@@ -250,9 +321,62 @@
 			class="rounded-xl border bg-card shadow-(--surface-shadow)"
 		>
 			<h2 id="recent-heading" class="border-b px-4 py-3 text-sm font-semibold tracking-tight">
-				Recent projects
+				{android ? 'Projects on this device' : 'Recent projects'}
 			</h2>
-			{#if recent_projects.length}
+			{#if android}
+				{#if library.length}
+					<ScrollArea class="max-h-80">
+						<ul class="p-2">
+							{#each library as project (project.path)}
+								<li class="flex items-center gap-1">
+									<Button
+										variant="ghost"
+										class="h-auto min-w-0 flex-1 justify-start gap-3 px-2 py-2"
+										disabled={busy}
+										onclick={() => attemptLoad(project.path)}
+									>
+										<span
+											class="grid size-8 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/10 text-primary"
+										>
+											<FileIcon class="size-4" />
+										</span>
+										<span class="flex min-w-0 flex-col items-start leading-tight">
+											<span class="w-full truncate text-left text-sm font-medium">
+												{project.name}
+											</span>
+											{#if project.modified}
+												<span
+													class="w-full truncate text-left text-[11px] font-normal text-muted-foreground"
+												>
+													Saved {MODIFIED.format(project.modified)}
+												</span>
+											{/if}
+										</span>
+									</Button>
+									<!-- Always visible: a touch screen has no hover to reveal it. -->
+									<Button
+										variant="ghost"
+										size="icon"
+										class="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+										disabled={busy}
+										onclick={() => {
+											delete_target = project;
+											delete_open = true;
+										}}
+										aria-label="Delete {project.name}"
+									>
+										<TrashIcon class="size-4" />
+									</Button>
+								</li>
+							{/each}
+						</ul>
+					</ScrollArea>
+				{:else}
+					<p class="px-4 py-10 text-center text-sm text-muted-foreground">
+						Projects you create or import will appear here.
+					</p>
+				{/if}
+			{:else if recent_projects.length}
 				<ScrollArea class="max-h-80">
 					<ul class="p-2">
 						{#each recent_projects as project (project.id)}
@@ -302,6 +426,19 @@
 			{/if}
 		</section>
 	</main>
+
+	{#if android}
+		<ConfirmationDialog
+			bind:open_dialog_state={delete_open}
+			trigger_variant="destructive"
+			trigger_text="Delete"
+			title="Delete {delete_target?.name ?? 'this project'}?"
+			description="The project file is removed from this device, along with its backups. Copies you exported are kept."
+			onConfirm={() => {
+				if (delete_target) void deleteProject(delete_target);
+			}}
+		/>
+	{/if}
 
 	<PasswordDialog
 		bind:open={unlock_open}

@@ -36,12 +36,15 @@ export default defineConfig(({ command, mode, isPreview }) => ({
 	worker: {
 		format: 'es'
 	},
+	// `tauri android dev` on a phone sets TAURI_DEV_HOST to this machine's LAN
+	// address: the phone loads the page and hot reload from there, not localhost.
 	server: {
+		host: process.env.TAURI_DEV_HOST || undefined,
 		fs: {
 			allow: ['package.json']
 		},
 		hmr: {
-			host: 'localhost'
+			host: process.env.TAURI_DEV_HOST || 'localhost'
 		}
 	}
 }));

@@ -39,7 +39,7 @@
 			},
 			"devCsp": null,
 			"dangerousDisableAssetCspModification": ["style-src"],
-			"capabilities": ["default"]
+			"capabilities": ["default", "mobile"]
 		}
 	},
 	"bundle": {

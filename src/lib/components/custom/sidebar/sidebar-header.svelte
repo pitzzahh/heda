@@ -24,6 +24,8 @@
 	import { UndoRedoButtons } from './(components)/index.js';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
 	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
+	import { UNTITLED_PROJECT_NAME } from '#lib/helpers/file/library.js';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import type { ButtonState } from '#lib/types/misc.js';
 	import {
 		allowProjectFolder,
@@ -94,13 +96,20 @@
 		try {
 			const current = getCurrentProject();
 			if (!current) throw new Error('No project found');
-			const path = await saveDialog({
-				filters: [{ name: 'Heda file', extensions: [EXTENSION] }]
-			});
+			const path = await saveDialog(
+				android
+					? {
+							// Android's picker types files by MIME, and has none for .heda.
+							defaultPath: `${project_state.current_project_name || UNTITLED_PROJECT_NAME}.${EXTENSION}`,
+							filters: [{ name: 'Heda file', extensions: ['application/octet-stream'] }]
+						}
+					: { filters: [{ name: 'Heda file', extensions: [EXTENSION] }] }
+			);
 			if (!path) return;
-			const file_path = path.endsWith(`.${EXTENSION}`) ? path : `${path}.${EXTENSION}`;
+			// Android returns a content:// document, which takes no extension and has no folder.
+			const file_path = android || path.endsWith(`.${EXTENSION}`) ? path : `${path}.${EXTENSION}`;
 			// The dialog granted only the picked path, which may lack the extension.
-			await allowProjectFolder(file_path);
+			if (!android) await allowProjectFolder(file_path);
 			await writeEncryptedFile(
 				{ project: current, nodes: getAllChildNodes(current.root_node_id, true) },
 				password,
@@ -135,6 +144,8 @@
 		last_autosaved_version = version;
 		untrack(handleSave);
 	});
+
+	const android = isAndroidApp();
 </script>
 
 <svelte:window

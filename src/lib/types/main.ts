@@ -13,3 +13,6 @@ export type FileExport = v.InferOutput<typeof FILE_EXPORT_SCHEMA>;
 export type FileProtection = v.InferOutput<typeof FILE_PROTECTION_FIELD>;
 
 export type RecentProject = v.InferOutput<typeof RECENT_PROJECT_SCHEMA>;
+
+/** A project file in the Android app's own folder (`#lib/helpers/file/library.ts`). */
+export type LibraryProject = { name: string; path: string; modified: Date | null };

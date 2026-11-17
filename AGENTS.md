@@ -9,6 +9,15 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 - Formatting: `bun run format` (`bun fmt`, built into bun). Settings live in the `[fmt]` section of `bunfig.toml`; never reintroduce Prettier or its plugins.
 - `.env` is optional: `BASE_PATH` (web builds only; dev and Tauri builds ignore it) and the legacy v1 migration keys `VITE_LEGACY_FILE_*` (production web builds define them empty; dev servers and tests still read them). Without those keys, v1 `.heda` files cannot be upgraded; v2/v3 files never need `.env`. See `.env.example`.
 
+## Android
+
+- Build: `ANDROID_HOME=~/Android/Sdk NDK_HOME=~/Android/Sdk/ndk/29.0.14206865 bunx tauri android build --apk --target aarch64`, then `adb -s <serial> install -r src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk` (`arm64/release` holds stale `dev --release` output). Always pin `adb -s`. Live runs: `bunx tauri android dev <model>` (e.g. `SM-A066B`; without a name it looks for an emulator); it still loads the Vite dev server, so judge speed on an installed build. Local release builds without `keystore.properties` are signed with the debug key; CI never is.
+- Identifier is `com.peterjohnarao.heda` via `src-tauri/tauri.android.conf.json`. The desktop keeps `me.araopj.heda`: changing it moves `$APPLOCALDATA` and strands every install's device key.
+- `src-tauri/gen/android` is committed and hand-edited (insets in `MainActivity.kt`, `DocumentsPlugin.kt`, backups off, signing from `keystore.properties`). Re-running `tauri android init` overwrites it.
+- Detect with `isAndroidApp()` (`#lib/helpers/platform.ts`). Desktop-only there: popouts, Updates, single-instance, updater, "Show in folder".
+- Projects live in `$APPLOCALDATA/projects` (`#lib/helpers/file/library.ts`). Picked files are `content://` URIs: import (copy) them in, export through the save dialog; never keep or save back to a picked URI.
+- The back button is handled entirely in JS (`#lib/helpers/back-button.ts`).
+
 ## SvelteKit 3 notes
 
 - No `svelte.config.js`: all Kit/Svelte config lives in the `sveltekit({ ... })` plugin in `vite.config.ts`.

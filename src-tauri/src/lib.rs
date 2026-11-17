@@ -4,9 +4,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
 
+#[cfg(desktop)]
 use tauri::webview::NewWindowResponse;
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+#[cfg(desktop)]
+use tauri::WebviewUrl;
+use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder};
 use tauri_plugin_fs::FsExt;
+
+#[cfg(target_os = "android")]
+mod android;
 
 #[tauri::command]
 fn get_file_name(path: String) -> String {
@@ -205,6 +211,7 @@ const MAIN_WINDOW: &str = "main";
 
 /// `popout-<id>` for `about:blank#<id>`, where the id is a UUID-like token
 /// (ASCII alphanumerics and `-`, as `crypto.randomUUID()` makes); else None.
+#[cfg(desktop)]
 fn popout_label(url: &tauri::Url) -> Option<String> {
     if url.scheme() != "about" || url.path() != "blank" || url.query().is_some() {
         return None;
@@ -217,13 +224,6 @@ fn popout_label(url: &tauri::Url) -> Option<String> {
 
 /// Builds the main window from `tauri.conf.json` (where it has `create: false`)
 /// so it can take a `window.open` handler, which config alone cannot set.
-///
-/// Only `about:blank#<id>` popouts are allowed: the opener renders a panel
-/// into them directly, sharing its JS state, so they must stay linked to it
-/// (the window features carry that link). Any other URL is denied, never
-/// loaded inside the app. The window is labelled `popout-<id>` so the opener
-/// can close and focus it natively; a page-side `close()`/`focus()` from the
-/// opener is ignored by WebKitGTK. Must match `src/lib/helpers/popout.ts`.
 fn build_main_window(app: &AppHandle) -> tauri::Result<()> {
     let config = app
         .config()
@@ -233,35 +233,53 @@ fn build_main_window(app: &AppHandle) -> tauri::Result<()> {
         .find(|window| window.label == MAIN_WINDOW)
         .expect("tauri.conf.json must define the main window")
         .clone();
-    let handle = app.clone();
-    WebviewWindowBuilder::from_config(app, &config)?
-        .on_new_window(move |url, features| {
-            let Some(label) = popout_label(&url) else {
-                log::warn!("denied a window.open request for {url}");
-                return NewWindowResponse::Deny;
-            };
-            let blank = WebviewUrl::External("about:blank".parse().expect("valid url"));
-            match WebviewWindowBuilder::new(&handle, label, blank)
-                // WebKitGTK drops the requested size; matches Poppable's default.
-                // `window_features` overrides it where the platform passes one.
-                .inner_size(1100.0, 720.0)
-                .window_features(features)
-                .on_document_title_changed(|window, title| {
-                    let _ = window.set_title(&title);
-                })
-                .build()
-            {
-                Ok(window) => NewWindowResponse::Create { window },
-                Err(err) => {
-                    log::warn!("failed to open a popout window: {err}");
-                    NewWindowResponse::Deny
-                }
-            }
-        })
-        .build()?;
+    let builder = WebviewWindowBuilder::from_config(app, &config)?;
+    #[cfg(desktop)]
+    let builder = with_popouts(builder, app.clone());
+    builder.build()?;
     Ok(())
 }
 
+/// The main window's `window.open` handler. Desktop only: Android has one
+/// window per app, and the webview there never asks.
+///
+/// Only `about:blank#<id>` popouts are allowed: the opener renders a panel
+/// into them directly, sharing its JS state, so they must stay linked to it
+/// (the window features carry that link). Any other URL is denied, never
+/// loaded inside the app. The window is labelled `popout-<id>` so the opener
+/// can close and focus it natively; a page-side `close()`/`focus()` from the
+/// opener is ignored by WebKitGTK. Must match `src/lib/helpers/popout.ts`.
+#[cfg(desktop)]
+fn with_popouts<'a>(
+    builder: WebviewWindowBuilder<'a, tauri::Wry, AppHandle>,
+    handle: AppHandle,
+) -> WebviewWindowBuilder<'a, tauri::Wry, AppHandle> {
+    builder.on_new_window(move |url, features| {
+        let Some(label) = popout_label(&url) else {
+            log::warn!("denied a window.open request for {url}");
+            return NewWindowResponse::Deny;
+        };
+        let blank = WebviewUrl::External("about:blank".parse().expect("valid url"));
+        match WebviewWindowBuilder::new(&handle, label, blank)
+            // WebKitGTK drops the requested size; matches Poppable's default.
+            // `window_features` overrides it where the platform passes one.
+            .inner_size(1100.0, 720.0)
+            .window_features(features)
+            .on_document_title_changed(|window, title| {
+                let _ = window.set_title(&title);
+            })
+            .build()
+        {
+            Ok(window) => NewWindowResponse::Create { window },
+            Err(err) => {
+                log::warn!("failed to open a popout window: {err}");
+                NewWindowResponse::Deny
+            }
+        }
+    })
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_plugin = tauri_plugin_log::Builder::new()
         // The platform log directory (e.g. ~/.local/share/<identifier>/logs on
@@ -282,26 +300,35 @@ pub fn run() {
         .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
         .build();
 
-    let app = tauri::Builder::default()
-        // Must be registered first: a second launch (another double-click while
-        // we run) forwards its arguments here instead of starting a new app
-        // that would wipe the open session's files.
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
-                let _ = window.set_focus();
-            }
-            if let Some(path) = args.into_iter().find(|arg| is_heda_file(arg)) {
-                deliver_file_open(app, path);
-            }
-        }))
+    let builder = tauri::Builder::default();
+    // Must be registered first: a second launch (another double-click while
+    // we run) forwards its arguments here instead of starting a new app
+    // that would wipe the open session's files. Android never starts a second
+    // instance of an app, so the plugin is desktop only.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+            let _ = window.set_focus();
+        }
+        if let Some(path) = args.into_iter().find(|arg| is_heda_file(arg)) {
+            deliver_file_open(app, path);
+        }
+    }));
+    let builder = builder
         .manage(FileOpenState::default())
         .manage(CloseRequestState::default())
         .plugin(log_plugin)
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_process::init());
+    // Android apps update through the APK or the store, not in place.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(android::init());
+
+    let app = builder
         .invoke_handler(tauri::generate_handler![
             get_file_name,
             get_file_metadata,
@@ -310,7 +337,9 @@ pub fn run() {
             ack_close_request,
             close_main_window,
             load_device_key,
-            store_device_key
+            store_device_key,
+            #[cfg(target_os = "android")]
+            android::document_info
         ])
         .setup(|app| {
             build_main_window(app.handle())?;
