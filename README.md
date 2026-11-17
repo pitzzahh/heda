@@ -137,7 +137,8 @@ already have a tag or release are skipped).
 - **Preview:** on `preview`, use a numeric pre-release version such as
   `2.9.0-1` (the Windows installer rejects `2.9.0-beta.1`). It is published as
   a pre-release on its own once every installer is up; the in-app updater never
-  offers pre-releases.
+  offers pre-releases. Linux previews have no `.rpm` (RPM rejects the hyphen);
+  the tarball covers those distros.
 - **Stable:** open a PR from `preview` into `main` that drops the suffix
   (`2.9.0`). Merging it builds the stable release.
 
