@@ -68,7 +68,9 @@ export const NODE_DOC_SCHEMA = v.object({
 			transformer_kva: v.optional(TRANSFORMER_KVA_FIELD),
 			transformer_z_percent: v.optional(TRANSFORMER_Z_PERCENT_FIELD),
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
-			wye_circuit_defaults: v.optional(v.boolean())
+			wye_circuit_defaults: v.optional(v.boolean()),
+			/** Set once a file is opened under the PEC 2017 sizing tables, so its notice and migration run once. */
+			pec_2017_sizing: v.optional(v.boolean())
 		})
 	),
 	parent_id: v.optional(v.string()),

@@ -26,6 +26,7 @@ import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 import { toast } from 'svelte-sonner';
 import type { FileExport, RecentProject } from '#lib/types/main.js';
 import { loadCurrentProject } from '#lib/db/mutations/index.js';
+import { needsPec2017Notice } from './migrations.js';
 import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getLegacyV1Config } from './legacy/credentials.js';
@@ -254,6 +255,7 @@ export async function handleLoadFile(
 			setSession(password!, 'password');
 		}
 
+		const show_pec_2017_notice = needsPec2017Notice(file_data);
 		let loaded_project;
 		try {
 			loaded_project = await loadCurrentProject(file_data);
@@ -262,6 +264,14 @@ export async function handleLoadFile(
 			// secret must not stay cached in memory or the tab's session mirror.
 			clearSessionPassword();
 			throw err;
+		}
+
+		if (show_pec_2017_notice) {
+			toast.info('Sizes recalculated with PEC 2017 tables', {
+				description:
+					'Breaker, conductor and conduit sizes now follow PEC 2017: all standard breaker ratings, 38 mm² at 100 A, heating at 125%, and Chapter 10 conduit fill in 15–150 mm sizes. Review the schedule, then save to update the file.',
+				duration: 15_000
+			});
 		}
 
 		return {

@@ -884,6 +884,7 @@ describe('incremental writes and reads', () => {
 		expect(updated?.highest_unit_form).toEqual({
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE,
+			pec_2017_sizing: true,
 			...source
 		});
 		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();
