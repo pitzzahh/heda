@@ -135,13 +135,14 @@ platform and attaches the installers to an unpublished release (versions that
 already have a tag or release are skipped).
 
 - **Preview:** on `preview`, use a numeric pre-release version such as
-  `2.9.0-1` (the Windows installer rejects `2.9.0-beta.1`). It becomes a
-  pre-release, which the in-app updater never offers.
+  `2.9.0-1` (the Windows installer rejects `2.9.0-beta.1`). It is published as
+  a pre-release on its own once every installer is up; the in-app updater never
+  offers pre-releases.
 - **Stable:** open a PR from `preview` into `main` that drops the suffix
   (`2.9.0`). Merging it builds the stable release.
 
-A version in the wrong form for its branch is skipped. Publish the draft on
-GitHub to create the tag and make it available. To retry a failed release,
+A version in the wrong form for its branch is skipped. Stable releases stay
+drafts: publish them on GitHub to create the tag and make them available. To retry a failed release,
 delete its draft and run the `publish` workflow manually.
 
 ## Authors

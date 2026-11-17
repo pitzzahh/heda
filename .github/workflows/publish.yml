@@ -302,3 +302,21 @@ jobs:
           gh api -X DELETE "repos/$R/releases/assets/$JSON_ID"
           gh api -X POST -H 'Content-Type: application/json' --input latest.new.json \
             "https://uploads.github.com/repos/$R/releases/$ID/assets?name=latest.json"
+
+  # previews go out on their own once every asset is up; stable drafts are still published by hand
+  publish-preview:
+    needs: [version, publish-desktop, publish-android, linux-updater-entry]
+    if: needs.version.outputs.prerelease == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      R: ${{ github.repository }}
+      TAG: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Publish the pre-release
+        run: |
+          ID=$(gh api "repos/$R/releases" --jq "[.[] | select(.tag_name == \"$TAG\")][0].id")
+          gh api -X PATCH "repos/$R/releases/$ID" -F draft=false -F prerelease=true -f make_latest=false \
+            --jq '"published \(.tag_name): \(.html_url)"'
