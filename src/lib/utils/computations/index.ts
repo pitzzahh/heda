@@ -6,7 +6,8 @@ import {
 	AMPACITY_TO_CONDUCTOR_SIZE,
 	AMBIENT_TEMP_RATINGS,
 	AMPERE_TRIP_TO_COPPER,
-	CONDUIT_TABLE,
+	CONDUIT_FILL_AREAS,
+	THHN_CONDUCTOR_AREAS,
 	MOTOR_LOAD_TYPES,
 	SQRT_3,
 	THREE_PHASE_MOTOR_FLC_400V,
@@ -209,29 +210,34 @@ export function getEgcSize(at: number) {
 	return range?.size ?? -1;
 }
 
+/**
+ * Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds `total_num_of_conductors`
+ * THHN conductors of `conductor_size`; -1 when none of Table 10.1.1.4's sizes does.
+ */
 export function getConduitSize(conductor_size: number, total_num_of_conductors: number) {
 	if (conductor_size > 530) {
 		return 'Error';
 	}
 
-	const row = CONDUIT_TABLE.conductor_rows.find((row) => row.conductor_size === conductor_size);
+	const conductor_area = THHN_CONDUCTOR_AREAS[conductor_size];
 
-	if (!row) {
+	if (!conductor_area) {
 		return 'Invalid conductor size';
 	}
 
-	let nearest_value = Infinity;
-	let column_index = -1;
+	const fill_key =
+		total_num_of_conductors === 1 ? 'one' : total_num_of_conductors === 2 ? 'two' : 'over_two';
+	const row = CONDUIT_FILL_AREAS.find(
+		(row) => maxConductorsInArea(row[fill_key], conductor_area) >= total_num_of_conductors
+	);
 
-	for (let i = 0; i < row.values.length; i++) {
-		const value = row.values[i];
-		if (value >= total_num_of_conductors && value < nearest_value) {
-			nearest_value = value;
-			column_index = i;
-		}
-	}
+	return row?.size ?? -1;
+}
 
-	return column_index === -1 ? column_index : CONDUIT_TABLE.conduit_columns[column_index];
+/** PEC 2017 Ch. 10 Note 7: a fractional count of 0.8 or more rounds up to the next whole conductor. */
+export function maxConductorsInArea(fill_area: number, conductor_area: number) {
+	// + 0.2 lifts x.8 and above to the next whole number; 1e-9 absorbs float error (48 / 10 → 4.7999…).
+	return Math.floor(fill_area / conductor_area + 0.2 + 1e-9);
 }
 
 export * from './short-circuit.js';

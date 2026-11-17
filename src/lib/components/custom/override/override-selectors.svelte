@@ -3,7 +3,7 @@
 		standard_ampere_ratings,
 		AMPACITY_TO_CONDUCTOR_SIZE,
 		AMPERE_TRIP_TO_COPPER,
-		CONDUIT_TABLE
+		CONDUIT_SIZES
 	} from '#lib/constants.js';
 
 	interface Props {
@@ -37,7 +37,7 @@
 		.sort((a, b) => a - b);
 	const egc_size_last_index = egc_sizes.length - 1;
 
-	const conduit_sizes = CONDUIT_TABLE.conduit_columns;
+	const conduit_sizes = CONDUIT_SIZES;
 	const conduit_size_last_index = conduit_sizes.length - 1;
 
 	const at_last_index = standard_ampere_ratings.length - 1;

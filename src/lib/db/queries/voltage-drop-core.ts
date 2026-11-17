@@ -49,10 +49,10 @@ export function* walkVoltageDrops(
 			? end_fraction_by_node.get(node.parent_id)
 			: undefined;
 		// PEC 2017 App. D Ex. D15: VD = k·I·Z, k = 1.732 for three-phase (line-to-line, 400 V)
-		// and 2 for single-phase (230 V, here the circuit's conductor count).
+		// and 2 for single-phase (230 V).
 		const is_three_phase = computed.phase === 'ABC';
 		const nominal_voltage = is_three_phase ? WYE_LINE_VOLTAGE : 230;
-		const k = is_three_phase ? SQRT_3 : (computed.conductor_qty as number);
+		const k = is_three_phase ? SQRT_3 : 2;
 		const conductor_size = computed.overrided_conductor_size || computed.conductor_size;
 		const length = computed.overrided_length || (computed.length as number);
 		const z = computed.overrided_z || ALTERNATING_CURRENT_REACTANCE[conductor_size];
