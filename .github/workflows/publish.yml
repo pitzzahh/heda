@@ -69,7 +69,8 @@ jobs:
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-24.04' # pinned: older glibc for the deb, rpm and tarball; the AppImage is skipped on purpose.
-            args: '--bundles deb,rpm'
+            # rpm rejects the hyphen in a preview version (2.9.0-1), so previews ship the deb and tarball only
+            args: ${{ needs.version.outputs.prerelease == 'true' && '--bundles deb' || '--bundles deb,rpm' }}
           - platform: 'windows-latest'
             args: ''
 
