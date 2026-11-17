@@ -1,10 +1,12 @@
 name: 'publish'
 
-# releases run on main, not on tag pushes: a tag run can read main's caches but never the previous tag's
+# releases run on branches, not on tag pushes: a tag run can read the default branch's caches but never the previous tag's.
+# preview (the default branch) ships pre-releases like 2.9.0-1; main ships stable versions like 2.9.0.
 on:
   push:
     branches:
       - main
+      - preview
     paths:
       - 'src-tauri/tauri.conf.json'
   workflow_dispatch:
@@ -13,7 +15,8 @@ env:
   APP_NAME: 'Hierarchical Electrical Design Analyzer'
 
 jobs:
-  # every later job is skipped unless tauri.conf.json carries a version with no tag or release yet
+  # every later job is skipped unless tauri.conf.json carries a version with no tag or release yet,
+  # in the form its branch ships
   version:
     runs-on: ubuntu-24.04
     permissions:
@@ -21,6 +24,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
       new: ${{ steps.ver.outputs.new }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
 
@@ -32,8 +36,18 @@ jobs:
         run: |
           V=$(jq -r .version src-tauri/tauri.conf.json)
           echo "version=$V" >> "$GITHUB_OUTPUT"
+          # the Windows MSI accepts only a numeric pre-release part, so previews are 2.9.0-1, not 2.9.0-beta.1
+          case "$GITHUB_REF_NAME" in
+            preview) FORM='^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$'; PRE=true ;;
+            main) FORM='^[0-9]+\.[0-9]+\.[0-9]+$'; PRE=false ;;
+            *) FORM='^$'; PRE=false ;;
+          esac
+          echo "prerelease=$PRE" >> "$GITHUB_OUTPUT"
+          if ! grep -qE "$FORM" <<< "$V"; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$V is not a $GITHUB_REF_NAME version (preview: 2.9.0-1, main: 2.9.0); skipping"
           # drafts have no git tag yet, so check releases too
-          if git ls-remote --exit-code --tags origin "refs/tags/$V" >/dev/null \
+          elif git ls-remote --exit-code --tags origin "refs/tags/$V" >/dev/null \
             || gh api --paginate "repos/$R/releases" --jq '.[].tag_name' | grep -qxF "$V"; then
             echo "new=false" >> "$GITHUB_OUTPUT"
             echo "::notice::$V already has a tag or release; skipping"
@@ -43,7 +57,7 @@ jobs:
 
   publish-desktop:
     needs: version
-    if: needs.version.outputs.new == 'true' && github.ref == 'refs/heads/main'
+    if: needs.version.outputs.new == 'true'
     permissions:
       contents: write
     strategy:
@@ -120,7 +134,8 @@ jobs:
           releaseName: '${{ env.APP_NAME }} v${{ needs.version.outputs.version }}'
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: true
-          prerelease: false
+          # GitHub never serves a pre-release as "latest", so the updater keeps stable installs on stable
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
           args: ${{ matrix.args }}
 
       # vertdll.dll is the VBS enclave runtime; its WaitOnAddress faults in a normal process,

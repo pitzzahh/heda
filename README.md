@@ -128,13 +128,21 @@ live in [`AGENTS.md`](AGENTS.md).
 
 ### Releasing
 
-Bump the version in `package.json` and `src-tauri/tauri.conf.json`, add a
-section to `changelog.md`, and merge to `main`. No tag push: CI sees the new
-version in `tauri.conf.json`, builds every platform and attaches the installers
-to an unpublished release (versions that already have a tag or release are
-skipped). Publish it on GitHub to create the tag and make it available to users
-and the updater. To retry a failed release, delete its draft and run the
-`publish` workflow manually.
+PRs merge into `preview`, the default branch. Bump the version in
+`package.json` and `src-tauri/tauri.conf.json`, add a section to
+`changelog.md`, and merge. No tag push: CI sees the new version, builds every
+platform and attaches the installers to an unpublished release (versions that
+already have a tag or release are skipped).
+
+- **Preview:** on `preview`, use a numeric pre-release version such as
+  `2.9.0-1` (the Windows installer rejects `2.9.0-beta.1`). It becomes a
+  pre-release, which the in-app updater never offers.
+- **Stable:** open a PR from `preview` into `main` that drops the suffix
+  (`2.9.0`). Merging it builds the stable release.
+
+A version in the wrong form for its branch is skipped. Publish the draft on
+GitHub to create the tag and make it available. To retry a failed release,
+delete its draft and run the `publish` workflow manually.
 
 ## Authors
 
