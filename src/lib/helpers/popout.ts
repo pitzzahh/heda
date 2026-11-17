@@ -7,6 +7,12 @@ import { isTauri } from '@tauri-apps/api/core';
 import { Window as NativeWindow } from '@tauri-apps/api/window';
 
 const STYLE_SELECTOR = 'style, link[rel="stylesheet"]';
+/**
+ * A `url("…")` as CSSOM `cssText` writes it (always double-quoted).
+ * shortcut: escaped URLs and unquoted ones kept verbatim in custom properties
+ * stay relative; match those too if a stylesheet ever puts assets there.
+ */
+const CSS_URL = /url\("([^"\\]*)"\)/g;
 /** Root attributes that carry the theme (mode-watcher class, color vars, color-scheme). */
 const MIRRORED_ROOT_ATTRIBUTES = ['class', 'style', 'lang', 'dir'];
 
@@ -63,9 +69,9 @@ export async function closePopoutWindow({ win, label }: PopoutWindow): Promise<v
 }
 
 /**
- * Keeps `target` styled like `source`: copies its stylesheets and theme root
- * attributes now and on every later change (Vite HMR, theme switches), until
- * the returned cleanup runs.
+ * Keeps `target` styled like `source`: copies its stylesheets (linked ones as
+ * inline `<style>`, see `linkedCss`) and theme root attributes now and on every
+ * later change (Vite HMR, theme switches), until the returned cleanup runs.
  */
 export function mirrorDocumentStyles(source: Document, target: Document): () => void {
 	const clones = new Map<Element, Element>();
@@ -78,14 +84,21 @@ export function mirrorDocumentStyles(source: Document, target: Document): () => 
 			clones.delete(node);
 		}
 		for (const node of current) {
+			const link = node instanceof HTMLLinkElement ? node : null;
 			const existing = clones.get(node);
+			// A loaded sheet's rules never change: copy each link once, not on every head mutation.
+			if (link && existing) continue;
+			const css = link ? linkedCss(link) : node.textContent;
+			// A link still loading: the head's `load` listener syncs it once it lands.
+			if (css === null) continue;
 			if (existing) {
-				if (existing.textContent !== node.textContent) existing.textContent = node.textContent;
+				if (existing.textContent !== css) existing.textContent = css;
 				continue;
 			}
-			const clone = node.cloneNode(true) as Element;
-			// Absolute, so the sheet resolves no matter what base URL the popout has.
-			if (node instanceof HTMLLinkElement) clone.setAttribute('href', node.href);
+			const clone = link
+				? Object.assign(target.createElement('style'), { media: link.media })
+				: (node.cloneNode(true) as Element);
+			clone.textContent = css;
 			target.head.append(clone);
 			clones.set(node, clone);
 		}
@@ -101,6 +114,8 @@ export function mirrorDocumentStyles(source: Document, target: Document): () => 
 
 	syncStyles();
 	syncRoot();
+	// `load` does not bubble; capture catches each linked sheet as it finishes.
+	source.head.addEventListener('load', syncStyles, true);
 	const head = new MutationObserver(syncStyles);
 	head.observe(source.head, { childList: true, subtree: true, characterData: true });
 	const root = new MutationObserver(syncRoot);
@@ -110,11 +125,41 @@ export function mirrorDocumentStyles(source: Document, target: Document): () => 
 	});
 
 	return () => {
+		source.head.removeEventListener('load', syncStyles, true);
 		head.disconnect();
 		root.disconnect();
 		for (const clone of clones.values()) clone.remove();
 		clones.clear();
 	};
+}
+
+/**
+ * The rules of a loaded stylesheet link, or null while it loads. Popouts get
+ * them inline so they never fetch a sheet: WebView2 (Windows) attaches the
+ * popout to its webview only after `window.open` returns, so a cloned `<link>`
+ * requests its sheet before the app's asset handler exists and never styles.
+ * Relative `url()`s are made absolute, as inline text no longer has the sheet's URL.
+ */
+function linkedCss(link: HTMLLinkElement): string | null {
+	try {
+		const rules = link.sheet?.cssRules;
+		if (!rules) return null;
+		return Array.from(rules, (rule) => rule.cssText)
+			.join('\n')
+			.replace(CSS_URL, (_, url: string) => `url("${resolveCssUrl(url, link.href)}")`);
+	} catch {
+		return null;
+	}
+}
+
+/** `url` against `base`, keeping same-document `#id` references (SVG masks, filters). */
+function resolveCssUrl(url: string, base: string): string {
+	if (url.startsWith('#')) return url;
+	try {
+		return new URL(url, base).href;
+	} catch {
+		return url;
+	}
 }
 
 /**

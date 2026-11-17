@@ -15,20 +15,45 @@ describe('mirrorDocumentStyles', () => {
 		document.documentElement.removeAttribute('style');
 	});
 
-	it('copies stylesheets with absolute hrefs and the theme root attributes', () => {
-		document.head.innerHTML =
-			'<link rel="stylesheet" href="/app.css"><style>.a{color:red}</style><title>x</title>';
+	it('copies stylesheets and the theme root attributes', () => {
+		document.head.innerHTML = '<style>.a{color:red}</style><title>x</title>';
 		document.documentElement.className = 'dark';
 		document.documentElement.style.setProperty('--primary', 'blue');
 
 		stop = mirrorDocumentStyles(document, target);
 
-		const link = target.head.querySelector('link');
-		expect(link?.getAttribute('href')).toBe(new URL('/app.css', document.baseURI).href);
 		expect(target.head.querySelector('style')?.textContent).toBe('.a{color:red}');
 		expect(target.title).toBe('popout');
 		expect(target.documentElement.className).toBe('dark');
 		expect(target.documentElement.style.getPropertyValue('--primary')).toBe('blue');
+	});
+
+	it('inlines linked stylesheets once they load, with urls resolved against the sheet', () => {
+		document.head.innerHTML = '<link rel="stylesheet" href="/assets/app.css" media="print">';
+		const link = document.head.querySelector('link')!;
+		let sheet: { cssRules: { cssText: string }[] } | null = null;
+		Object.defineProperty(link, 'sheet', { get: () => sheet });
+		stop = mirrorDocumentStyles(document, target);
+		expect(target.head.querySelector('style')).toBeNull();
+
+		sheet = {
+			cssRules: [
+				{ cssText: '.a { color: red; }' },
+				{ cssText: '@font-face { src: url("./f.woff2") format("woff2"); }' },
+				{ cssText: '.m { mask: url("#m"); background: url("data:image/gif;base64,R0=="); }' }
+			]
+		};
+		link.dispatchEvent(new Event('load'));
+
+		const style = target.head.querySelector('style');
+		const font = new URL('/assets/f.woff2', document.baseURI).href;
+		expect(target.head.querySelector('link')).toBeNull();
+		expect(style?.textContent).toBe(
+			'.a { color: red; }\n' +
+				`@font-face { src: url("${font}") format("woff2"); }\n` +
+				'.m { mask: url("#m"); background: url("data:image/gif;base64,R0=="); }'
+		);
+		expect(style?.media).toBe('print');
 	});
 
 	it('follows added, edited and removed styles and theme switches', async () => {
