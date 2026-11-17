@@ -25,6 +25,7 @@
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 	import { loadScheduleRouteId } from '#lib/helpers/navigation.js';
+	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -164,7 +165,9 @@
 				})
 			)
 				.then(() => {
-					toast.success(`${project_state.current_project_name} created successfully`);
+					toast.success(`${project_state.current_project_name} created successfully`, {
+						action: showInFolderAction(file_path_with_file)
+					});
 				})
 				.catch((err) => {
 					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);

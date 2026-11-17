@@ -22,6 +22,7 @@
 	import { toast } from 'svelte-sonner';
 	import { UndoRedoButtons } from './(components)/index.js';
 	import { exportToExcel } from '#lib/helpers/export/index.js';
+	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 	import type { ButtonState } from '#lib/types/misc.js';
 	import {
 		allowProjectFolder,
@@ -67,7 +68,11 @@
 
 			const saved = await saveCurrentProject(project_state.current_project_path, undo_redo_state);
 			if (saved && !settings_state.auto_save_enabled) {
-				toast.success('Saved successfully');
+				toast.success('Saved successfully', {
+					action: project_state.current_project_path
+						? showInFolderAction(project_state.current_project_path)
+						: undefined
+				});
 			}
 		} finally {
 			component_state.saving = false;
@@ -101,7 +106,8 @@
 			);
 			share_open = false;
 			toast.success('Password-protected copy saved', {
-				description: 'Anyone with the password can open this file.'
+				description: 'Anyone with the password can open this file.',
+				action: showInFolderAction(file_path)
 			});
 		} catch (err) {
 			share_error = (err as Error)?.message ?? 'The copy could not be saved.';
