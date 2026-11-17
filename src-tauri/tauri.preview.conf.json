@@ -1,0 +1,9 @@
+{
+	"plugins": {
+		"updater": {
+			"endpoints": [
+				"https://github.com/pitzzahh/heda/releases/download/preview-channel/latest.json"
+			]
+		}
+	}
+}
