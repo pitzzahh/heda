@@ -71,7 +71,10 @@
 		}
 	}
 
-	async function handleLoadFileSuccess(recent_project_data: RecentProject) {
+	async function handleLoadFileSuccess({
+		pec_2017_migrated,
+		...recent_project_data
+	}: RecentProject & { pec_2017_migrated: boolean }) {
 		await goto(
 			resolve(`/(workspaces)/workspace?load_file=true&project_id=${recent_project_data.id}`)
 		)
@@ -81,6 +84,16 @@
 				project_state.addRecentProject(recent_project_data, true);
 
 				project_state.setProjectLoaded(true);
+				if (pec_2017_migrated) {
+					// The migration only lives in memory until saved: flag it so Save is enabled,
+					// auto-save writes it, and closing asks first.
+					undo_redo_state.setHasUnsavedActions();
+					toast.info('Sizes recalculated with PEC 2017 tables', {
+						description:
+							'Breaker, conductor and conduit sizes now follow PEC 2017: all standard breaker ratings, 38 mm² at 100 A, heating at 125%, and Chapter 10 conduit fill in 15–150 mm sizes. Review the schedule, then save to keep the update.',
+						duration: 15_000
+					});
+				}
 				if (recent_project_data.protection === 'password') {
 					return toast.success('Project loaded successfully', {
 						description: 'This file uses a password. Convert it so it opens without one.',
@@ -103,7 +116,7 @@
 			.finally(() => (component_state.status = 'idle'));
 	}
 
-	function isRecentProject(obj: unknown): obj is RecentProject {
+	function isRecentProject(obj: unknown): obj is RecentProject & { pec_2017_migrated: boolean } {
 		return !!obj && typeof obj === 'object' && 'id' in obj && 'project_name' in obj;
 	}
 
