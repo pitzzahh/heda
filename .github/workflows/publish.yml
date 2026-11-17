@@ -176,6 +176,89 @@ jobs:
           gh api -X POST -H 'Content-Type: application/octet-stream' --input "$BIN" "$UPLOAD?name=$BIN"
           gh api -X POST -H 'Content-Type: text/plain' --input "$BIN.sig" "$UPLOAD?name=$BIN.sig"
 
+  # The APK goes on the draft release tauri-action created; Android has no in-app updater.
+  publish-android:
+    needs: [version, publish-desktop]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      R: ${{ github.repository }}
+      TAG: ${{ needs.version.outputs.version }}
+      NDK_VERSION: '29.0.14206865'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # caches the Gradle wrapper, dependencies and the build cache between runs
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          # the default also installs the legacy `tools` package, which cmdline-tools 16 can no longer resolve
+          packages: 'platform-tools'
+
+      - name: Install the Android platform, build tools and NDK
+        run: |
+          sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0" "ndk;$NDK_VERSION"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust 1.99.1
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+          targets: 'aarch64-linux-android,armv7-linux-androideabi'
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: android
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Write the release keystore
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          KS="$RUNNER_TEMP/release.jks"
+          echo "$ANDROID_KEYSTORE" | base64 -d > "$KS"
+          printf 'storeFile=%s\npassword=%s\nkeyAlias=%s\n' "$KS" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" \
+            > src-tauri/gen/android/keystore.properties
+
+      - name: Build the APK
+        env:
+          CI: true
+          VITE_LEGACY_FILE_PASSPHRASE: ${{ secrets.VITE_LEGACY_FILE_PASSPHRASE }}
+          VITE_LEGACY_FILE_SALT: ${{ secrets.VITE_LEGACY_FILE_SALT }}
+        run: bunx tauri android build --apk --target aarch64 armv7
+
+      - name: Upload the APK to the release
+        run: |
+          APK=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+          # an unsigned build means the keystore secrets are missing; never publish one
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify "$APK"
+          NAME="Hierarchical_Electrical_Design_Analyzer-$TAG-android.apk"
+          ID=$(gh api "repos/$R/releases" --jq "[.[] | select(.tag_name == \"$TAG\")][0].id")
+          gh api -X POST -H 'Content-Type: application/vnd.android.package-archive' --input "$APK" \
+            "https://uploads.github.com/repos/$R/releases/$ID/assets?name=$NAME"
+
   # tauri-action points the generic linux-x86_64 entry at the .deb, which overwrites tarball
   # installs with a package; point it at the signed plain binary once every job has written latest.json
   linux-updater-entry:
