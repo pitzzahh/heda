@@ -22,6 +22,11 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 			'Transformer'
 		),
 		phase: PHASE_FIELD,
+		// Android only: desktop names the file in the save dialog. Blank means
+		// "Untitled project"; unsafe characters are replaced when the file is made.
+		project_name: v.optional(
+			v.pipe(v.string(), v.trim(), v.maxLength(100, 'Use at most 100 characters.'))
+		),
 		use_password: v.optional(v.boolean(), false),
 		// Optional: no password means the file uses this device's key and opens
 		// without a prompt. A password is only for files that must be shared.

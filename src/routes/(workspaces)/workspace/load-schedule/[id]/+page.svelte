@@ -39,6 +39,7 @@
 	import { Poppable } from '#lib/components/custom/popout/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -184,6 +185,9 @@
 			goto(resolve(`/`));
 		}
 	});
+
+	// Android gives an app one window: no popouts there.
+	const can_pop_out = !isAndroidApp();
 </script>
 
 <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
@@ -248,15 +252,17 @@
 					<Tabs.Trigger value={tab.value} class="px-2 sm:px-3">{tab.label}</Tabs.Trigger>
 				{/each}
 			</Tabs.List>
-			<Button
-				variant="outline"
-				size="icon-sm"
-				aria-label="Open this tab in a new window"
-				title="Open in a new window"
-				onclick={() => popouts[active_tab as TabValue]?.popOut()}
-			>
-				<ArrowSquareOutIcon />
-			</Button>
+			{#if can_pop_out}
+				<Button
+					variant="outline"
+					size="icon-sm"
+					aria-label="Open this tab in a new window"
+					title="Open in a new window"
+					onclick={() => popouts[active_tab as TabValue]?.popOut()}
+				>
+					<ArrowSquareOutIcon />
+				</Button>
+			{/if}
 		</div>
 		{#each TABS as tab (tab.value)}
 			<Tabs.Content

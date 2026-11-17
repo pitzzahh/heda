@@ -6,6 +6,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { showInFolderAction } from '#lib/helpers/file/reveal.js';
+import { isAndroidApp } from '#lib/helpers/platform.js';
 
 export { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
 export { processVoltageDropSheet } from './voltage-drop-sheet.js';
@@ -59,7 +60,8 @@ export async function exportToExcel(
 			}
 			await writeFile(path, new Uint8Array(generated.buffer));
 			toast.success('Export finished successfully.', {
-				description: path,
+				// On Android the path is an opaque content:// document link.
+				description: isAndroidApp() ? 'Saved where you picked in the file picker.' : path,
 				action: showInFolderAction(path),
 				position: 'bottom-center'
 			});

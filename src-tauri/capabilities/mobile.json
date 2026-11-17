@@ -1,0 +1,21 @@
+{
+	"$schema": "../gen/schemas/mobile-schema.json",
+	"identifier": "mobile",
+	"description": "Android: no updater, popout windows or relaunch; projects live in the app's own folder",
+	"windows": ["main"],
+	"permissions": [
+		"core:default",
+		"log:default",
+		"stronghold:default",
+		"fs:read-files",
+		"fs:write-files",
+		"fs:allow-read-dir",
+		"fs:allow-mkdir",
+		{
+			"identifier": "fs:scope",
+			"allow": ["$APPLOCALDATA/*", "$APPLOCALDATA/projects/*"]
+		},
+		"dialog:default"
+	],
+	"platforms": ["android"]
+}

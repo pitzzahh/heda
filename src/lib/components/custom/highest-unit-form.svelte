@@ -26,6 +26,8 @@
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 	import { loadScheduleRouteId } from '#lib/helpers/navigation.js';
 	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
+	import { newLibraryFile, UNTITLED_PROJECT_NAME } from '#lib/helpers/file/library.js';
+	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -76,14 +78,17 @@
 			const device_key = password ? null : await getDeviceKey();
 			setSession(password ?? device_key!, password ? 'password' : 'device');
 
-			let file_path_with_file = await saveDialog({
-				filters: [
-					{
-						name: 'Heda file',
-						extensions: [EXTENSION]
-					}
-				]
-			});
+			// Android keeps projects in the app's own folder, named in this form.
+			let file_path_with_file = android
+				? await newLibraryFile(data.project_name || UNTITLED_PROJECT_NAME)
+				: await saveDialog({
+						filters: [
+							{
+								name: 'Heda file',
+								extensions: [EXTENSION]
+							}
+						]
+					});
 
 			if (!file_path_with_file) {
 				return toast.warning('No folder selected', {
@@ -91,13 +96,15 @@
 				});
 			}
 
-			// The dialog filter doesn't append it, and files without it won't match `*.heda` later.
-			if (!file_path_with_file.endsWith(`.${EXTENSION}`)) {
-				file_path_with_file += `.${EXTENSION}`;
+			if (!android) {
+				// The dialog filter doesn't append it, and files without it won't match `*.heda` later.
+				if (!file_path_with_file.endsWith(`.${EXTENSION}`)) {
+					file_path_with_file += `.${EXTENSION}`;
+				}
+				// The dialog granted only the picked path; the backup and the appended
+				// extension need the folder.
+				await allowProjectFolder(file_path_with_file);
 			}
-			// The dialog granted only the picked path; the backup and the appended
-			// extension need the folder.
-			await allowProjectFolder(file_path_with_file);
 
 			let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
 
@@ -192,6 +199,8 @@
 			submitting = false;
 		}
 	}
+
+	const android = isAndroidApp();
 </script>
 
 <form
@@ -201,6 +210,22 @@
 	}}
 >
 	<div class="grid gap-4">
+		{#if android}
+			<Field of={form} path={['project_name']}>
+				{#snippet children(field)}
+					<div class="space-y-2">
+						<Label class={cn(field.errors && 'text-destructive')}>Project name</Label>
+						<Input
+							{...field.props}
+							value={field.input ?? ''}
+							placeholder={UNTITLED_PROJECT_NAME}
+							autocomplete="off"
+						/>
+						<FieldErrors errors={field.errors} />
+					</div>
+				{/snippet}
+			</Field>
+		{/if}
 		<Field of={form} path={['distribution_unit']}>
 			{#snippet children(field)}
 				<div class="space-y-2">

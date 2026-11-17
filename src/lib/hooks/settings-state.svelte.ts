@@ -3,6 +3,7 @@ import type { Font, Settings, ThemeColor, ThemeMode } from '#lib/types/settings.
 import { setGlobalColorTheme } from '#lib/theme-colors.js';
 import { setState, getState } from '#lib/state/index.svelte.js';
 import { THEME_COLOR_STATE_CTX } from '#lib/state/constants.js';
+import { isAndroidApp } from '#lib/helpers/platform.js';
 import { setMode } from 'mode-watcher';
 
 export class SettingsState {
@@ -27,7 +28,9 @@ export class SettingsState {
 			is_panel_multi_copy: false,
 			is_load_multi_copy: false,
 			theme_mode: mode,
-			auto_save_enabled: false,
+			// Android kills apps in the background and a relaunch starts a fresh
+			// session, so unsaved edits there are one app switch from gone.
+			auto_save_enabled: isAndroidApp(),
 			backup_project_file_if_exists: false
 		});
 

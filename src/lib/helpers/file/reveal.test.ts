@@ -1,20 +1,39 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { is_tauri, reveal_item_in_dir, toast_warning } = vi.hoisted(() => ({
+const { is_tauri, is_android, reveal_item_in_dir, toast_warning } = vi.hoisted(() => ({
 	is_tauri: vi.fn(),
+	is_android: vi.fn(),
 	reveal_item_in_dir: vi.fn(),
 	toast_warning: vi.fn()
 }));
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: is_tauri }));
+vi.mock('#lib/helpers/platform.js', () => ({ isAndroidApp: is_android }));
 vi.mock('@tauri-apps/plugin-opener', () => ({ revealItemInDir: reveal_item_in_dir }));
 vi.mock('svelte-sonner', () => ({ toast: { warning: toast_warning } }));
 
 import { revealInFileManager, showInFolderAction } from './reveal.js';
 
 describe('revealInFileManager', () => {
-	beforeEach(() => vi.clearAllMocks());
+	beforeEach(() => {
+		vi.clearAllMocks();
+		is_android.mockReturnValue(false);
+	});
+
+	test('does nothing on Android, where the opener cannot reveal files', async () => {
+		is_tauri.mockReturnValue(true);
+		is_android.mockReturnValue(true);
+		await revealInFileManager('/data/user/0/com.peterjohnarao.heda/projects/Plan.heda');
+		expect(reveal_item_in_dir).not.toHaveBeenCalled();
+		expect(toast_warning).not.toHaveBeenCalled();
+	});
+
+	test('showInFolderAction offers no action on Android', () => {
+		is_tauri.mockReturnValue(true);
+		is_android.mockReturnValue(true);
+		expect(showInFolderAction('content://com.android.providers/document/1')).toBeUndefined();
+	});
 
 	test('does nothing on the web', async () => {
 		is_tauri.mockReturnValue(false);
@@ -43,8 +62,8 @@ describe('revealInFileManager', () => {
 		is_tauri.mockReturnValue(true);
 		reveal_item_in_dir.mockResolvedValue(undefined);
 		const action = showInFolderAction('/tmp/project.heda');
-		expect(action.label).toBe('Show in folder');
-		await action.onClick();
+		expect(action?.label).toBe('Show in folder');
+		await action?.onClick();
 		expect(reveal_item_in_dir).toHaveBeenCalledWith('/tmp/project.heda');
 	});
 });

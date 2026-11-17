@@ -1,3 +1,5 @@
+import { syncSystemBars } from '#lib/helpers/system-bars.js';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const themes: Record<string, any> = {
 	// Excel is the default theme; these values mirror :root / .dark in app.css.
@@ -144,6 +146,7 @@ export function setGlobalColorTheme(themeMode: 'light' | 'dark' | 'system', colo
 		document.documentElement.style.setProperty(name, theme[key]);
 		vars[name] = theme[key];
 	}
+	syncSystemBars(themeMode === 'dark');
 	try {
 		// Pre-paint cache for the blocking theme script in app.html (no flash on boot).
 		localStorage.setItem('heda-theme-v2', JSON.stringify({ dark: themeMode === 'dark', vars }));
