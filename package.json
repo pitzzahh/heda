@@ -1,6 +1,6 @@
 {
 	"name": "heda",
-	"version": "2.8.1",
+	"version": "2.9.0-1",
 	"type": "module",
 	"private": true,
 	"imports": {
