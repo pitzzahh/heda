@@ -129,14 +129,12 @@ live in [`AGENTS.md`](AGENTS.md).
 ### Releasing
 
 Bump the version in `package.json` and `src-tauri/tauri.conf.json`, add a
-section to `changelog.md`, then push a tag with the bare version number:
-
-```sh
-git tag 2.7.1 && git push origin 2.7.1
-```
-
-CI builds every platform and attaches the installers to an unpublished
-release. Publish it on GitHub to make it available to users and the updater.
+section to `changelog.md`, and merge to `main`. No tag push: CI sees the new
+version in `tauri.conf.json`, builds every platform and attaches the installers
+to an unpublished release (versions that already have a tag or release are
+skipped). Publish it on GitHub to create the tag and make it available to users
+and the updater. To retry a failed release, delete its draft and run the
+`publish` workflow manually.
 
 ## Authors
 

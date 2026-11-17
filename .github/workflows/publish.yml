@@ -1,22 +1,49 @@
 name: 'publish'
 
+# releases run on main, not on tag pushes: a tag run can read main's caches but never the previous tag's
 on:
   push:
-    tags:
-      - '*.*.*'
-    # caches are scoped to the ref that saved them; tags can read main's, never another tag's
     branches:
       - main
     paths:
-      - 'src-tauri/**'
-      - '.github/workflows/publish.yml'
-      - 'rust-toolchain.toml'
+      - 'src-tauri/tauri.conf.json'
+  workflow_dispatch:
 
 env:
   APP_NAME: 'Hierarchical Electrical Design Analyzer'
 
 jobs:
+  # every later job is skipped unless tauri.conf.json carries a version with no tag or release yet
+  version:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # draft releases are only listed for tokens with push access
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      new: ${{ steps.ver.outputs.new }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the version and check it is unreleased
+        id: ver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          R: ${{ github.repository }}
+        run: |
+          V=$(jq -r .version src-tauri/tauri.conf.json)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          # drafts have no git tag yet, so check releases too
+          if git ls-remote --exit-code --tags origin "refs/tags/$V" >/dev/null \
+            || gh api --paginate "repos/$R/releases" --jq '.[].tag_name' | grep -qxF "$V"; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$V already has a tag or release; skipping"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish-desktop:
+    needs: version
+    if: needs.version.outputs.new == 'true' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     strategy:
@@ -25,16 +52,12 @@ jobs:
         include:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
             args: '--target aarch64-apple-darwin'
-            warm: '--target aarch64-apple-darwin'
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin'
-            warm: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-24.04' # pinned: older glibc for the deb, rpm and tarball; the AppImage is skipped on purpose.
             args: '--bundles deb,rpm'
-            warm: ''
           - platform: 'windows-latest'
             args: ''
-            warm: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -66,30 +89,24 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           # both macOS targets run on one runner type and would otherwise share a key
-          key: ${{ matrix.warm }}
+          key: ${{ matrix.args }}
 
       - name: Install frontend dependencies
         run: bun install
 
-      - name: Warm the Rust cache
-        if: github.ref_type == 'branch'
-        run: bunx tauri build --no-bundle ${{ matrix.warm }}
-
       - name: Get Changelog Entry
-        if: github.ref_type == 'tag'
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
         with:
           validation_level: warn
           # only the entry being released; older ones predate the section rules
           validation_depth: 1
-          version: ${{ github.ref_name }}
+          version: ${{ needs.version.outputs.version }}
           path: ./changelog.md
 
       - name: Build Tauri app and create release
         id: tauri
         uses: tauri-apps/tauri-action@v1
-        if: ${{ github.ref_type == 'tag' }}
         env:
           CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,8 +115,9 @@ jobs:
           VITE_LEGACY_FILE_PASSPHRASE: ${{ secrets.VITE_LEGACY_FILE_PASSPHRASE }}
           VITE_LEGACY_FILE_SALT: ${{ secrets.VITE_LEGACY_FILE_SALT }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: '${{ env.APP_NAME }} v${{ github.ref_name }}'
+          tagName: ${{ needs.version.outputs.version }}
+          releaseCommitish: ${{ github.sha }}
+          releaseName: '${{ env.APP_NAME }} v${{ needs.version.outputs.version }}'
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: true
           prerelease: false
@@ -118,7 +136,7 @@ jobs:
           'heda.exe imports WaitOnAddress from the core sync API set'
 
       - name: Package Linux tarball
-        if: matrix.platform == 'ubuntu-24.04' && github.ref_type == 'tag'
+        if: matrix.platform == 'ubuntu-24.04'
         run: |
           PKG=src-tauri/target/release/pkg
           mkdir -p "$PKG"
@@ -136,18 +154,18 @@ jobs:
           Categories=Utility;
           EOF
           cp src-tauri/linux/heda.xml "$PKG/heda.xml"
-          tar -czf "Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz" -C "$PKG" heda heda.png heda.desktop heda.xml
+          tar -czf "Hierarchical_Electrical_Design_Analyzer-${{ needs.version.outputs.version }}-linux-x86_64.tar.gz" -C "$PKG" heda heda.png heda.desktop heda.xml
           ls -lh Hierarchical_Electrical_Design_Analyzer-*.tar.gz
 
       - name: Upload Linux tarball and updater binary to release
-        if: matrix.platform == 'ubuntu-24.04' && github.ref_type == 'tag'
+        if: matrix.platform == 'ubuntu-24.04'
         # by id: tag lookups skip drafts, so a tag-based upload creates a second public release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          TARBALL: Hierarchical_Electrical_Design_Analyzer-${{ github.ref_name }}-linux-x86_64.tar.gz
-          BIN: heda-${{ github.ref_name }}-linux-x86_64
+          TARBALL: Hierarchical_Electrical_Design_Analyzer-${{ needs.version.outputs.version }}-linux-x86_64.tar.gz
+          BIN: heda-${{ needs.version.outputs.version }}-linux-x86_64
           UPLOAD: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.tauri.outputs.releaseId }}/assets
         run: |
           # the updater installs a plain binary only when it carries no deb/rpm bundle mark
@@ -161,15 +179,14 @@ jobs:
   # tauri-action points the generic linux-x86_64 entry at the .deb, which overwrites tarball
   # installs with a package; point it at the signed plain binary once every job has written latest.json
   linux-updater-entry:
-    needs: publish-desktop
-    if: github.ref_type == 'tag'
+    needs: [version, publish-desktop]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       R: ${{ github.repository }}
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ needs.version.outputs.version }}
     steps:
       - name: Point linux-x86_64 at the plain binary
         run: |
