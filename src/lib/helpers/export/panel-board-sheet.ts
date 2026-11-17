@@ -1,17 +1,13 @@
 import type ExcelJS from 'exceljs';
 import type { Node } from '#lib/types/db.js';
-import {
-	buildChildrenByParent,
-	getComputedLoadsFromNodes,
-	getNodeDepthFromNodes,
-	getNodeByIdFromNodes
-} from '#lib/db/queries/loads-core.js';
+import { buildChildrenByParent, getNodeDepthFromNodes } from '#lib/db/queries/loads-core.js';
 import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
 import { DEFAULT_PHASES, PHASE_ASSIGNMENTS, default_phases } from '#lib/constants.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
 import { rowPhaseVa, supplyPhaseOf } from '#lib/utils/computations/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type { ExportProcessResult, Header } from './types.js';
+import { fitColumnWidths } from './column-widths.js';
 
 type CellValue = string | number | undefined;
 
@@ -127,6 +123,13 @@ function supplyDescription(phase: string | undefined): string {
 		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`;
 }
 
+/** Lookups built once per export and shared by every panel it writes. */
+interface ExportTree {
+	nodes_by_id: Map<string, Node>;
+	context: LoadComputationContext;
+}
+
+/** Writes the schedule of `node_id` and every panel under it, one sheet per depth. */
 export async function processExcelPanelBoardSchedule(
 	workbook: ExcelJS.Workbook,
 	node_id: string,
@@ -134,34 +137,39 @@ export async function processExcelPanelBoardSchedule(
 	nodes: Node[] = [],
 	is_dynamic = false
 ): Promise<ExportProcessResult> {
-	const current_node = getNodeByIdFromNodes(nodes, node_id);
-	const children = getComputedLoadsFromNodes(nodes, node_id, is_dynamic);
-	const computation_context: LoadComputationContext = {
-		children_by_parent: buildChildrenByParent(nodes),
-		is_dynamic,
-		memo: new Map()
+	// Built once: rebuilding them per panel scanned every node for every panel.
+	const tree: ExportTree = {
+		nodes_by_id: new Map(nodes.map((node) => [node.id, node])),
+		context: { children_by_parent: buildChildrenByParent(nodes), is_dynamic, memo: new Map() }
 	};
-	const computed_current_node = current_node
-		? computeNodeLoad(current_node, computation_context)
-		: undefined;
-	if (!computed_current_node) {
+	const depth = getNodeDepthFromNodes(nodes, node_id);
+	const result = await writePanelSchedule(workbook, node_id, depth, highest_unit, tree);
+	// Once per sheet, after the whole tree: panels at one depth share a sheet, so
+	// fitting it after each panel re-read a growing sheet per panel (quadratic).
+	workbook.eachSheet((worksheet) => fitColumnWidths(worksheet));
+	return result;
+}
+
+async function writePanelSchedule(
+	workbook: ExcelJS.Workbook,
+	node_id: string,
+	depth: number,
+	highest_unit: Node['highest_unit_form'] | undefined,
+	tree: ExportTree
+): Promise<ExportProcessResult> {
+	const { nodes_by_id, context } = tree;
+	const current_node = nodes_by_id.get(node_id);
+	if (!current_node) {
 		return { valid: false, message: 'Node not found', is_system_error: true };
 	}
+	const computed_current_node = computeNodeLoad(current_node, context);
+	// One computed list serves both the load rows and the recursion into sub-panels.
+	const loads = (context.children_by_parent.get(node_id) ?? []).map((child) =>
+		computeNodeLoad(child, context)
+	);
 
-	if (!current_node) {
-		return {
-			valid: false,
-			message: 'Node not found',
-			is_system_error: true
-		};
-	}
-
-	// Use the existing getNodeDepth2 function to calculate the depth
-	const actualDepth = getNodeDepthFromNodes(nodes, node_id);
-	const panel_level = getOrdinalSuffix(actualDepth);
-	const parent_node = current_node?.parent_id
-		? getNodeByIdFromNodes(nodes, current_node.parent_id)
-		: undefined;
+	const panel_level = getOrdinalSuffix(depth);
+	const parent_node = current_node.parent_id ? nodes_by_id.get(current_node.parent_id) : undefined;
 	const panel_name =
 		current_node?.panel_data?.name ??
 		current_node?.highest_unit_form?.distribution_unit ??
@@ -240,7 +248,6 @@ export async function processExcelPanelBoardSchedule(
 		current_header_column += header.cols;
 	});
 
-	const loads = getComputedLoadsFromNodes(nodes, node_id, is_dynamic);
 	let current_load_row = startRow + 6;
 
 	for (const load of loads) {
@@ -268,23 +275,10 @@ export async function processExcelPanelBoardSchedule(
 	emptyRow.height = 15;
 
 	// Process children
-	for (const child of children) {
+	for (const child of loads) {
 		if (child.node_type === 'root' || child.node_type === 'panel') {
-			await processExcelPanelBoardSchedule(workbook, child.id, highest_unit, nodes, is_dynamic);
+			await writePanelSchedule(workbook, child.id, depth + 1, highest_unit, tree);
 		}
-	}
-
-	for (let i = 0; i < worksheet.columns.length; i += 1) {
-		let dataMax = 0;
-		const column = worksheet.columns[i];
-		const headerLength = String(column.values?.[1] ?? '').length;
-		for (let j = 1; j < (column.values?.length ?? 0); j += 1) {
-			const columnLength = String(column.values?.[j] ?? '').length;
-			if (columnLength > dataMax) {
-				dataMax = columnLength;
-			}
-		}
-		column.width = Math.max(dataMax, headerLength, 10);
 	}
 
 	return { valid: true };

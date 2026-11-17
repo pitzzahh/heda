@@ -5,7 +5,7 @@ import {
 	default_phases
 } from '#lib/constants.js';
 import type { FileExport } from '#lib/types/main.js';
-import { migrateFileExport } from './migrations.js';
+import { migrateFileExport, needsPec2017Notice } from './migrations.js';
 
 function createFileExport(): FileExport {
 	return {
@@ -75,6 +75,7 @@ describe('migrateFileExport', () => {
 		file_export.nodes[1].panel_data!.terminal_temperature = STANDARD_TERMINAL_TEMPERATURE;
 		file_export.nodes[2].load_data!.terminal_temperature = STANDARD_TERMINAL_TEMPERATURE;
 		file_export.nodes[2].load_data!.load_type = default_load_types.GENERAL_LIGHTING;
+		file_export.nodes[0].highest_unit_form!.pec_2017_sizing = true;
 
 		const migrated = migrateFileExport(file_export);
 
@@ -130,5 +131,40 @@ describe('migrateFileExport', () => {
 		single.nodes[2].pole = '2';
 		single.nodes[2].conductor_qty = 2;
 		expect(migrateFileExport(single).nodes[2].pole).toBe('2');
+	});
+});
+
+describe('PEC 2017 sizing migration', () => {
+	it('flags a pre-PEC file with circuits for the notice, then marks it once', () => {
+		const file_export = createFileExport();
+		expect(needsPec2017Notice(file_export)).toBe(true);
+
+		const migrated = migrateFileExport(file_export);
+		expect(migrated.nodes[0].highest_unit_form?.pec_2017_sizing).toBe(true);
+		expect(needsPec2017Notice(migrated)).toBe(false);
+	});
+
+	it('maps old Appendix C conduit overrides to the PEC Table 10.1.1.4 trade sizes', () => {
+		const file_export = createFileExport();
+		file_export.nodes[1].overrided_conduit_size = 21;
+		file_export.nodes[2].overrided_conduit_size = 155;
+
+		const migrated = migrateFileExport(file_export);
+		expect(migrated.nodes[1].overrided_conduit_size).toBe(20);
+		expect(migrated.nodes[2].overrided_conduit_size).toBe(150);
+	});
+
+	it('maps conduit overrides only once, so a file already marked keeps its values', () => {
+		const file_export = createFileExport();
+		file_export.nodes[0].highest_unit_form!.pec_2017_sizing = true;
+		file_export.nodes[1].overrided_conduit_size = 16;
+
+		expect(migrateFileExport(file_export).nodes[1].overrided_conduit_size).toBe(16);
+	});
+
+	it('skips the notice for a file with only its root', () => {
+		const file_export = createFileExport();
+		file_export.nodes = [{ ...file_export.nodes[0], child_ids: [] }];
+		expect(needsPec2017Notice(file_export)).toBe(false);
 	});
 });

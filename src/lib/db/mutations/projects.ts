@@ -17,9 +17,11 @@ export async function createProject(
 		const root_node = withNodeDefaults({
 			id: root_node_id,
 			node_type: 'root',
-			// New 3P-Y projects already insert 400Y/230 V defaults: nothing to migrate.
+			// New projects are sized by the PEC 2017 tables, and new 3P-Y ones already insert
+			// 400Y/230 V defaults: nothing to migrate.
 			highest_unit_form: highest_unit_form && {
 				...highest_unit_form,
+				pec_2017_sizing: true,
 				...(highest_unit_form.phase === default_phases.THREE_PHASE_WYE && {
 					wye_circuit_defaults: true
 				})

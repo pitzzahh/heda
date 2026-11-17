@@ -2,6 +2,10 @@ import type { Node } from '#lib/types/db.js';
 import { toast } from 'svelte-sonner';
 import type { ExcelExportType } from '#lib/types/misc.js';
 import { generateWorkbookInWorker } from '#lib/workers/export-client.js';
+import { isTauri } from '@tauri-apps/api/core';
+import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
+import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 
 export { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
 export { processVoltageDropSheet } from './voltage-drop-sheet.js';
@@ -40,22 +44,43 @@ export async function exportToExcel(
 			is_dynamic: snapshot.is_dynamic
 		});
 
-		const blob = new Blob([generated.buffer], {
-			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-		});
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = `${generated.title}.xlsx`;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-		URL.revokeObjectURL(url);
+		const output_file_name = `${generated.title}.xlsx`;
 
-		toast.success('Export finished successfully.', {
-			description: 'The file has been downloaded successfully',
-			position: 'bottom-center'
-		});
+		if (isTauri()) {
+			// Desktop: let the user pick the destination. A browser download would
+			// vanish into an unknown Downloads folder and we could not reveal it.
+			const path = await saveDialog({
+				defaultPath: output_file_name,
+				filters: [{ name: 'Excel workbook', extensions: ['xlsx'] }]
+			});
+			if (!path) {
+				idle_callaback?.();
+				return;
+			}
+			await writeFile(path, new Uint8Array(generated.buffer));
+			toast.success('Export finished successfully.', {
+				description: path,
+				action: showInFolderAction(path),
+				position: 'bottom-center'
+			});
+		} else {
+			const blob = new Blob([generated.buffer], {
+				type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+			});
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = output_file_name;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+
+			toast.success('Export finished successfully.', {
+				description: 'The file has been downloaded successfully',
+				position: 'bottom-center'
+			});
+		}
 	} catch (error) {
 		idle_callaback?.();
 		toast.warning(`Something went wrong while exporting: ${String(error)}`, {

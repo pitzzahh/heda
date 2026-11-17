@@ -13,10 +13,11 @@ export * from './file.js';
 
 export const HIGHEST_UNIT_SCHEMA = v.pipe(
 	v.object({
+		// A blank name falls back to the form's placeholder, "Transformer".
 		distribution_unit: v.optional(
 			v.pipe(
 				v.string(),
-				v.check((val) => !!val, 'A distribution unit is required.')
+				v.transform((val) => val.trim() || 'Transformer')
 			),
 			'Transformer'
 		),

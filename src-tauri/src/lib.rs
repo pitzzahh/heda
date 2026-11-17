@@ -4,7 +4,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
 
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::webview::NewWindowResponse;
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_fs::FsExt;
 
 #[tauri::command]
@@ -199,6 +200,68 @@ fn close_main_window(app: AppHandle) {
     app.exit(0);
 }
 
+/// The window the app starts with; every other window is a popout of it.
+const MAIN_WINDOW: &str = "main";
+
+/// `popout-<id>` for `about:blank#<id>`, where the id is a UUID-like token
+/// (ASCII alphanumerics and `-`, as `crypto.randomUUID()` makes); else None.
+fn popout_label(url: &tauri::Url) -> Option<String> {
+    if url.scheme() != "about" || url.path() != "blank" || url.query().is_some() {
+        return None;
+    }
+    let id = url.fragment()?;
+    let valid = (1..=64).contains(&id.len())
+        && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+    valid.then(|| format!("popout-{id}"))
+}
+
+/// Builds the main window from `tauri.conf.json` (where it has `create: false`)
+/// so it can take a `window.open` handler, which config alone cannot set.
+///
+/// Only `about:blank#<id>` popouts are allowed: the opener renders a panel
+/// into them directly, sharing its JS state, so they must stay linked to it
+/// (the window features carry that link). Any other URL is denied, never
+/// loaded inside the app. The window is labelled `popout-<id>` so the opener
+/// can close and focus it natively; a page-side `close()`/`focus()` from the
+/// opener is ignored by WebKitGTK. Must match `src/lib/helpers/popout.ts`.
+fn build_main_window(app: &AppHandle) -> tauri::Result<()> {
+    let config = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == MAIN_WINDOW)
+        .expect("tauri.conf.json must define the main window")
+        .clone();
+    let handle = app.clone();
+    WebviewWindowBuilder::from_config(app, &config)?
+        .on_new_window(move |url, features| {
+            let Some(label) = popout_label(&url) else {
+                log::warn!("denied a window.open request for {url}");
+                return NewWindowResponse::Deny;
+            };
+            let blank = WebviewUrl::External("about:blank".parse().expect("valid url"));
+            match WebviewWindowBuilder::new(&handle, label, blank)
+                // WebKitGTK drops the requested size; matches Poppable's default.
+                // `window_features` overrides it where the platform passes one.
+                .inner_size(1100.0, 720.0)
+                .window_features(features)
+                .on_document_title_changed(|window, title| {
+                    let _ = window.set_title(&title);
+                })
+                .build()
+            {
+                Ok(window) => NewWindowResponse::Create { window },
+                Err(err) => {
+                    log::warn!("failed to open a popout window: {err}");
+                    NewWindowResponse::Deny
+                }
+            }
+        })
+        .build()?;
+    Ok(())
+}
+
 pub fn run() {
     let log_plugin = tauri_plugin_log::Builder::new()
         // The platform log directory (e.g. ~/.local/share/<identifier>/logs on
@@ -224,7 +287,7 @@ pub fn run() {
         // we run) forwards its arguments here instead of starting a new app
         // that would wipe the open session's files.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
                 let _ = window.set_focus();
             }
             if let Some(path) = args.into_iter().find(|arg| is_heda_file(arg)) {
@@ -236,6 +299,7 @@ pub fn run() {
         .plugin(log_plugin)
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
@@ -249,8 +313,9 @@ pub fn run() {
             store_device_key
         ])
         .setup(|app| {
+            build_main_window(app.handle())?;
             // Built from the bundle version so the title never goes stale.
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
                 let title = format!(
                     "Hierarchical Electrical Design Analyzer v{}",
                     app.package_info().version
@@ -278,10 +343,14 @@ pub fn run() {
 
             Ok(())
         })
-        // Every system close (close button, Alt+F4, Cmd+W) is prevented and
-        // handed to the webview, which runs the unsaved-changes prompt and
-        // quits through `close_main_window` only after the user decides.
+        // Every system close (close button, Alt+F4, Cmd+W) of the main window
+        // is prevented and handed to the webview, which runs the unsaved-changes
+        // prompt and quits through `close_main_window` only after the user
+        // decides. Popouts close normally; the opener docks their content back.
         .on_window_event(|window, event| {
+            if window.label() != MAIN_WINDOW {
+                return;
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let state = window.state::<CloseRequestState>();
@@ -321,4 +390,28 @@ pub fn run() {
 
     #[cfg(not(target_os = "macos"))]
     app.run(|_, _| {});
+}
+
+#[cfg(test)]
+mod tests {
+    use super::popout_label;
+
+    fn label(url: &str) -> Option<String> {
+        popout_label(&url.parse().unwrap())
+    }
+
+    #[test]
+    fn popout_label_accepts_only_blank_with_an_id() {
+        assert_eq!(
+            label("about:blank#3f2a-9b").as_deref(),
+            Some("popout-3f2a-9b")
+        );
+        assert_eq!(label("about:blank"), None);
+        assert_eq!(label("about:blank#"), None);
+        assert_eq!(label("about:blank?x=1#abc"), None);
+        assert_eq!(label("about:blank#a/b"), None);
+        assert_eq!(label("about:srcdoc#abc"), None);
+        assert_eq!(label("https://example.com/#abc"), None);
+        assert_eq!(label(&format!("about:blank#{}", "a".repeat(65))), None);
+    }
 }

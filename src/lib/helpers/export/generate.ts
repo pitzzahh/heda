@@ -73,6 +73,9 @@ export async function generateWorkbook(payload: {
 			throw new Error('Unknown phase');
 	}
 
-	const buffer = await workbook.xlsx.writeBuffer();
-	return { buffer: buffer as ArrayBuffer, title: workbook.title };
+	// ExcelJS returns a Buffer (a Uint8Array, possibly a view into a larger pool),
+	// not the ArrayBuffer its types claim. The worker transfers this to the page,
+	// and only a real, exactly sized ArrayBuffer can be transferred.
+	const bytes = await workbook.xlsx.writeBuffer();
+	return { buffer: new Uint8Array(bytes).buffer, title: workbook.title };
 }

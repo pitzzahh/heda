@@ -25,6 +25,7 @@
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 	import { loadScheduleRouteId } from '#lib/helpers/navigation.js';
+	import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 	import {
 		getFileName,
 		writeDeviceEncryptedFile,
@@ -50,7 +51,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { distribution_unit: 'Transformer', use_password: false }
+		initialInput: { use_password: false }
 	});
 
 	let submitting = $state(false);
@@ -164,7 +165,9 @@
 				})
 			)
 				.then(() => {
-					toast.success(`${project_state.current_project_name} created successfully`);
+					toast.success(`${project_state.current_project_name} created successfully`, {
+						action: showInFolderAction(file_path_with_file)
+					});
 				})
 				.catch((err) => {
 					console.error(`Error: failed to create project: ${JSON.stringify(err, null, 2)}`);
@@ -202,13 +205,7 @@
 			{#snippet children(field)}
 				<div class="space-y-2">
 					<Label class={cn(field.errors && 'text-destructive')}>Distribution unit</Label>
-					<Input
-						{...field.props}
-						value={field.input ?? ''}
-						placeholder="Enter the distribution unit name"
-						readonly
-						tabindex={-1}
-					/>
+					<Input {...field.props} value={field.input ?? ''} placeholder="Transformer" />
 					<FieldErrors errors={field.errors} />
 				</div>
 			{/snippet}

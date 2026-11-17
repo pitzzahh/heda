@@ -188,23 +188,28 @@ export const load_type_to_quantity_label = {
 	[default_load_types.GENERAL_LIGHTING]: 'Floor area'
 } as const as Record<LoadType, QuantityLabel>;
 
+// PEC 2017 Table 2.40.1.6(A): standard ampere ratings for fuses and inverse time circuit breakers.
 export const standard_ampere_ratings = [
-	15, 20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500, 600, 700,
-	800, 1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
+	15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200, 225, 250, 300, 350,
+	400, 450, 500, 600, 700, 800, 1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
 ] as const;
 
+// Breaker multiplier on the load current. Motors: PEC 2017 Table 4.30.4.2, inverse time breaker 250%.
+// Continuous loads: 125% (2.10.2.3(A)); heating is continuous per 4.24.1.3(B), and 125% stays under the
+// 150% ceiling of 4.22.2.2(E)(3) for a single appliance.
 export const load_type_z_value = {
 	[default_load_types.LIGHTING_LOAD]: 1.25,
 	[default_load_types.CONVENIENCE_OUTLET]: 1.25,
 	[default_load_types.GENERAL_LIGHTING]: 1.25,
 	[default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
 	[default_load_types.ONE_P_MOTOR__RATED_CURRENT]: 2.5,
-	[default_load_types.HEATING_EQUIPMENT]: 1.5,
+	[default_load_types.HEATING_EQUIPMENT]: 1.25,
 	[default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
 	[default_load_types.THREE_P_MOTOR__RATED_CURRENT]: 2.5,
 	[default_load_types.THREE_P_EQUIPMENT]: 1.25
 } as const satisfies Record<LoadType, number>;
 
+// PEC 2017 Table 4.30.14.2: full-load current of single-phase AC motors, 230 V column (A).
 export const default_hp_current_relationship = {
 	'1/6': '2.2',
 	'1/4': '2.9',
@@ -251,6 +256,8 @@ export const THREE_PHASE_MOTOR_FLC_400V = {
 } as const;
 
 // FOR CONDUCTOR SIZING
+// PEC 2017 Table 3.10.2.6(B)(16), copper. 2.0–38 mm² use the 60°C column and larger sizes the 75°C
+// column, per 1.10.1.14(C)(1) (circuits ≤ 100 A or 2.0–38 mm² conductors are rated at 60°C).
 export const AMPACITY_RANGES = [
 	{ min: 0, max: 15, value: 15 },
 	{ min: 15, max: 20, value: 20 },
@@ -259,8 +266,8 @@ export const AMPACITY_RANGES = [
 	{ min: 40, max: 55, value: 55 },
 	{ min: 55, max: 70, value: 70 },
 	{ min: 70, max: 85, value: 85 },
-	{ min: 85, max: 115, value: 115 },
-	{ min: 115, max: 140, value: 140 },
+	{ min: 85, max: 100, value: 100 },
+	{ min: 100, max: 140, value: 140 },
 	{ min: 140, max: 155, value: 155 },
 	{ min: 155, max: 190, value: 190 },
 	{ min: 190, max: 220, value: 220 },
@@ -275,6 +282,7 @@ export const AMPACITY_RANGES = [
 	{ min: 480, max: Infinity, value: 530 }
 ];
 
+// PEC 2017 Table 3.10.2.6(B)(2)(a): ambient temperature correction factors based on 30°C, 75°C column.
 export const AMBIENT_TEMP_RATINGS = [
 	{ max_temp: 10, factor: 1.2 }, // 10 or less
 	{ max_temp: 15, factor: 1.15 }, // 11-15
@@ -292,6 +300,7 @@ export const AMBIENT_TEMP_RATINGS = [
 ];
 
 // FOR EGC SIZING
+// PEC 2017 Table 2.50.6.13: minimum copper equipment grounding conductor (mm²) by OCPD rating.
 export const AMPERE_TRIP_TO_COPPER = [
 	{ at_threshold: 6000, size: 'error' },
 	{ at_threshold: 5000, size: 400 },
@@ -322,7 +331,7 @@ export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	55: 14,
 	70: 22,
 	85: 30,
-	115: 38,
+	100: 38,
 	140: 50,
 	155: 60,
 	190: 80,
@@ -338,6 +347,8 @@ export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	530: 500
 };
 
+// PEC 2017 Ch. 10 Table 10.1.1.9: effective Z at 0.85 PF, uncoated copper in PVC conduit,
+// ohms to neutral per 305 m (Note 2: an approximation of R·cosθ + X·sinθ for voltage drop).
 export const ALTERNATING_CURRENT_REACTANCE: Record<number, number> = {
 	2.0: 2.7,
 	3.5: 1.7,
@@ -403,32 +414,50 @@ export const MOTOR_IMPEDANCE_PU = 0.25;
 // PEC 2017 App. D Ex. D14 step 3: source short-circuit level of the Metro Manila grid.
 export const METRO_MANILA_UTILITY_SC_KVA = 1_000_000;
 
-export const CONDUIT_TABLE = {
-	conduit_columns: [16, 21, 27, 35, 41, 53, 63, 78, 91, 103, 128, 155],
-	conductor_rows: [
-		{ conductor_size: 2, values: [9, 17, 28, 51, 70, 118, 170, 265, 358, 464, 736, 1055] },
-		{ conductor_size: 3.5, values: [6, 12, 20, 37, 51, 86, 124, 193, 261, 338, 537, 770] },
-		{ conductor_size: 5.5, values: [4, 7, 13, 23, 32, 54, 78, 122, 164, 213, 338, 485] },
-		{ conductor_size: 8, values: [2, 4, 7, 13, 18, 31, 45, 70, 95, 123, 195, 279] },
-		{ conductor_size: 14, values: [2, 3, 5, 9, 13, 22, 32, 51, 68, 89, 141, 202] },
-		{ conductor_size: 22, values: [1, 1, 3, 6, 8, 14, 20, 33, 42, 54, 86, 124] },
-		{ conductor_size: 30, values: [1, 1, 2, 4, 6, 10, 14, 22, 30, 39, 61, 88] },
-		{ conductor_size: 38, values: [1, 1, 1, 3, 4, 7, 10, 16, 22, 29, 45, 65] },
-		{ conductor_size: 50, values: [0, 1, 1, 2, 3, 6, 9, 14, 18, 24, 38, 55] },
-		{ conductor_size: 60, values: [0, 1, 1, 1, 3, 5, 7, 11, 15, 20, 32, 46] },
-		{ conductor_size: 80, values: [0, 1, 1, 1, 2, 4, 6, 9, 13, 17, 26, 38] },
-		{ conductor_size: 100, values: [0, 0, 1, 1, 2, 3, 5, 8, 11, 15, 23, 34] },
-		{ conductor_size: 125, values: [0, 0, 1, 1, 1, 2, 4, 6, 9, 11, 19, 28] },
-		{ conductor_size: 150, values: [0, 0, 0, 1, 1, 2, 3, 5, 7, 9, 15, 22] },
-		{ conductor_size: 175, values: [0, 0, 0, 1, 1, 1, 3, 5, 6, 8, 13, 19] },
-		{ conductor_size: 200, values: [0, 0, 0, 1, 1, 1, 2, 4, 6, 8, 11, 17] },
-		{ conductor_size: 250, values: [0, 0, 0, 0, 1, 1, 2, 3, 5, 6, 9, 14] },
-		{ conductor_size: 300, values: [0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 8, 12] },
-		{ conductor_size: 325, values: [0, 0, 0, 0, 1, 1, 1, 3, 4, 5, 7, 11] },
-		{ conductor_size: 350, values: [0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 6, 10] },
-		{ conductor_size: 400, values: [0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 6, 9] },
-		{ conductor_size: 500, values: [0, 0, 0, 0, 0, 1, 1, 1, 2, 3, 5, 7] }
-	]
+// PEC 2017 Ch. 10 Table 10.1.1.4, Article 3.52 Rigid PVC Conduit, Schedule 80: raceway size (mm)
+// and the area (mm²) allowed by Table 10.1.1.1 for 1 conductor (53%), 2 (31%) and over 2 (40%).
+export const CONDUIT_FILL_AREAS = [
+	{ size: 15, one: 75, two: 44, over_two: 56 },
+	{ size: 20, one: 139, two: 82, over_two: 105 },
+	{ size: 25, one: 236, two: 138, over_two: 178 },
+	{ size: 32, one: 424, two: 248, over_two: 320 },
+	{ size: 40, one: 585, two: 342, over_two: 442 },
+	{ size: 50, one: 983, two: 575, over_two: 742 },
+	{ size: 65, one: 1410, two: 825, over_two: 1064 },
+	{ size: 80, one: 2200, two: 1287, over_two: 1660 },
+	{ size: 90, one: 2972, two: 1738, over_two: 2243 },
+	{ size: 100, one: 3852, two: 2253, over_two: 2907 },
+	{ size: 130, one: 6105, two: 3571, over_two: 4607 },
+	{ size: 150, one: 8752, two: 5119, over_two: 6605 }
+] as const;
+
+export const CONDUIT_SIZES = CONDUIT_FILL_AREAS.map((row) => row.size);
+
+// PEC 2017 Ch. 10 Table 10.1.1.5: approximate area (mm²) of THHN/THWN/THWN-2 conductors.
+// shortcut: the table lists no THHN 175 or 400 mm², so those take the next larger listed size
+// (200, 500); replace with the manufacturer's dimensions if heda ever records them (Note 10).
+export const THHN_CONDUCTOR_AREAS: Record<number, number> = {
+	2.0: 6.2,
+	3.5: 8.6,
+	5.5: 13.9,
+	8.0: 23.8,
+	14: 33.2,
+	22: 52.8,
+	30: 75.4,
+	38: 100.3,
+	50: 118.8,
+	60: 143.1,
+	80: 172.0,
+	100: 208.7,
+	125: 254.5,
+	150: 298.6,
+	175: 376.7,
+	200: 376.7,
+	250: 456.2,
+	325: 559.9,
+	375: 678.9,
+	400: 870.9,
+	500: 870.9
 };
 
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(

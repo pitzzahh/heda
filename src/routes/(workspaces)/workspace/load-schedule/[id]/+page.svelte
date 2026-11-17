@@ -2,6 +2,13 @@
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 	import type { ShortCircuit } from '#lib/types/short-circuit.js';
+
+	const TABS = [
+		{ value: 'load-sched', label: 'Load Schedule' },
+		{ value: 'voltage-drop', label: 'Voltage Drop' },
+		{ value: 'short-circuit', label: 'Short Circuit' }
+	] as const;
+	type TabValue = (typeof TABS)[number]['value'];
 </script>
 
 <script lang="ts">
@@ -27,7 +34,9 @@
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { shortCircuitColumns } from '#lib/components/custom/table/short-circuit-cols/index.js';
 	import { ShortCircuitSourceForm } from '#lib/components/custom/short-circuit/index.js';
-	import { LightningAIcon } from '#lib/assets/icons.js';
+	import { ArrowSquareOutIcon, LightningAIcon } from '#lib/assets/icons.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Poppable } from '#lib/components/custom/popout/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import { toast } from 'svelte-sonner';
@@ -45,6 +54,18 @@
 		'short-circuit': false
 	});
 	let voltage_activated = $state(false);
+	// Any tab's content can move into its own window; see Poppable.
+	let popouts = $state<Partial<Record<TabValue, Poppable>>>({});
+	let popped_tabs = $state<Record<TabValue, boolean>>({
+		'load-sched': false,
+		'voltage-drop': false,
+		'short-circuit': false
+	});
+	const panels = {
+		'load-sched': loadSchedulePanel,
+		'voltage-drop': voltageDropPanel,
+		'short-circuit': shortCircuitPanel
+	} satisfies Record<TabValue, unknown>;
 
 	// A fresh page starts on its first tab; tell the workspace header, which outlives the page.
 	onMount(() => {
@@ -64,6 +85,9 @@
 	const current_node = $derived(getNodeById(node_id));
 	const parent_node = $derived(
 		current_node?.parent_id ? getNode(current_node.parent_id) : undefined
+	);
+	const unit_name = $derived(
+		current_node?.panel_data?.name ?? current_node?.highest_unit_form?.distribution_unit
 	);
 	const root_node = $derived(getRootNode());
 	const source_key = $derived(
@@ -95,10 +119,11 @@
 	const voltage_drop_columns = voltageDropColumns();
 	const short_circuit_columns = shortCircuitColumns<ShortCircuit>();
 
-	// Recomputes on each snapshot revision only while the tab shows; hidden, the
-	// table keeps the last result instead of walking the whole tree on every edit.
+	// Recomputes on each snapshot revision only while the tab shows (here or in its
+	// popout window); hidden, the table keeps the last result instead of walking
+	// the whole tree on every edit.
 	const short_circuits = $derived(
-		active_tab === 'short-circuit'
+		active_tab === 'short-circuit' || popped_tabs['short-circuit']
 			? getComputedShortCircuits()
 			: visited_tabs['short-circuit']
 				? peekComputedShortCircuits()
@@ -176,9 +201,7 @@
 					>Distribution Unit</span
 				>
 				<span class="text-base leading-5 font-bold tracking-tight">
-					{current_node?.panel_data?.name ??
-						current_node?.highest_unit_form?.distribution_unit ??
-						'NOT FOUND'}
+					{unit_name ?? 'NOT FOUND'}
 				</span>
 			</div>
 		</div>
@@ -216,56 +239,84 @@
 		}}
 		class="min-h-0 w-full flex-1"
 	>
-		<Tabs.List class="place-self-end">
-			<Tabs.Trigger value="load-sched">Load Schedule</Tabs.Trigger>
-			<Tabs.Trigger value="voltage-drop">Voltage Drop</Tabs.Trigger>
-			<Tabs.Trigger value="short-circuit">Short Circuit</Tabs.Trigger>
-		</Tabs.List>
-		<Tabs.Content value="load-sched" class="flex min-h-0 flex-1 flex-col">
-			{#if current_node}
-				<DataTable
-					data={loads}
-					columns={load_columns}
-					highest_unit={root_node?.highest_unit_form}
-					is_footer_shown={current_node.node_type !== 'root'}
-				/>
-			{:else}
-				<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
-					Could not load the schedule.
-				</div>
-			{/if}
-		</Tabs.Content>
-		<Tabs.Content value="voltage-drop" class="flex min-h-0 flex-1 flex-col">
-			{#if voltage_mounted && drops_ready}
-				<DataTable
-					data={voltage_drops}
-					is_footer_shown={false}
-					columns={voltage_drop_columns}
-					is_in_vd_table
-				/>
-			{:else}
-				<div
-					class="grid min-h-0 flex-1 place-items-center rounded-xl border border-border bg-card text-sm text-muted-foreground"
+		<div class="flex items-center justify-end gap-2">
+			<Tabs.List>
+				{#each TABS as tab (tab.value)}
+					<Tabs.Trigger value={tab.value}>{tab.label}</Tabs.Trigger>
+				{/each}
+			</Tabs.List>
+			<Button
+				variant="outline"
+				size="icon-sm"
+				aria-label="Open this tab in a new window"
+				title="Open in a new window"
+				onclick={() => popouts[active_tab as TabValue]?.popOut()}
+			>
+				<ArrowSquareOutIcon />
+			</Button>
+		</div>
+		{#each TABS as tab (tab.value)}
+			<Tabs.Content
+				value={tab.value}
+				class={['flex min-h-0 flex-1 flex-col', tab.value === 'short-circuit' && 'gap-4']}
+			>
+				<Poppable
+					bind:this={popouts[tab.value]}
+					title={unit_name ? `${tab.label} · ${unit_name}` : tab.label}
+					onPoppedChange={(popped) => (popped_tabs[tab.value] = popped)}
 				>
-					Loading voltage drop…
-				</div>
-			{/if}
-		</Tabs.Content>
-		<Tabs.Content value="short-circuit" class="flex min-h-0 flex-1 flex-col gap-4">
-			{#if root_node}
-				<!-- Remount on undo/redo too, so the inputs never show a source that was undone. -->
-				{#key source_key}
-					<ShortCircuitSourceForm root={root_node} />
-				{/key}
-			{/if}
-			{#if visited_tabs['short-circuit']}
-				<DataTable
-					data={short_circuits}
-					is_footer_shown={false}
-					columns={short_circuit_columns}
-					is_in_vd_table
-				/>
-			{/if}
-		</Tabs.Content>
+					{@render panels[tab.value]()}
+				</Poppable>
+			</Tabs.Content>
+		{/each}
 	</Tabs.Root>
 </div>
+
+{#snippet loadSchedulePanel()}
+	{#if current_node}
+		<DataTable
+			data={loads}
+			columns={load_columns}
+			highest_unit={root_node?.highest_unit_form}
+			is_footer_shown={current_node.node_type !== 'root'}
+		/>
+	{:else}
+		<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
+			Could not load the schedule.
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet voltageDropPanel()}
+	{#if voltage_mounted && drops_ready}
+		<DataTable
+			data={voltage_drops}
+			is_footer_shown={false}
+			columns={voltage_drop_columns}
+			is_in_vd_table
+		/>
+	{:else}
+		<div
+			class="grid min-h-0 flex-1 place-items-center rounded-xl border border-border bg-card text-sm text-muted-foreground"
+		>
+			Loading voltage drop…
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet shortCircuitPanel()}
+	{#if root_node}
+		<!-- Remount on undo/redo too, so the inputs never show a source that was undone. -->
+		{#key source_key}
+			<ShortCircuitSourceForm root={root_node} />
+		{/key}
+	{/if}
+	{#if visited_tabs['short-circuit']}
+		<DataTable
+			data={short_circuits}
+			is_footer_shown={false}
+			columns={short_circuit_columns}
+			is_in_vd_table
+		/>
+	{/if}
+{/snippet}
