@@ -26,11 +26,19 @@
 			event.preventDefault();
 			contentEl?.querySelector<HTMLElement>('[data-slot="alert-dialog-cancel"]')?.focus();
 		}}
-		class={cn(styles.popup(), styles.panel(), 'w-[min(26rem,calc(100vw-2rem))]', classProp)}
+		class={cn(
+			styles.popup(),
+			styles.panel(),
+			'w-[min(26rem,calc(100vw-2rem))]',
+			classProp,
+			styles.drawer()
+		)}
 	>
 		{#if dialog.variant === 'framed'}
 			<div class={styles.body()}>
-				{@render children?.()}
+				<div data-slot="alert-dialog-scroll" class={styles.scroll()}>
+					{@render children?.()}
+				</div>
 			</div>
 			{#if dialog.footer}
 				<div
@@ -41,7 +49,9 @@
 				</div>
 			{/if}
 		{:else}
-			{@render children?.()}
+			<div data-slot="alert-dialog-scroll" class={styles.scroll()}>
+				{@render children?.()}
+			</div>
 			{#if dialog.footer}
 				<div
 					data-slot="alert-dialog-footer"

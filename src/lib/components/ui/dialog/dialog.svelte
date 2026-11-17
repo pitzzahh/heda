@@ -23,6 +23,7 @@
 	} = $props();
 
 	let footer = $state<{ children?: Snippet; class?: string }>();
+	let header = $state<{ children?: Snippet; class?: string }>();
 
 	setDialog({
 		get motion() {
@@ -42,6 +43,12 @@
 		},
 		set footer(next) {
 			footer = next;
+		},
+		get header() {
+			return header;
+		},
+		set header(next) {
+			header = next;
 		}
 	});
 </script>

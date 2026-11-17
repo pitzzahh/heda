@@ -18,11 +18,16 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import { SelectedNodesActions } from './(components)/index.js';
+	import { afterNavigate } from '$app/navigation';
 
 	let { ref = $bindable(null), project, root_node, ...restProps }: Props = $props();
 
 	const dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	let tree_scroller = $state<HTMLDivElement | null>(null);
+	const sidebar = Sidebar.useSidebar();
+
+	// On phones the sidebar covers the page: once a page opens, get out of its way.
+	afterNavigate(() => sidebar.setOpenMobile(false));
 </script>
 
 <SelectedNodesActions />

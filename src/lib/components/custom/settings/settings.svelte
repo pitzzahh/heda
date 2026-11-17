@@ -61,7 +61,9 @@
 			<Tooltip.Content>Settings</Tooltip.Content>
 		</Tooltip.Root>
 	</Tooltip.Provider>
-	<Dialog.Content class="w-full overflow-hidden p-0 md:max-h-125 md:max-w-175 lg:max-w-200">
+	<Dialog.Content
+		class="w-full overflow-hidden p-0 max-lg:p-0 md:max-h-125 md:max-w-175 lg:max-w-200"
+	>
 		<Dialog.Title class="sr-only">Settings</Dialog.Title>
 		<Dialog.Description class="sr-only">Customize your settings here.</Dialog.Description>
 		<Sidebar.Provider
@@ -100,7 +102,27 @@
 				<header
 					class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 				>
-					<div class="flex items-center gap-2 px-4">
+					<!-- Phones: the side nav is hidden, so the sections switch here. -->
+					<nav class="flex gap-1 overflow-x-auto px-4 md:hidden" aria-label="Settings sections">
+						{#each settings_links.nav as item (item.name)}
+							<button
+								type="button"
+								class={buttonVariants({
+									size: 'sm',
+									variant:
+										item.name === component_state.current.active_setting ? 'secondary' : 'ghost'
+								})}
+								aria-current={item.name === component_state.current.active_setting
+									? 'page'
+									: undefined}
+								onclick={() => (component_state.current.active_setting = item.name)}
+							>
+								<item.icon />
+								{item.name}
+							</button>
+						{/each}
+					</nav>
+					<div class="hidden items-center gap-2 px-4 md:flex">
 						<Breadcrumb.Root>
 							<Breadcrumb.List>
 								<Breadcrumb.Item class="hidden md:block">

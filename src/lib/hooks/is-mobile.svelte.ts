@@ -1,6 +1,7 @@
 import { untrack } from 'svelte';
 
-const MOBILE_BREAKPOINT = 768;
+// lg: phones and tablets get the slide-over sidebar, matching the drawer modals.
+const MOBILE_BREAKPOINT = 1024;
 
 export class IsMobile {
 	#current = $state<boolean>(false);

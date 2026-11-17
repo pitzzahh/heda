@@ -290,7 +290,8 @@
 		{/if}
 	</div>
 
-	<div class="flex gap-3">
+	<!-- Drawers keep Save in reach while the fields scroll. -->
+	<div class="flex gap-3 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
 		{#if load_type}
 			<Button
 				variant="ghost"

@@ -2,6 +2,7 @@
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
 	import { cn } from '#lib/utils/index.js';
+	import { isCompactViewport } from '#lib/helpers/platform.js';
 	import { dialogFrame, dialogWidth } from './variants.js';
 	import { getDialog } from './context.js';
 
@@ -21,6 +22,9 @@
 		data-slot="dialog-content"
 		data-motion={dialog.motion}
 		data-variant={dialog.variant}
+		onOpenAutoFocus={(event) => {
+			if (isCompactViewport()) event.preventDefault();
+		}}
 		onInteractOutside={(event) => {
 			if (!dialog.dismissOnBackdrop) event.preventDefault();
 		}}
@@ -29,13 +33,21 @@
 			styles.panel(),
 			'w-[min(32rem,calc(100vw-2rem))]',
 			dialogWidth({ size: dialog.size }),
-			classProp
+			classProp,
+			styles.drawer()
 		)}
 	>
 		{#if dialog.variant === 'framed'}
 			<!-- Inset frame: the body sits on a lighter surface, the footer in the rim below it. -->
 			<div class={styles.body()}>
-				{@render children?.()}
+				{#if dialog.header}
+					<div data-slot="dialog-header" class={cn(styles.header(), dialog.header.class)}>
+						{@render dialog.header.children?.()}
+					</div>
+				{/if}
+				<div data-slot="dialog-scroll" class={styles.scroll()}>
+					{@render children?.()}
+				</div>
 			</div>
 			{#if dialog.footer}
 				<div
@@ -46,7 +58,14 @@
 				</div>
 			{/if}
 		{:else}
-			{@render children?.()}
+			{#if dialog.header}
+				<div data-slot="dialog-header" class={cn(styles.header(), dialog.header.class)}>
+					{@render dialog.header.children?.()}
+				</div>
+			{/if}
+			<div data-slot="dialog-scroll" class={styles.scroll()}>
+				{@render children?.()}
+			</div>
 			{#if dialog.footer}
 				<div
 					data-slot="dialog-footer"

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { Command as CommandPrimitive } from 'bits-ui';
 	import { cn } from '#lib/utils/index.js';
+	import { isCompactViewport } from '#lib/helpers/platform.js';
 	import { getCommand } from './context.js';
 
 	let {
 		placeholder = 'Type a command or search…',
+		autofocus = true,
 		hint,
 		class: classProp,
 		...rest
@@ -35,7 +37,7 @@
 		<path d="m10.4 10.4 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
 	</svg>
 	<CommandPrimitive.Input
-		autofocus
+		autofocus={autofocus && !isCompactViewport()}
 		data-slot="command-input"
 		{placeholder}
 		class={cn(command.styles.input(), classProp)}

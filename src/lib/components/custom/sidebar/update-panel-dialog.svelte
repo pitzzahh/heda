@@ -19,7 +19,6 @@
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
-	import { cn } from '#lib/utils/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants.js';
@@ -64,12 +63,16 @@
 	<Dialog.Content class="w-full max-w-[70%]">
 		<Dialog.Header>
 			<Dialog.Title>Update a Panel</Dialog.Title>
-			<div class={cn('flex flex-col items-center justify-start')}>
-				<h4 class="mb-1 font-bold">MAIN</h4>
-				<div class="grid w-full grid-cols-2 justify-items-start">
-					<div>
-						<div class="flex items-center gap-1">
-							<h4 class="font-semibold">Supply From:</h4>
+			<div class="grid gap-1.5 pt-1">
+				<span class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase"
+					>Main</span
+				>
+				<dl
+					class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 text-sm sm:grid-cols-2 sm:gap-x-4"
+				>
+					<div class="grid min-w-0 gap-0.5">
+						<dt class="text-xs text-muted-foreground">Supply from</dt>
+						<dd class="min-w-0 font-medium [&>p]:truncate">
 							{#if parent_display}
 								<ParentPanelPopover
 									current_parent_id={panel_to_edit.parent_id || ''}
@@ -78,17 +81,13 @@
 									excluded_node_id={panel_to_edit.id}
 								/>
 							{/if}
-						</div>
+						</dd>
 					</div>
-					<div>
-						<div class="flex gap-1">
-							<h4 class="font-semibold">Phase:</h4>
-							<p>
-								{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}
-							</p>
-						</div>
+					<div class="grid gap-0.5">
+						<dt class="text-xs text-muted-foreground">Phase</dt>
+						<dd class="font-medium">{getOptionLabel(DEFAULT_PHASES, phase) || 'N/A'}</dd>
 					</div>
-				</div>
+				</dl>
 			</div>
 		</Dialog.Header>
 		<Separator class="mb-4" />

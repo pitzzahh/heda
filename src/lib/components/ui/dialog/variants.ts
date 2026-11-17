@@ -31,9 +31,25 @@ export const dialogFrame = tv({
 		],
 		// The icon-only close in the corner; a close with children styles itself.
 		close:
-			'absolute top-4 right-4 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:transition-none',
-		footer: 'flex items-center justify-end gap-2',
-		body: 'relative overflow-hidden'
+			'absolute top-4 right-4 z-20 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:transition-none max-lg:top-3 max-lg:right-3',
+		header: 'mb-4 flex shrink-0 flex-col gap-2 pr-10 max-lg:mb-3 max-lg:gap-1 max-lg:pr-9',
+		footer: 'flex shrink-0 items-center justify-end gap-2',
+		body: 'relative overflow-hidden max-lg:flex max-lg:min-h-0 max-lg:flex-col',
+		// Drawers scroll only this middle; the header sits above it and the footer below it.
+		scroll: 'max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-contain',
+		// Phones and tablets (below lg): a bottom drawer instead of a centred dialog.
+		// Important, so call-site widths (`sm:max-w-md`, …) only shape the desktop dialog.
+		drawer: [
+			'max-lg:top-auto! max-lg:bottom-0! max-lg:left-0! max-lg:w-full! max-lg:max-w-none!',
+			'max-lg:flex! max-lg:max-h-[92dvh]! max-lg:flex-col! max-lg:overflow-hidden!',
+			'max-lg:rounded-t-2xl! max-lg:rounded-b-none! max-lg:border-x-0! max-lg:border-b-0!',
+			'max-lg:[transform:translateY(var(--drawer-y,0))]! max-lg:[clip-path:none]!',
+			// Phone GPUs: a layer ready before the slide, and one light shadow instead of the
+			// four-layer dialog shadow, which is costly to paint across a full-width sheet.
+			'max-lg:shadow-[0_-8px_24px_-8px_rgb(0_0_0/0.18)]! max-lg:will-change-transform',
+			'max-lg:transition-[opacity,transform]! max-lg:duration-[var(--duration-overlay)] max-lg:ease-[var(--ease-drawer)]',
+			'max-lg:data-[state=closed]:[--drawer-y:100%] max-lg:starting:data-[state=open]:[--drawer-y:100%]'
+		]
 	},
 	variants: {
 		motion: {
@@ -94,12 +110,16 @@ export const dialogFrame = tv({
 			framed: {
 				panel: 'bg-card p-1',
 				footer: 'px-2 pt-2 pb-1',
-				body: 'rounded-xl border border-border bg-popover p-5'
+				body: 'rounded-xl border border-border bg-popover p-5 max-lg:p-4'
 			},
 			default: {
-				panel: 'bg-popover p-6',
+				// Drawers trade the desktop margins for room: space is tight on a phone.
+				panel: 'bg-popover p-6 max-lg:p-4',
 				// Full-bleed action bar: the negative margins cancel the panel padding.
-				footer: '-mx-6 mt-6 -mb-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',
+				footer: [
+					'-mx-6 mt-6 -mb-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',
+					'max-lg:-mx-4 max-lg:mt-4 max-lg:-mb-4 max-lg:px-4 max-lg:py-3'
+				],
 				body: ''
 			}
 		}

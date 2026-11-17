@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '#lib/utils/index.js';
+	import { getDialog } from './context.js';
 
-	let {
-		children,
-		class: classProp,
-		...rest
-	}: { children?: Snippet; class?: string } & HTMLAttributes<HTMLDivElement> = $props();
+	let { children, class: classProp }: { children?: Snippet; class?: string } = $props();
+
+	const dialog = getDialog();
+
+	// Rendered by DialogContent above the scroll area, so nothing is emitted here.
+	$effect(() => {
+		dialog.header = { children, class: classProp };
+		return () => {
+			dialog.header = undefined;
+		};
+	});
 </script>
-
-<div {...rest} data-slot="dialog-header" class={cn('mb-4 flex flex-col gap-2 pr-10', classProp)}>
-	{@render children?.()}
-</div>

@@ -85,4 +85,27 @@ describe('dialogFrame', () => {
 		expect(dialogFrame().backdrop()).not.toContain('data-[open]');
 		expect(dialogFrame().backdrop()).not.toContain('data-[closed]');
 	});
+
+	test('below lg every modal is a bottom drawer that slides back down', () => {
+		const drawer = dialogFrame().drawer();
+		// Anchored to the bottom edge, full width, scrolling within the screen.
+		for (const cls of [
+			'max-lg:bottom-0!',
+			'max-lg:top-auto!',
+			'max-lg:w-full!',
+			'max-lg:max-w-none!'
+		]) {
+			expect(drawer).toContain(cls);
+		}
+		expect(drawer).toContain('max-lg:max-h-[92dvh]!');
+		// Only the middle scrolls; the panel itself is a fixed column.
+		expect(drawer).toContain('max-lg:overflow-hidden!');
+		expect(dialogFrame().scroll()).toContain('max-lg:overflow-y-auto');
+		// Slides from and back to below the screen, overriding every desktop motion.
+		expect(drawer).toContain('max-lg:[transform:translateY(var(--drawer-y,0))]!');
+		expect(drawer).toContain('max-lg:data-[state=closed]:[--drawer-y:100%]');
+		expect(drawer).toContain('max-lg:starting:data-[state=open]:[--drawer-y:100%]');
+		// Desktop dialogs are untouched: every drawer class is scoped below lg.
+		expect(drawer.split(' ').every((cls) => cls.startsWith('max-lg:'))).toBe(true);
+	});
 });
