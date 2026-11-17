@@ -10,6 +10,8 @@ export type DialogContext = {
 	readonly dismissOnBackdrop: boolean;
 	/** The footer hoists itself here so it can sit in the frame rim below the surface. */
 	footer: { children?: Snippet; class?: string } | undefined;
+	/** The header hoists itself above the scroll area, so drawers scroll only the fields. */
+	header: { children?: Snippet; class?: string } | undefined;
 };
 
 export const [getDialog, setDialog] = createContext<DialogContext>();

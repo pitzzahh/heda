@@ -37,6 +37,9 @@
 			hint: 'From the nameplate (Ex. D14 step 6).'
 		}
 	];
+
+	const formatNumber = (value: number | undefined) =>
+		value == null ? '-' : value.toLocaleString();
 </script>
 
 <script lang="ts">
@@ -73,6 +76,9 @@
 	});
 
 	let saving = $state(false);
+	// Phones fold the source into one summary line so the results table is on screen.
+	let expanded = $state(false);
+	const unit = $derived(root.highest_unit_form);
 
 	async function handleSubmit() {
 		if (saving) return;
@@ -91,6 +97,7 @@
 				data: updated as unknown as PhaseLoadSchedule
 			});
 			toast.success('Short-circuit source saved');
+			expanded = false;
 		} finally {
 			saving = false;
 		}
@@ -104,18 +111,43 @@
 		handleSubmit();
 	}}
 >
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-		<div class="grid gap-0.5">
+	<div class="flex items-start justify-between gap-3">
+		<div class="grid min-w-0 gap-0.5">
 			<span class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
 				Fault Source
 			</span>
-			<p class="text-sm text-muted-foreground">
+			<p class="text-sm text-muted-foreground max-lg:hidden">
 				Utility and transformer data for the per-unit method of PEC 2017 Appendix D, Example D14.
 			</p>
+			{#if !expanded}
+				<p class="text-sm font-medium lg:hidden">
+					{#if unit?.transformer_kva == null}
+						Not set
+					{:else}
+						Utility {formatNumber(unit.utility_sc_kva)} kVA · Transformer {formatNumber(
+							unit.transformer_kva
+						)} kVA, {formatNumber(unit.transformer_z_percent)} %Z
+					{/if}
+				</p>
+			{/if}
 		</div>
-		<Button type="submit" size="sm" class="shrink-0" loading={saving}>Save source</Button>
+		<div class="flex shrink-0 gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				class="lg:hidden"
+				aria-expanded={expanded}
+				onclick={() => (expanded = !expanded)}
+			>
+				{expanded ? 'Hide' : 'Edit'}
+			</Button>
+			<Button type="submit" size="sm" class={cn({ 'max-lg:hidden': !expanded })} loading={saving}
+				>Save source</Button
+			>
+		</div>
 	</div>
-	<div class="grid items-start gap-4 sm:grid-cols-3">
+	<div class={['grid items-start gap-4 sm:grid-cols-3', !expanded && 'max-lg:hidden']}>
 		{#each FIELDS as source_field (source_field.path[0])}
 			<Field of={form} path={source_field.path}>
 				{#snippet children(field)}

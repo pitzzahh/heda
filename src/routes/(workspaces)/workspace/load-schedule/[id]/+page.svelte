@@ -188,9 +188,11 @@
 
 <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
 	<div
-		class="flex flex-col gap-4 rounded-2xl border border-border bg-card px-5 py-4 shadow-(--surface-shadow) lg:flex-row lg:items-center"
+		class="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-(--surface-shadow) sm:gap-4 sm:px-5 sm:py-4 lg:flex-row lg:items-center"
 	>
-		<div class="flex items-center gap-3 border-b pb-4 lg:border-r lg:border-b-0 lg:pr-5 lg:pb-0">
+		<div
+			class="flex items-center gap-3 border-b pb-3 sm:pb-4 lg:border-r lg:border-b-0 lg:pr-5 lg:pb-0"
+		>
 			<div
 				class="grid size-11 shrink-0 place-items-center rounded-xl border border-primary/15 bg-primary/10 text-primary"
 			>
@@ -206,7 +208,7 @@
 			</div>
 		</div>
 
-		<dl class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-0">
+		<dl class="grid flex-1 grid-cols-2 gap-4 lg:gap-0">
 			<div class="grid gap-0.5 lg:border-r lg:px-5">
 				<dt class="text-[9px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
 					Phase System
@@ -242,7 +244,8 @@
 		<div class="flex items-center justify-end gap-2">
 			<Tabs.List>
 				{#each TABS as tab (tab.value)}
-					<Tabs.Trigger value={tab.value}>{tab.label}</Tabs.Trigger>
+					<!-- Tighter on phones, so all three labels fit without scrolling. -->
+					<Tabs.Trigger value={tab.value} class="px-2 sm:px-3">{tab.label}</Tabs.Trigger>
 				{/each}
 			</Tabs.List>
 			<Button

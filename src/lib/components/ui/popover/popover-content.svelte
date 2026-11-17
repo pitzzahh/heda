@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Popover as PopoverPrimitive } from 'bits-ui';
 	import { cn } from '#lib/utils/index.js';
+	import { isCompactViewport } from '#lib/helpers/platform.js';
 	import { ANCHORED } from '#lib/components/ui/shared/anchor.js';
 	import { type PopoverSize, popover } from './variants.js';
 
@@ -10,6 +11,7 @@
 		align = 'center',
 		container,
 		size = 'default',
+		onOpenAutoFocus,
 		...rest
 	}: PopoverPrimitive.ContentProps & {
 		/** Portal target; defaults to BitsConfig's (the body, or a popout window's body). Pass a fullscreen element so the popover stays visible. */
@@ -26,6 +28,10 @@
 		{align}
 		role="dialog"
 		{...rest}
+		onOpenAutoFocus={(event) => {
+			if (isCompactViewport()) event.preventDefault();
+			onOpenAutoFocus?.(event);
+		}}
 		data-slot="popover-content"
 		data-size={size}
 		class={cn(ANCHORED, 'static', styles.surface(), styles.content(), classProp)}

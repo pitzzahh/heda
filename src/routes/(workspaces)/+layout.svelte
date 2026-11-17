@@ -101,9 +101,7 @@
 						</p>
 						{#if on_load_schedule}
 							<CaretRightIcon class="size-3.5 shrink-0 text-muted-foreground" />
-							<p
-								class="hidden text-sm font-medium whitespace-nowrap text-muted-foreground md:inline"
-							>
+							<p class="shrink-0 text-sm font-medium whitespace-nowrap text-muted-foreground">
 								{SCHEDULE_TAB_LABELS[project_state.schedule_tab] ?? 'Load Schedule'}
 							</p>
 						{/if}

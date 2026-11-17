@@ -173,8 +173,8 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid grid-cols-2 gap-2">
-		<div class="flex flex-col gap-2.5">
+	<div class="grid gap-4 sm:grid-cols-2">
+		<div class="flex min-w-0 flex-col gap-4">
 			<Field of={form} path={['name']}>
 				{#snippet children(field)}
 					<div class="space-y-2">
@@ -198,7 +198,7 @@
 			/>
 		</div>
 
-		<div class="flex flex-col gap-2.5">
+		<div class="flex min-w-0 flex-col gap-4">
 			<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
 			<PanelPhaseField {form} {main_phase} />
 			<AmbientTempField {form} />
@@ -212,5 +212,8 @@
 			/>
 		</div>
 	</div>
-	<Button type="submit" class="w-full" loading={submitting}>Save</Button>
+	<!-- Drawers keep Save in reach while the fields scroll. -->
+	<div class="mt-4 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
+		<Button type="submit" class="w-full" loading={submitting}>Save</Button>
+	</div>
 </form>

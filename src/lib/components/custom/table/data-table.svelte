@@ -15,6 +15,9 @@
 	// First paint before the viewport is measured (and jsdom's zero-layout runs):
 	// render a small slice instead of every row.
 	const INITIAL_RENDER_COUNT = 20;
+	// Phones and tablets scroll the table sideways; a load schedule's circuit # column stays put
+	// (voltage-drop and short-circuit tables lead with wide node names, which would crowd the screen).
+	const PINNED = 'max-lg:sticky max-lg:left-0';
 </script>
 
 <script lang="ts" generics="TData extends { id?: string }, TValue">
@@ -39,6 +42,7 @@
 	}: DataTableProps<TData, TValue> = $props();
 
 	setTableActions(new TableActionsState());
+	const pin_first = $derived(!is_in_vd_table);
 
 	// Bridges the imperative virtual-core instance to Svelte rendering in one
 	// reusable place; see VirtualWindow.
@@ -110,7 +114,7 @@
 
 <Tooltip.Provider delayDuration={100}>
 	<div
-		class="flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border border-border bg-card pr-4 pb-4 shadow-(--surface-shadow)"
+		class="flex min-h-0 flex-1 flex-col overflow-auto rounded-xl border border-border bg-card pr-4 pb-4 shadow-(--surface-shadow) max-lg:min-h-[70svh]"
 		{@attach virtual.attach_scroll_element}
 	>
 		<TableActionDialogs {highest_unit} {is_in_vd_table} />
@@ -128,7 +132,8 @@
 								colspan={header.colSpan}
 								class={cn('h-10 align-middle font-semibold text-muted-foreground', {
 									'border-r border-border/60': index + 1 < headerGroup.headers.length,
-									'text-center': header.colSpan > 1
+									'text-center': header.colSpan > 1,
+									[PINNED + ' z-20 bg-secondary']: pin_first && index === 0
 								})}
 							>
 								{#if !header.isPlaceholder}
@@ -185,7 +190,8 @@
 									class={cn(cellClasses, {
 										'border-r border-border/60': cellIdx + 1 !== cells.length,
 										'text-center': cellIdx === 0 || cell.column.id === 'load_description',
-										'min-w-62.5': cell.column.columnDef.header === 'LOAD DESCRIPTION'
+										'min-w-40 sm:min-w-62.5': cell.column.columnDef.header === 'LOAD DESCRIPTION',
+										[PINNED + ' bg-card']: pin_first && cellIdx === 0
 									})}
 								>
 									<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
@@ -217,6 +223,7 @@
 										class={cn('font-bold text-foreground', {
 											'border-r border-border/60': i + 1 < footerGroup.headers.length,
 											'text-center': i === 0,
+											[PINNED + ' bg-muted']: pin_first && i === 0,
 											'p-0': header.column.id === 'conductor_sets'
 										})}
 									>

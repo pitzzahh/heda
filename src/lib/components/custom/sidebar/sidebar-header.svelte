@@ -6,7 +6,8 @@
 		HouseIcon,
 		LockKeyIcon,
 		FloppyDiskIcon,
-		TableIcon
+		TableIcon,
+		XIcon
 	} from '#lib/assets/icons.js';
 	import type { Node } from '#lib/types/db.js';
 
@@ -41,7 +42,9 @@
 	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 	import { untrack } from 'svelte';
+	import { useSidebar } from '#lib/components/ui/sidebar/index.js';
 	let { root_node }: Props = $props();
+	const sidebar = useSidebar();
 
 	let component_state = $state({
 		export_to_excel: 'idle' as ButtonState,
@@ -292,6 +295,18 @@
 			</div>
 		{/snippet}
 	</svelte:boundary>
+	{#if sidebar.isMobile}
+		<!-- Full width on phones: no backdrop is left to tap, so it closes here. -->
+		<Button
+			variant="ghost"
+			size="icon-sm"
+			class="ml-auto"
+			aria-label="Close sidebar"
+			onclick={() => sidebar.setOpenMobile(false)}
+		>
+			<XIcon class="size-4" />
+		</Button>
+	{/if}
 </div>
 
 <PasswordDialog
