@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import {
 	DEFAULT_PHASES,
 	DEFAULT_TERMINAL_TEMPERATURES,
+	LINE_PAIRS,
 	PHASE_ASSIGNMENTS,
 	STANDARD_TERMINAL_TEMPERATURE
 } from '#lib/constants.js';
@@ -11,17 +12,26 @@ export const PHASE_FIELD = v.picklist(
 	'You need to select a phase'
 );
 
-/** Phase of a single-phase circuit on a 400Y/230 V panel (PEC 2017 App. D Ex. D6 6.1). */
+/**
+ * Where a single-phase circuit connects on a three-phase panel: a phase of a
+ * 400Y/230 V panel (PEC 2017 App. D Ex. D6 6.1) or a line pair of a 230 V delta one.
+ */
 export const PHASE_ASSIGNMENT_FIELD = v.picklist(
-	PHASE_ASSIGNMENTS,
-	'Please select phase A, B or C.'
+	[...PHASE_ASSIGNMENTS, ...LINE_PAIRS],
+	'Please select phase A, B or C, or line pair AB, BC or CA.'
 );
 
-/** Phases a circuit draws from on a 400Y/230 V panel: one of A/B/C, or all three. */
-export const CIRCUIT_PHASE_FIELD = v.picklist(['A', 'B', 'C', 'ABC']);
+/** What a circuit draws from on a three-phase panel: a phase, a line pair, or all three lines. */
+export const CIRCUIT_PHASE_FIELD = v.picklist([...PHASE_ASSIGNMENTS, ...LINE_PAIRS, 'ABC']);
 
 /** VA carried by each phase of a 3P-Y panel. */
 export const PHASE_VA_SCHEMA = v.object({ A: v.number(), B: v.number(), C: v.number() });
+
+/** VA carried by each line pair of a delta panel. */
+export const PAIR_VA_SCHEMA = v.object({ AB: v.number(), BC: v.number(), CA: v.number() });
+
+/** Current in each line of a delta panel. */
+export const LINE_CURRENT_SCHEMA = v.object({ A: v.number(), B: v.number(), C: v.number() });
 
 export const TERMINAL_TEMPERATURE_FIELD = v.optional(
 	v.picklist(

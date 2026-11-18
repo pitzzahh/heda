@@ -1,6 +1,8 @@
 import type * as v from 'valibot';
 import type {
 	CIRCUIT_PHASE_FIELD,
+	LINE_CURRENT_SCHEMA,
+	PAIR_VA_SCHEMA,
 	PHASE_ASSIGNMENT_FIELD,
 	PHASE_FIELD,
 	PHASE_VA_SCHEMA
@@ -13,3 +15,7 @@ export type PhaseAssignment = v.InferOutput<typeof PHASE_ASSIGNMENT_FIELD>;
 export type CircuitPhase = v.InferOutput<typeof CIRCUIT_PHASE_FIELD>;
 
 export type PhaseVa = v.InferOutput<typeof PHASE_VA_SCHEMA>;
+
+export type PairVa = v.InferOutput<typeof PAIR_VA_SCHEMA>;
+
+export type LineCurrent = v.InferOutput<typeof LINE_CURRENT_SCHEMA>;

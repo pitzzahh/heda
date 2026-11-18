@@ -20,7 +20,13 @@ import {
 	SHORT_CIRCUIT_RESULT_SCHEMA,
 	SHORT_CIRCUIT_SOURCE_SCHEMA
 } from './short-circuit.js';
-import { CIRCUIT_PHASE_FIELD, PHASE_ASSIGNMENT_FIELD, PHASE_VA_SCHEMA } from './shared.js';
+import {
+	CIRCUIT_PHASE_FIELD,
+	LINE_CURRENT_SCHEMA,
+	PAIR_VA_SCHEMA,
+	PHASE_ASSIGNMENT_FIELD,
+	PHASE_VA_SCHEMA
+} from './shared.js';
 import {
 	COMPUTE_COMMON_PROPERTIES_SCHEMA,
 	LOAD_SCHEDULE_ROW_SCHEMA,
@@ -263,11 +269,16 @@ describe('validators', () => {
 		).toBe(false);
 	});
 
-	it('validates 3P-Y phases', () => {
-		for (const phase of ['A', 'B', 'C']) {
+	it('validates 3P-Y phases and delta line pairs', () => {
+		for (const phase of ['A', 'B', 'C', 'AB', 'BC', 'CA']) {
 			expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, phase).success).toBe(true);
+			expect(v.safeParse(CIRCUIT_PHASE_FIELD, phase).success).toBe(true);
 		}
 		expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, 'ABC').success).toBe(false);
+		expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, 'BA').success).toBe(false);
+		expect(v.safeParse(PAIR_VA_SCHEMA, { AB: 1, BC: 2, CA: 3 }).success).toBe(true);
+		expect(v.safeParse(PAIR_VA_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(false);
+		expect(v.safeParse(LINE_CURRENT_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(true);
 		expect(v.safeParse(CIRCUIT_PHASE_FIELD, 'ABC').success).toBe(true);
 		expect(v.safeParse(CIRCUIT_PHASE_FIELD, 'D').success).toBe(false);
 		expect(v.safeParse(PHASE_VA_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(true);
@@ -316,6 +327,15 @@ describe('validators', () => {
 		};
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, row).success).toBe(true);
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, phase: 'Z' }).success).toBe(false);
+		const delta_row = {
+			...row,
+			voltage: 230,
+			phase_va: undefined,
+			pair_va: { AB: 1, BC: 1, CA: 1 },
+			line_current: { A: 1, B: 1, C: 1 }
+		};
+		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, delta_row).success).toBe(true);
+		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, phase: 'CA' }).success).toBe(true);
 		expect(
 			v.safeParse(NODE_BY_ID_RESULT_SCHEMA, { ...row, egc_size: 'error', conduit_size: '16' })
 				.success
