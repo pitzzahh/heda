@@ -36,6 +36,10 @@ export default defineConfig(({ command, mode, isPreview }) => ({
 	worker: {
 		format: 'es'
 	},
+	// The Rust engine needs its `.wasm` before any test computes; see the setup file.
+	test: {
+		setupFiles: ['./src/lib/core/vitest-setup.ts']
+	},
 	// `tauri android dev` on a phone sets TAURI_DEV_HOST to this machine's LAN
 	// address: the phone loads the page and hot reload from there, not localhost.
 	server: {

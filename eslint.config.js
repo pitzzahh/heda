@@ -32,6 +32,14 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/', 'src-tauri/target/', 'coverage/']
+		ignores: [
+			'build/',
+			'.svelte-kit/',
+			'dist/',
+			'src-tauri/target/',
+			'crates/heda-core/target/',
+			'src/lib/core/pkg/',
+			'coverage/'
+		]
 	}
 ];

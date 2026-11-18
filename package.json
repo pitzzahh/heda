@@ -21,14 +21,15 @@
 		}
 	],
 	"scripts": {
+		"core": "bun scripts/build-core.ts",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"check": "bun run core && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "bun run core && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "bun fmt",
-		"lint": "bun fmt --check . && eslint .",
-		"test": "vitest run",
+		"lint": "bun fmt --check . && eslint . && cargo fmt --check --manifest-path crates/heda-core/Cargo.toml && cargo clippy --quiet --all-targets --all-features --manifest-path crates/heda-core/Cargo.toml -- -D warnings",
+		"test": "bun run core && cargo test --quiet --manifest-path crates/heda-core/Cargo.toml && vitest run",
 		"tauri": "tauri",
 		"site:td": "bun run build && bun run preview"
 	},

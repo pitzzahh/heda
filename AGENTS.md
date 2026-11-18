@@ -102,6 +102,14 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 - Queries/mutations return plain objects and keep async signatures even though SignalDB calls are sync. After `updateOne`, re-fetch with `findOne` for the updated doc. Sort uses `{ field: 1 | -1 }`, never `'asc'`/`'desc'`.
 - DB changes extend `src/lib/db/db.test.ts` (runs on memory under node).
 
+## Rust engine (crates/heda-core)
+
+- New calculations and features go in Rust (`crates/heda-core`, pure, no Tauri deps); Svelte is UI only. The TS engine in `#lib/utils/computations` and `#lib/db/queries` stays only until the app is switched over (#285 stack): do not extend it.
+- One entry point: `dispatch(session, command, args) -> Result<Value, String>` (`src/dispatch.rs`). The app will reach it through a single Tauri `heda` command; vitest reaches it through the WASM build (`bun run core`, run by `test`/`check`; needs `wasm-bindgen-cli` at the exact version pinned in `Cargo.toml`). Production never loads the WASM.
+- Byte-for-byte parity with the TS engine: `src/js.rs` reproduces JS `toFixed`, `Number(string)`, `Math.hypot` (V8), `||` and `Math.max`; use those helpers, never `f64::hypot`/`format!` rounding, for anything a golden covers. `src/lib/core/rust-parity.test.ts` compares every sample against `src/lib/core/golden/` (recorded from TS by `golden.test.ts`); a golden only changes in a commit that says why.
+- PEC tables live in `src/tables.rs`, each citing its table; verify values on rendered page images (`pdftoppm`), the PDF text layer is corrupt in places. Worked examples (App. D) are cargo integration tests in `crates/heda-core/tests/`.
+- `bun run lint` includes `cargo fmt --check` and `cargo clippy -D warnings`; `bun run test` includes `cargo test`.
+
 ## Crypto & file passwords
 
 - All crypto is WebCrypto ONLY (`src/lib/helpers/security/index.ts`: PBKDF2-SHA256, AES-256-GCM, `getRandomValues`). Never reintroduce `crypto-js`.
