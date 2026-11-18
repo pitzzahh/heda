@@ -127,8 +127,8 @@ pub fn load_factor(load_type: Option<&str>, continuous: bool) -> Option<f64> {
 }
 
 /// A branch circuit's breaker: its current times `load_factor`, up to the next standard
-/// rating of PEC 2017 Table 2.40.1.6(A) (15 A at the least), and 20 A at the least for a
-/// dwelling circuit of 2.10.1.11(C). 0 when the current is past the table.
+/// rating of PEC 2017 Table 2.40.1.6(A) (15 A at the least). A dwelling circuit of
+/// 2.10.1.11(C) is 20 A: 0 when its load needs more, as when the current is past the table.
 pub fn ampere_trip(
     current: f64,
     load_type: Option<&str>,
@@ -136,8 +136,8 @@ pub fn ampere_trip(
     dwelling_circuit: bool,
 ) -> f64 {
     let calculated_at = current * load_factor(load_type, continuous).unwrap_or(f64::NAN);
-    if dwelling_circuit && calculated_at < 20.0 {
-        return 20.0;
+    if dwelling_circuit {
+        return if calculated_at <= 20.0 { 20.0 } else { 0.0 };
     }
     next_rating(calculated_at)
 }

@@ -100,6 +100,21 @@ mod breaker_rating_pec_2017_table_2_40_1_6_a_and_2_10_2_3_a {
     }
 
     #[test]
+    fn a_dwelling_circuit_past_20_a_has_no_rating() {
+        // 2.10.1.11(C) fixes these circuits at 20 A: 4000 VA continuous is 17.39 A × 1.25 =
+        // 21.7 A, which no 20 A circuit carries, so the load must be split, not given 25 A.
+        assert_eq!(
+            ampere_trip(4000.0 / 230.0, Some(CONVENIENCE_OUTLET), true, true),
+            0.0
+        );
+        // Exactly 20 A still fits: 16 A × 1.25.
+        assert_eq!(
+            ampere_trip(16.0, Some(CONVENIENCE_OUTLET), true, true),
+            20.0
+        );
+    }
+
+    #[test]
     fn a_feeder_without_motors_takes_the_next_rating_up() {
         // 2.15.1.3: 72 A continuous × 1.25 = 90 A; 437.5 A → 450 A; 5 A → 15 A.
         assert_eq!(feeder_trip(90.0, 90.0), 90.0);
