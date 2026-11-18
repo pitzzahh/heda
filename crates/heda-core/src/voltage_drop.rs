@@ -59,11 +59,11 @@ pub fn voltage_drops(
         let length = crate::sizing::overridden(node.overrided_length).or(node.length);
         let z = crate::sizing::overridden(node.overrided_z)
             .or_else(|| lookup(&ALTERNATING_CURRENT_REACTANCE, conductor_size).copied());
-        let actual_z = js::round_js(
-            (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0,
-            4,
-        );
-        let voltage_per_segment = js::round_js(k * computed.current * actual_z, 4);
+        // Ohms of this run: Table 10.1.1.9 gives Ω per 305 m. D15 carries it unrounded
+        // into VD (1.732 × 295 A × 0.0561 Ω × 15.2 / 305 = 1.428 V); 0.0001 Ω is display only.
+        let run_z = (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0;
+        let actual_z = js::round_js(run_z, 4);
+        let voltage_per_segment = js::round_js(k * computed.current * run_z, 4);
         // Parents come first in preorder; the root (and a feeder with no drop) adds nothing.
         let voltage_at_end_circuit = js::round_js(
             parent_end_fraction.unwrap_or(0.0) * nominal_voltage + voltage_per_segment,

@@ -226,9 +226,8 @@ fn d15_voltage_drop_on_a_230_v_three_phase_system() {
         .unwrap();
     let drops = session.voltage_drops();
     let row = |id: &str| drops.iter().find(|d| d.id == id).unwrap();
-    // (a) VD = 1.732 × 295 × Z × 15.2 / 305 = 1.428 V. heda rounds the run's ohms to
-    // 0.0001 Ω first (0.0028 Ω), which gives 1.4306 V.
-    close(row("P").voltage_per_segment, 1.428, 0.003);
+    // (a) VD = 1.732 × 295 × Z × 15.2 / 305 = 1.428 V (the example rounds Z to 0.0561).
+    close(row("P").voltage_per_segment, 1.428, 0.001);
     // (b) VD = 1.732 × 20 × Z × 30.5 / 305 = 4.163 V.
     close(row("M").voltage_per_segment, 4.163, 0.001);
     // (1.428 + 4.163) / 230 × 100 % = 2.43 % at the motor terminals.

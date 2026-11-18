@@ -843,7 +843,10 @@ describe('incremental writes and reads', () => {
 		await buildTree();
 		for (const drop of await getComputedVoltageDropsAsync()) {
 			const current = getComputedLoads(drop.parent_id!).find((l) => l.id === drop.id)!.current;
-			expect(drop.voltage_per_segment).toBeCloseTo(2 * current * drop.actual_z, 4);
+			// On the run's own ohms (Ω/305 m × length), not the 0.0001 Ω shown as actual_z.
+			const run_z = (drop.length! * drop.z!) / 305;
+			expect(drop.voltage_per_segment).toBeCloseTo(2 * current * run_z, 4);
+			expect(drop.actual_z).toBeCloseTo(run_z, 4);
 			expect(drop.voltage_at_receiving_end).toBeCloseTo(230 - drop.voltage_at_end_circuit, 10);
 		}
 	});
