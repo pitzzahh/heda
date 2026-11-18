@@ -173,19 +173,21 @@ pub fn load_row<'g>(
                 .collect::<Vec<_>>(),
         );
         let feeder = feeder_load(node, &circuits);
-        let main_at = js::or(
-            node.overrided_at,
-            service_rating(
-                graph,
-                node,
-                sizing::feeder_trip(feeder.load, feeder.ceiling),
-                memo,
-            ),
-        );
+        let trip = sizing::feeder_trip(feeder.load, feeder.ceiling);
+        let service_at = service_rating(graph, node, trip, memo);
+        let main_at = js::or(node.overrided_at, service_at);
         let main_current = js::round_js(totals.current, 2);
         let ambient_temp = js::or(panel_data.ambient_temperature, 30.0);
         let main_sizing = if feeder.share.largest_motor.is_some() {
-            input(feeder.load, main_at, Sizing::MotorFeeder, ambient_temp)
+            // 2.30.7.1(A): a service main raised to its 2.30.6.10 minimum is no motor
+            // breaker, so the service conductors carry at least that rating.
+            let floor = if service_at > trip { service_at } else { 0.0 };
+            input(
+                feeder.load.max(floor),
+                main_at,
+                Sizing::MotorFeeder,
+                ambient_temp,
+            )
         } else {
             input(main_current, main_at, Sizing::Main, ambient_temp)
         };

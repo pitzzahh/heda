@@ -143,3 +143,35 @@ fn a_third_circuit_raises_the_service_main() {
     let changed = session.remove(&["c".to_owned()]);
     assert_eq!(changed.rows["SP"].at, 30.0);
 }
+
+fn motor(id: &str, parent: &str, circuit: f64, flc: f64) -> Value {
+    json!({
+        "id": id, "node_type": "load", "parent_id": parent, "circuit_number": circuit,
+        "conductor_sets": 1, "conductor_qty": 2,
+        "load_data": { "load_type": "one_phase_motor_rated_current", "quantity": 1,
+            "varies": flc, "continuous": true }
+    })
+}
+
+#[test]
+fn a_service_main_raised_to_its_minimum_keeps_its_conductor_at_that_rating() {
+    // An 8 A motor and two 400 VA lighting circuits: the 4.30.2.4 load is about 13 A, but
+    // 2.30.6.10(E) makes the service main 60 A, and 2.30.7.1(A) lets the service breaker be
+    // no higher than the conductor's ampacity. At 60 A (≤ 100 A, 1.10.1.14(C)(1)(a)) the
+    // 60 °C column of Table 3.10.2.6(B)(16) applies: 14 mm² is 55 A, 22 mm² is 70 A.
+    let mut session = Session::default();
+    let all = session
+        .open(
+            json!({}),
+            vec![
+                root(None),
+                panel("SP", 1.0),
+                motor("m", "SP", 1.0, 8.0),
+                load("a", "SP", 2.0, 2.0),
+                load("b", "SP", 3.0, 2.0),
+            ],
+        )
+        .unwrap();
+    assert_eq!(all.rows["SP"].at, 60.0);
+    assert_eq!(all.rows["SP"].conductor_size, 22.0);
+}
