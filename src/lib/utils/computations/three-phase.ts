@@ -1,12 +1,5 @@
-import {
-	PHASE_ASSIGNMENTS,
-	SQRT_3,
-	THREE_PHASE_LOAD_TYPES,
-	WYE_LINE_VOLTAGE,
-	WYE_PHASE_VOLTAGE,
-	default_phases
-} from '#lib/constants.js';
-import type { CircuitPhase, PhaseAssignment, PhaseVa } from '#lib/types/phase.js';
+import { PHASE_ASSIGNMENTS, THREE_PHASE_LOAD_TYPES, default_phases } from '#lib/constants.js';
+import type { CircuitPhase, PhaseAssignment } from '#lib/types/phase.js';
 
 // Three-phase wye (400Y/230 V, 4-wire) per PEC 2017 2.20.1.5(A) and Appendix D
 // Examples D6 and D8.
@@ -86,73 +79,6 @@ export function circuitPhase(node: {
 	load_data?: { load_type?: string };
 }): CircuitPhase {
 	return isThreePhaseCircuit(node) ? 'ABC' : phaseOf(node);
-}
-
-/** PEC 2017 App. D Ex. D6 6.3 / D8 8.6: I = VA ÷ (400 V × 1.732). */
-export function threePhaseCurrent(va: number): number {
-	return va / (WYE_LINE_VOLTAGE * SQRT_3);
-}
-
-/** Line-to-neutral current of a single-phase 230 V load. */
-export function singlePhaseCurrent(va: number): number {
-	return va / WYE_PHASE_VOLTAGE;
-}
-
-export function emptyPhaseVa(): PhaseVa {
-	return { A: 0, B: 0, C: 0 };
-}
-
-/**
- * Adds one circuit to a panel's per-phase VA: a three-phase circuit loads all
- * three phases equally, a single-phase one only its own phase.
- */
-export function addToPhaseVa(
-	total: PhaseVa,
-	circuit: { va: number; phase: CircuitPhase }
-): PhaseVa {
-	if (circuit.phase === 'ABC') {
-		const share = circuit.va / 3;
-		return { A: total.A + share, B: total.B + share, C: total.C + share };
-	}
-	return { ...total, [circuit.phase]: total[circuit.phase] + circuit.va };
-}
-
-/**
- * Current of a 3P-Y feeder. `balanced` is PEC 2017 App. D Ex. D6 6.3 / D8 8.6
- * (total VA ÷ (400 × 1.732)); `highest_phase` is the most loaded phase at 230 V,
- * which is also the neutral's maximum unbalance (PEC 2017 2.20.3.22(A)).
- * Conductors and the breaker are sized on the larger of the two.
- */
-export function wyeFeederCurrent(phase_va: PhaseVa): {
-	balanced: number;
-	highest_phase: number;
-	design: number;
-} {
-	const balanced = threePhaseCurrent(phase_va.A + phase_va.B + phase_va.C);
-	const highest_phase = singlePhaseCurrent(Math.max(phase_va.A, phase_va.B, phase_va.C));
-	return { balanced, highest_phase, design: Math.max(balanced, highest_phase) };
-}
-
-/**
- * Totals of a panel from its computed circuits. A single-phase panel adds the
- * circuit currents; a 3P-Y panel sums VA per phase and sizes on the larger of
- * the balanced and highest-phase currents (`wyeFeederCurrent`), reporting the
- * balanced one too (rounded to 0.01 A, like the table).
- */
-export function panelTotals(
-	panel: { panel_data?: { phase?: string } },
-	circuits: (Parameters<typeof circuitPhase>[0] & { va?: number; current?: number })[]
-): { va: number; current: number; phase_va?: PhaseVa; balanced_current?: number } {
-	const va = circuits.reduce((total, circuit) => total + (circuit.va || 0), 0);
-	if (panel.panel_data?.phase !== default_phases.THREE_PHASE_WYE) {
-		return { va, current: circuits.reduce((total, circuit) => total + (circuit.current || 0), 0) };
-	}
-	const phase_va = circuits.reduce(
-		(total, circuit) => addToPhaseVa(total, { va: circuit.va || 0, phase: circuitPhase(circuit) }),
-		emptyPhaseVa()
-	);
-	const { balanced, design } = wyeFeederCurrent(phase_va);
-	return { va, current: design, phase_va, balanced_current: parseFloat(balanced.toFixed(2)) };
 }
 
 /**

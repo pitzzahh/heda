@@ -39,22 +39,9 @@ export const THREE_PHASE_LOAD_TYPES: readonly string[] = [
 	default_load_types.THREE_P_EQUIPMENT
 ];
 
-/** Motor load types of either phase, for motor-specific sizing and fault contribution. */
-export const MOTOR_LOAD_TYPES: readonly string[] = [
-	default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER,
-	default_load_types.ONE_P_MOTOR__RATED_CURRENT,
-	default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
-	default_load_types.THREE_P_MOTOR__RATED_CURRENT
-];
-
 // PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400Y/230 V, three-phase 4-wire.
 /** The phases of a 400Y/230 V system, in order. */
 export const PHASE_ASSIGNMENTS = ['A', 'B', 'C'] as const;
-
-export const WYE_LINE_VOLTAGE = 400;
-export const WYE_PHASE_VOLTAGE = 230;
-// PEC 2017 App. D Ex. D6 6.3 and D14 step 9.4 use 1.732 for √3.
-export const SQRT_3 = 1.732;
 
 export const STANDARD_TERMINAL_TEMPERATURE = 'standard';
 
@@ -194,21 +181,6 @@ export const standard_ampere_ratings = [
 	400, 450, 500, 600, 700, 800, 1000, 1200, 1600, 2000, 2500, 3000, 4000, 5000, 6000
 ] as const;
 
-// Breaker multiplier on the load current. Motors: PEC 2017 Table 4.30.4.2, inverse time breaker 250%.
-// Continuous loads: 125% (2.10.2.3(A)); heating is continuous per 4.24.1.3(B), and 125% stays under the
-// 150% ceiling of 4.22.2.2(E)(3) for a single appliance.
-export const load_type_z_value = {
-	[default_load_types.LIGHTING_LOAD]: 1.25,
-	[default_load_types.CONVENIENCE_OUTLET]: 1.25,
-	[default_load_types.GENERAL_LIGHTING]: 1.25,
-	[default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
-	[default_load_types.ONE_P_MOTOR__RATED_CURRENT]: 2.5,
-	[default_load_types.HEATING_EQUIPMENT]: 1.25,
-	[default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER]: 2.5,
-	[default_load_types.THREE_P_MOTOR__RATED_CURRENT]: 2.5,
-	[default_load_types.THREE_P_EQUIPMENT]: 1.25
-} as const satisfies Record<LoadType, number>;
-
 // PEC 2017 Table 4.30.14.2: full-load current of single-phase AC motors, 230 V column (A).
 export const default_hp_current_relationship = {
 	'1/6': '2.2',
@@ -254,50 +226,6 @@ export const THREE_PHASE_MOTOR_FLC_400V = {
 	'400': '636',
 	'500': '786'
 } as const;
-
-// FOR CONDUCTOR SIZING
-// PEC 2017 Table 3.10.2.6(B)(16), copper. 2.0–38 mm² use the 60°C column and larger sizes the 75°C
-// column, per 1.10.1.14(C)(1) (circuits ≤ 100 A or 2.0–38 mm² conductors are rated at 60°C).
-export const AMPACITY_RANGES = [
-	{ min: 0, max: 15, value: 15 },
-	{ min: 15, max: 20, value: 20 },
-	{ min: 20, max: 30, value: 30 },
-	{ min: 30, max: 40, value: 40 },
-	{ min: 40, max: 55, value: 55 },
-	{ min: 55, max: 70, value: 70 },
-	{ min: 70, max: 85, value: 85 },
-	{ min: 85, max: 100, value: 100 },
-	{ min: 100, max: 140, value: 140 },
-	{ min: 140, max: 155, value: 155 },
-	{ min: 155, max: 190, value: 190 },
-	{ min: 190, max: 220, value: 220 },
-	{ min: 220, max: 255, value: 255 },
-	{ min: 255, max: 285, value: 285 },
-	{ min: 285, max: 305, value: 305 },
-	{ min: 305, max: 325, value: 325 },
-	{ min: 325, max: 375, value: 375 },
-	{ min: 375, max: 435, value: 435 },
-	{ min: 435, max: 470, value: 470 },
-	{ min: 470, max: 480, value: 480 },
-	{ min: 480, max: Infinity, value: 530 }
-];
-
-// PEC 2017 Table 3.10.2.6(B)(2)(a): ambient temperature correction factors based on 30°C, 75°C column.
-export const AMBIENT_TEMP_RATINGS = [
-	{ max_temp: 10, factor: 1.2 }, // 10 or less
-	{ max_temp: 15, factor: 1.15 }, // 11-15
-	{ max_temp: 20, factor: 1.11 }, // 16-20
-	{ max_temp: 25, factor: 1.05 }, // 21-25
-	{ max_temp: 30, factor: 1.0 }, // 26-30
-	{ max_temp: 35, factor: 0.94 }, // 31-35
-	{ max_temp: 40, factor: 0.88 }, // 36-40
-	{ max_temp: 45, factor: 0.82 }, // 41-45
-	{ max_temp: 50, factor: 0.75 }, // 46-50
-	{ max_temp: 55, factor: 0.67 }, // 51-55
-	{ max_temp: 60, factor: 0.58 }, // 56-60
-	{ max_temp: 65, factor: 0.47 }, // 61-65
-	{ max_temp: 70, factor: 0.33 } // 66-70
-];
 
 // FOR EGC SIZING
 // PEC 2017 Table 2.50.6.13: minimum copper equipment grounding conductor (mm²) by OCPD rating.
@@ -347,70 +275,6 @@ export const AMPACITY_TO_CONDUCTOR_SIZE: { [key: number]: number } = {
 	530: 500
 };
 
-// PEC 2017 Ch. 10 Table 10.1.1.9: effective Z at 0.85 PF, uncoated copper in PVC conduit,
-// ohms to neutral per 305 m (Note 2: an approximation of R·cosθ + X·sinθ for voltage drop).
-export const ALTERNATING_CURRENT_REACTANCE: Record<number, number> = {
-	2.0: 2.7,
-	3.5: 1.7,
-	5.5: 1.1,
-	8.0: 0.69,
-	14: 0.44,
-	22: 0.29,
-	30: 0.19,
-	38: 0.16,
-	50: 0.13,
-	60: 0.11,
-	80: 0.088,
-	100: 0.074,
-	125: 0.066,
-	150: 0.059,
-	175: 0.053,
-	200: 0.049,
-	250: 0.043,
-	325: 0.04,
-	375: 0.036,
-	400: 0.036,
-	500: 0.032
-};
-
-// PEC 2017 Ch. 10 Table 10.1.1.9: AC resistance and reactance of 600 V cables,
-// 3-phase, 60 Hz, 75°C, three single conductors in conduit, in ohms to neutral
-// per 305 m. Uncoated copper only.
-// shortcut: copper columns only; add the aluminum columns when aluminum conductors are supported.
-export const CONDUCTOR_RESISTANCE_REACTANCE: Record<
-	number,
-	{ xl: number; xl_steel: number; r_pvc: number; r_aluminum: number; r_steel: number }
-> = {
-	2.0: { xl: 0.058, xl_steel: 0.073, r_pvc: 3.1, r_aluminum: 3.1, r_steel: 3.1 },
-	3.5: { xl: 0.054, xl_steel: 0.068, r_pvc: 2.0, r_aluminum: 2.0, r_steel: 2.0 },
-	5.5: { xl: 0.05, xl_steel: 0.063, r_pvc: 1.2, r_aluminum: 1.2, r_steel: 1.2 },
-	8.0: { xl: 0.052, xl_steel: 0.065, r_pvc: 0.78, r_aluminum: 0.78, r_steel: 0.78 },
-	14: { xl: 0.051, xl_steel: 0.064, r_pvc: 0.49, r_aluminum: 0.49, r_steel: 0.49 },
-	22: { xl: 0.048, xl_steel: 0.06, r_pvc: 0.31, r_aluminum: 0.31, r_steel: 0.31 },
-	30: { xl: 0.045, xl_steel: 0.057, r_pvc: 0.19, r_aluminum: 0.2, r_steel: 0.2 },
-	38: { xl: 0.046, xl_steel: 0.057, r_pvc: 0.15, r_aluminum: 0.16, r_steel: 0.16 },
-	50: { xl: 0.044, xl_steel: 0.055, r_pvc: 0.12, r_aluminum: 0.13, r_steel: 0.12 },
-	60: { xl: 0.043, xl_steel: 0.054, r_pvc: 0.1, r_aluminum: 0.1, r_steel: 0.1 },
-	80: { xl: 0.042, xl_steel: 0.052, r_pvc: 0.077, r_aluminum: 0.082, r_steel: 0.079 },
-	100: { xl: 0.041, xl_steel: 0.051, r_pvc: 0.062, r_aluminum: 0.067, r_steel: 0.063 },
-	125: { xl: 0.041, xl_steel: 0.052, r_pvc: 0.052, r_aluminum: 0.057, r_steel: 0.054 },
-	150: { xl: 0.041, xl_steel: 0.051, r_pvc: 0.044, r_aluminum: 0.049, r_steel: 0.045 },
-	175: { xl: 0.04, xl_steel: 0.05, r_pvc: 0.038, r_aluminum: 0.043, r_steel: 0.039 },
-	200: { xl: 0.04, xl_steel: 0.049, r_pvc: 0.033, r_aluminum: 0.038, r_steel: 0.035 },
-	250: { xl: 0.039, xl_steel: 0.048, r_pvc: 0.027, r_aluminum: 0.032, r_steel: 0.029 },
-	325: { xl: 0.039, xl_steel: 0.048, r_pvc: 0.023, r_aluminum: 0.028, r_steel: 0.025 },
-	375: { xl: 0.038, xl_steel: 0.048, r_pvc: 0.019, r_aluminum: 0.024, r_steel: 0.021 },
-	400: { xl: 0.038, xl_steel: 0.048, r_pvc: 0.019, r_aluminum: 0.024, r_steel: 0.021 },
-	500: { xl: 0.037, xl_steel: 0.046, r_pvc: 0.015, r_aluminum: 0.019, r_steel: 0.018 }
-};
-
-// PEC 2017 2.40.7.4(C): only breakers rated other than 5 000 A must show their interrupting
-// rating, so heda takes a breaker with no rating entered as 5,000 A.
-export const UNMARKED_BREAKER_INTERRUPTING_RATING_KA = 5;
-
-// PEC 2017 App. D Ex. D14 step 8: average induction motor impedance (per IEEE Std 141), on the motor's own kVA.
-export const MOTOR_IMPEDANCE_PU = 0.25;
-
 // PEC 2017 App. D Ex. D14 step 3: source short-circuit level of the Metro Manila grid.
 export const METRO_MANILA_UTILITY_SC_KVA = 1_000_000;
 
@@ -432,33 +296,6 @@ export const CONDUIT_FILL_AREAS = [
 ] as const;
 
 export const CONDUIT_SIZES = CONDUIT_FILL_AREAS.map((row) => row.size);
-
-// PEC 2017 Ch. 10 Table 10.1.1.5: approximate area (mm²) of THHN/THWN/THWN-2 conductors.
-// shortcut: the table lists no THHN 175 or 400 mm², so those take the next larger listed size
-// (200, 500); replace with the manufacturer's dimensions if heda ever records them (Note 10).
-export const THHN_CONDUCTOR_AREAS: Record<number, number> = {
-	2.0: 6.2,
-	3.5: 8.6,
-	5.5: 13.9,
-	8.0: 23.8,
-	14: 33.2,
-	22: 52.8,
-	30: 75.4,
-	38: 100.3,
-	50: 118.8,
-	60: 143.1,
-	80: 172.0,
-	100: 208.7,
-	125: 254.5,
-	150: 298.6,
-	175: 376.7,
-	200: 376.7,
-	250: 456.2,
-	325: 559.9,
-	375: 678.9,
-	400: 870.9,
-	500: 870.9
-};
 
 export const DEFAULT_HP_CURRENT_RELATIONSHIP_ARRAY = Object.entries(
 	default_hp_current_relationship

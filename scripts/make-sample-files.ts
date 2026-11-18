@@ -13,6 +13,7 @@
  * them for the machine that ran this script: it opens without a password,
  * but it is tied to the key in the app's data folder.
  */
+import { readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -22,13 +23,14 @@ import {
 	packFileV2,
 	packFileV3
 } from '#lib/helpers/file/format.js';
-import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
+import { dispatch_json, initSync } from '#lib/core/pkg/heda_core.js';
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES } from '#lib/constants.js';
 import type { FileExport } from '#lib/types/main.js';
 import type { LoadSpec, Overrides, PanelSpec, SampleSpec } from './sample-types.js';
 import { buildBusinessPark, buildCondominium } from './large-projects.js';
 import type { Node } from '#lib/types/db.js';
+import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
 const LOAD_TYPES = new Set<string>(DEFAULT_LOAD_TYPES.map((option) => option.value));
 const PHASES = new Set<string>(DEFAULT_PHASES.map((option) => option.value));
@@ -37,6 +39,17 @@ const SCRIPT_DIR = new URL('.', import.meta.url).pathname;
 const OUTPUT_DIR = join(SCRIPT_DIR, '..', 'samples');
 const DEVICE_KEY_PATH = join(homedir(), '.local/share/me.araopj.heda/heda-d');
 const SAMPLE_PASSWORD = 'heda-sample-2026';
+
+// The engine's WASM build (`bun run core` writes it), the same `dispatch` the app calls.
+initSync({ module: readFileSync(join(SCRIPT_DIR, '..', 'src/lib/core/pkg/heda_core_bg.wasm')) });
+
+/** The engine's voltage drop of every run of a tree. */
+function voltageDrops(
+	nodes: Node[]
+): Pick<VoltageDrop, 'id' | 'current' | 'percent_voltage_drop'>[] {
+	dispatch_json('open', JSON.stringify({ project: null, nodes }));
+	return JSON.parse(dispatch_json('voltage_drops', '{}'));
+}
 
 const NODE_DEFAULTS = {
 	conductor_sets: 1,
@@ -659,7 +672,7 @@ function checkStructure(file_export: FileExport, name: string): void {
 	}
 
 	// The app's own load and voltage-drop math must run over the tree.
-	const drops = computeVoltageDropsFromNodes(nodes, false);
+	const drops = voltageDrops(nodes);
 	if (drops.length !== nodes.length - 1) {
 		throw new Error(`${name}: voltage drop pass missed ${nodes.length - 1 - drops.length} nodes`);
 	}
@@ -737,7 +750,7 @@ async function main() {
 
 		const loads = file_export.nodes.filter((node) => node.node_type === 'load').length;
 		const panels = file_export.nodes.filter((node) => node.node_type === 'panel').length;
-		const drops = computeVoltageDropsFromNodes(file_export.nodes, false);
+		const drops = voltageDrops(file_export.nodes);
 		const worst = drops.reduce((max, drop) => Math.max(max, drop.percent_voltage_drop), 0);
 		console.log(
 			`${spec.project_name}: ${panels} panels, ${loads} circuits, worst voltage drop ${worst.toFixed(2)}%`
