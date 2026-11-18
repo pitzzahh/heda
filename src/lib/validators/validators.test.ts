@@ -330,7 +330,6 @@ describe('validators', () => {
 			at: 30,
 			conductor_size: 3.5,
 			egc_size: 2,
-			adjusted_current: 2,
 			conduit_size: 16,
 			ampere_frames: 30,
 			phase: 'ABC',

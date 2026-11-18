@@ -3,7 +3,8 @@
 use heda_core::model::load_types::*;
 use heda_core::sizing::*;
 
-/// A panel ("Main") sizes its conductor from the breaker rating, so `at` is the ampacity asked for.
+/// A panel ("Main") sizes its conductor from the breaker rating, so `at` is the ampacity
+/// asked for; heda's default conductor is THHN, 90 °C, at 30 °C ambient.
 fn panel(at: f64) -> ConductorInput<'static> {
     ConductorInput {
         sets: 1.0,
@@ -12,7 +13,17 @@ fn panel(at: f64) -> ConductorInput<'static> {
         sizing: Sizing::Main,
         at,
         current: 0.0,
+        rating: Rating::C90,
         is_dynamic: false,
+    }
+}
+
+/// The same circuit on another insulation and ambient.
+fn at_ambient(at: f64, rating: Rating, ambient_temp: f64) -> ConductorInput<'static> {
+    ConductorInput {
+        rating,
+        ambient_temp,
+        ..panel(at)
     }
 }
 
@@ -54,50 +65,135 @@ mod breaker_rating_pec_2017_table_2_40_1_6_a_and_2_10_2_3_a {
     }
 }
 
-mod conductor_size_pec_2017_table_3_10_2_6_b_16_with_1_10_1_14_c_1 {
+/// Every expectation below is worked by hand from PEC 2017 Table 3.10.2.6(B)(16) (p. 174),
+/// Table 3.10.2.6(B)(2)(a) (p. 170) and Table 3.10.2.6(B)(3)(a) (p. 172): a conductor must
+/// meet its terminations (1.10.1.14(C)(1)) and, separately, its conditions of use
+/// (3.10.2.6(B)), as App. D Ex. D21 sets out.
+mod conductor_size_pec_2017_3_10_2_6_b_and_1_10_1_14_c_1 {
     use super::*;
 
     #[test]
-    fn a85_is_30_mm2_60_c_column() {
-        assert_eq!(conductor_size(panel(85.0)), 30.0);
+    fn circuits_of_100_a_or_less_terminate_on_the_60_c_column() {
+        // 1.10.1.14(C)(1)(a)
+        for (at, size) in [
+            (15.0, 2.0),
+            (20.0, 3.5),
+            (30.0, 5.5),
+            (40.0, 8.0),
+            (60.0, 22.0), // 14 mm² is 55 A at 60 °C
+            (85.0, 30.0),
+            (100.0, 38.0),
+        ] {
+            assert_eq!(conductor_size(panel(at)), size, "{at} A");
+        }
     }
 
     #[test]
-    fn a100_is_38_mm2_its_60_c_ampacity() {
-        assert_eq!(conductor_size(panel(100.0)), 38.0);
+    fn circuits_over_100_a_terminate_on_the_75_c_column() {
+        // 1.10.1.14(C)(1)(b): 38 mm² is 115 A at 75 °C, 50 mm² 140 A, 60 mm² 155 A.
+        for (at, size) in [
+            (110.0, 38.0),
+            (125.0, 50.0),
+            (150.0, 60.0),
+            (200.0, 100.0),
+            (400.0, 325.0),
+        ] {
+            assert_eq!(conductor_size(panel(at)), size, "{at} A");
+        }
     }
 
     #[test]
-    fn a110_is_50_mm2_since_38_mm2_is_100_a_at_60_c() {
-        assert_eq!(conductor_size(panel(110.0)), 50.0);
+    fn correction_applies_to_the_conductor_rating_capped_at_its_termination() {
+        // THHN at 40 °C: 3.5 mm² is 30 A × 0.91 = 27.3 A, and terminates at 20 A (60 °C).
+        assert_eq!(conductor_size(at_ambient(20.0, Rating::C90, 40.0)), 3.5);
+        // THHN at 33 °C: 38 mm² is 130 A × 0.96 = 124.8 A, and terminates at 100 A.
+        assert_eq!(conductor_size(at_ambient(100.0, Rating::C90, 33.0)), 38.0);
+        // THHN at 55 °C: 5.5 mm² is 40 A × 0.76 = 30.4 A ≥ 30 A.
+        assert_eq!(conductor_size(at_ambient(30.0, Rating::C90, 55.0)), 5.5);
+        // THHN at 60 °C: 5.5 mm² is 40 A × 0.71 = 28.4 A; 8.0 mm² is 55 A × 0.71 = 39.05 A.
+        assert_eq!(conductor_size(at_ambient(30.0, Rating::C90, 60.0)), 8.0);
     }
 
     #[test]
-    fn a140_is_50_mm2_and_a141_is_60_mm2_75_c_column() {
-        assert_eq!(conductor_size(panel(140.0)), 50.0);
-        assert_eq!(conductor_size(panel(141.0)), 60.0);
-    }
-
-    #[test]
-    fn ambient_33_c_factor_0_94_on_100_a_gives_106_4_a_so_50_mm2() {
-        let input = ConductorInput {
-            ambient_temp: 33.0,
-            ..panel(100.0)
+    fn a_cool_ambient_never_lifts_a_conductor_past_its_termination() {
+        // 20 °C: 3.5 mm² THHN is 30 A × 1.08 = 32.4 A where it runs but only 20 A at its
+        // 60 °C terminations, short of a 17 A motor's 125 % (21.25 A); 5.5 mm² gives 30 A.
+        let motor = ConductorInput {
+            sizing: Sizing::Load(THREE_P_MOTOR_RATED_CURRENT),
+            current: 17.0,
+            at: ampere_trip(17.0, Some(THREE_P_MOTOR_RATED_CURRENT)),
+            ..at_ambient(0.0, Rating::C90, 20.0)
         };
-        assert!((adjusted_current(input) - 106.383).abs() < 5e-4);
-        assert_eq!(conductor_size(input), 50.0);
+        assert_eq!(motor.at, 45.0);
+        assert_eq!(conductor_size(motor), 5.5);
+    }
+
+    #[test]
+    fn tw_takes_the_60_c_column_and_factors() {
+        // TW at 40 °C (0.82): 5.5 mm² is 30 A × 0.82 = 24.6 A < 25 A; 8.0 mm² is 32.8 A.
+        assert_eq!(conductor_size(at_ambient(25.0, Rating::C60, 40.0)), 8.0);
+        assert_eq!(Rating::of(Some("TW-Cu")), Rating::C60);
+    }
+
+    #[test]
+    fn thwn_takes_the_75_c_column_and_factors() {
+        // THWN at 40 °C (0.88): 5.5 mm² is 35 A × 0.88 = 30.8 A, terminating at 30 A.
+        assert_eq!(conductor_size(at_ambient(25.0, Rating::C75, 40.0)), 5.5);
+        assert_eq!(Rating::of(Some("THWN-Cu")), Rating::C75);
+        assert_eq!(Rating::of(Some("THWN-2-Cu")), Rating::C90);
+        assert_eq!(Rating::of(Some("THHN-Cu")), Rating::C90);
+    }
+
+    #[test]
+    fn no_conductor_where_the_correction_table_shows_a_dash() {
+        assert_eq!(conductor_size(at_ambient(15.0, Rating::C60, 56.0)), -1.0);
+        assert_eq!(conductor_size(at_ambient(15.0, Rating::C75, 71.0)), -1.0);
+        assert_eq!(conductor_size(at_ambient(15.0, Rating::C90, 86.0)), -1.0);
+    }
+
+    #[test]
+    fn no_conductor_past_the_table() {
+        // 500 mm² terminates at 530 A (75 °C): a 600 A circuit on one set needs more sets.
+        assert_eq!(conductor_size(panel(600.0)), -1.0);
+    }
+
+    #[test]
+    fn app_d_ex_d9_25_hp_motor_at_40_c_on_14_mm2_thw() {
+        // D9 (p. 1052): 34 A × 1.25 = 42 A on a 100 A ITD breaker; "Use three 14 mm² THW
+        // wires. Ampacity of 14 mm² THW at 40°C ambient is 65 Amperes x 0.88 = 57.2 Amperes."
+        // THW is in the 75 °C column. 8.0 mm² fails at its 60 °C terminations (40 A).
+        assert!((corrected_ampacity(14.0, Rating::C75, 40.0, 1.0) - 57.2).abs() < 1e-9);
+        let motor = ConductorInput {
+            sizing: Sizing::Load(THREE_P_MOTOR_RATED_CURRENT),
+            current: 34.0,
+            at: 100.0,
+            ..at_ambient(0.0, Rating::C75, 40.0)
+        };
+        assert_eq!(conductor_size(motor), 14.0);
     }
 
     #[test]
     fn six_conductors_at_80_percent_table_3_10_2_6_b_3_a() {
-        // 30 A / 0.8 = 37.5 A → 8.0 mm²
+        // 30 A on 6 conductors: 5.5 mm² THHN is 40 A × 0.8 = 32 A, and terminates at 30 A.
         let input = ConductorInput {
             qty: 6.0,
             is_dynamic: true,
             ..panel(30.0)
         };
-        assert_eq!(adjusted_current(input), 37.5);
-        assert_eq!(conductor_size(input), 8.0);
+        assert_eq!(conductor_size(input), 5.5);
+        // 45 A: 8.0 mm² is 55 A × 0.8 = 44 A, short; 14 mm² is 60 A.
+        assert_eq!(conductor_size(ConductorInput { at: 45.0, ..input }), 14.0);
+    }
+
+    #[test]
+    fn motors_take_heda_s_3_5_mm2_floor() {
+        let motor = ConductorInput {
+            sizing: Sizing::Load(ONE_P_MOTOR_RATED_CURRENT),
+            current: 4.0,
+            at: 20.0,
+            ..panel(0.0)
+        };
+        assert_eq!(conductor_size(motor), 3.5);
     }
 }
 

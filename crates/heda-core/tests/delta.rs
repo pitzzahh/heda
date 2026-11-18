@@ -226,13 +226,18 @@ fn d15_voltage_drop_on_a_230_v_three_phase_system() {
         .unwrap();
     let drops = session.voltage_drops();
     let row = |id: &str| drops.iter().find(|d| d.id == id).unwrap();
-    // (a) VD = 1.732 × 295 × Z × 15.2 / 305 = 1.428 V (the example rounds Z to 0.0561).
-    close(row("P").voltage_per_segment, 1.428, 0.001);
-    // (b) VD = 1.732 × 20 × Z × 30.5 / 305 = 4.163 V.
-    close(row("M").voltage_per_segment, 4.163, 0.001);
-    // (1.428 + 4.163) / 230 × 100 % = 2.43 % at the motor terminals.
-    close(row("M").percent_voltage_drop, 2.43, 0.005);
-    close(row("M").voltage_at_receiving_end, 230.0 - 5.59, 0.01);
+    // D15 Eq. (1), printed to three places; heda shows four.
+    // (a) 1.732 × 295 × √(0.029² + 0.048²) × 15.2 / 305 = 1.42797 V: "1.428 volt".
+    assert_eq!(row("P").voltage_per_segment, 1.428);
+    // "Voltage at panelboard: V = 230 - 1.428 = 228.572 volts".
+    assert_eq!(row("P").voltage_at_receiving_end, 230.0 - 1.428);
+    // (b) 1.732 × 20 × √(1.2² + 0.063²) × 30.5 / 305 = 4.162525 V: "4.163 volts".
+    assert_eq!(row("M").voltage_per_segment, 4.1625);
+    // "(1.428 + 4.163) / 230 × 100 = 2.43 %" at the motor terminals.
+    assert_eq!(
+        (row("M").percent_voltage_drop * 100.0).round() / 100.0,
+        2.43
+    );
 }
 
 #[test]

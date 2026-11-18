@@ -17,8 +17,8 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	va: v.number(),
 	current: v.number(),
 	at: v.number(),
+	/** -1 when no conductor of PEC 2017 Table 3.10.2.6(B)(16) meets the circuit. */
 	conductor_size: v.number(),
-	adjusted_current: v.number(),
 	ampere_frames: v.number(),
 	/** What the circuit draws from: A/B/C on 3P-Y, AB/BC/CA on delta (single-phase), or ABC. */
 	phase: v.optional(CIRCUIT_PHASE_FIELD),

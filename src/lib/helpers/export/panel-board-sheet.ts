@@ -24,6 +24,9 @@ type SheetGroup = Header & {
 const text = (value: number | string | undefined, fallback = 'N/A') =>
 	value === undefined ? fallback : value.toString();
 
+/** -1 is the engine's "none in the PEC table": a dash, as the load schedule shows it. */
+const size = (value: number | string) => (value === -1 ? '-' : value);
+
 /** Columns of a single-phase panelboard schedule, A–Q. */
 function baseGroups(): SheetGroup[] {
 	return [
@@ -74,11 +77,16 @@ function baseGroups(): SheetGroup[] {
 			text: 'CONDUCTOR',
 			cols: 4,
 			sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'],
-			row: (l) => [l.conductor_sets, l.conductor_qty, l.conductor_size, l.conductor_insulation],
+			row: (l) => [
+				l.conductor_sets,
+				l.conductor_qty,
+				size(l.conductor_size),
+				l.conductor_insulation
+			],
 			total: (p) => [
 				text(p.conductor_sets),
 				text(p.conductor_qty),
-				p.conductor_size.toString(),
+				text(size(p.conductor_size)),
 				text(p.conductor_insulation)
 			]
 		},
@@ -86,15 +94,15 @@ function baseGroups(): SheetGroup[] {
 			text: 'EGC',
 			cols: 2,
 			sub_cols: ['Size', 'Insulation'],
-			row: (l) => [l.egc_size, l.egc_insulation],
-			total: (p) => [p.egc_size.toString(), text(p.egc_insulation)]
+			row: (l) => [size(l.egc_size), l.egc_insulation],
+			total: (p) => [text(size(p.egc_size)), text(p.egc_insulation)]
 		},
 		{
 			text: 'CONDUIT',
 			cols: 2,
 			sub_cols: ['Size', 'Type'],
-			row: (l) => [l.conduit_size, l.conduit_type],
-			total: (p) => [p.conduit_size.toString(), text(p.conduit_type)]
+			row: (l) => [size(l.conduit_size), l.conduit_type],
+			total: (p) => [text(size(p.conduit_size)), text(p.conduit_type)]
 		}
 	];
 }

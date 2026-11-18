@@ -57,13 +57,10 @@ impl<'a> Sizing<'a> {
         matches!(self, Sizing::Load(t) if MOTOR_LOAD_TYPES.contains(&t))
     }
 
-    /// Whether the conductor is sized on the breaker rating rather than on 125 % of the current.
+    /// Whether the conductor is sized on the breaker rating rather than on 125 % of the
+    /// current: every circuit but a motor's (Article 4.30 lets its breaker exceed the conductor).
     fn sizes_on_trip(self) -> bool {
-        match self {
-            Sizing::Load(t) => COMMON_LOAD_TYPES.contains(&t),
-            Sizing::Main => true,
-            Sizing::Unspecified => false,
-        }
+        !self.is_motor()
     }
 }
 
@@ -148,6 +145,31 @@ pub fn ampere_trip(current: f64, load_type: Option<&str>) -> f64 {
         .unwrap_or(0.0)
 }
 
+/// A conductor's temperature rating: its column in PEC 2017 Table 3.10.2.6(B)(16) and
+/// Table 3.10.2.6(B)(2)(a).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Rating {
+    C60,
+    C75,
+    C90,
+}
+
+impl Rating {
+    /// By the type columns of Table 3.10.2.6(B)(16): TW 60 °C, THWN 75 °C, THHN and THWN-2
+    /// 90 °C. Anything else is heda's default conductor, THHN.
+    pub fn of(insulation: Option<&str>) -> Self {
+        match insulation {
+            Some("TW-Cu") => Rating::C60,
+            Some("THWN-Cu") => Rating::C75,
+            _ => Rating::C90,
+        }
+    }
+
+    fn column(self) -> usize {
+        self as usize
+    }
+}
+
 /// Inputs shared by the conductor sizing helpers.
 #[derive(Debug, Clone, Copy)]
 pub struct ConductorInput<'a> {
@@ -157,41 +179,68 @@ pub struct ConductorInput<'a> {
     pub sizing: Sizing<'a>,
     pub at: f64,
     pub current: f64,
+    pub rating: Rating,
     pub is_dynamic: bool,
 }
 
-/// Conductor (mm²) whose PEC 2017 Table 3.10.2.6(B)(16) ampacity covers the adjusted
-/// current; motors take at least 3.5 mm².
+/// The smallest conductor (mm²) of PEC 2017 Table 3.10.2.6(B)(16) that meets both checks
+/// of App. D Ex. D21, the terminations and the conditions of use, for the current each set
+/// carries; -1 when none does (more sets are needed, or the insulation cannot take the
+/// ambient). Motors take at least 3.5 mm², a design floor of heda's, not a PEC rule.
 pub fn conductor_size(input: ConductorInput) -> f64 {
-    let adjusted = adjusted_current(input);
-    let ampacity = AMPACITY_RANGES
+    let required = required_ampacity(input) / input.sets;
+    let adjustment = adjustment_factor(input.sets * input.qty, input.is_dynamic);
+    let size = COPPER_AMPACITIES
         .iter()
-        .find(|(above, up_to, _)| adjusted > *above && adjusted <= *up_to)
-        .map_or(AMPACITY_RANGES[0].2, |(_, _, ampacity)| *ampacity);
-    let size = *lookup(&AMPACITY_TO_CONDUCTOR_SIZE, ampacity)
-        .expect("every ampacity step has a conductor");
-    if input.sizing.is_motor() && size <= 2.0 {
-        3.5
-    } else {
-        size
+        .map(|(size, _)| *size)
+        .find(|size| {
+            termination_ampacity(*size, input.rating, input.at) >= required
+                && corrected_ampacity(*size, input.rating, input.ambient_temp, adjustment)
+                    >= required
+        });
+    match size {
+        Some(size) if input.sizing.is_motor() && size <= 2.0 => 3.5,
+        Some(size) => size,
+        None => -1.0,
     }
 }
 
-/// The current a conductor must carry after the ambient correction (PEC 2017 Table
-/// 3.10.2.6(B)(2)(a)) and the more-than-three-conductors adjustment, per set.
-pub fn adjusted_current(input: ConductorInput) -> f64 {
-    let total_conductors = input.sets * input.qty;
-    let correction = AMBIENT_TEMP_RATINGS
-        .iter()
-        .find(|(up_to, _)| input.ambient_temp <= *up_to)
-        .map_or(1.0, |(_, factor)| *factor);
-    let adjustment = adjustment_factor(total_conductors, input.is_dynamic);
-    let output = if input.sizing.sizes_on_trip() {
+/// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), else
+/// the breaker rating, which then protects the conductor at its ampacity (2.40.1.4).
+fn required_ampacity(input: ConductorInput) -> f64 {
+    if input.sizing.sizes_on_trip() {
         input.at
     } else {
         1.25 * input.current
+    }
+}
+
+/// PEC 2017 3.10.2.6(B): the Table 3.10.2.6(B)(16) ampacity at the conductor's own
+/// temperature rating, times the ambient correction of Table 3.10.2.6(B)(2)(a) and the
+/// adjustment of Table 3.10.2.6(B)(3)(a); NaN where the table has no factor.
+pub fn corrected_ampacity(size: f64, rating: Rating, ambient_temp: f64, adjustment: f64) -> f64 {
+    let correction = AMBIENT_CORRECTION_FACTORS
+        .iter()
+        .find(|(up_to, _)| ambient_temp <= *up_to)
+        .map_or(f64::NAN, |(_, factors)| factors[rating.column()]);
+    ampacity(size, rating) * correction * adjustment
+}
+
+/// PEC 2017 1.10.1.14(C)(1): what the terminations allow, uncorrected, which 3.10.2.6(B)
+/// caps the corrected ampacity at. Circuits of 100 A or less take the 60 °C column, (a);
+/// over 100 A the 75 °C one, (b); never above the conductor's own rating.
+pub fn termination_ampacity(size: f64, rating: Rating, at: f64) -> f64 {
+    let termination = if at <= 100.0 {
+        Rating::C60
+    } else {
+        Rating::C75
     };
-    output / (correction * adjustment * input.sets)
+    ampacity(size, termination.min(rating))
+}
+
+/// Table 3.10.2.6(B)(16) ampacity of a listed size; NaN for any other.
+fn ampacity(size: f64, rating: Rating) -> f64 {
+    lookup(&COPPER_AMPACITIES, size).map_or(f64::NAN, |columns| columns[rating.column()])
 }
 
 /// PEC 2017 Table 3.10.2.6(B)(3)(a): adjustment factors for more than three

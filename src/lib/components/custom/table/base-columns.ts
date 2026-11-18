@@ -167,7 +167,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				cell: (info) => {
 					const data = info.row.original;
 					return renderComponent(InsulationsDropdown, {
-						adjusted_current: data.adjusted_current,
+						at: data.at,
 						type: 'egc',
 						current_insulation: data.egc_insulation as string,
 						node: data
@@ -176,7 +176,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				header: () => 'INSULATION',
 				footer: () =>
 					renderComponent(InsulationsDropdown, {
-						adjusted_current: current_node.adjusted_current,
+						at: current_node.at,
 						type: 'egc',
 						current_insulation: current_node.egc_insulation as string,
 						node: current_node
@@ -191,7 +191,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_size',
 				cell: (info) => {
 					const data = info.row.original;
-					if (data.adjusted_current > 530 && !data.overrided_conduit_size) {
+					if (data.conductor_size === -1 && !data.overrided_conduit_size) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
 							tooltip_content: 'Insufficient Information'
@@ -209,7 +209,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 				header: () => 'SIZE',
 				footer: () => {
-					if (current_node.adjusted_current > 530 && !current_node.overrided_conduit_size) {
+					if (current_node.conductor_size === -1 && !current_node.overrided_conduit_size) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
 							tooltip_content: 'Insufficient Information'

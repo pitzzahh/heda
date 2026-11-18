@@ -395,7 +395,6 @@ describe('db', () => {
 			'current',
 			'at',
 			'conductor_size',
-			'adjusted_current',
 			'conduit_size',
 			'ampere_frames',
 			// PEC 2017 Table 2.50.6.13: both size the panel's EGC on its main breaker.
@@ -1352,8 +1351,8 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			overrideField({ node_id: feeder.id, field_data: Math.hypot(0.029, 0.048), field_type: 'z' });
 			const [drop] = await getComputedVoltageDropsAsync();
 			expect(drop?.current).toBe(295);
-			// heda rounds the run impedance to 4 decimals (0.0028 Ω), so 1.4306 V vs the book's 1.428 V.
-			expect(drop?.voltage_per_segment).toBeCloseTo(1.428, 2);
+			// D15 Eq. (1): 1.732 × 295 × √(0.029² + 0.048²) × 15.2 / 305 = 1.42797 V, "1.428 volt".
+			expect(drop?.voltage_per_segment).toBe(1.428);
 			expect(drop?.percent_voltage_drop).toBeCloseTo((drop!.voltage_per_segment / 400) * 100, 4);
 		});
 
@@ -1365,7 +1364,8 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			})!;
 			overrideField({ node_id: motor.id, field_data: Math.hypot(1.2, 0.063), field_type: 'z' });
 			const [drop] = await getComputedVoltageDropsAsync();
-			expect(drop?.voltage_per_segment).toBeCloseTo(4.163, 2);
+			// D15 Eq. (1): 1.732 × 20 × √(1.2² + 0.063²) × 30.5 / 305 = 4.162525 V, printed "4.163".
+			expect(drop?.voltage_per_segment).toBe(4.1625);
 		});
 
 		it('carries the percent drop of a 400 V feeder into a 230 V branch', async () => {

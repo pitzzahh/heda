@@ -5,7 +5,7 @@ use crate::graph::Graph;
 use crate::js;
 use crate::model::Node;
 use crate::phases::{self, CircuitTotal, LineCurrent, PairVa, PhaseVa, Supply};
-use crate::sizing::{self, ConductorInput, Conduit, Egc, Sizing};
+use crate::sizing::{self, ConductorInput, Conduit, Egc, Rating, Sizing};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -20,7 +20,6 @@ pub struct LoadRow {
     pub current: f64,
     pub conductor_size: f64,
     pub egc_size: Egc,
-    pub adjusted_current: f64,
     pub conduit_size: Conduit,
     pub ampere_frames: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -116,6 +115,7 @@ pub fn load_row<'g>(
         sizing,
         at,
         current,
+        rating: Rating::of(node.conductor_insulation.as_deref()),
         is_dynamic,
     };
     let at = js::or(node.overrided_at, sizing::ampere_trip(current, load_type));
@@ -124,7 +124,6 @@ pub fn load_row<'g>(
         node.overrided_conductor_size,
         sizing::conductor_size(own_sizing),
     );
-    let adjusted_current = sizing::adjusted_current(own_sizing);
 
     let row = if let Some(panel_data) = &node.panel_data {
         let circuits: Vec<(&Node, LoadRow)> = graph
@@ -173,7 +172,6 @@ pub fn load_row<'g>(
             conductor_size: main_conductor_size,
             // PEC 2017 Table 2.50.6.13 sizes the EGC on the overcurrent device ahead of it: the main.
             egc_size: egc(node, main_at),
-            adjusted_current: sizing::adjusted_current(main_sizing),
             conduit_size: conduit(node, main_conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, main_at),
             phase_va: totals.phase_va,
@@ -197,7 +195,6 @@ pub fn load_row<'g>(
             current: js::round_js(current, 2),
             conductor_size,
             egc_size: egc(node, at),
-            adjusted_current,
             conduit_size: conduit(node, conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, at),
             phase_va: None,

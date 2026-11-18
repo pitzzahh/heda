@@ -55,6 +55,9 @@ pub struct Node {
     pub length: Option<f64>,
     #[serde(default)]
     pub conduit_type: Option<String>,
+    /// TW-Cu, THWN-Cu, THWN-2-Cu or THHN-Cu: the conductor's temperature rating.
+    #[serde(default)]
+    pub conductor_insulation: Option<String>,
     #[serde(default)]
     pub phase_assignment: Option<String>,
     /// Interrupting rating in kA as typed (`Number(kaic)` in the app).

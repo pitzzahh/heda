@@ -154,4 +154,16 @@ describe('panel board sheet', () => {
 		expect(total.slice(0, 3)).toEqual(['TOTAL', 'MAIN', '230']);
 		expect(total.slice(5, 9)).toEqual(['ABC', '4300', '2000', '2000']);
 	});
+
+	it('shows a dash where no conductor of PEC 2017 Table 3.10.2.6(B)(16) carries the circuit', async () => {
+		// 150 000 VA ÷ 230 V = 652 A, × 1.25 → a 1 000 A breaker; one set of 500 mm² terminates
+		// at 530 A (75 °C), so the circuit needs more sets. Its EGC is 60 mm² (Table 2.50.6.13).
+		const sheet = await sheetFor(default_phases.ONE_PHASE, default_phases.ONE_PHASE, [
+			[default_load_types.LIGHTING_LOAD, '150000']
+		]);
+		const row = rowValues(sheet, 7);
+		expect(row[5]).toBe(1000);
+		expect([row[11], row[13]]).toEqual(['-', 60]);
+		expect(rowValues(sheet, 8)[11]).toBe('-');
+	});
 });
