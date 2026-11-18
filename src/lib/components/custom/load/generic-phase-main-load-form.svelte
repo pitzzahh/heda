@@ -260,7 +260,7 @@
 		<div class="flex min-w-0 flex-col gap-4">
 			<TerminalTempField
 				{form}
-				hint="This is the terminal temp that will determine the terminal temp of the wire to the main."
+				hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
 			/>
 
 			<NumberField
