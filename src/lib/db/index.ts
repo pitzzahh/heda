@@ -10,7 +10,7 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { engine } from '#lib/core/api.js';
-import type { ComputedResult, ComputedRow, EngineComputed, Node, Project } from '#lib/types/db.js';
+import type { ComputedRow, EngineComputed, Node, Project } from '#lib/types/db.js';
 import { getSessionPassword } from './session.js';
 
 // Session files of earlier versions (node and project stores, vault and its salt),
@@ -29,7 +29,6 @@ const LEGACY_FILES = [
 const nodes = new Map<string, Node>();
 let project: Project | undefined;
 const rows = new Map<string, ComputedRow>();
-const results = new Map<string, ComputedResult>();
 let pending: Promise<void> = Promise.resolve();
 let ready: Promise<void> | null = null;
 
@@ -47,7 +46,6 @@ function notify(): void {
 
 function apply(computed: EngineComputed): void {
 	for (const [id, row] of Object.entries(computed.rows)) rows.set(id, row);
-	for (const [id, result] of Object.entries(computed.results)) results.set(id, result);
 	notify();
 }
 
@@ -117,14 +115,9 @@ export function findNode(id: string | undefined): Node | undefined {
 	return id ? nodes.get(id) : undefined;
 }
 
-/** The engine's row for a node in its parent's load schedule, once computed. */
+/** The engine's row for a node (its load-schedule row and sidebar/header result), once computed. */
 export function getRow(id: string): ComputedRow | undefined {
 	return rows.get(id);
-}
-
-/** The engine's sidebar/header result for a node, once computed. */
-export function getResult(id: string): ComputedResult | undefined {
-	return results.get(id);
 }
 
 function assertNewIds(items: readonly Node[], existing: ReadonlyMap<string, Node>): void {
@@ -144,7 +137,6 @@ export function openSession(next_project: Project | undefined, next_nodes: reado
 	project = next_project;
 	nodes.clear();
 	rows.clear();
-	results.clear();
 	for (const node of next_nodes) nodes.set(node.id, node);
 	notify();
 	send('open', { project: next_project ?? null, nodes: next_nodes });
@@ -177,7 +169,6 @@ export function removeNodes(ids: ReadonlySet<string>): void {
 	for (const id of ids) {
 		nodes.delete(id);
 		rows.delete(id);
-		results.delete(id);
 	}
 	notify();
 	send('remove', { ids: [...ids] });

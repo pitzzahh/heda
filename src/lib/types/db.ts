@@ -9,14 +9,11 @@ import type {
 export type Project = v.InferOutput<typeof PROJECT_DOC_SCHEMA>;
 export type Node = v.InferOutput<typeof NODE_DOC_SCHEMA>;
 
-/** What the engine adds to a node for its row in the parent's load schedule. */
+/** What the engine adds to a node: its load-schedule row, also its sidebar/header result. */
 export type ComputedRow = v.InferOutput<typeof LOAD_SCHEDULE_ROW_SCHEMA>;
-/** What the engine adds to a node for its own sidebar/header result. */
-export type ComputedResult = v.InferOutput<typeof NODE_BY_ID_RESULT_SCHEMA>;
-/** The results an engine write recomputed, by node id (`Computed` in `crates/heda-core`). */
+/** The rows an engine write recomputed, by node id (`Computed` in `crates/heda-core`). */
 export type EngineComputed = {
 	rows: Record<string, ComputedRow>;
-	results: Record<string, ComputedResult>;
 };
 
 export type NodeByIdResult = Node & v.InferOutput<typeof NODE_BY_ID_RESULT_SCHEMA>;

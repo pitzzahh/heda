@@ -7,7 +7,7 @@
 //! stays cached. Each write answers with the rows it recomputed.
 
 use crate::graph::Graph;
-use crate::load_schedule::{load_row, node_result, LoadRow};
+use crate::load_schedule::{load_row, LoadRow};
 use crate::model::Node;
 use crate::short_circuit::{short_circuits, ShortCircuitRow};
 use crate::voltage_drop::{voltage_drops, VoltageDropRow};
@@ -23,15 +23,13 @@ pub struct Session {
     project: Value,
     is_dynamic: bool,
     load_rows: HashMap<String, LoadRow>,
-    node_results: HashMap<String, LoadRow>,
 }
 
-/// Recomputed results by node id: the row a node shows in its parent's load
-/// schedule, and the sidebar/header result of the node itself.
+/// Recomputed load-schedule rows by node id: what a node shows in its parent's
+/// load schedule, its sidebar entry and its page header.
 #[derive(Debug, Default, Serialize)]
 pub struct Computed {
     pub rows: HashMap<String, LoadRow>,
-    pub results: HashMap<String, LoadRow>,
 }
 
 /// The whole session, for a webview that reloads while the app keeps running.
@@ -65,7 +63,6 @@ impl Session {
         }
         self.is_dynamic = is_dynamic;
         self.load_rows.clear();
-        self.node_results.clear();
         self.compute_all()
     }
 
@@ -142,7 +139,6 @@ impl Session {
             .collect();
         for id in &touched {
             self.load_rows.remove(id);
-            self.node_results.remove(id);
         }
         self.compute(&touched)
     }
@@ -154,9 +150,7 @@ impl Session {
                 continue;
             };
             let row = load_row(&self.graph, node, self.is_dynamic, &mut self.load_rows);
-            let result = node_result(&self.graph, node, self.is_dynamic, &mut self.node_results);
             computed.rows.insert(id.clone(), row);
-            computed.results.insert(id.clone(), result);
         }
         computed
     }
@@ -225,7 +219,7 @@ mod tests {
         let mut session = session();
         let changed = session.put(vec![load("x", "a", 1.0, 360.0)]).unwrap();
         assert_eq!(keys(&changed.rows), ["a", "root", "x"]);
-        assert_eq!(changed.results["a"].va, 360.0);
+        assert_eq!(changed.rows["a"].va, 360.0);
     }
 
     #[test]
@@ -233,8 +227,8 @@ mod tests {
         let mut session = session();
         let changed = session.put(vec![load("x", "b", 1.0, 180.0)]).unwrap();
         assert_eq!(keys(&changed.rows), ["a", "b", "root", "x"]);
-        assert_eq!(changed.results["a"].va, 0.0);
-        assert_eq!(changed.results["b"].va, 180.0);
+        assert_eq!(changed.rows["a"].va, 0.0);
+        assert_eq!(changed.rows["b"].va, 180.0);
     }
 
     #[test]
@@ -242,7 +236,7 @@ mod tests {
         let mut session = session();
         let changed = session.remove(&["x".to_owned()]);
         assert_eq!(keys(&changed.rows), ["a", "root"]);
-        assert_eq!(changed.results["a"].va, 0.0);
+        assert_eq!(changed.rows["a"].va, 0.0);
         assert_eq!(session.snapshot().nodes.len(), 3);
     }
 
@@ -269,12 +263,12 @@ mod tests {
         let changed = session
             .put(vec![panel("a", "b", 1.0), panel("b", "a", 2.0)])
             .unwrap();
-        assert_eq!(changed.results["a"].va, 0.0);
-        assert_eq!(changed.results["root"].va, 0.0);
+        assert_eq!(changed.rows["a"].va, 0.0);
+        assert_eq!(changed.rows["root"].va, 0.0);
         assert!(session.graph().children("a").next().is_none());
         assert!(session.graph().children("b").next().is_none());
         let changed = session.put(vec![panel("a", "a", 1.0)]).unwrap();
-        assert_eq!(changed.results["a"].va, 0.0);
+        assert_eq!(changed.rows["a"].va, 0.0);
     }
 
     #[test]
@@ -285,10 +279,8 @@ mod tests {
         let all = session.open(json!({}), nodes).unwrap();
         // 23 000 VA / 230 V = 100 A, a 1.25 × 100 = 125 A main, so PEC 2017 Table 2.50.6.13
         // gives 14 mm² (over 100 A up to 200 A), not the 5.5 mm² of a bare 30 A trip.
-        for computed in [&all.rows["a"], &all.results["a"]] {
-            assert_eq!(computed.at, 125.0);
-            assert_eq!(computed.egc_size, crate::sizing::Egc::Size(14.0));
-        }
+        assert_eq!(all.rows["a"].at, 125.0);
+        assert_eq!(all.rows["a"].egc_size, crate::sizing::Egc::Size(14.0));
     }
 
     #[test]
@@ -298,7 +290,6 @@ mod tests {
         // 180 VA outlets: 0.78 A × 1.25, raised to the 20 A floor for loads; the
         // 30 A floor is a panel's (PEC 2017 Table 2.40.1.6(A) ratings).
         assert_eq!(all.rows["x"].at, 20.0);
-        assert_eq!(all.results["x"], all.rows["x"]);
     }
 
     #[test]

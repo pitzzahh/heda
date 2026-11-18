@@ -1,9 +1,5 @@
-//! Load-schedule rows (`computeNodeLoad` in `src/lib/db/queries/compute.ts`) and the
-//! sidebar/header result of a node (`getNodeById` in `src/lib/db/queries/nodes.ts`).
-//!
-//! The two app paths size panels differently today (a panel's EGC, and whether a
-//! load's breaker uses its load type); both are ported as they are, so the move to
-//! Rust changes no result, and are unified separately.
+//! Load-schedule rows: what the engine adds to a node, shown in its parent's load
+//! schedule and, the same values, in the node's own sidebar entry and page header.
 
 use crate::graph::Graph;
 use crate::js;
@@ -141,12 +137,11 @@ pub fn load_row<'g>(
         );
         let main_at = js::or(node.overrided_at, sizing::ampere_trip(totals.current, None));
         let main_current = js::round_js(totals.current, 2);
-        // `panel_data.ambient_temperature` as stored: absent is NaN, which no ambient row matches.
         let main_sizing = input(
             main_current,
             main_at,
             Sizing::Main,
-            panel_data.ambient_temperature.unwrap_or(f64::NAN),
+            js::or(panel_data.ambient_temperature, 30.0),
         );
         let main_conductor_size = js::or(
             node.overrided_conductor_size,
@@ -190,102 +185,6 @@ pub fn load_row<'g>(
             phase_va: None,
             balanced_current: None,
         }
-    };
-    memo.insert(node.id.clone(), row.clone());
-    row
-}
-
-/// The sidebar/header result of a node (`getNodeById`), memoized per node. A panel
-/// totals its circuits' results; the root and loads size their own load.
-pub fn node_result<'g>(
-    graph: &'g Graph,
-    node: &'g Node,
-    is_dynamic: bool,
-    memo: &mut HashMap<String, LoadRow>,
-) -> LoadRow {
-    if let Some(row) = memo.get(&node.id) {
-        return row.clone();
-    }
-    let (voltage, phase) = voltage_and_phase(node);
-    let common =
-        |va: f64, current: f64, load_type: Option<&str>, sizing: Sizing<'g>, ambient_temp: f64| {
-            let at = js::or(node.overrided_at, sizing::ampere_trip(current, load_type));
-            let input = ConductorInput {
-                sets: count(node.conductor_sets),
-                qty: count(node.conductor_qty),
-                ambient_temp,
-                sizing,
-                at,
-                current,
-                is_dynamic,
-            };
-            let conductor_size =
-                js::or(node.overrided_conductor_size, sizing::conductor_size(input));
-            (va, at, conductor_size, sizing::adjusted_current(input))
-        };
-
-    let (va, current, (_, at, conductor_size, adjusted_current), wye) = if node.node_type == "panel"
-    {
-        let circuits: Vec<(&Node, LoadRow)> = graph
-            .children(&node.id)
-            .map(|child| (child, node_result(graph, child, is_dynamic, memo)))
-            .collect();
-        let totals = phases::panel_totals(
-            node,
-            &circuits
-                .iter()
-                .map(|(child, row)| CircuitTotal {
-                    node: child,
-                    va: row.va,
-                    current: row.current,
-                })
-                .collect::<Vec<_>>(),
-        );
-        let ambient = js::or(
-            node.panel_data.as_ref().and_then(|d| d.ambient_temperature),
-            30.0,
-        );
-        let common = common(totals.va, totals.current, None, Sizing::Main, ambient);
-        (totals.va, totals.current, common, totals.wye)
-    } else {
-        let (va, current) = own_load(node);
-        let ambient = js::or(
-            node.load_data.as_ref().and_then(|d| d.ambient_temperature),
-            js::or(
-                node.panel_data.as_ref().and_then(|d| d.ambient_temperature),
-                30.0,
-            ),
-        );
-        let common = common(
-            va,
-            current,
-            node.load_type(),
-            Sizing::of(node.load_type()),
-            ambient,
-        );
-        (va, current, common, None)
-    };
-    let description = if node.node_type == "panel" {
-        node.panel_data.as_ref().and_then(|d| d.name.as_deref())
-    } else {
-        node.load_data
-            .as_ref()
-            .and_then(|d| d.load_description.as_deref())
-    };
-    let row = LoadRow {
-        load_description: js::or_str(description, "").to_owned(),
-        voltage,
-        phase,
-        va,
-        at,
-        current: js::round_js(current, 2),
-        conductor_size,
-        egc_size: egc(node, at),
-        adjusted_current,
-        conduit_size: conduit(node, conductor_size),
-        ampere_frames: js::or(node.overrided_ampere_frames, at),
-        phase_va: wye.map(|(phase_va, _)| phase_va),
-        balanced_current: wye.map(|(_, balanced)| balanced),
     };
     memo.insert(node.id.clone(), row.clone());
     row

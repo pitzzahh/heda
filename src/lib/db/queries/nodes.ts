@@ -1,6 +1,6 @@
 import { node_by_id_reuse, reuseIfEqual } from './cache.js';
 import { getChildren, loadSnapshot } from './snapshot.js';
-import { getProject, getResult } from '../index.js';
+import { getProject, getRow } from '../index.js';
 import type { Node, NodeByIdResult, Project } from '#lib/types/db.js';
 
 export function getCurrentProject(project_id?: string): Project | undefined {
@@ -52,7 +52,7 @@ export function checkNodeExists({
 /** A node with its engine result (sidebar, page header); null until computed. */
 export function getNodeById(target_id: string): NodeByIdResult | null {
 	const node = loadSnapshot().node_by_id.get(target_id);
-	const result = node && getResult(target_id);
+	const result = node && getRow(target_id);
 	if (!node || !result) return null;
 	const value = reuseIfEqual(node_by_id_reuse.get(target_id), {
 		...node,
