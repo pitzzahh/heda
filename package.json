@@ -59,9 +59,6 @@
 	},
 	"dependencies": {
 		"@formisch/svelte": "^1.2.0",
-		"@pitzzahh/signaldb-adapter-tauri": "^4.0.0",
-		"@signaldb/core": "^2.0.2",
-		"@signaldb/svelte": "^2.0.0",
 		"@tanstack/table-core": "^8.21.3",
 		"@tanstack/virtual-core": "^3.19.11",
 		"@tauri-apps/api": "^2.12.4",
@@ -70,7 +67,6 @@
 		"@tauri-apps/plugin-log": "~2.10.2",
 		"@tauri-apps/plugin-opener": "~2.7.3",
 		"@tauri-apps/plugin-process": "~2.4.0",
-		"@tauri-apps/plugin-stronghold": "~2.4.0",
 		"@tauri-apps/plugin-updater": "~2.14.1",
 		"@thisux/sveltednd": "^0.8.0",
 		"cn": "^0.5.2",

@@ -3,7 +3,7 @@ import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig(({ command, mode, isPreview }) => ({
 	// Component tests use a per-file `// @vitest-environment jsdom` comment, so the
@@ -38,7 +38,9 @@ export default defineConfig(({ command, mode, isPreview }) => ({
 	},
 	// The Rust engine needs its `.wasm` before any test computes; see the setup file.
 	test: {
-		setupFiles: ['./src/lib/core/vitest-setup.ts']
+		setupFiles: ['./src/lib/core/vitest-setup.ts'],
+		// Local worktrees under .claude/ are other checkouts, not part of this suite.
+		exclude: [...configDefaults.exclude, '.claude/**']
 	},
 	// `tauri android dev` on a phone sets TAURI_DEV_HOST to this machine's LAN
 	// address: the phone loads the page and hot reload from there, not localhost.
