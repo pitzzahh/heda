@@ -44,16 +44,25 @@ import {
 	getSnapshotRevision
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
-import { computeNodeLoad } from './queries/compute.js';
-import { computeShortCircuitsFromNodes } from './queries/short-circuit-core.js';
-import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
 import { loadSnapshot } from './queries/snapshot.js';
+import { engine } from '#lib/core/api.js';
+import type { EngineComputed } from '#lib/types/db.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
 
 beforeAll(async () => {
 	await initializeDatabase();
 });
+
+/** Every row as a cold engine computes it: the same documents opened again from scratch. */
+async function coldRows(): Promise<EngineComputed['rows']> {
+	await settled();
+	const reopened = await engine<EngineComputed>('open', {
+		project: getProject() ?? null,
+		nodes: getNodes()
+	});
+	return reopened.rows;
+}
 
 describe('db', () => {
 	it('creates a project with a root node', async () => {
@@ -378,13 +387,8 @@ describe('db', () => {
 
 		await settled();
 		const children = getChildNodesByParentId(panel!.id);
-		const panel_context = {
-			children_by_parent: new Map([[panel!.id, children]]),
-			is_dynamic: false,
-			memo: new Map()
-		};
 		const via_id = getNodeById(panel!.id)!;
-		const via_compute = computeNodeLoad(getNode(panel!.id)!, panel_context);
+		const via_compute = getComputedLoads(root).find((row) => row.id === panel!.id)!;
 		for (const field of [
 			'va',
 			'current',
@@ -401,8 +405,7 @@ describe('db', () => {
 		// fixed 30A trip. Merging the paths changes either table or export numbers.
 		expect(via_id.egc_size).not.toBe(via_compute.egc_size);
 
-		const load_context = { children_by_parent: new Map(), is_dynamic: false, memo: new Map() };
-		expect(getNodeById(children[0].id)).toEqual(computeNodeLoad(children[0], load_context));
+		expect(getNodeById(children[0].id)).toEqual(getComputedLoads(panel!.id)[0]);
 	});
 
 	it('shares one snapshot across reads until the next write', async () => {
@@ -759,12 +762,7 @@ describe('incremental writes and reads', () => {
 			load_description: '1000 - Renamed'
 		});
 		// Same numbers as a cold computation of the whole tree.
-		const cold = {
-			children_by_parent: loadSnapshot().children_by_parent,
-			is_dynamic: false,
-			memo: new Map()
-		};
-		expect(after_a).toEqual(computeNodeLoad(getNode(a.id)!, cold));
+		expect(after_a).toMatchObject((await coldRows())[a.id]!);
 	});
 
 	it('sees a moved subtree under its new parent in both totals', async () => {
@@ -852,10 +850,9 @@ describe('incremental writes and reads', () => {
 		}
 	});
 
-	it('computes the same voltage drops in Rust as the TypeScript export path', async () => {
+	it('reuses the voltage drops until the next write', async () => {
 		await buildTree();
 		const drops = await getComputedVoltageDropsAsync();
-		expect(drops).toEqual(computeVoltageDropsFromNodes(loadSnapshot().nodes, false));
 		expect(await getComputedVoltageDropsAsync()).toBe(drops);
 	});
 
@@ -878,7 +875,6 @@ describe('incremental writes and reads', () => {
 
 		const after = await getComputedShortCircuitsAsync();
 		expect(after).not.toBe(before);
-		expect(after).toEqual(computeShortCircuitsFromNodes(loadSnapshot().nodes, false));
 		// PEC 2017 App. D Ex. D13 transformer on the 1000 MVA grid: 434.78 A / 0.0251 pu.
 		const first = after.find((row) => row.id === a.id)!;
 		expect(Math.round(first.supply_fault_current!)).toBe(17_322);
@@ -1053,11 +1049,9 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 	it('agrees with the sidebar/header computation', async () => {
 		const { mdp } = await buildWyeTree();
 		const by_id = getNodeById(mdp.id)!;
-		const computed = computeNodeLoad(getNode(mdp.id)!, {
-			children_by_parent: loadSnapshot().children_by_parent,
-			is_dynamic: false,
-			memo: new Map()
-		});
+		const computed = getComputedLoads(getNode(mdp.id)!.parent_id!).find(
+			(row) => row.id === mdp.id
+		)!;
 		expect(by_id.phase_va).toEqual(computed.phase_va);
 		expect(by_id.current).toBe(computed.current);
 		expect(by_id.balanced_current).toBe(computed.balanced_current);
@@ -1162,9 +1156,7 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 		const { mdp, lp1, lp1_load } = await buildWyeTree();
 		patchNode(mdp.id, { length: 0 });
 		patchNode(lp1.id, { length: 0 });
-		const rows = new Map(
-			computeVoltageDropsFromNodes(loadSnapshot().nodes, false).map((row) => [row.id, row])
-		);
+		const rows = new Map((await getComputedVoltageDropsAsync()).map((row) => [row.id, row]));
 		expect(rows.get(lp1.id)!.voltage_at_end_circuit).toBe(0);
 		const load = rows.get(lp1_load.id)!;
 		expect(load.voltage_per_segment).toBeGreaterThan(0);
