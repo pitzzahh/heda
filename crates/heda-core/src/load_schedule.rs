@@ -4,8 +4,8 @@
 use crate::graph::Graph;
 use crate::js;
 use crate::model::Node;
-use crate::phases::{self, CircuitTotal, PhaseVa};
-use crate::sizing::{self, ConductorInput, Conduit, Egc, Sizing, WYE_LINE_VOLTAGE};
+use crate::phases::{self, CircuitTotal, LineCurrent, PairVa, PhaseVa, Supply};
+use crate::sizing::{self, ConductorInput, Conduit, Egc, Sizing};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -26,31 +26,37 @@ pub struct LoadRow {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase_va: Option<PhaseVa>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub pair_va: Option<PairVa>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_current: Option<LineCurrent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub balanced_current: Option<f64>,
 }
 
-/// Fields every circuit shares: single-phase circuits run at 230 V, three-phase ones
-/// line-to-line at 400 V (PEC 2017 2.20.1.5(A); App. D Ex. D6).
-fn voltage_and_phase(node: &Node) -> (f64, String) {
+/// Fields every circuit shares: single-phase circuits run at 230 V (line to neutral
+/// on 400Y/230 V, line to line on delta), three-phase ones at the supply's
+/// line-to-line voltage (PEC 2017 2.20.1.5(A); App. D Ex. D6, D14).
+fn voltage_and_phase(node: &Node, supply: Supply) -> (f64, String) {
     let voltage = if phases::is_three_phase_circuit(node) {
-        WYE_LINE_VOLTAGE
+        supply.line_voltage()
     } else {
         230.0
     };
-    (voltage, phases::circuit_phase(node).to_owned())
+    (voltage, phases::circuit_phase(node, supply).to_owned())
 }
 
 /// VA and current of a node's own load (0 for a panel or the root).
-fn own_load(node: &Node) -> (f64, f64) {
+fn own_load(node: &Node, supply: Supply) -> (f64, f64) {
     let load_data = node.load_data.as_ref();
     let va = sizing::volt_ampere(
         node.load_type(),
         load_data.and_then(|d| d.quantity).unwrap_or(0.0),
         or_zero(js::number(load_data.and_then(|d| d.varies.as_ref()))),
+        supply.line_voltage(),
     );
     let va = or_zero(va);
     let current = if phases::is_three_phase_circuit(node) {
-        phases::three_phase_current(va)
+        phases::three_phase_current_at(va, supply.line_voltage())
     } else {
         va / 230.0
     };
@@ -95,13 +101,14 @@ pub fn load_row<'g>(
     if let Some(row) = memo.get(&node.id) {
         return row.clone();
     }
-    let (voltage, phase) = voltage_and_phase(node);
+    let supply = phases::supply_of(node.parent_id.as_deref().and_then(|id| graph.get(id)));
+    let (voltage, phase) = voltage_and_phase(node, supply);
     let load_type = node.load_type();
     let ambient_temp = js::or(
         node.load_data.as_ref().and_then(|d| d.ambient_temperature),
         30.0,
     );
-    let (va, current) = own_load(node);
+    let (va, current) = own_load(node, supply);
     let input = |current: f64, at: f64, sizing: Sizing<'g>, ambient_temp: f64| ConductorInput {
         sets: count(node.conductor_sets),
         qty: count(node.conductor_qty),
@@ -128,10 +135,10 @@ pub fn load_row<'g>(
             node,
             &circuits
                 .iter()
-                .map(|(child, row)| CircuitTotal {
-                    node: child,
+                .map(|(_, row)| CircuitTotal {
                     va: row.va,
                     current: row.current,
+                    phase: &row.phase,
                 })
                 .collect::<Vec<_>>(),
         );
@@ -160,8 +167,10 @@ pub fn load_row<'g>(
             adjusted_current: sizing::adjusted_current(main_sizing),
             conduit_size: conduit(node, main_conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, main_at),
-            phase_va: totals.wye.map(|(phase_va, _)| phase_va),
-            balanced_current: totals.wye.map(|(_, balanced)| balanced),
+            phase_va: totals.phase_va,
+            pair_va: totals.pair_va,
+            line_current: totals.line_current,
+            balanced_current: totals.balanced_current,
         }
     } else {
         LoadRow {
@@ -183,6 +192,8 @@ pub fn load_row<'g>(
             conduit_size: conduit(node, conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, at),
             phase_va: None,
+            pair_va: None,
+            line_current: None,
             balanced_current: None,
         }
     };

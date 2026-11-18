@@ -4,7 +4,7 @@
 use crate::graph::Graph;
 use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
-use crate::sizing::{SQRT_3, WYE_LINE_VOLTAGE};
+use crate::sizing::SQRT_3;
 use crate::tables::{lookup, ALTERNATING_CURRENT_REACTANCE};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -49,14 +49,11 @@ pub fn voltage_drops(
             .parent_id
             .as_deref()
             .and_then(|id| end_fraction.get(id).copied());
-        // PEC 2017 App. D Ex. D15: VD = k·I·Z, k = 1.732 for three-phase (line-to-line,
-        // 400 V) and 2 for single-phase (230 V).
+        // PEC 2017 App. D Ex. D15: VD = k·I·Z, k = 1.732 for three-phase (line to line:
+        // 400 V on wye, 230 V on delta) and 2 for single-phase (230 V), over the
+        // circuit's own nominal voltage.
         let is_three_phase = computed.phase == crate::phases::ALL_PHASES;
-        let nominal_voltage = if is_three_phase {
-            WYE_LINE_VOLTAGE
-        } else {
-            230.0
-        };
+        let nominal_voltage = computed.voltage;
         let k = if is_three_phase { SQRT_3 } else { 2.0 };
         let conductor_size = js::or(node.overrided_conductor_size, computed.conductor_size);
         let length = crate::sizing::overridden(node.overrided_length).or(node.length);

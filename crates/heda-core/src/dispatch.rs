@@ -2,7 +2,7 @@
 //! arguments, answered with JSON. The Tauri backend and the WASM build used by
 //! tests and browser development both go through here, so they cannot drift apart.
 
-use crate::phases::{self, BalanceCircuit};
+use crate::phases::{self, BalanceCircuit, Supply};
 use crate::session::Session;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -29,7 +29,7 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
         "voltage_drops" => to_json(session.voltage_drops()),
         "short_circuits" => to_json(session.short_circuits()),
         "balanced_phases" => {
-            let BalancedPhases { circuits } = parse(args)?;
+            let BalancedPhases { circuits, supply } = parse(args)?;
             let circuits: Vec<BalanceCircuit> = circuits
                 .iter()
                 .map(|c| BalanceCircuit {
@@ -39,7 +39,7 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
                 })
                 .collect();
             Ok(Value::Array(
-                phases::balanced_phase_assignments(&circuits)
+                phases::balanced_phase_assignments(&circuits, Supply::of(supply.as_deref()))
                     .into_iter()
                     .map(|(id, phase)| json!([id, phase]))
                     .collect(),
@@ -74,6 +74,9 @@ struct SetProject {
 #[derive(Deserialize)]
 struct BalancedPhases {
     circuits: Vec<BalanceInput>,
+    /// The panel's phase (`three_phase_delta` balances line pairs); absent is 3P-Y.
+    #[serde(default)]
+    supply: Option<String>,
 }
 
 #[derive(Deserialize)]

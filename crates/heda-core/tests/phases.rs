@@ -4,7 +4,7 @@ use heda_core::model::{
     load_types::*, phases as names, HighestUnitForm, LoadData, Node, PanelData,
 };
 use heda_core::phases::*;
-use heda_core::sizing::volt_ampere;
+use heda_core::sizing::{volt_ampere, WYE_LINE_VOLTAGE};
 
 fn close(actual: f64, expected: f64, tolerance: f64) {
     assert!(
@@ -29,20 +29,25 @@ fn d8_8_6_service_current_242_a() {
 #[test]
 fn table_4_30_14_4_25_hp_motor_round_trips_44_a() {
     // 44 A × 400 V × 1.732 = 30 483.2 VA → 44 A
-    let va = volt_ampere(Some(THREE_P_MOTOR_HORSE_POWER), 1.0, 44.0);
+    let va = volt_ampere(Some(THREE_P_MOTOR_HORSE_POWER), 1.0, 44.0, WYE_LINE_VOLTAGE);
     close(va, 30_483.2, 1e-6);
     close(three_phase_current(va), 44.0, 1e-10);
 }
 
 #[test]
 fn rated_current_motors_multiply_by_quantity() {
-    let va = volt_ampere(Some(THREE_P_MOTOR_RATED_CURRENT), 2.0, 10.0);
+    let va = volt_ampere(
+        Some(THREE_P_MOTOR_RATED_CURRENT),
+        2.0,
+        10.0,
+        WYE_LINE_VOLTAGE,
+    );
     close(three_phase_current(va), 20.0, 1e-10);
 }
 
 #[test]
 fn d6_6_kva_package_acu_is_three_phase_equipment_va() {
-    let va = volt_ampere(Some(THREE_P_EQUIPMENT), 1.0, 6_000.0);
+    let va = volt_ampere(Some(THREE_P_EQUIPMENT), 1.0, 6_000.0, WYE_LINE_VOLTAGE);
     assert_eq!(va, 6_000.0);
     close(three_phase_current(va), 8.66, 0.005);
 }
@@ -50,7 +55,7 @@ fn d6_6_kva_package_acu_is_three_phase_equipment_va() {
 #[test]
 fn d7_single_phase_motor_stays_at_230_v() {
     // 1-Hp room acu, 8 A × 230 V = 1 840 VA
-    let va = volt_ampere(Some(ONE_P_MOTOR_RATED_CURRENT), 1.0, 8.0);
+    let va = volt_ampere(Some(ONE_P_MOTOR_RATED_CURRENT), 1.0, 8.0, WYE_LINE_VOLTAGE);
     assert_eq!(va, 1_840.0);
     assert_eq!(single_phase_current(va), 8.0);
 }
@@ -87,12 +92,12 @@ fn falls_back_to_a_and_keeps_an_override() {
         circuit_number: Some(3.0),
         ..Node::default()
     };
-    assert_eq!(phase_of(&circuit), "B");
+    assert_eq!(phase_of(&circuit, Supply::Wye), "B");
     let overridden = Node {
         phase_assignment: Some("C".into()),
         ..circuit
     };
-    assert_eq!(phase_of(&overridden), "C");
+    assert_eq!(phase_of(&overridden, Supply::Wye), "C");
 }
 
 #[test]
@@ -170,7 +175,7 @@ fn supply_error_needs_a_wye_supply_for_three_phase_circuits() {
     assert_eq!(supply_error(&motor, Some(&wye), &[]), None);
     assert!(supply_error(&motor, Some(&one), &[])
         .unwrap()
-        .contains("3P-Y"));
+        .contains("three-phase supply"));
     assert!(supply_error(&wye, Some(&one), &[])
         .unwrap()
         .contains("3P-Y"));
@@ -196,7 +201,7 @@ fn supply_error_takes_single_phase_circuits_anywhere() {
 fn supply_error_keeps_a_panel_wye_while_it_feeds_three_phase_circuits() {
     let (wye, one) = (panel(names::THREE_PHASE_WYE), panel(names::ONE_PHASE));
     let error = supply_error(&one, Some(&wye), &[load(THREE_P_MOTOR_RATED_CURRENT)]);
-    assert!(error.unwrap().contains("stay 3P-Y"));
+    assert!(error.unwrap().contains("stay three-phase"));
     assert_eq!(supply_error(&one, Some(&wye), &[load(LIGHTING_LOAD)]), None);
 }
 
@@ -231,8 +236,8 @@ fn balancing_puts_the_largest_load_on_the_lightest_phase_after_three_phase_share
     ];
     // 4 000 → A (tie, A first); 2 000 → B; 1 500 → C; 1 000 → C (2 500 < 3 000 < 5 000).
     assert_eq!(
-        balanced_phase_assignments(&circuits),
+        balanced_phase_assignments(&circuits, Supply::Wye),
         [("b", "A"), ("c", "B"), ("d", "C"), ("a", "C")]
     );
-    assert!(balanced_phase_assignments(&[]).is_empty());
+    assert!(balanced_phase_assignments(&[], Supply::Wye).is_empty());
 }

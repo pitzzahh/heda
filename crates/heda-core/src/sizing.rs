@@ -11,6 +11,8 @@ pub const SQRT_3: f64 = 1.732;
 // PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400Y/230 V, three-phase 4-wire.
 pub const WYE_LINE_VOLTAGE: f64 = 400.0;
 pub const WYE_PHASE_VOLTAGE: f64 = 230.0;
+// PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire (delta).
+pub const DELTA_LINE_VOLTAGE: f64 = 230.0;
 
 /// Load types with the same VA formula, which also size their conductor on the breaker rating.
 const COMMON_LOAD_TYPES: [&str; 5] = [
@@ -29,8 +31,8 @@ pub const MOTOR_LOAD_TYPES: [&str; 4] = [
     THREE_P_MOTOR_RATED_CURRENT,
 ];
 
-/// Three-phase loads: line-to-line at 400 V on a 400Y/230 V system (PEC 2017 App. D
-/// Ex. D6; motors per Table 4.30.14.4, 400 V column).
+/// Three-phase loads, line to line: 400 V on a 400Y/230 V system (PEC 2017 App. D
+/// Ex. D6), 230 V on a delta one (D14); motors per Table 4.30.14.4 at that voltage.
 pub const THREE_PHASE_LOAD_TYPES: [&str; 3] = [
     THREE_P_MOTOR_HORSE_POWER,
     THREE_P_MOTOR_RATED_CURRENT,
@@ -90,14 +92,15 @@ impl Serialize for Egc {
 }
 
 /// Volt-amperes of a load. Common loads are quantity × unit VA; three-phase motors
-/// are 1.732 × 400 V × full-load current (PEC 2017 App. D Ex. D6 6.3); other
-/// types (single-phase motors) are quantity × 230 V × current.
-pub fn volt_ampere(load_type: Option<&str>, quantity: f64, varies: f64) -> f64 {
+/// are 1.732 × line voltage × full-load current (PEC 2017 App. D Ex. D6 6.3, at
+/// 400 V on wye and 230 V on delta); other types (single-phase motors) are
+/// quantity × 230 V × current.
+pub fn volt_ampere(load_type: Option<&str>, quantity: f64, varies: f64, line_voltage: f64) -> f64 {
     let is = |types: &[&str]| load_type.is_some_and(|t| types.contains(&t));
     if is(&COMMON_LOAD_TYPES) {
         quantity * varies
     } else if is(&[THREE_P_MOTOR_HORSE_POWER, THREE_P_MOTOR_RATED_CURRENT]) {
-        quantity * SQRT_3 * WYE_LINE_VOLTAGE * varies
+        quantity * SQRT_3 * line_voltage * varies
     } else {
         quantity * 230.0 * varies
     }

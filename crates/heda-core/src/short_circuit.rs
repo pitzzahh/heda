@@ -161,13 +161,18 @@ pub fn short_circuits(
         .as_ref()
         .and_then(|h| h.phase.as_deref());
     let single_phase_system = is_single_phase(root_phase);
-    // A 3P-Y system is per unit at 400 V (PEC 2017 App. D Ex. D14 step 9.4, 2.20.1.5(A)).
+    // A 3P-Y system is per unit at 400 V (PEC 2017 App. D Ex. D14 step 9.4, 2.20.1.5(A)),
+    // a delta one at its 230 V, as D14 itself is; both take the bolted three-phase fault
+    // at every bus. A single-phase circuit on delta is line to line: its run counts out
+    // and back, and the bus value is the three-phase one, above the 0.866 × of a
+    // line-to-line fault, the safe side.
     // Buses and three-phase circuits take the bolted three-phase fault. A 230 V
     // single-phase circuit can only fault line to neutral: its run counts out on the
     // phase and back on the neutral, as in D13, and the rest of the path is the
     // three-phase impedance per phase (heda takes the transformer's zero-sequence
     // impedance equal to its positive one, as for the usual delta-wye unit).
-    let system_voltage = if root_phase == Some(phase_names::THREE_PHASE_WYE) {
+    let is_wye_system = root_phase == Some(phase_names::THREE_PHASE_WYE);
+    let system_voltage = if is_wye_system {
         WYE_LINE_VOLTAGE
     } else {
         230.0
@@ -200,7 +205,7 @@ pub fn short_circuits(
         // are rated on first-cycle current, where every motor counts at 4 × rated current
         // (IEEE C37.13, the 0.25 pu of D14 step 8). The kVA is scaled by (400/230)² to put the
         // motor's real ohms on the 400 V base, and every phase is charged with it.
-        let line_to_neutral_scale = if !single_phase_system && !is_three_phase_circuit(node) {
+        let line_to_neutral_scale = if is_wye_system && !is_three_phase_circuit(node) {
             let ratio = WYE_LINE_VOLTAGE / WYE_PHASE_VOLTAGE;
             ratio * ratio
         } else {

@@ -2,9 +2,10 @@
 //! calculation cache. Rust owns this state; the app keeps a mirror for its sync
 //! reads and sends every write here.
 //!
-//! Results depend only on a node and its descendants, so a write recomputes the
-//! written nodes and their ancestors (old and new parents) and everything else
-//! stays cached. Each write answers with the rows it recomputed.
+//! A row depends on the node, its descendants and the phase of the panel feeding it,
+//! so a write recomputes the written nodes, their ancestors (old and new parents)
+//! and their direct children; everything else stays cached. Each write answers with
+//! the rows it recomputed.
 
 use crate::graph::Graph;
 use crate::load_schedule::{load_row, LoadRow};
@@ -80,6 +81,12 @@ impl Session {
             self.docs.insert(id_of(&doc), doc);
         }
         touched.extend(ids.iter().flat_map(|id| self.graph.ancestors_and_self(id)));
+        // A panel's phase sets its circuits' voltage, phase and VA.
+        let children: Vec<String> = ids
+            .iter()
+            .flat_map(|id| self.graph.children(id).map(|child| child.id.clone()))
+            .collect();
+        touched.extend(children);
         Ok(self.recompute(touched))
     }
 
