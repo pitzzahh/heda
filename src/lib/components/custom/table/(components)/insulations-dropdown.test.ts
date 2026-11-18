@@ -9,6 +9,7 @@ vi.mock('#lib/db/mutations/index.js', () => ({ changeInsulation }));
 import InsulationsDropdownFixture, {
 	get_fixture_state
 } from './insulations-dropdown.fixture.svelte';
+import { isTwBarred } from './insulations-dropdown.svelte';
 
 afterEach(() => {
 	document.body.innerHTML = '';
@@ -16,16 +17,18 @@ afterEach(() => {
 });
 
 describe('InsulationsDropdown', () => {
-	test('silently repairs TW-Cu past its rating without an undo entry', () => {
+	test('bars TW from conductors of circuits over 100 A (PEC 2017 1.10.1.14(C)(1)(b))', () => {
+		expect(isTwBarred('conductor', 110)).toBe(true);
+		expect(isTwBarred('conductor', 100)).toBe(false);
+		// The EGC is not a termination of the circuit's conductors.
+		expect(isTwBarred('egc', 600)).toBe(false);
+	});
+
+	test('never writes on its own: a TW conductor past 100 A stays for the engine to flag', () => {
 		const component = mount(InsulationsDropdownFixture, { target: document.body });
 		flushSync();
-		expect(changeInsulation).toHaveBeenCalledWith({
-			node_id: 'node-a',
-			insulation: 'THHN-Cu',
-			type: 'conductor'
-		});
-		expect(get_fixture_state().hasUndoActions()).toBe(false);
-		expect(get_fixture_state().has_unsaved_actions).toBe(true);
+		expect(changeInsulation).not.toHaveBeenCalled();
+		expect(get_fixture_state().has_unsaved_actions).toBe(false);
 		unmount(component);
 	});
 });

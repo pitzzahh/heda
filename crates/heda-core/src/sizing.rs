@@ -227,14 +227,16 @@ pub fn corrected_ampacity(size: f64, rating: Rating, ambient_temp: f64, adjustme
 
 /// PEC 2017 1.10.1.14(C)(1): what the terminations allow, uncorrected, which 3.10.2.6(B)
 /// caps the corrected ampacity at. Circuits of 100 A or less take the 60 °C column, (a);
-/// over 100 A the 75 °C one, (b); never above the conductor's own rating.
+/// over 100 A the 75 °C one, (b), which admits only conductors rated 75 °C or more, so a
+/// TW conductor fits no size there (NaN).
 pub fn termination_ampacity(size: f64, rating: Rating, at: f64) -> f64 {
-    let termination = if at <= 100.0 {
-        Rating::C60
+    if at <= 100.0 {
+        ampacity(size, Rating::C60)
+    } else if rating >= Rating::C75 {
+        ampacity(size, Rating::C75)
     } else {
-        Rating::C75
-    };
-    ampacity(size, termination.min(rating))
+        f64::NAN
+    }
 }
 
 /// Table 3.10.2.6(B)(16) ampacity of a listed size; NaN for any other.

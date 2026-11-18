@@ -135,6 +135,13 @@ mod conductor_size_pec_2017_3_10_2_6_b_and_1_10_1_14_c_1 {
     }
 
     #[test]
+    fn tw_cannot_terminate_a_circuit_over_100_a() {
+        // 1.10.1.14(C)(1)(b) takes conductors rated 75 °C or more; THWN gives 38 mm² (115 A).
+        assert_eq!(conductor_size(at_ambient(110.0, Rating::C60, 30.0)), -1.0);
+        assert_eq!(conductor_size(at_ambient(110.0, Rating::C75, 30.0)), 38.0);
+    }
+
+    #[test]
     fn thwn_takes_the_75_c_column_and_factors() {
         // THWN at 40 °C (0.88): 5.5 mm² is 35 A × 0.88 = 30.8 A, terminating at 30 A.
         assert_eq!(conductor_size(at_ambient(25.0, Rating::C75, 40.0)), 5.5);

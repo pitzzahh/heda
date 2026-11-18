@@ -13,9 +13,10 @@
 
 	/**
 	 * PEC 2017 1.10.1.14(C)(1)(b): terminations of circuits rated over 100 A take conductors
-	 * rated 75 °C or more, so TW (60 °C) cannot carry them. An EGC is not held to this.
+	 * rated 75 °C or more, so TW (60 °C) is not offered there; the engine shows a TW conductor
+	 * already on such a circuit as unsizable. An EGC is not held to this.
 	 */
-	function isTwBarred(type: Props['type'], at: number) {
+	export function isTwBarred(type: Props['type'], at: number) {
 		return type === 'conductor' && at > 100;
 	}
 
@@ -37,15 +38,6 @@
 	const insulations_to_map = $derived(
 		isTwBarred(type, at) ? insulations.filter((i) => i !== 'TW-Cu') : insulations
 	);
-
-	// Silent repair: TW-Cu past its rating upgrades without an undo entry, since
-	// it was never a user action; the file is still marked unsaved so it persists.
-	$effect(() => {
-		if (isTwBarred(type, at) && current_insulation === 'TW-Cu') {
-			changeInsulation({ node_id: node.id, insulation: 'THHN-Cu', type });
-			undo_redo_state.setHasUnsavedActions();
-		}
-	});
 
 	function handleChangeInsulation(insulation: Insulations) {
 		const previous_node = getNode(node.id);
