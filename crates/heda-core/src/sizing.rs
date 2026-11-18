@@ -39,12 +39,14 @@ pub const THREE_PHASE_LOAD_TYPES: [&str; 3] = [
     THREE_P_EQUIPMENT,
 ];
 
-/// What a circuit's conductor is sized for: a load of some type, or a panel's main
-/// (`'Main'` in the app). `Unspecified` is a node without a load type.
+/// What a circuit's conductor is sized for: a load of some type, a panel's main
+/// (`'Main'` in the app), or a main that feeds motors (sized on its 4.30.2.4 load, which
+/// `current` then holds). `Unspecified` is a node without a load type.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Sizing<'a> {
     Load(&'a str),
     Main,
+    MotorFeeder,
     Unspecified,
 }
 
@@ -57,10 +59,11 @@ impl<'a> Sizing<'a> {
         matches!(self, Sizing::Load(t) if MOTOR_LOAD_TYPES.contains(&t))
     }
 
-    /// Whether the conductor is sized on the breaker rating rather than on 125 % of the
-    /// current: every circuit but a motor's (Article 4.30 lets its breaker exceed the conductor).
+    /// Whether the conductor is sized on the breaker rating rather than on its load: every
+    /// circuit but a motor's or a motor feeder's (Table 2.40.1.4(G) lets Article 4.30
+    /// breakers exceed the conductor).
     fn sizes_on_trip(self) -> bool {
-        !self.is_motor()
+        !self.is_motor() && self != Sizing::MotorFeeder
     }
 }
 
@@ -139,9 +142,23 @@ pub fn ampere_trip(
     next_rating(calculated_at)
 }
 
-/// A panel main's breaker: 125 % of its circuits' current, at least 30 A.
-pub fn main_trip(current: f64) -> f64 {
-    next_rating((1.25 * current).max(30.0))
+/// Whether a load type is a motor's.
+pub fn is_motor(load_type: Option<&str>) -> bool {
+    load_type.is_some_and(|t| MOTOR_LOAD_TYPES.contains(&t))
+}
+
+/// A panel main's breaker from its feeder `load` (2.15.1.3: the noncontinuous load plus
+/// 125 % of the continuous, with 4.30.2.4's motor load) and the `ceiling` a motor
+/// feeder may not exceed (4.30.5.2(A), 4.30.5.3: the other loads, plus the largest motor
+/// branch breaker and the other motors' full-load currents); without motors the two are
+/// equal. The largest standard rating between them (App. D Ex. D10: 131 A gives 125 A),
+/// else the next one up from the load. 0 past the table.
+pub fn feeder_trip(load: f64, ceiling: f64) -> f64 {
+    STANDARD_AMPERE_RATINGS
+        .into_iter()
+        .rev()
+        .find(|rating| *rating <= ceiling && *rating >= load)
+        .unwrap_or_else(|| next_rating(load))
 }
 
 /// The smallest standard rating of Table 2.40.1.6(A) at or above `at`; 0 past the table.
@@ -208,13 +225,14 @@ pub fn conductor_size(input: ConductorInput) -> f64 {
     size.unwrap_or(-1.0)
 }
 
-/// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), else
-/// the breaker rating, which then protects the conductor at its ampacity (2.40.1.4).
+/// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), a
+/// motor feeder's 4.30.2.4 load, else the breaker rating, which then protects the conductor
+/// at its ampacity (2.40.1.4).
 fn required_ampacity(input: ConductorInput) -> f64 {
-    if input.sizing.sizes_on_trip() {
-        input.at
-    } else {
-        1.25 * input.current
+    match input.sizing {
+        Sizing::MotorFeeder => input.current,
+        sizing if sizing.sizes_on_trip() => input.at,
+        _ => 1.25 * input.current,
     }
 }
 

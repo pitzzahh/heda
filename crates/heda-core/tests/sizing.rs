@@ -100,9 +100,19 @@ mod breaker_rating_pec_2017_table_2_40_1_6_a_and_2_10_2_3_a {
     }
 
     #[test]
-    fn panels_72_a_gives_90_a_and_350_a_gives_437_5_a_next_450_a() {
-        assert_eq!(main_trip(72.0), 90.0);
-        assert_eq!(main_trip(350.0), 450.0);
+    fn a_feeder_without_motors_takes_the_next_rating_up() {
+        // 2.15.1.3: 72 A continuous × 1.25 = 90 A; 437.5 A → 450 A; 5 A → 15 A.
+        assert_eq!(feeder_trip(90.0, 90.0), 90.0);
+        assert_eq!(feeder_trip(437.5, 437.5), 450.0);
+        assert_eq!(feeder_trip(5.0, 5.0), 15.0);
+    }
+
+    #[test]
+    fn a_motor_feeder_takes_the_largest_rating_within_its_4_30_5_2_ceiling() {
+        // App. D Ex. D10: 83.5 A load, 131 A ceiling → 125 A.
+        assert_eq!(feeder_trip(83.5, 131.0), 125.0);
+        // No rating between 81 and 84 A: the next one up from the load.
+        assert_eq!(feeder_trip(81.0, 84.0), 90.0);
     }
 }
 

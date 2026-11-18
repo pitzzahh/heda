@@ -1041,7 +1041,8 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 
 		expect(setServiceEntrance(root, false)?.highest_unit_form?.is_service).toBe(false);
 		await settled();
-		expect(getComputedLoads(root)[0]?.at).toBe(30);
+		// As a feeder: 5.2 A of noncontinuous load (2.15.1.3) takes the smallest rating, 15 A.
+		expect(getComputedLoads(root)[0]?.at).toBe(15);
 		expect(setServiceEntrance(panel.id, true)).toBeUndefined();
 	});
 });

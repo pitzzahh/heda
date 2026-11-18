@@ -107,7 +107,7 @@
 					undo_redo_state.setHasUnsavedActions();
 					toast.info('Sizes recalculated with PEC 2017', {
 						description:
-							'Breakers, conductors and conduits now follow PEC 2017: conductors by insulation, ambient and conduit fill (3.10.2.6(B)) and terminal rating (1.10.1.14(C)), 125% only on continuous loads (2.10.2.3(A)) and 20 A dwelling circuits (2.10.1.11(C)). Review the schedule, then save to keep the update.',
+							'Breakers, conductors and conduits now follow PEC 2017: conductors by insulation, ambient and conduit fill (3.10.2.6(B)) and terminal rating (1.10.1.14(C)), 125% only on continuous loads (2.10.2.3(A)), 20 A dwelling circuits (2.10.1.11(C)), and motor feeders by 4.30.2.4 and 4.30.5. Review the schedule, then save to keep the update.',
 						duration: 15_000
 					});
 				}

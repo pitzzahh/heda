@@ -30,6 +30,28 @@ pub struct LoadRow {
     pub line_current: Option<LineCurrent>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub balanced_current: Option<f64>,
+    /// What the circuit adds to its panel's feeder load.
+    #[serde(skip)]
+    pub feeder: FeederShare,
+}
+
+/// A circuit's share of its panel's feeder load, PEC 2017 2.15.1.2(A)(1) and 4.30.2.4:
+/// 125 % of its continuous and 100 % of its noncontinuous non-motor load, plus each
+/// motor's full-load current; and the largest motor at or below it, whose extra 25 % (and,
+/// for the main's breaker, branch breaker) the panel adds once.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct FeederShare {
+    pub va: f64,
+    pub current: f64,
+    pub largest_motor: Option<Motor>,
+}
+
+/// A motor circuit as a feeder sees it: VA, full-load current and branch breaker.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Motor {
+    pub va: f64,
+    pub current: f64,
+    pub at: f64,
 }
 
 /// Fields every circuit shares: single-phase circuits run at 230 V (line to neutral
@@ -147,17 +169,23 @@ pub fn load_row<'g>(
                 })
                 .collect::<Vec<_>>(),
         );
+        let feeder = feeder_load(node, &circuits);
         let main_at = js::or(
             node.overrided_at,
-            service_rating(graph, node, sizing::main_trip(totals.current), memo),
+            service_rating(
+                graph,
+                node,
+                sizing::feeder_trip(feeder.load, feeder.ceiling),
+                memo,
+            ),
         );
         let main_current = js::round_js(totals.current, 2);
-        let main_sizing = input(
-            main_current,
-            main_at,
-            Sizing::Main,
-            js::or(panel_data.ambient_temperature, 30.0),
-        );
+        let ambient_temp = js::or(panel_data.ambient_temperature, 30.0);
+        let main_sizing = if feeder.share.largest_motor.is_some() {
+            input(feeder.load, main_at, Sizing::MotorFeeder, ambient_temp)
+        } else {
+            input(main_current, main_at, Sizing::Main, ambient_temp)
+        };
         let main_conductor_size = js::or(
             node.overrided_conductor_size,
             sizing::conductor_size(main_sizing),
@@ -178,6 +206,7 @@ pub fn load_row<'g>(
             pair_va: totals.pair_va,
             line_current: totals.line_current,
             balanced_current: totals.balanced_current,
+            feeder: feeder.share,
         }
     } else {
         LoadRow {
@@ -201,10 +230,87 @@ pub fn load_row<'g>(
             pair_va: None,
             line_current: None,
             balanced_current: None,
+            feeder: if sizing::is_motor(load_type) {
+                FeederShare {
+                    va,
+                    current,
+                    largest_motor: Some(Motor { va, current, at }),
+                }
+            } else {
+                // An unknown load type has no factor; it adds its VA as it is.
+                let factor = sizing::load_factor(load_type, continuous).unwrap_or(1.0);
+                FeederShare {
+                    va: va * factor,
+                    current: current * factor,
+                    largest_motor: None,
+                }
+            },
         }
     };
     memo.insert(node.id.clone(), row.clone());
     row
+}
+
+/// A panel's feeder: its `load` (2.15.1.2(A)(1), 4.30.2.4), the `ceiling` of a motor
+/// feeder's breaker (4.30.5.2(A), 4.30.5.3), and what it adds to its own panel.
+struct Feeder {
+    load: f64,
+    ceiling: f64,
+    share: FeederShare,
+}
+
+/// The circuits' feeder shares through the panel's own phase totals, plus the largest
+/// motor once: 25 % more of its full-load current for the load, and its branch breaker in
+/// place of that current for the ceiling (App. D Ex. D10).
+// shortcut: the largest motor is the one with the highest full-load current (4.30.2.4(1)),
+// whose breaker 4.30.5.2(A) then takes as the largest; true unless a smaller motor has a
+// larger breaker override.
+fn feeder_load(panel: &Node, circuits: &[(&Node, LoadRow)]) -> Feeder {
+    let motor = largest(circuits);
+    let total = |extra: f64| {
+        let mut parts: Vec<CircuitTotal> = circuits
+            .iter()
+            .map(|(_, row)| CircuitTotal {
+                va: row.feeder.va,
+                current: row.feeder.current,
+                phase: &row.phase,
+            })
+            .collect();
+        if let Some((motor, phase)) = motor {
+            parts.push(CircuitTotal {
+                va: motor.va * extra,
+                current: motor.current * extra,
+                phase,
+            });
+        }
+        phases::panel_totals(panel, &parts).current
+    };
+    let load = total(0.25);
+    let ceiling = match motor {
+        Some((motor, _)) if motor.current > 0.0 => total(motor.at / motor.current - 1.0),
+        _ => load,
+    };
+    Feeder {
+        load,
+        ceiling: ceiling.max(load),
+        share: FeederShare {
+            va: circuits.iter().fold(0.0, |va, (_, row)| va + row.feeder.va),
+            current: total(0.0),
+            largest_motor: motor.map(|(motor, _)| motor),
+        },
+    }
+}
+
+/// The motor with the highest full-load current at or below the circuits, and the phase
+/// of the circuit it is on.
+fn largest<'r>(circuits: &'r [(&Node, LoadRow)]) -> Option<(Motor, &'r str)> {
+    circuits
+        .iter()
+        .filter_map(|(_, row)| row.feeder.largest_motor.map(|m| (m, row.phase.as_str())))
+        .fold(None, |best, (motor, phase)| match best {
+            Some((top, _)) if top.current >= motor.current => best,
+            _ => Some((motor, phase)),
+        })
 }
 
 /// The rating of `panel`'s main when it is the service disconnecting means: the first

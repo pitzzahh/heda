@@ -70,12 +70,14 @@ fn a_supply_that_is_not_the_service_keeps_the_feeder_rating() {
         load("b", "SP", 2.0, 2.0),
         load("c", "SP", 3.0, 2.0),
     ];
-    assert_eq!(main_at(nodes, "SP"), 30.0);
+    // 3 × 400 VA continuous lighting is 6.52 A at 125 % (2.15.1.3): the smallest rating.
+    assert_eq!(main_at(nodes, "SP"), 15.0);
 }
 
 #[test]
 fn the_disconnects_on_the_service_count_together() {
-    // 2.30.6.11: two 30 A panel mains already give 60 A combined.
+    // 2.30.6.11: three 2-wire circuits need 60 A combined ((D)/(E)); P2's own 15 A main
+    // leaves 45 A for P1, the first panel.
     let nodes = vec![
         root(None),
         panel("P1", 1.0),
@@ -84,8 +86,8 @@ fn the_disconnects_on_the_service_count_together() {
         load("b", "P1", 2.0, 2.0),
         load("c", "P2", 1.0, 2.0),
     ];
-    assert_eq!(main_at(nodes.clone(), "P1"), 30.0);
-    assert_eq!(main_at(nodes, "P2"), 30.0);
+    assert_eq!(main_at(nodes.clone(), "P1"), 45.0);
+    assert_eq!(main_at(nodes, "P2"), 15.0);
     // A 15 A lighting circuit on the service leaves 45 A for the panel, itself a
     // standard rating (Table 2.40.1.6(A)).
     let nodes = vec![
@@ -112,8 +114,8 @@ fn a_write_to_a_sibling_on_the_service_updates_the_service_main() {
             ],
         )
         .unwrap();
-    // Two 2-wire circuits: (C), 30 A, already met.
-    assert_eq!(all.rows["P1"].at, 30.0);
+    // Two 2-wire circuits: (C), 30 A, met by L's 15 A and P1's own 15 A.
+    assert_eq!(all.rows["P1"].at, 15.0);
     // L becomes 3-wire, so (E) asks 60 A; L's 15 A leaves 45 A for P1. Only L was written.
     let changed = session.put(vec![load("L", "root", 2.0, 3.0)]).unwrap();
     assert_eq!(changed.rows["P1"].at, 45.0);
