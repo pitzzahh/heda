@@ -12,6 +12,8 @@ ignorePatterns = [
 	"coverage/",
 	"src-tauri/target/",
 	"src-tauri/gen/",
+	# Byte-exact calculation goldens (src/lib/core/golden.test.ts).
+	"src/lib/core/golden/",
 	# Line-based template output, not source code.
 	"src-tauri/linux/*.hbs",
 	"package-lock.json",
