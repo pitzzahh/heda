@@ -56,7 +56,7 @@ impl<'a> Sizing<'a> {
     }
 
     fn is_motor(self) -> bool {
-        matches!(self, Sizing::Load(t) if MOTOR_LOAD_TYPES.contains(&t))
+        matches!(self, Sizing::Load(t) if is_motor(Some(t)))
     }
 
     /// Whether the conductor is sized on the breaker rating rather than on its load: every
