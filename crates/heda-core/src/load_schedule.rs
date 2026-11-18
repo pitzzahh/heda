@@ -160,8 +160,8 @@ pub fn load_row<'g>(
             at: main_at,
             current: main_current,
             conductor_size: main_conductor_size,
-            // As in the app today: the panel's own (load-less) trip, not `main_at`.
-            egc_size: egc(node, at),
+            // PEC 2017 Table 2.50.6.13 sizes the EGC on the overcurrent device ahead of it: the main.
+            egc_size: egc(node, main_at),
             adjusted_current: sizing::adjusted_current(main_sizing),
             conduit_size: conduit(node, main_conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, main_at),

@@ -278,6 +278,20 @@ mod tests {
     }
 
     #[test]
+    fn a_panel_grounds_on_its_main_breaker() {
+        let mut session = Session::default();
+        let root = json!({ "id": "root", "node_type": "root" });
+        let nodes = vec![root, panel("a", "root", 1.0), load("x", "a", 1.0, 23_000.0)];
+        let all = session.open(json!({}), nodes).unwrap();
+        // 23 000 VA / 230 V = 100 A, a 1.25 × 100 = 125 A main, so PEC 2017 Table 2.50.6.13
+        // gives 14 mm² (over 100 A up to 200 A), not the 5.5 mm² of a bare 30 A trip.
+        for computed in [&all.rows["a"], &all.results["a"]] {
+            assert_eq!(computed.at, 125.0);
+            assert_eq!(computed.egc_size, crate::sizing::Egc::Size(14.0));
+        }
+    }
+
+    #[test]
     fn switching_the_adjustment_factor_recomputes_everything() {
         let mut session = session();
         assert!(session

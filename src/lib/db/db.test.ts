@@ -350,7 +350,7 @@ describe('db', () => {
 		expect(getNodeById(panel!.id)?.panel_data?.name).toBe('LP-A-new');
 	});
 
-	it('documents where the two load-computation paths agree and differ', async () => {
+	it('gives the table and the header the same panel and load results', async () => {
 		resetData();
 		const created = await createProject('TwoPaths', {
 			distribution_unit: 'Transformer',
@@ -396,14 +396,12 @@ describe('db', () => {
 			'conductor_size',
 			'adjusted_current',
 			'conduit_size',
-			'ampere_frames'
+			'ampere_frames',
+			// PEC 2017 Table 2.50.6.13: both size the panel's EGC on its main breaker.
+			'egc_size'
 		] as const) {
 			expect(via_id[field]).toBe(via_compute[field]);
 		}
-		// Known divergence, pending a domain decision: the header path sizes the
-		// panel ground from the summed load while the table path sizes it from a
-		// fixed 30A trip. Merging the paths changes either table or export numbers.
-		expect(via_id.egc_size).not.toBe(via_compute.egc_size);
 
 		expect(getNodeById(children[0].id)).toEqual(getComputedLoads(panel!.id)[0]);
 	});
