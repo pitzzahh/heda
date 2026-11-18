@@ -110,3 +110,49 @@ fn a_motor_and_other_loads_follow_4_30_2_4_and_4_30_5_3() {
     ];
     assert_eq!(rows(nodes), (60.0, 14.0));
 }
+
+/// A 400Y/230 V main "P" feeding a three-phase sub-panel "S" (4 wires each).
+fn wye_main_and_sub(circuit: Value) -> Vec<Value> {
+    let mut sub = panel("three_phase_wye");
+    sub["id"] = json!("S");
+    sub["parent_id"] = json!("P");
+    sub["panel_data"]["name"] = json!("S");
+    let mut main = panel("three_phase_wye");
+    main["conductor_qty"] = json!(4);
+    sub["conductor_qty"] = json!(4);
+    let mut circuit = circuit;
+    circuit["parent_id"] = json!("S");
+    circuit["phase_assignment"] = json!("A");
+    vec![root("three_phase_wye"), main, sub, circuit]
+}
+
+#[test]
+fn a_sub_panel_brings_its_unbalanced_phases_to_its_feeder() {
+    // 4600 VA of noncontinuous lighting on phase A of the sub-panel is 20 A on phase A of
+    // the main too (4600 ÷ 230 V), not 4600 VA spread over three phases (6.67 A). The
+    // main is sized on its most loaded phase, so its breaker is 20 A.
+    let mut session = Session::default();
+    let all = session
+        .open(
+            json!({}),
+            wye_main_and_sub(load("l", 1.0, "lighting_load", 4600.0, false)),
+        )
+        .unwrap();
+    assert_eq!(all.rows["P"].current, 20.0);
+    assert_eq!(all.rows["P"].at, 20.0);
+}
+
+#[test]
+fn a_motor_in_a_sub_panel_loads_its_own_phase_of_the_main() {
+    // A 20 A single-phase motor on phase A of the sub-panel. Main load (4.30.2.4(1)):
+    // 20 A × 1.25 = 25 A on phase A. Ceiling (4.30.5.2(A)): its 50 A breaker (250 % of
+    // 20 A) on phase A → 50 A. Conductor: 25 A at the 60 °C column (≤ 100 A): 3.5 mm² is
+    // 20 A, 5.5 mm² is 30 A. The same as with the motor directly on the main.
+    let motor = load("m", 1.0, "one_phase_motor_rated_current", 20.0, true);
+    let mut session = Session::default();
+    let all = session.open(json!({}), wye_main_and_sub(motor)).unwrap();
+    assert_eq!(
+        (all.rows["P"].at, all.rows["P"].conductor_size),
+        (50.0, 5.5)
+    );
+}

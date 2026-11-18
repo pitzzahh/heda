@@ -266,6 +266,21 @@ pub struct CircuitTotal<'a> {
     pub current: f64,
     /// What it draws from on the panel (`LoadRow::phase`).
     pub phase: &'a str,
+    /// A three-phase sub-panel's own VA per phase (3P-Y) or line pair (delta), which its
+    /// feeder carries as it is rather than spread evenly over the three.
+    pub split: Option<[f64; 3]>,
+}
+
+/// The `'static` label of a circuit phase: a phase, a line pair or all three; "" (no
+/// total reads it) for anything else.
+pub fn label(phase: &str) -> &'static str {
+    PHASES
+        .iter()
+        .chain(&PAIRS)
+        .chain(&[ALL_PHASES])
+        .find(|label| **label == phase)
+        .copied()
+        .unwrap_or("")
 }
 
 /// Totals of a panel from its computed circuits.
@@ -298,9 +313,16 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
             ..PanelTotals::default()
         },
         Supply::Wye => {
-            let phase_va = circuits.iter().fold(PhaseVa::default(), |total, c| {
-                total.add(js_or_zero(c.va), c.phase)
-            });
+            let phase_va = circuits
+                .iter()
+                .fold(PhaseVa::default(), |total, c| match c.split {
+                    Some([a, b, c]) => PhaseVa {
+                        A: total.A + a,
+                        B: total.B + b,
+                        C: total.C + c,
+                    },
+                    None => total.add(js_or_zero(c.va), c.phase),
+                });
             let (balanced, _, design) = wye_feeder_current(phase_va);
             PanelTotals {
                 va,
@@ -311,9 +333,16 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
             }
         }
         Supply::Delta => {
-            let pair_va = circuits.iter().fold(PairVa::default(), |total, c| {
-                total.add(js_or_zero(c.va), c.phase)
-            });
+            let pair_va = circuits
+                .iter()
+                .fold(PairVa::default(), |total, c| match c.split {
+                    Some([ab, bc, ca]) => PairVa {
+                        AB: total.AB + ab,
+                        BC: total.BC + bc,
+                        CA: total.CA + ca,
+                    },
+                    None => total.add(js_or_zero(c.va), c.phase),
+                });
             let (balanced, lines, design) = delta_feeder_current(pair_va);
             PanelTotals {
                 va,

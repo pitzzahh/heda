@@ -47,14 +47,36 @@ pub struct FeederShare {
     pub current: f64,
     pub largest_motor: Option<Motor>,
     pub largest_breaker: Option<Motor>,
+    /// A three-phase panel's share per phase (3P-Y) and line pair (delta), so the feeder
+    /// above it carries its imbalance.
+    pub phase_va: Option<PhaseVa>,
+    pub pair_va: Option<PairVa>,
 }
 
-/// A motor circuit as a feeder sees it: VA, full-load current and branch breaker.
+impl FeederShare {
+    /// The share as the panel's supply sees it: a single-phase panel puts its motors on
+    /// its own phase there; a three-phase one keeps theirs, its phases being the supply's.
+    fn on(self, phase: &'static str) -> Self {
+        if phase == phases::ALL_PHASES {
+            return self;
+        }
+        let on = |motor: Option<Motor>| motor.map(|m| Motor { phase, ..m });
+        FeederShare {
+            largest_motor: on(self.largest_motor),
+            largest_breaker: on(self.largest_breaker),
+            ..self
+        }
+    }
+}
+
+/// A motor circuit as a feeder sees it: VA, full-load current, branch breaker, and the
+/// phase it loads on the panel counting it.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Motor {
     pub va: f64,
     pub current: f64,
     pub at: f64,
+    pub phase: &'static str,
 }
 
 /// Fields every circuit shares: single-phase circuits run at 230 V (line to neutral
@@ -126,6 +148,7 @@ pub fn load_row<'g>(
     }
     let supply = phases::supply_of(node.parent_id.as_deref().and_then(|id| graph.get(id)));
     let (voltage, phase) = voltage_and_phase(node, supply);
+    let label = phases::label(&phase);
     let load_type = node.load_type();
     let ambient_temp = js::or(
         node.load_data.as_ref().and_then(|d| d.ambient_temperature),
@@ -157,6 +180,7 @@ pub fn load_row<'g>(
     );
 
     let row = if let Some(panel_data) = &node.panel_data {
+        let panel_supply = Supply::of(node.panel_phase());
         let circuits: Vec<(&Node, LoadRow)> = graph
             .children(&node.id)
             .map(|child| (child, load_row(graph, child, memo)))
@@ -169,6 +193,7 @@ pub fn load_row<'g>(
                     va: row.va,
                     current: row.current,
                     phase: &row.phase,
+                    split: split(panel_supply, row.phase_va, row.pair_va),
                 })
                 .collect::<Vec<_>>(),
         );
@@ -211,7 +236,7 @@ pub fn load_row<'g>(
             pair_va: totals.pair_va,
             line_current: totals.line_current,
             balanced_current: totals.balanced_current,
-            feeder: feeder.share,
+            feeder: feeder.share.on(label),
         }
     } else {
         LoadRow {
@@ -239,8 +264,20 @@ pub fn load_row<'g>(
                 FeederShare {
                     va,
                     current,
-                    largest_motor: Some(Motor { va, current, at }),
-                    largest_breaker: Some(Motor { va, current, at }),
+                    largest_motor: Some(Motor {
+                        va,
+                        current,
+                        at,
+                        phase: label,
+                    }),
+                    largest_breaker: Some(Motor {
+                        va,
+                        current,
+                        at,
+                        phase: label,
+                    }),
+                    phase_va: None,
+                    pair_va: None,
                 }
             } else {
                 // An unknown load type has no factor; it adds its VA as it is.
@@ -250,6 +287,8 @@ pub fn load_row<'g>(
                     current: current * factor,
                     largest_motor: None,
                     largest_breaker: None,
+                    phase_va: None,
+                    pair_va: None,
                 }
             },
         }
@@ -271,57 +310,72 @@ struct Feeder {
 /// largest motor branch breaker in place of that motor's full-load current (4.30.5.2(A);
 /// App. D Ex. D10). Two motors with the same largest rating count one of them.
 fn feeder_load(panel: &Node, circuits: &[(&Node, LoadRow)]) -> Feeder {
+    let supply = Supply::of(panel.panel_phase());
     let motor = largest(circuits, |share| share.largest_motor, |m| m.current);
     let breaker = largest(circuits, |share| share.largest_breaker, |m| m.at);
-    let total = |extra: Option<(Motor, &str, f64)>| {
+    let total = |extra: Option<(Motor, f64)>| {
         let mut parts: Vec<CircuitTotal> = circuits
             .iter()
             .map(|(_, row)| CircuitTotal {
                 va: row.feeder.va,
                 current: row.feeder.current,
                 phase: &row.phase,
+                split: split(supply, row.feeder.phase_va, row.feeder.pair_va),
             })
             .collect();
-        if let Some((motor, phase, factor)) = extra {
+        if let Some((motor, factor)) = extra {
             parts.push(CircuitTotal {
                 va: motor.va * factor,
                 current: motor.current * factor,
-                phase,
+                phase: motor.phase,
+                split: None,
             });
         }
-        phases::panel_totals(panel, &parts).current
+        phases::panel_totals(panel, &parts)
     };
-    let load = total(motor.map(|(m, phase)| (m, phase, 0.25)));
+    let load = total(motor.map(|m| (m, 0.25))).current;
     let ceiling = match breaker {
-        Some((m, phase)) if m.current > 0.0 => total(Some((m, phase, m.at / m.current - 1.0))),
+        Some(m) if m.current > 0.0 => total(Some((m, m.at / m.current - 1.0))).current,
         _ => load,
     };
+    let own = total(None);
     Feeder {
         load,
         ceiling: ceiling.max(load),
         share: FeederShare {
             va: circuits.iter().fold(0.0, |va, (_, row)| va + row.feeder.va),
-            current: total(None),
-            largest_motor: motor.map(|(m, _)| m),
-            largest_breaker: breaker.map(|(m, _)| m),
+            current: own.current,
+            largest_motor: motor,
+            largest_breaker: breaker,
+            phase_va: own.phase_va,
+            pair_va: own.pair_va,
         },
     }
 }
 
-/// The motor at or below the circuits that is largest by `key`, and the phase of the
-/// circuit it is on.
-fn largest<'r>(
-    circuits: &'r [(&Node, LoadRow)],
+/// The motor at or below the circuits that is largest by `key`.
+fn largest(
+    circuits: &[(&Node, LoadRow)],
     pick: impl Fn(&FeederShare) -> Option<Motor>,
     key: impl Fn(&Motor) -> f64,
-) -> Option<(Motor, &'r str)> {
+) -> Option<Motor> {
     circuits
         .iter()
-        .filter_map(|(_, row)| pick(&row.feeder).map(|m| (m, row.phase.as_str())))
-        .fold(None, |best, (m, phase)| match best {
-            Some((top, _)) if key(&top) >= key(&m) => best,
-            _ => Some((m, phase)),
+        .filter_map(|(_, row)| pick(&row.feeder))
+        .fold(None, |best, m| match best {
+            Some(top) if key(&top) >= key(&m) => best,
+            _ => Some(m),
         })
+}
+
+/// A three-phase sub-panel's VA per phase or line pair, when it matches the supply of the
+/// panel above it (a mismatch is an error the panel reports; its VA is spread then).
+fn split(supply: Supply, phase_va: Option<PhaseVa>, pair_va: Option<PairVa>) -> Option<[f64; 3]> {
+    match supply {
+        Supply::Wye => phase_va.map(|p| [p.A, p.B, p.C]),
+        Supply::Delta => pair_va.map(|p| [p.AB, p.BC, p.CA]),
+        Supply::OnePhase => None,
+    }
 }
 
 /// The rating of `panel`'s main when it is the service disconnecting means: the first
