@@ -8,17 +8,14 @@
 //!
 //! ## `toFixed`
 //!
-//! heda's results were defined by the TypeScript engine, which rounds with
-//! `toFixed` (e.g. a feeder's current to 0.01 A before sizing it). Rust's `{:.N}`
-//! rounds an exact tie to even, `toFixed` away from zero (ECMA-262
-//! `Number.prototype.toFixed`: "If there are two such n, pick the larger n",
-//! applied to the magnitude). Ties only happen when the binary value sits
-//! exactly halfway, such as 2.5 or 0.125, but those do occur in VA totals, so
-//! every port of a `toFixed` call goes through here.
+//! `toFixed` rounds the exact binary value half away from zero (ECMA-262:
+//! "If there are two such n, pick the larger n", applied to the magnitude).
+//! Rust's `{:.N}` rounds an exact tie to even, so the rounding is done here on
+//! the exact decimal expansion, which `{:.1100}` prints in full (every finite f64
+//! has at most 1074 fractional digits).
 
-/// Largest `digits` handled: 10^22 is the largest power of ten an f64 holds exactly,
-/// which the tie check below relies on. `toFixed` itself allows up to 100.
-pub const MAX_DIGITS: u32 = 20;
+/// Largest `digits` accepted, the limit of `toFixed` itself.
+pub const MAX_DIGITS: u32 = 100;
 
 /// `value.toFixed(digits)`, for values below 1e21 (from there `toFixed` prints in
 /// exponent form, which this does not reimplement).
@@ -39,23 +36,41 @@ pub fn to_fixed_js(value: f64, digits: u32) -> String {
         panic!("to_fixed_js: {value} is outside the fixed-point range of toFixed");
     }
     // toFixed checks `x < 0`, which is false for -0, so -0 prints like 0.
-    let value = if value == 0.0 { 0.0 } else { value };
+    let sign = if value < 0.0 { "-" } else { "" };
     let precision = digits as usize;
-    match exact_tie(value, digits) {
-        Some(doubled) => {
-            // `doubled` is the odd integer 2·|value|·10^digits; away from zero is ⌈doubled / 2⌉.
-            let rounded = doubled.div_ceil(2);
-            let text = rounded.to_string();
-            let sign = if value < 0.0 { "-" } else { "" };
-            if precision == 0 {
-                return format!("{sign}{text}");
-            }
-            let padded = format!("{text:0>width$}", width = precision + 1);
-            let (whole, fraction) = padded.split_at(padded.len() - precision);
-            format!("{sign}{whole}.{fraction}")
-        }
-        None => format!("{value:.precision$}"),
+    let exact = format!("{:.1100}", value.abs());
+    let (whole, fraction) = exact
+        .split_once('.')
+        .expect("{:.N} with N > 0 always prints a point");
+    // Digits kept: the whole part and `precision` fractional digits. Rounding up
+    // is decided by the first dropped digit alone, which makes exact ties go up.
+    let mut kept: Vec<u8> = whole
+        .bytes()
+        .chain(fraction.bytes().take(precision))
+        .map(|byte| byte - b'0')
+        .collect();
+    if fraction.as_bytes()[precision] >= b'5' {
+        increment(&mut kept);
     }
+    let text: String = kept.iter().map(|digit| char::from(b'0' + digit)).collect();
+    let (whole, fraction) = text.split_at(text.len() - precision);
+    if precision == 0 {
+        format!("{sign}{whole}")
+    } else {
+        format!("{sign}{whole}.{fraction}")
+    }
+}
+
+/// Adds one to a decimal number held as digits, most significant first.
+fn increment(digits: &mut Vec<u8>) {
+    for digit in digits.iter_mut().rev() {
+        if *digit < 9 {
+            *digit += 1;
+            return;
+        }
+        *digit = 0;
+    }
+    digits.insert(0, 1);
 }
 
 /// `Number(value.toFixed(digits))`. NaN, infinities and values from 1e21 up come
@@ -67,25 +82,6 @@ pub fn round_js(value: f64, digits: u32) -> f64 {
     to_fixed_js(value, digits)
         .parse()
         .expect("to_fixed_js always prints a parseable number")
-}
-
-/// When `|value|·10^digits` is exactly halfway between two integers, the odd
-/// integer `2·|value|·10^digits`; otherwise `None`.
-fn exact_tie(value: f64, digits: u32) -> Option<u128> {
-    let scale = 2.0 * 10f64.powi(digits as i32);
-    let magnitude = value.abs();
-    let doubled = (magnitude * scale).round();
-    // Beyond 2^53 every f64 is an even integer, so no odd `doubled` exists there.
-    if doubled >= 9_007_199_254_740_992.0 {
-        return None;
-    }
-    // The fused multiply-add computes magnitude·scale − doubled with one rounding,
-    // so it is zero only when the product is exactly that integer.
-    if magnitude.mul_add(scale, -doubled) != 0.0 {
-        return None;
-    }
-    let doubled = doubled as u128;
-    (doubled % 2 == 1).then_some(doubled)
 }
 
 /// `Number(text)`: ECMA-262 StringToNumber. Surrounding white space is
@@ -297,6 +293,9 @@ mod tests {
         assert_eq!(to_fixed_js(0.375, 2), "0.38");
         assert_eq!(to_fixed_js(-2.5, 0), "-3");
         assert_eq!(to_fixed_js(-0.125, 2), "-0.13");
+        // A carry out of the last kept digit reaches the whole part.
+        assert_eq!(to_fixed_js(9.996, 2), "10.00");
+        assert_eq!(to_fixed_js(99.5, 0), "100");
         assert_eq!(to_fixed_js(1234.0625, 3), "1234.063");
     }
 
