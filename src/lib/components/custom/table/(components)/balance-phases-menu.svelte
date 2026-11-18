@@ -17,7 +17,8 @@
 	import { changePhaseAssignments } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { balancedPhaseAssignments, phaseOverride } from '#lib/utils/computations/index.js';
+	import { phaseOverride } from '#lib/utils/computations/index.js';
+	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
 
 	let { loads }: Props = $props();
@@ -39,16 +40,24 @@
 		toast.success(message);
 	}
 
-	function autoBalance() {
-		const assignments = balancedPhaseAssignments(
-			loads.map((load) => ({ id: load.id, va: load.va || 0, phase: load.phase ?? 'ABC' }))
-		);
+	async function autoBalance() {
+		let assignments: [string, PhaseAssignment][];
+		try {
+			assignments = await engine('balanced_phases', {
+				circuits: loads.map((load) => ({
+					id: load.id,
+					va: load.va || 0,
+					phase: load.phase ?? 'ABC'
+				}))
+			});
+		} catch (error) {
+			console.error('Auto-balance failed:', error);
+			toast.error('Could not balance the phases');
+			return;
+		}
 		const by_id = new Map(loads.map((load) => [load.id, load]));
 		applyChanges(
-			[...assignments].map(([id, phase]) => [
-				id,
-				phaseOverride(phase, by_id.get(id)?.circuit_number)
-			]),
+			assignments.map(([id, phase]) => [id, phaseOverride(phase, by_id.get(id)?.circuit_number)]),
 			'Single-phase circuits balanced across A, B and C'
 		);
 	}

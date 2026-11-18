@@ -4,8 +4,8 @@
  * Recorded from the TypeScript engine before the move to Rust
  * (`crates/heda-core`), so each step of the port has to reproduce exactly what
  * engineers saw before it. The samples go through the real open path
- * (unseal, migrate, load into the session store) and the results come from
- * the same query functions the pages use.
+ * (unseal, migrate, open in the session) and the results come from the same
+ * query functions the pages use, which read the Rust engine's answers.
  *
  * Each sample also runs as a variant that switches on what the samples leave
  * off: a short-circuit source (the utility and transformer of PEC 2017 App. D
@@ -25,12 +25,14 @@ import { decryptFilePayload } from '#lib/helpers/file/format.js';
 import { loadCurrentProject } from '#lib/db/mutations/index.js';
 import {
 	getComputedLoads,
-	getComputedShortCircuits,
-	getComputedVoltageDrops,
+	getComputedShortCircuitsAsync,
+	getComputedVoltageDropsAsync,
 	getNodeById
 } from '#lib/db/queries/index.js';
+import { settled } from '#lib/db/index.js';
 import { loadSnapshot } from '#lib/db/queries/snapshot.js';
-import { balancedPhaseAssignments, circuitPhase } from '#lib/utils/computations/index.js';
+import { engine } from '#lib/core/api.js';
+import { circuitPhase } from '#lib/utils/computations/index.js';
 import type { FileExport } from '#lib/types/main.js';
 import {
 	canonicalJson,
@@ -60,7 +62,8 @@ describe('calculation goldens', () => {
 				const raw = readFileSync(new URL(`${sample}.heda`, SAMPLES_DIR), 'utf8');
 				const file_export = await decryptFilePayload<FileExport>(raw, SAMPLE_PASSWORD);
 				await loadCurrentProject(variant ? withEverythingOn(file_export) : file_export);
-				await expectGolden(name, HASHED.has(sample), canonicalJson(collectOutputs()));
+				await settled();
+				await expectGolden(name, HASHED.has(sample), canonicalJson(await collectOutputs()));
 			});
 		}
 	}
@@ -68,7 +71,7 @@ describe('calculation goldens', () => {
 
 async function expectGolden(name: string, hashed: boolean, golden: string) {
 	if (hashed) {
-		const outputs = JSON.parse(golden) as ReturnType<typeof collectOutputs>;
+		const outputs = JSON.parse(golden) as Awaited<ReturnType<typeof collectOutputs>>;
 		await expect(
 			canonicalJson({
 				sha256: createHash('sha256').update(golden).digest('hex'),
@@ -85,7 +88,7 @@ async function expectGolden(name: string, hashed: boolean, golden: string) {
 }
 
 /** Everything a page shows that the engine computes, keyed by node id. */
-function collectOutputs() {
+async function collectOutputs() {
 	const { nodes, root } = loadSnapshot();
 	const parents = nodes.filter((node) => node.node_type === 'root' || node.node_type === 'panel');
 	const load_schedules: Record<string, unknown> = {};
@@ -96,9 +99,9 @@ function collectOutputs() {
 		if (parent.panel_data?.phase === default_phases.THREE_PHASE_WYE) {
 			// What the "Balance phases" menu would assign on this panel.
 			balanced_phases[parent.id] = Object.fromEntries(
-				balancedPhaseAssignments(
-					rows.map((row) => ({ id: row.id, va: row.va, phase: circuitPhase(row) }))
-				)
+				await engine<[string, string][]>('balanced_phases', {
+					circuits: rows.map((row) => ({ id: row.id, va: row.va, phase: circuitPhase(row) }))
+				})
 			);
 		}
 	}
@@ -107,8 +110,8 @@ function collectOutputs() {
 		root_id: root?.id ?? null,
 		load_schedules,
 		node_results,
-		voltage_drops: getComputedVoltageDrops(),
-		short_circuits: getComputedShortCircuits(),
+		voltage_drops: await getComputedVoltageDropsAsync(),
+		short_circuits: await getComputedShortCircuitsAsync(),
 		balanced_phases
 	};
 }

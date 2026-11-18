@@ -1,12 +1,6 @@
-import { computed_load_arrays, computed_loads, reuseArrayIfEqual } from './cache.js';
-import {
-	getChildren,
-	getSnapshotRevision,
-	loadSnapshot,
-	peekSnapshot,
-	type LoadSnapshot
-} from './snapshot.js';
-import { computeNodeLoad, type LoadComputationContext } from './compute.js';
+import { computed_load_arrays, merged_rows, reuseArrayIfEqual } from './cache.js';
+import { getChildren, loadSnapshot } from './snapshot.js';
+import { getRow } from '../index.js';
 import { supplyError } from '#lib/utils/computations/index.js';
 import type { Node } from '#lib/types/db.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
@@ -55,19 +49,23 @@ export function isWithinSubtree(
 	return false;
 }
 
-/** The shared, revision-surviving computation context for the live snapshot. */
-export function liveComputationContext(snapshot: LoadSnapshot): LoadComputationContext {
-	return {
-		children_by_parent: snapshot.children_by_parent,
-		is_dynamic: snapshot.is_dynamic,
-		memo: computed_loads
-	};
+/** The engine's row for `node`, merged onto the stored node; undefined until computed. */
+export function loadRowOf(node: Node): PhaseLoadSchedule | undefined {
+	const row = getRow(node.id);
+	if (!row) return undefined;
+	const cached = merged_rows.get(node.id);
+	if (cached?.node === node && cached.row === row) return cached.value;
+	const value = { ...node, ...row } as PhaseLoadSchedule;
+	merged_rows.set(node.id, { node, row, value });
+	return value;
 }
 
+/**
+ * A panel's load schedule. A circuit written a moment ago shows once the engine
+ * has answered (the next revision); until then it is left out.
+ */
 export function getComputedLoads(parent_id: string): PhaseLoadSchedule[] {
-	const snapshot = loadSnapshot();
-	const context = liveComputationContext(snapshot);
-	const loads = getChildren(snapshot, parent_id).map((child) => computeNodeLoad(child, context));
+	const loads = getChildren(loadSnapshot(), parent_id).flatMap((child) => loadRowOf(child) ?? []);
 	const value = reuseArrayIfEqual(computed_load_arrays.get(parent_id), loads);
 	computed_load_arrays.set(parent_id, value);
 	return value;
@@ -116,56 +114,6 @@ export function getAllChildNodes(root_node_id: string, include_parent?: boolean)
 	return all_nodes;
 }
 
-// Work done per task before yielding back to the event loop.
-const SLICE_MS = 8;
-
 export function nextTask(): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-/**
- * Computes `nodes` into `context.memo` a few milliseconds at a time. Pass
- * children before their parents so every call is O(children) instead of a
- * whole-subtree recursion that cannot be split. Stops (returning false) as
- * soon as `keep_going` says the graph it was given is no longer current.
- */
-export async function computeLoadsInSlices(
-	nodes: Node[],
-	context: LoadComputationContext,
-	keep_going: () => boolean = () => true
-): Promise<boolean> {
-	let slice_start = performance.now();
-	for (const node of nodes) {
-		if (performance.now() - slice_start > SLICE_MS) {
-			await nextTask();
-			if (!keep_going()) return false;
-			slice_start = performance.now();
-		}
-		computeNodeLoad(node, context);
-	}
-	return true;
-}
-
-/**
- * Fills the load cache for the whole project in the background, so the first
- * look at a large schedule (the root above all) is a cache read rather than a
- * long block. Gives up on any write; later reads compute what they need.
- */
-export async function warmComputedLoads(): Promise<void> {
-	await nextTask();
-	const revision = getSnapshotRevision();
-	const snapshot = peekSnapshot();
-	if (!snapshot.root) return;
-	const preorder: Node[] = [];
-	const stack = [...getChildren(snapshot, snapshot.root.id)];
-	while (stack.length > 0) {
-		const node = stack.pop() as Node;
-		preorder.push(node);
-		stack.push(...getChildren(snapshot, node.id));
-	}
-	await computeLoadsInSlices(
-		preorder.reverse(),
-		liveComputationContext(snapshot),
-		() => getSnapshotRevision() === revision
-	);
 }

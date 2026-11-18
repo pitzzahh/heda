@@ -1,19 +1,16 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import {
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
 } from '#lib/constants.js';
-import { Collection, DefaultDataAdapter } from '@signaldb/core';
-import type { StorageAdapter } from '@signaldb/core';
 import {
-	StrongholdTimeoutError,
-	clearCollection,
-	getDatabase,
+	getNodes,
+	getProject,
 	initializeDatabase,
-	insertIntoCollection,
-	replaceInCollection,
-	withTimeout
+	insertNodes,
+	replaceNodes,
+	settled
 } from './index.js';
 import {
 	addNode,
@@ -38,8 +35,7 @@ import {
 	checkNodeExists,
 	getChildNodesByParentId,
 	getComputedLoads,
-	getComputedShortCircuits,
-	getComputedVoltageDrops,
+	getComputedShortCircuitsAsync,
 	getComputedVoltageDropsAsync,
 	getNode,
 	getNodeDepth,
@@ -49,7 +45,6 @@ import {
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
 import { computeNodeLoad } from './queries/compute.js';
-import { computed_loads } from './queries/cache.js';
 import { computeShortCircuitsFromNodes } from './queries/short-circuit-core.js';
 import { computeVoltageDropsFromNodes } from './queries/voltage-drop-core.js';
 import { loadSnapshot } from './queries/snapshot.js';
@@ -60,7 +55,7 @@ beforeAll(async () => {
 	await initializeDatabase();
 });
 
-describe('db (signaldb)', () => {
+describe('db', () => {
 	it('creates a project with a root node', async () => {
 		resetData();
 		const created = await createProject('Test Project', {
@@ -69,9 +64,8 @@ describe('db (signaldb)', () => {
 		});
 		expect(created?.project.project_name).toBe('Test Project');
 		expect(created?.root_node_id).toBeTruthy();
-		const db = getDatabase();
-		expect(db.projects.find().fetch()).toHaveLength(1);
-		expect(db.nodes.find().fetch()).toHaveLength(1);
+		expect(getProject()?.id).toBe(created?.project.id);
+		expect(getNodes()).toHaveLength(1);
 	});
 
 	it('applies insert defaults to nodes', async () => {
@@ -189,6 +183,7 @@ describe('db (signaldb)', () => {
 				}
 			]
 		});
+		await settled();
 		expect(project.project_name).toBe('Imported');
 		const children = getChildNodesByParentId('root');
 		expect(children.map((c) => c.circuit_number)).toEqual([1, 2]);
@@ -220,14 +215,15 @@ describe('db (signaldb)', () => {
 			parent_id: root,
 			load_data
 		});
+		await settled();
 
 		const first_loads = getComputedLoads(root);
 		const second_loads = getComputedLoads(root);
 		expect(second_loads).toBe(first_loads);
 		expect(second_loads[0]).toBe(first_loads[0]);
 
-		const voltage_drops = getComputedVoltageDrops();
-		expect(getComputedVoltageDrops()).toBe(voltage_drops);
+		const voltage_drops = await getComputedVoltageDropsAsync();
+		expect(await getComputedVoltageDropsAsync()).toBe(voltage_drops);
 		expect(voltage_drops).toHaveLength(1);
 
 		// The revision-keyed memo must not survive a write.
@@ -236,7 +232,7 @@ describe('db (signaldb)', () => {
 			parent_id: root,
 			load_data: { ...load_data, length: 20 }
 		});
-		const updated_drops = getComputedVoltageDrops();
+		const updated_drops = await getComputedVoltageDropsAsync();
 		expect(updated_drops).not.toBe(voltage_drops);
 		expect(updated_drops[0]?.length).toBe(20);
 	});
@@ -259,6 +255,7 @@ describe('db (signaldb)', () => {
 		const panel_a = addNode({ parent_id: root, panel_data: panel_data('LP-A', 1) });
 		const panel_b = addNode({ parent_id: root, panel_data: panel_data('LP-B', 2) });
 
+		await settled();
 		const first = getNodeById(panel_a!.id);
 		expect(getNodeById(panel_a!.id)).toBe(first);
 
@@ -267,6 +264,7 @@ describe('db (signaldb)', () => {
 			parent_id: root,
 			panel_data: panel_data('LP-B2', 2)
 		});
+		await settled();
 		expect(getNodeById(panel_a!.id)).toBe(first);
 
 		updateNode({
@@ -274,6 +272,7 @@ describe('db (signaldb)', () => {
 			parent_id: root,
 			panel_data: panel_data('LP-A2', 1)
 		});
+		await settled();
 		const edited = getNodeById(panel_a!.id);
 		expect(edited).not.toBe(first);
 		expect(edited?.panel_data?.name).toBe('LP-A2');
@@ -322,6 +321,7 @@ describe('db (signaldb)', () => {
 				phase: default_phases.ONE_PHASE
 			}
 		});
+		await settled();
 		expect(getNodeById(panel!.id)?.panel_data?.name).toBe('LP-A');
 
 		removeNode(panel!.id);
@@ -337,6 +337,7 @@ describe('db (signaldb)', () => {
 				phase: default_phases.ONE_PHASE
 			}
 		});
+		await settled();
 		expect(getNodeById(panel!.id)?.panel_data?.name).toBe('LP-A-new');
 	});
 
@@ -375,6 +376,7 @@ describe('db (signaldb)', () => {
 		addNode({ parent_id: panel!.id, load_data: load_data(1) });
 		addNode({ parent_id: panel!.id, load_data: load_data(2) });
 
+		await settled();
 		const children = getChildNodesByParentId(panel!.id);
 		const panel_context = {
 			children_by_parent: new Map([[panel!.id, children]]),
@@ -549,24 +551,23 @@ describe('db (signaldb)', () => {
 			});
 		}
 
-		const database = getDatabase();
-		const batch = vi.spyOn(database.nodes, 'batch');
+		await settled();
+		const revision = getSnapshotRevision();
 
 		const copies = await copyAndAddNodesById(panel.id, 100);
+		await settled();
 
 		expect(copies).toHaveLength(100);
-		// One index rebuild for the insert and one for the parent update,
-		// instead of one per copied node.
-		expect(batch).toHaveBeenCalledTimes(2);
-		expect(database.nodes.find({}).count()).toBe(2 + 30 + 100 * 31);
+		// One write for the insert and one for the parent update (each answered once
+		// by the engine), instead of one per copied node.
+		expect(getSnapshotRevision() - revision).toBe(4);
+		expect(countNodes()).toBe(2 + 30 + 100 * 31);
 		expect(getChildNodesByParentId(root)).toHaveLength(101);
 		expect(new Set(copies.map((copy) => copy.circuit_number)).size).toBe(100);
 		for (const copy of copies) {
 			expect(copy.parent_id).toBe(root);
 			expect(getChildNodesByParentId(copy.id)).toHaveLength(30);
 		}
-
-		batch.mockRestore();
 	});
 
 	it('removes many subtrees with one bulk delete', async () => {
@@ -604,13 +605,10 @@ describe('db (signaldb)', () => {
 		});
 		const copies = await copyAndAddNodesById(panel.id, 10);
 
-		const database = getDatabase();
-		const remove_many = vi.spyOn(database.nodes, 'removeMany');
 		const revision = getSnapshotRevision();
 		const removed = removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
 
 		// One bulk delete invalidates the snapshot once, plus once for the parent patch.
-		expect(remove_many).toHaveBeenCalledTimes(1);
 		expect(getSnapshotRevision() - revision).toBe(2);
 		expect(removed).toHaveLength(11);
 		expect(removed.every((entry) => entry.children_nodes.length === 1)).toBe(true);
@@ -618,8 +616,6 @@ describe('db (signaldb)', () => {
 		expect(getChildNodesByParentId(panel.id)).toHaveLength(0);
 		// The rebuilt indices still resolve the nodes that stayed.
 		expect(getNode(root)?.id).toBe(root);
-
-		remove_many.mockRestore();
 	});
 
 	it('removes a panel subtree in one batch', async () => {
@@ -661,7 +657,7 @@ describe('db (signaldb)', () => {
 		expect(getChildNodesByParentId(panel!.id)).toHaveLength(0);
 	});
 
-	it('clears a collection in one pass and keeps indices usable', async () => {
+	it('ends the session in one pass and accepts a new project after', async () => {
 		resetData();
 		const created = await createProject('Clear', {
 			distribution_unit: 'Transformer',
@@ -682,33 +678,20 @@ describe('db (signaldb)', () => {
 		expect(loadSnapshot().nodes).toHaveLength(2);
 
 		const revision = getSnapshotRevision();
-		clearCollection(getDatabase().nodes);
-		expect(getDatabase().nodes.find().fetch()).toHaveLength(0);
+		resetData();
+		expect(countNodes()).toBe(0);
+		expect(getProject()).toBeUndefined();
 		expect(loadSnapshot().nodes).toHaveLength(0);
 		// The snapshot cache is invalidated, not left serving the old nodes.
 		expect(getSnapshotRevision()).toBeGreaterThan(revision);
 
-		// Clearing an already-empty collection is a no-op.
-		const empty_revision = getSnapshotRevision();
-		clearCollection(getDatabase().nodes);
-		expect(getSnapshotRevision()).toBe(empty_revision);
-
-		// The rebuilt id index still resolves fresh inserts.
 		const next = await createProject('AfterClear', {
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE
 		});
+		await settled();
 		expect(getNode(next!.root_node_id)?.id).toBe(next!.root_node_id);
-	});
-
-	it('passes fast promises through the Stronghold timeout', async () => {
-		await expect(withTimeout(Promise.resolve('key'), 50)).resolves.toBe('key');
-	});
-
-	it('rejects hung promises with StrongholdTimeoutError', async () => {
-		const hung = new Promise<string>(() => {});
-		const err = await withTimeout(hung, 20).catch((e) => e);
-		expect(err).toBeInstanceOf(StrongholdTimeoutError);
+		expect(getNodeById(next!.root_node_id)?.id).toBe(next!.root_node_id);
 	});
 });
 
@@ -748,6 +731,7 @@ describe('incremental writes and reads', () => {
 		const deep = addNode({ parent_id: a1.id, load_data: loadData(1) })!;
 		const b = addNode({ parent_id: root, panel_data: panelData('B', 2) })!;
 		const b_load = addNode({ parent_id: b.id, load_data: loadData(1) })!;
+		await settled();
 		return { root, a, a1, deep, b, b_load };
 	}
 
@@ -763,6 +747,7 @@ describe('incremental writes and reads', () => {
 		});
 		overrideField({ node_id: deep.id, field_data: 100, field_type: 'at' });
 
+		await settled();
 		const [after_a, after_b] = getComputedLoads(root);
 		expect(after_a).not.toBe(before_a);
 		// An untouched branch keeps its identity, so its rows never re-render.
@@ -790,6 +775,7 @@ describe('incremental writes and reads', () => {
 
 		updateNode({ id: a1.id, parent_id: b.id, whole_data: { ...getNode(a1.id)!, parent_id: b.id } });
 
+		await settled();
 		const [after_a, after_b] = getComputedLoads(root);
 		expect(after_a!.va).toBe(0);
 		expect(after_b!.va).toBe(2000);
@@ -859,25 +845,25 @@ describe('incremental writes and reads', () => {
 
 	it('keeps the single-phase voltage drop formula: 2·I·Z over 230 V', async () => {
 		await buildTree();
-		for (const drop of getComputedVoltageDrops()) {
+		for (const drop of await getComputedVoltageDropsAsync()) {
 			const current = getComputedLoads(drop.parent_id!).find((l) => l.id === drop.id)!.current;
 			expect(drop.voltage_per_segment).toBeCloseTo(2 * current * drop.actual_z, 4);
 			expect(drop.voltage_at_receiving_end).toBeCloseTo(230 - drop.voltage_at_end_circuit, 10);
 		}
 	});
 
-	it('computes the same voltage drops in slices as in one pass', async () => {
+	it('computes the same voltage drops in Rust as the TypeScript export path', async () => {
 		await buildTree();
-		const sliced = await getComputedVoltageDropsAsync();
-		expect(sliced).toEqual(computeVoltageDropsFromNodes(loadSnapshot().nodes, false));
-		expect(getComputedVoltageDrops()).toBe(sliced);
+		const drops = await getComputedVoltageDropsAsync();
+		expect(drops).toEqual(computeVoltageDropsFromNodes(loadSnapshot().nodes, false));
+		expect(await getComputedVoltageDropsAsync()).toBe(drops);
 	});
 
 	it('stores the short-circuit source on the root and recomputes fault currents', async () => {
 		const { root, a } = await buildTree();
-		const before = getComputedShortCircuits();
+		const before = await getComputedShortCircuitsAsync();
 		expect(before.every((row) => row.status === 'no_source')).toBe(true);
-		expect(getComputedShortCircuits()).toBe(before);
+		expect(await getComputedShortCircuitsAsync()).toBe(before);
 
 		const source = { utility_sc_kva: 1_000_000, transformer_kva: 100, transformer_z_percent: 2.5 };
 		const updated = updateShortCircuitSource(root, source);
@@ -890,7 +876,7 @@ describe('incremental writes and reads', () => {
 		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();
 		expect(getNode(a.id)?.highest_unit_form).toBeUndefined();
 
-		const after = getComputedShortCircuits();
+		const after = await getComputedShortCircuitsAsync();
 		expect(after).not.toBe(before);
 		expect(after).toEqual(computeShortCircuitsFromNodes(loadSnapshot().nodes, false));
 		// PEC 2017 App. D Ex. D13 transformer on the 1000 MVA grid: 434.78 A / 0.0251 pu.
@@ -900,31 +886,27 @@ describe('incremental writes and reads', () => {
 
 	it('rejects duplicate ids without writing anything', async () => {
 		const { a } = await buildTree();
-		const database = getDatabase();
 		const before = countNodes();
 		const clash = { ...getNode(a.id)! };
-		expect(() =>
-			insertIntoCollection(database.nodes, [{ ...clash, id: crypto.randomUUID() }, clash])
-		).toThrow('same id');
+		expect(() => insertNodes([{ ...clash, id: crypto.randomUUID() }, clash])).toThrow('same id');
 		expect(countNodes()).toBe(before);
 	});
 
 	it('rejects a tampered file with duplicate ids and keeps the session empty', async () => {
 		const { root } = await buildTree();
-		const project = getDatabase().projects.findOne({})!;
-		const nodes = getDatabase().nodes.find().fetch();
+		const project = getProject()!;
+		const nodes = getNodes();
 		await expect(
 			loadCurrentProject({ project, nodes: [...nodes, nodes[1]!] } as never)
 		).rejects.toThrow('same id');
-		expect(getDatabase().projects.find().count()).toBe(0);
+		expect(getProject()).toBeUndefined();
 		expect(countNodes()).toBe(0);
 		expect(getNode(root)).toBeUndefined();
 	});
 
 	it('terminates on a looping parent chain from a tampered file', async () => {
 		const { a } = await buildTree();
-		const database = getDatabase();
-		replaceInCollection(database.nodes, [{ ...getNode(a.id)!, parent_id: a.id }]);
+		replaceNodes([{ ...getNode(a.id)!, parent_id: a.id }]);
 		expect(getNodeDepth(a.id)).toBeGreaterThan(0);
 	});
 
@@ -936,56 +918,12 @@ describe('incremental writes and reads', () => {
 		expect(countNodes()).toBe(before);
 	});
 
-	it('leaves nothing cached when the session ends during a copy', async () => {
+	it('writes nothing when the session ends during a copy', async () => {
 		const { a } = await buildTree();
 		const copying = copyAndAddNodesById(a.id, 50);
 		resetData();
 		expect(await copying).toEqual([]);
 		expect(countNodes()).toBe(0);
-		expect(computed_loads.size).toBe(0);
-	});
-});
-
-describe('bulk writes and the session file', () => {
-	it('persists bulk inserts and in-place replacements per operation', async () => {
-		type Item = { id: string; value: number };
-		const stored = new Map<string, Item>();
-		const put = async (items: Item[]) => {
-			for (const item of items) stored.set(item.id, item);
-		};
-		const storage: StorageAdapter<Item, string> = {
-			setup: async () => {},
-			teardown: async () => {},
-			readAll: async () => [...stored.values()],
-			readIds: async (ids) => ids.flatMap((id) => stored.get(id) ?? []),
-			createIndex: async () => {},
-			dropIndex: async () => {},
-			readIndex: async () => new Map(),
-			insert: put,
-			replace: put,
-			remove: async (items) => {
-				for (const item of items) stored.delete(item.id);
-			},
-			removeAll: async () => stored.clear()
-		};
-		const collection = new Collection<Item, string>(
-			'bulk',
-			new DefaultDataAdapter({ storage: () => storage })
-		);
-		await collection.ready();
-
-		insertIntoCollection(collection, [
-			{ id: 'a', value: 1 },
-			{ id: 'b', value: 2 }
-		]);
-		replaceInCollection(collection, [{ id: 'a', value: 3 }]);
-		await vi.waitFor(() => expect(stored.get('a')?.value).toBe(3));
-		expect([...stored.values()]).toEqual([
-			{ id: 'a', value: 3 },
-			{ id: 'b', value: 2 }
-		]);
-		// The id index still resolves replaced items.
-		expect(collection.findOne({ id: 'a' })?.value).toBe(3);
 	});
 });
 
@@ -1059,6 +997,7 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			parent_id: lp1.id,
 			load_data: load(1, default_load_types.LIGHTING_LOAD, '2300')
 		})!;
+		await settled();
 		return { root, mdp, a, b, c, acu, motor, lp1, lp1_load };
 	}
 
@@ -1130,12 +1069,14 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 		const before = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
 
 		changePhaseAssignment(a.id, 'C');
+		await settled();
 		const moved = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
 		expect(moved.A).toBeCloseTo(before.A - 1_840, 6);
 		expect(moved.C).toBeCloseTo(before.C + 1_840, 6);
 		expect(getComputedLoads(mdp.id).find((l) => l.id === a.id)?.phase).toBe('C');
 
 		changePhaseAssignment(a.id, undefined);
+		await settled();
 		expect(getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va).toEqual(before);
 	});
 
@@ -1257,6 +1198,7 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			[b.id, 'C'],
 			[c.id, 'A']
 		]);
+		await settled();
 		const phases = new Map(getComputedLoads(mdp.id).map((l) => [l.id, l.phase]));
 		expect([phases.get(a.id), phases.get(b.id), phases.get(c.id)]).toEqual(['B', 'C', 'A']);
 	});
@@ -1270,7 +1212,7 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			})!;
 			// D15 uses √(R² + X²) of Table 10.1.1.9: 0.029 Ω and 0.048 Ω per 305 m.
 			overrideField({ node_id: feeder.id, field_data: Math.hypot(0.029, 0.048), field_type: 'z' });
-			const [drop] = getComputedVoltageDrops();
+			const [drop] = await getComputedVoltageDropsAsync();
 			expect(drop?.current).toBe(295);
 			// heda rounds the run impedance to 4 decimals (0.0028 Ω), so 1.4306 V vs the book's 1.428 V.
 			expect(drop?.voltage_per_segment).toBeCloseTo(1.428, 2);
@@ -1284,13 +1226,13 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 				load_data: load(1, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '20', 30.5)
 			})!;
 			overrideField({ node_id: motor.id, field_data: Math.hypot(1.2, 0.063), field_type: 'z' });
-			const [drop] = getComputedVoltageDrops();
+			const [drop] = await getComputedVoltageDropsAsync();
 			expect(drop?.voltage_per_segment).toBeCloseTo(4.163, 2);
 		});
 
 		it('carries the percent drop of a 400 V feeder into a 230 V branch', async () => {
 			const { mdp, a } = await buildWyeTree();
-			const drops = new Map(getComputedVoltageDrops().map((d) => [d.id, d]));
+			const drops = new Map((await getComputedVoltageDropsAsync()).map((d) => [d.id, d]));
 			const feeder = drops.get(mdp.id)!;
 			const branch = drops.get(a.id)!;
 			expect(feeder.voltage_at_receiving_end).toBeCloseTo(400 - feeder.voltage_at_end_circuit, 10);
@@ -1308,5 +1250,5 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 });
 
 function countNodes(): number {
-	return getDatabase().nodes.find().count();
+	return getNodes().length;
 }

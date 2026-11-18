@@ -181,29 +181,3 @@ export function supplyError({
 	}
 	return null;
 }
-
-/**
- * Phases for the single-phase circuits of one 3P-Y panel, largest load first
- * onto the least loaded phase. Three-phase circuits load every phase equally,
- * so they only seed the totals. PEC 2017 App. D Ex. D6 6.1 asks for "balanced
- * distribution of single phase loads" but leaves the method to the designer.
- */
-export function balancedPhaseAssignments(
-	circuits: { id: string; va: number; phase: CircuitPhase }[]
-): Map<string, PhaseAssignment> {
-	let totals = emptyPhaseVa();
-	for (const circuit of circuits) {
-		if (circuit.phase === 'ABC') totals = addToPhaseVa(totals, circuit);
-	}
-	const assignments = new Map<string, PhaseAssignment>();
-	const single_phase = circuits
-		.filter((circuit) => circuit.phase !== 'ABC')
-		.sort((a, b) => b.va - a.va);
-	for (const circuit of single_phase) {
-		// Ties go to A, then B, then C, so the result is stable.
-		const phase = PHASES.reduce((best, next) => (totals[next] < totals[best] ? next : best));
-		totals = addToPhaseVa(totals, { va: circuit.va, phase });
-		assignments.set(circuit.id, phase);
-	}
-	return assignments;
-}

@@ -22,8 +22,7 @@
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
-		getComputedShortCircuits,
-		peekComputedShortCircuits,
+		getComputedShortCircuitsAsync,
 		getComputedVoltageDropsAsync,
 		getNode,
 		getNodeById,
@@ -120,22 +119,26 @@
 	const voltage_drop_columns = voltageDropColumns();
 	const short_circuit_columns = shortCircuitColumns<ShortCircuit>();
 
-	// Recomputes on each snapshot revision only while the tab shows (here or in its
-	// popout window); hidden, the table keeps the last result instead of walking
-	// the whole tree on every edit.
-	const short_circuits = $derived(
-		active_tab === 'short-circuit' || popped_tabs['short-circuit']
-			? getComputedShortCircuits()
-			: visited_tabs['short-circuit']
-				? peekComputedShortCircuits()
-				: ([] as ShortCircuit[])
+	// Recomputed on each snapshot revision only while the tab shows (here or in its
+	// popout window); hidden, the table keeps the last result.
+	let short_circuits = $state<ShortCircuit[]>([]);
+	const short_circuits_shown = $derived(
+		active_tab === 'short-circuit' || !!popped_tabs['short-circuit']
 	);
+	// The engine answers asynchronously; stale answers are dropped (external async, so an effect).
+	$effect(() => {
+		const revision = getSnapshotRevision();
+		if (!short_circuits_shown) return;
+		void getComputedShortCircuitsAsync()
+			.then((faults) => {
+				if (getSnapshotRevision() === revision) short_circuits = faults;
+			})
+			.catch((error: unknown) => console.error('Short-circuit calculation failed:', error));
+	});
 
-	// Async worker fetch keyed to the revision. Snapshot load and worker clone
-	// are synchronous costs, so dispatch them off the reactive flush to keep the
-	// UI responsive. `revision` is read here to track changes; stale results are
-	// dropped. External async coordination (not derivable state) requires an
-	// effect.
+	// Engine fetch keyed to the revision, dispatched off the reactive flush.
+	// `revision` is read here to track changes; stale results are dropped.
+	// External async coordination (not derivable state) requires an effect.
 	$effect(() => {
 		const revision = getSnapshotRevision();
 		const timer = setTimeout(() => {

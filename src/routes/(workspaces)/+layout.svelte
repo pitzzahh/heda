@@ -61,7 +61,7 @@
 		return is_wye ? getComputedLoads(node_id) : [];
 	});
 
-	// Live workspace rows: the SignalDB cursor subscribes to collection changes
+	// Live workspace rows: the session snapshot subscribes to every write
 	// inside this derived, so a mutation recomputes only this layout.
 	const workspace = $derived({
 		project: getCurrentProject(project_id),

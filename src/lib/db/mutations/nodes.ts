@@ -1,16 +1,10 @@
-import {
-	getDatabase,
-	insertIntoCollection,
-	removeFromCollection,
-	replaceInCollection
-} from '../index.js';
+import { findNode, getNodes, insertNodes, removeNodes, replaceNodes } from '../index.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 import type { Node } from '#lib/types/db.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { peekSnapshot, type LoadSnapshot } from '../queries/snapshot.js';
-import { computed_loads, evictNodeFromCache } from '../queries/cache.js';
-import { computeLoadsInSlices, isWithinSubtree, nextTask } from '../queries/loads.js';
+import { isWithinSubtree, nextTask } from '../queries/loads.js';
 import { supplyError } from '#lib/utils/computations/index.js';
 import {
 	circuitDefaults,
@@ -26,24 +20,19 @@ const COPY_SLICE_MS = 8;
 // memory and crashes with unsaved work, so the copy is refused up front.
 export const MAX_COPY_NODES = 100_000;
 
-/** The live stored node, without touching SignalDB cursors or reactivity. */
-export function findNode(id: string | undefined): Node | undefined {
-	if (!id) return undefined;
-	return getDatabase().nodes.findOne({ id }, { reactive: false });
-}
+export { findNode };
 
 /**
  * Applies `$set`-style patches to many nodes in one pass and one index
  * rebuild. Later patches for the same node merge into earlier ones.
  */
 export function patchNodes(patches: [node_id: string, set: Partial<Node>][]): Node[] {
-	const database = getDatabase();
 	const merged = new Map<string, Node>();
 	for (const [node_id, set] of patches) {
 		const current = merged.get(node_id) ?? findNode(node_id);
 		if (current) merged.set(node_id, { ...current, ...set });
 	}
-	return replaceInCollection(database.nodes, [...merged.values()]);
+	return replaceNodes([...merged.values()]);
 }
 
 export function patchNode(node_id: string, set: Partial<Node>): Node | undefined {
@@ -61,8 +50,6 @@ export function addNode({
 	panel_data?: GenericPhasePanelSchema;
 	existing_id?: string;
 }) {
-	const database = getDatabase();
-
 	try {
 		const parent_node_data = findNode(parent_id);
 
@@ -87,7 +74,7 @@ export function addNode({
 			child_ids: []
 		});
 		if (findNode(created_node.id)) throw Error(`Node with ID ${created_node.id} already exists`);
-		insertIntoCollection(database.nodes, [created_node]);
+		insertNodes([created_node]);
 		patchNode(parent_id, { child_ids: [...parent_node_data.child_ids, created_node.id] });
 
 		return created_node;
@@ -116,13 +103,7 @@ export function systemPhase(node: Node): string | undefined {
 export function restoreNodes(
 	entries: { data: PhaseLoadSchedule | Node; children_nodes?: (PhaseLoadSchedule | Node)[] }[]
 ): Node[] {
-	const database = getDatabase();
-	const existing = new Set(
-		database.nodes
-			.find({}, { reactive: false })
-			.fetch()
-			.map((node) => node.id)
-	);
+	const existing = new Set(getNodes().map((node) => node.id));
 	const restored = new Map<string, Node>();
 	const roots: Node[] = [];
 
@@ -155,7 +136,7 @@ export function restoreNodes(
 		parent_patches.set(node.parent_id, child_ids);
 	}
 
-	insertIntoCollection(database.nodes, [...restored.values()]);
+	insertNodes([...restored.values()]);
 	patchNodes([...parent_patches].map(([id, child_ids]) => [id, { child_ids }]));
 	return roots.map((root) => restored.get(root.id) as Node);
 }
@@ -236,8 +217,6 @@ export async function copyAndAddNodesById(
 	count: number,
 	sub_parent_id?: string
 ): Promise<Node[]> {
-	const database = getDatabase();
-
 	try {
 		const copy_count = Math.floor(count);
 		if (!Number.isFinite(copy_count) || copy_count <= 0) return [];
@@ -260,7 +239,7 @@ export async function copyAndAddNodesById(
 			throw Error(`Copy would create more than ${MAX_COPY_NODES} nodes`);
 		}
 		// The copy spans several tasks. If the session ends meanwhile (home,
-		// reset, another file), stop and leave nothing of this project cached.
+		// reset, another file), stop and write nothing.
 		const target_still_exists = () => !target_parent_id || !!findNode(target_parent_id);
 
 		const clones: Node[] = [];
@@ -279,37 +258,13 @@ export async function copyAndAddNodesById(
 			roots.push(created.root);
 		}
 
-		// Compute the copies before they land so the first read after the insert
-		// is a cache hit, not one long block. Roots are left out: their circuit
-		// numbers are only settled below.
-		const root_ids = new Set(roots.map((root) => root.id));
-		const clone_children = new Map<string, Node[]>();
-		for (const clone of clones) {
-			if (root_ids.has(clone.id) || !clone.parent_id) continue;
-			const children = clone_children.get(clone.parent_id);
-			if (children) children.push(clone);
-			else clone_children.set(clone.parent_id, [clone]);
-		}
-		const descendants = clones.filter((clone) => !root_ids.has(clone.id)).reverse();
-		const warmed = await computeLoadsInSlices(
-			descendants,
-			{ children_by_parent: clone_children, is_dynamic: snapshot.is_dynamic, memo: computed_loads },
-			target_still_exists
-		);
 		const target_parent = findNode(target_parent_id);
-		if (!warmed || (target_parent_id && !target_parent)) {
-			for (const clone of descendants) evictNodeFromCache(clone.id);
-			throw Error('Target parent no longer exists');
-		}
-		if (peekSnapshot().is_dynamic !== snapshot.is_dynamic) {
-			for (const clone of descendants) evictNodeFromCache(clone.id);
-		}
+		if (target_parent_id && !target_parent) throw Error('Target parent no longer exists');
 
 		const used_numbers = new Set(
 			target_parent_id
-				? database.nodes
-						.find({ parent_id: target_parent_id }, { reactive: false })
-						.fetch()
+				? getNodes()
+						.filter((node) => node.parent_id === target_parent_id)
 						.map((node) => node.circuit_number)
 				: []
 		);
@@ -322,7 +277,7 @@ export async function copyAndAddNodesById(
 			next_circuit_num += 1;
 		}
 
-		insertIntoCollection(database.nodes, clones);
+		insertNodes(clones);
 		if (target_parent) {
 			patchNode(target_parent.id, {
 				child_ids: [...target_parent.child_ids, ...roots.map((root) => root.id)]
@@ -472,8 +427,6 @@ export function removeNode(
 	id: string,
 	visited: Set<string> = new Set()
 ): { removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] } | undefined {
-	const database = getDatabase();
-
 	try {
 		const snapshot = peekSnapshot();
 		const root = snapshot.node_by_id.get(id);
@@ -501,7 +454,7 @@ export function removeNode(
 		}
 
 		const removed = new Set(subtree.map((node) => node.id));
-		removeFromCollection(database.nodes, removed);
+		removeNodes(removed);
 		detachFromParents([root], removed);
 
 		return {
@@ -520,8 +473,6 @@ export function removeNode(
 export function removeNodesById(
 	ids: string[]
 ): { removed_node: PhaseLoadSchedule; children_nodes: PhaseLoadSchedule[] }[] {
-	const database = getDatabase();
-
 	try {
 		const snapshot = peekSnapshot();
 		const removed = new Set<string>();
@@ -544,7 +495,7 @@ export function removeNodesById(
 		}
 
 		if (removed.size > 0) {
-			removeFromCollection(database.nodes, removed);
+			removeNodes(removed);
 			detachFromParents(roots, removed);
 		}
 

@@ -15,7 +15,6 @@
 		"updater:default",
 		"fs:allow-rename",
 		"fs:allow-remove",
-		"stronghold:default",
 		"fs:allow-exists",
 		"fs:allow-read-dir",
 		"fs:write-files",

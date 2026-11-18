@@ -20,7 +20,7 @@ vi.mock('svelte-sonner', () => ({
 	toast: { warning: vi.fn(), info: vi.fn(), success: vi.fn(), error: vi.fn(), loading: vi.fn() }
 }));
 
-import { initializeDatabase } from '#lib/db/index.js';
+import { initializeDatabase, settled } from '#lib/db/index.js';
 import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
 import {
 	STANDARD_TERMINAL_TEMPERATURE,
@@ -86,6 +86,7 @@ async function seed() {
 			}
 		});
 	}
+	await settled();
 	return panel.id;
 }
 

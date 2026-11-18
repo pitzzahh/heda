@@ -3,7 +3,6 @@ import { THREE_PHASE_MOTOR_FLC_400V, default_load_types, default_phases } from '
 import { computeVoltAmpere, horsepowerOfCurrent } from './index.js';
 import {
 	addToPhaseVa,
-	balancedPhaseAssignments,
 	defaultPhaseAssignment,
 	emptyPhaseVa,
 	isThreePhaseLoadType,
@@ -178,25 +177,6 @@ describe('supplyError', () => {
 	it('keeps a panel 3P-Y while it feeds three-phase circuits', () => {
 		expect(supplyError({ node: one, parent: wye, children: [motor] })).toMatch(/stay 3P-Y/);
 		expect(supplyError({ node: one, parent: wye, children: [lights] })).toBeNull();
-	});
-});
-
-describe('balancedPhaseAssignments', () => {
-	it('puts the largest load first on the lightest phase, after three-phase shares', () => {
-		const result = balancedPhaseAssignments([
-			{ id: 'm', va: 3_000, phase: 'ABC' }, // 1 000 VA on each phase
-			{ id: 'a', va: 1_000, phase: 'A' },
-			{ id: 'b', va: 4_000, phase: 'A' },
-			{ id: 'c', va: 2_000, phase: 'A' },
-			{ id: 'd', va: 1_500, phase: 'B' }
-		]);
-		// 4 000 → A (tie, A first); 2 000 → B; 1 500 → C; 1 000 → C (2 500 < 3 000 < 5 000).
-		expect(Object.fromEntries(result)).toEqual({ b: 'A', c: 'B', d: 'C', a: 'C' });
-		expect(result.has('m')).toBe(false);
-	});
-
-	it('leaves an empty panel alone', () => {
-		expect(balancedPhaseAssignments([]).size).toBe(0);
 	});
 });
 

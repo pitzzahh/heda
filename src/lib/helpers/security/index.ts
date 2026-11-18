@@ -117,9 +117,3 @@ export async function decryptGcm(packed: string, key: Uint8Array): Promise<strin
 		throw new Error('Decryption failed');
 	}
 }
-
-// Raw session-store key from the Stronghold passphrase (already 32 uniform
-// random bytes, base64). No KDF needed: only files stretch user passwords.
-export function sessionStoreKey(passphrase: string): Uint8Array {
-	return base64ToBytes(passphrase);
-}

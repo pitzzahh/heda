@@ -111,12 +111,6 @@ pub struct HighestUnitForm {
     pub transformer_z_percent: Option<f64>,
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize)]
-pub struct Settings {
-    #[serde(default)]
-    pub is_adjustment_factor_dynamic: Option<bool>,
-}
-
 impl Node {
     pub fn load_type(&self) -> Option<&str> {
         self.load_data.as_ref()?.load_type.as_deref()

@@ -8,8 +8,8 @@ export const entries = () => {
 
 export const load = async ({ params }) => {
 	// No `depends('app:workspace/load-schedule')`: this load runs only when
-	// `params` change. Tables derive live rows from SignalDB cursors keyed by
-	// the current node id, so a field edit recomputes only the schedule it
+	// `params` change. Tables derive live rows from the session snapshot
+	// keyed by the current node id, so a field edit recomputes only the schedule it
 	// touched, never the layout.
 	const node_id = nodeIdFromRouteId(params.id);
 	if (!node_id) {

@@ -6,7 +6,6 @@
 	"permissions": [
 		"core:default",
 		"log:default",
-		"stronghold:default",
 		"fs:read-files",
 		"fs:write-files",
 		"fs:allow-read-dir",

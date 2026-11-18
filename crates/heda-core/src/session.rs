@@ -1,110 +1,118 @@
-//! The open project and its calculation cache. Results depend only on a node and
-//! its descendants, so a change evicts the changed nodes and their ancestors (old
-//! and new parents) and everything else stays cached, as
-//! `invalidateComputed` in `src/lib/db/queries/snapshot.ts` does.
+//! The open project: the stored documents, as the app wrote them, and the
+//! calculation cache. Rust owns this state; the app keeps a mirror for its sync
+//! reads and sends every write here.
+//!
+//! Results depend only on a node and its descendants, so a write recomputes the
+//! written nodes and their ancestors (old and new parents) and everything else
+//! stays cached. Each write answers with the rows it recomputed.
 
 use crate::graph::Graph;
 use crate::load_schedule::{load_row, node_result, LoadRow};
-use crate::model::{Node, Settings};
+use crate::model::Node;
 use crate::short_circuit::{short_circuits, ShortCircuitRow};
 use crate::voltage_drop::{voltage_drops, VoltageDropRow};
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default)]
 pub struct Session {
     graph: Graph,
+    /// Every node exactly as stored, fields the engine does not read included.
+    docs: HashMap<String, Value>,
+    project: Value,
     is_dynamic: bool,
     load_rows: HashMap<String, LoadRow>,
     node_results: HashMap<String, LoadRow>,
 }
 
+/// Recomputed results by node id: the row a node shows in its parent's load
+/// schedule, and the sidebar/header result of the node itself.
+#[derive(Debug, Default, Serialize)]
+pub struct Computed {
+    pub rows: HashMap<String, LoadRow>,
+    pub results: HashMap<String, LoadRow>,
+}
+
+/// The whole session, for a webview that reloads while the app keeps running.
+#[derive(Debug, Serialize)]
+pub struct Snapshot {
+    pub project: Value,
+    pub nodes: Vec<Value>,
+    #[serde(flatten)]
+    pub computed: Computed,
+}
+
 impl Session {
-    /// Replaces the open project.
-    pub fn open(&mut self, nodes: Vec<Node>, settings: Settings) {
+    /// Replaces the open project (`project` is null and `nodes` empty to close it).
+    pub fn open(&mut self, project: Value, nodes: Vec<Value>) -> Result<Computed, String> {
+        let parsed = parse_nodes(&nodes)?;
         *self = Session {
-            graph: Graph::new(nodes),
-            is_dynamic: settings.is_adjustment_factor_dynamic.unwrap_or(false),
+            is_dynamic: is_dynamic(&project),
+            project,
+            graph: Graph::new(parsed),
+            docs: nodes.into_iter().map(|doc| (id_of(&doc), doc)).collect(),
             ..Session::default()
         };
+        Ok(self.compute_all())
     }
 
-    pub fn set_settings(&mut self, settings: Settings) {
-        let is_dynamic = settings.is_adjustment_factor_dynamic.unwrap_or(false);
-        if is_dynamic != self.is_dynamic {
-            self.is_dynamic = is_dynamic;
-            self.load_rows.clear();
-            self.node_results.clear();
+    pub fn set_project(&mut self, project: Value) -> Computed {
+        let is_dynamic = is_dynamic(&project);
+        self.project = project;
+        if is_dynamic == self.is_dynamic {
+            return Computed::default();
         }
+        self.is_dynamic = is_dynamic;
+        self.load_rows.clear();
+        self.node_results.clear();
+        self.compute_all()
     }
 
     /// Inserts or replaces nodes.
-    pub fn upsert(&mut self, nodes: Vec<Node>) {
-        let ids: Vec<String> = nodes.iter().map(|node| node.id.clone()).collect();
-        // A node that did not exist before has nothing stale cached, only its ancestors.
-        let starts: Vec<String> = nodes
+    pub fn put(&mut self, nodes: Vec<Value>) -> Result<Computed, String> {
+        let parsed = parse_nodes(&nodes)?;
+        let ids: Vec<String> = parsed.iter().map(|node| node.id.clone()).collect();
+        // The old chain (a move leaves its old parents stale), then the new one.
+        let mut touched: Vec<String> = ids
             .iter()
-            .filter_map(|node| {
-                if self.graph.get(&node.id).is_some() {
-                    Some(node.id.clone())
-                } else {
-                    node.parent_id.clone()
-                }
-            })
+            .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
-        self.evict(&starts);
-        self.graph.upsert(nodes);
-        self.evict(&starts);
-        self.evict(
-            &ids.iter()
-                .filter_map(|id| self.graph.get(id)?.parent_id.clone())
-                .collect::<Vec<_>>(),
-        );
+        self.graph.upsert(parsed);
+        for doc in nodes {
+            self.docs.insert(id_of(&doc), doc);
+        }
+        touched.extend(ids.iter().flat_map(|id| self.graph.ancestors_and_self(id)));
+        Ok(self.recompute(touched))
     }
 
-    pub fn remove(&mut self, ids: &[String]) {
-        self.evict(ids);
+    pub fn remove(&mut self, ids: &[String]) -> Computed {
+        let touched: Vec<String> = ids
+            .iter()
+            .flat_map(|id| self.graph.ancestors_and_self(id))
+            .collect();
         self.graph.remove(ids);
         for id in ids {
-            self.load_rows.remove(id);
-            self.node_results.remove(id);
+            self.docs.remove(id);
         }
+        self.recompute(touched)
     }
 
-    fn evict(&mut self, starts: &[String]) {
-        for start in starts {
-            for id in self.graph.ancestors_and_self(start) {
-                self.load_rows.remove(&id);
-                self.node_results.remove(&id);
-            }
+    pub fn snapshot(&mut self) -> Snapshot {
+        Snapshot {
+            project: self.project.clone(),
+            nodes: self
+                .graph
+                .ids_in_order()
+                .into_iter()
+                .filter_map(|id| self.docs.get(id).cloned())
+                .collect(),
+            computed: self.compute_all(),
         }
     }
 
     pub fn graph(&self) -> &Graph {
         &self.graph
-    }
-
-    /// The rows of a panel's (or the root's) load schedule, in circuit order.
-    pub fn load_schedule(&mut self, parent_id: &str) -> Vec<(String, LoadRow)> {
-        let children: Vec<&Node> = self.graph.children(parent_id).collect();
-        children
-            .into_iter()
-            .map(|child| {
-                (
-                    child.id.clone(),
-                    load_row(&self.graph, child, self.is_dynamic, &mut self.load_rows),
-                )
-            })
-            .collect()
-    }
-
-    pub fn node_result(&mut self, id: &str) -> Option<LoadRow> {
-        let node = self.graph.get(id)?;
-        Some(node_result(
-            &self.graph,
-            node,
-            self.is_dynamic,
-            &mut self.node_results,
-        ))
     }
 
     pub fn voltage_drops(&mut self) -> Vec<VoltageDropRow> {
@@ -113,5 +121,171 @@ impl Session {
 
     pub fn short_circuits(&mut self) -> Vec<ShortCircuitRow> {
         short_circuits(&self.graph, self.is_dynamic, &mut self.load_rows)
+    }
+
+    fn compute_all(&mut self) -> Computed {
+        let ids: Vec<String> = self
+            .graph
+            .ids_in_order()
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
+        self.compute(&ids)
+    }
+
+    /// Drops the cached results of `touched` and computes them again (the ones still present).
+    fn recompute(&mut self, touched: Vec<String>) -> Computed {
+        let mut seen = HashSet::new();
+        let touched: Vec<String> = touched
+            .into_iter()
+            .filter(|id| seen.insert(id.clone()))
+            .collect();
+        for id in &touched {
+            self.load_rows.remove(id);
+            self.node_results.remove(id);
+        }
+        self.compute(&touched)
+    }
+
+    fn compute(&mut self, ids: &[String]) -> Computed {
+        let mut computed = Computed::default();
+        for id in ids {
+            let Some(node) = self.graph.get(id) else {
+                continue;
+            };
+            let row = load_row(&self.graph, node, self.is_dynamic, &mut self.load_rows);
+            let result = node_result(&self.graph, node, self.is_dynamic, &mut self.node_results);
+            computed.rows.insert(id.clone(), row);
+            computed.results.insert(id.clone(), result);
+        }
+        computed
+    }
+}
+
+fn parse_nodes(docs: &[Value]) -> Result<Vec<Node>, String> {
+    docs.iter()
+        .map(|doc| Node::deserialize(doc).map_err(|error| format!("invalid node: {error}")))
+        .collect()
+}
+
+fn id_of(doc: &Value) -> String {
+    doc["id"].as_str().unwrap_or_default().to_owned()
+}
+
+fn is_dynamic(project: &Value) -> bool {
+    project
+        .pointer("/settings/is_adjustment_factor_dynamic")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn load(id: &str, parent: &str, circuit: f64, va: f64) -> Value {
+        json!({
+            "id": id, "node_type": "load", "parent_id": parent, "circuit_number": circuit,
+            "conductor_sets": 1, "conductor_qty": 2,
+            "load_data": { "load_type": "convenience_outlet", "quantity": 1, "varies": va }
+        })
+    }
+
+    fn panel(id: &str, parent: &str, circuit: f64) -> Value {
+        json!({
+            "id": id, "node_type": "panel", "parent_id": parent, "circuit_number": circuit,
+            "conductor_sets": 1, "conductor_qty": 2,
+            "panel_data": { "name": id, "phase": "one_phase", "ambient_temperature": 30 }
+        })
+    }
+
+    fn keys(map: &HashMap<String, LoadRow>) -> Vec<&str> {
+        let mut keys: Vec<&str> = map.keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        keys
+    }
+
+    fn session() -> Session {
+        let mut session = Session::default();
+        let root = json!({ "id": "root", "node_type": "root" });
+        let nodes = vec![
+            root,
+            panel("a", "root", 1.0),
+            panel("b", "root", 2.0),
+            load("x", "a", 1.0, 180.0),
+        ];
+        let all = session.open(json!({}), nodes).unwrap();
+        assert_eq!(keys(&all.rows), ["a", "b", "root", "x"]);
+        session
+    }
+
+    #[test]
+    fn a_write_recomputes_the_node_and_its_ancestors_only() {
+        let mut session = session();
+        let changed = session.put(vec![load("x", "a", 1.0, 360.0)]).unwrap();
+        assert_eq!(keys(&changed.rows), ["a", "root", "x"]);
+        assert_eq!(changed.results["a"].va, 360.0);
+    }
+
+    #[test]
+    fn a_move_recomputes_the_old_and_the_new_parent() {
+        let mut session = session();
+        let changed = session.put(vec![load("x", "b", 1.0, 180.0)]).unwrap();
+        assert_eq!(keys(&changed.rows), ["a", "b", "root", "x"]);
+        assert_eq!(changed.results["a"].va, 0.0);
+        assert_eq!(changed.results["b"].va, 180.0);
+    }
+
+    #[test]
+    fn a_removal_recomputes_the_ancestors() {
+        let mut session = session();
+        let changed = session.remove(&["x".to_owned()]);
+        assert_eq!(keys(&changed.rows), ["a", "root"]);
+        assert_eq!(changed.results["a"].va, 0.0);
+        assert_eq!(session.snapshot().nodes.len(), 3);
+    }
+
+    #[test]
+    fn the_snapshot_keeps_every_stored_field_in_insertion_order() {
+        let mut session = session();
+        let mut x = load("x", "a", 1.0, 180.0);
+        x["not_read_by_the_engine"] = json!("kept");
+        session.put(vec![x.clone()]).unwrap();
+        let snapshot = session.snapshot();
+        let ids: Vec<&str> = snapshot
+            .nodes
+            .iter()
+            .map(|n| n["id"].as_str().unwrap())
+            .collect();
+        assert_eq!(ids, ["root", "a", "b", "x"]);
+        assert_eq!(snapshot.nodes[3], x);
+    }
+
+    #[test]
+    fn a_looping_parent_chain_is_left_unlinked_instead_of_recursing() {
+        let mut session = session();
+        // a → b → a, from a tampered file; x below the loop is unlinked too.
+        let changed = session
+            .put(vec![panel("a", "b", 1.0), panel("b", "a", 2.0)])
+            .unwrap();
+        assert_eq!(changed.results["a"].va, 0.0);
+        assert_eq!(changed.results["root"].va, 0.0);
+        assert!(session.graph().children("a").next().is_none());
+        assert!(session.graph().children("b").next().is_none());
+        let changed = session.put(vec![panel("a", "a", 1.0)]).unwrap();
+        assert_eq!(changed.results["a"].va, 0.0);
+    }
+
+    #[test]
+    fn switching_the_adjustment_factor_recomputes_everything() {
+        let mut session = session();
+        assert!(session
+            .set_project(json!({ "title": "renamed" }))
+            .rows
+            .is_empty());
+        let all =
+            session.set_project(json!({ "settings": { "is_adjustment_factor_dynamic": true } }));
+        assert_eq!(all.rows.len(), 4);
     }
 }

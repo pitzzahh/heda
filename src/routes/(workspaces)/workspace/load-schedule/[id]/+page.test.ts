@@ -35,11 +35,9 @@ vi.mock('#lib/db/queries/index.js', () => ({
 	getNode: () => undefined,
 	getRootNode: () => ({ highest_unit_form: { phase: 'one_phase' } }),
 	getComputedLoads: () => [{ id: 'load-1' }],
-	getComputedVoltageDrops: () => [{ id: 'vd-1' }],
 	getComputedVoltageDropsAsync: () => Promise.resolve([{ id: 'vd-1' }]),
 	getSnapshotRevision: () => 0,
-	getComputedShortCircuits: () => [],
-	peekComputedShortCircuits: () => []
+	getComputedShortCircuitsAsync: () => Promise.resolve([])
 }));
 
 vi.mock('#lib/components/custom/table/index.js', async () => ({

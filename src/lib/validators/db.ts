@@ -6,7 +6,7 @@ import {
 } from './short-circuit.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 
-// Canonical data shapes for SignalDB documents. Types derive from these schemas
+// Canonical data shapes for the stored project and node documents. Types derive from these schemas
 // (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults
 // / withProjectDefaults); the store itself is schemaless.
 export const PROJECT_DOC_SCHEMA = v.object({

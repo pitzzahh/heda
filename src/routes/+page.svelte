@@ -31,7 +31,6 @@
 		setSessionProtection
 	} from '#lib/db/session.js';
 	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
-	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { ConfirmationDialog, PasswordDialog } from '#lib/components/custom/index.js';
 	import {
 		IMPORT_REJECTIONS,
@@ -244,7 +243,6 @@
 		// inherit the flag (which would fire an immediate auto-save).
 		undo_redo_state.resetUnsavedActions();
 		clearSessionPassword();
-		clearSessionSnapshot();
 		void project_state.validateRecentProjects();
 		if (android) void refreshLibrary();
 	});
