@@ -105,9 +105,9 @@
 					// The migration only lives in memory until saved: flag it so Save is enabled,
 					// auto-save writes it, and closing asks first.
 					undo_redo_state.setHasUnsavedActions();
-					toast.info('Sizes recalculated with PEC 2017 tables', {
+					toast.info('Sizes recalculated with PEC 2017', {
 						description:
-							'Breaker, conductor and conduit sizes now follow PEC 2017: all standard breaker ratings, 38 mm² at 100 A, heating at 125%, and Chapter 10 conduit fill in 15–150 mm sizes. Review the schedule, then save to keep the update.',
+							'Breakers, conductors and conduits now follow PEC 2017: conductors by insulation, ambient and conduit fill (3.10.2.6(B)) and terminal rating (1.10.1.14(C)), 125% only on continuous loads (2.10.2.3(A)) and 20 A dwelling circuits (2.10.1.11(C)). Review the schedule, then save to keep the update.',
 						duration: 15_000
 					});
 				}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	PEC_2017_REVISION,
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
@@ -76,6 +77,7 @@ describe('migrateFileExport', () => {
 		file_export.nodes[2].load_data!.terminal_temperature = STANDARD_TERMINAL_TEMPERATURE;
 		file_export.nodes[2].load_data!.load_type = default_load_types.GENERAL_LIGHTING;
 		file_export.nodes[0].highest_unit_form!.pec_2017_sizing = true;
+		file_export.nodes[0].highest_unit_form!.pec_2017_revision = PEC_2017_REVISION;
 
 		const migrated = migrateFileExport(file_export);
 
@@ -142,6 +144,60 @@ describe('PEC 2017 sizing migration', () => {
 		const migrated = migrateFileExport(file_export);
 		expect(migrated.nodes[0].highest_unit_form?.pec_2017_sizing).toBe(true);
 		expect(needsPec2017Notice(migrated)).toBe(false);
+	});
+
+	it('flags a file migrated only to the first revision, and marks it at the current one', () => {
+		const file_export = createFileExport();
+		file_export.nodes[0].highest_unit_form!.pec_2017_sizing = true;
+		expect(needsPec2017Notice(file_export)).toBe(true);
+
+		const migrated = migrateFileExport(file_export);
+		expect(migrated.nodes[0].highest_unit_form?.pec_2017_revision).toBe(PEC_2017_REVISION);
+		expect(needsPec2017Notice(migrated)).toBe(false);
+	});
+
+	it('marks dwelling-circuit presets for PEC 2017 2.10.1.11(C), bathroom at 0 VA by 2.20.2.5(J)', () => {
+		const file_export = createFileExport();
+		file_export.nodes[0].highest_unit_form!.pec_2017_sizing = true;
+		const load = file_export.nodes[2].load_data!;
+		const preset = (description: string, config_preference = 'DEFAULT') => ({
+			...file_export.nodes[2],
+			load_data: {
+				...load,
+				load_description: `1 - ${description}`,
+				varies: '1500',
+				load_type: default_load_types.CONVENIENCE_OUTLET,
+				config_preference
+			}
+		});
+		file_export.nodes.push(
+			{ ...preset('Bathroom Branch Circuit'), id: 'bath' },
+			{ ...preset('Small Appliance Load'), id: 'kitchen' },
+			// A custom load keeps the VA the user typed, but is still the 20 A garage circuit.
+			{ ...preset('Garage Branch Circuit', 'CUSTOM'), id: 'custom' },
+			{ ...preset('Kitchen Outlets', 'CUSTOM'), id: 'other' }
+		);
+
+		const migrated = migrateFileExport(file_export);
+		const by_id = (id: string) => migrated.nodes.find((node) => node.id === id)?.load_data;
+		expect(by_id('bath')).toMatchObject({ dwelling_circuit: 'bathroom', varies: '0' });
+		expect(by_id('kitchen')).toMatchObject({ dwelling_circuit: 'small_appliance', varies: '1500' });
+		expect(by_id('custom')).toMatchObject({ dwelling_circuit: 'garage', varies: '1500' });
+		expect(by_id('other')?.dwelling_circuit).toBeUndefined();
+	});
+
+	it('marks dwelling circuits only once, so a later "none" survives reopening', () => {
+		const file_export = createFileExport();
+		file_export.nodes[2].load_data = {
+			...file_export.nodes[2].load_data!,
+			load_description: '1 - Laundry Circuit Load',
+			config_preference: 'DEFAULT'
+		};
+		const migrated = migrateFileExport(file_export);
+		expect(migrated.nodes[2].load_data?.dwelling_circuit).toBe('laundry');
+
+		delete migrated.nodes[2].load_data!.dwelling_circuit;
+		expect(migrateFileExport(migrated).nodes[2].load_data?.dwelling_circuit).toBeUndefined();
 	});
 
 	it('maps old Appendix C conduit overrides to the PEC Table 10.1.1.4 trade sizes', () => {

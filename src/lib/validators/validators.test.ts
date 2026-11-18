@@ -39,7 +39,8 @@ import {
 	EXPORT_PROCESS_RESULT_SCHEMA,
 	OVERRIDE_FIELD_TYPE_FIELD
 } from './misc.js';
-import { DEFAULT_LOAD_SCHEMA } from './load.js';
+import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD } from './load.js';
+import { DEFAULT_LOADS } from '#lib/constants.js';
 
 describe('validators', () => {
 	it('accepts valid inputs', () => {
@@ -400,6 +401,19 @@ describe('validators', () => {
 				type: default_load_types.GENERAL_LIGHTING
 			}).success
 		).toBe(true);
+		// The four PEC 2017 2.10.1.11(C) dwelling circuits, and nothing else.
+		for (const circuit of ['small_appliance', 'laundry', 'bathroom', 'garage']) {
+			expect(v.safeParse(DWELLING_CIRCUIT_FIELD, circuit).success).toBe(true);
+		}
+		expect(v.safeParse(DWELLING_CIRCUIT_FIELD, 'kitchen').success).toBe(false);
+		// Every shipped preset parses; 2.20.3.13 gives the small-appliance and laundry
+		// circuits 1500 VA, 2.20.2.5(J)(1) bathroom and garage none beyond general lighting.
+		for (const preset of DEFAULT_LOADS) {
+			expect(v.safeParse(DEFAULT_LOAD_SCHEMA, preset).success).toBe(true);
+		}
+		expect(
+			DEFAULT_LOADS.filter((preset) => preset.dwelling_circuit).map((preset) => preset.varies)
+		).toEqual(['1500', '1500', '0', '0']);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'z').success).toBe(true);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'va').success).toBe(false);
 		expect(v.safeParse(EXPORT_PROCESS_RESULT_SCHEMA, { valid: true }).success).toBe(true);

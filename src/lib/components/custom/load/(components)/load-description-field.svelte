@@ -49,6 +49,7 @@
 			setInput(form, { path: ['varies'], input: selected_load.varies });
 			setInput(form, { path: ['continuous'], input: selected_load.continuous });
 			setInput(form, { path: ['load_type'], input: selected_load.type });
+			setInput(form, { path: ['dwelling_circuit'], input: selected_load.dwelling_circuit });
 		}
 		closeAndFocus();
 	}

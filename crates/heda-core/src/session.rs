@@ -297,9 +297,9 @@ mod tests {
     fn the_header_sizes_a_load_breaker_by_its_load_type() {
         let session = &mut session();
         let all = session.snapshot().computed;
-        // 180 VA outlets: 0.78 A × 1.25, raised to the 20 A floor for loads; the
-        // 30 A floor is a panel's (PEC 2017 Table 2.40.1.6(A) ratings).
-        assert_eq!(all.rows["x"].at, 20.0);
+        // 180 VA outlets: 0.78 A × 1.25 = 0.98 A, the smallest rating of PEC 2017 Table
+        // 2.40.1.6(A); an outlet that is no dwelling circuit of 2.10.1.11(C) needs no 20 A.
+        assert_eq!(all.rows["x"].at, 15.0);
     }
 
     #[test]

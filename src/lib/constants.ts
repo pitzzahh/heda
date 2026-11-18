@@ -14,6 +14,17 @@ export const default_load_types = {
 	THREE_P_EQUIPMENT: 'three_phase_equipment'
 } as const;
 
+/** The PEC 2017 sizing revision new files start at; older files migrate up to it once. */
+export const PEC_2017_REVISION = 2;
+
+// PEC 2017 2.10.1.11(C)(1)–(4): the dwelling-unit receptacle circuits that are rated 20 A.
+export const DWELLING_CIRCUITS = [
+	{ value: 'small_appliance', label: 'Small-appliance, 2.10.1.11(C)(1)' },
+	{ value: 'laundry', label: 'Laundry, 2.10.1.11(C)(2)' },
+	{ value: 'bathroom', label: 'Bathroom, 2.10.1.11(C)(3)' },
+	{ value: 'garage', label: 'Garage, 2.10.1.11(C)(4)' }
+] as const;
+
 export const DEFAULT_LOAD_TYPES = [
 	{ value: default_load_types.LIGHTING_LOAD, label: 'Lighting Load' },
 	{ value: default_load_types.CONVENIENCE_OUTLET, label: 'Convenience Outlet' },
@@ -71,27 +82,37 @@ export const DEFAULT_LOADS = [
 	},
 	{
 		description: 'Small Appliance Load',
+		// PEC 2017 2.20.3.13(A): 1500 VA for each small-appliance circuit.
 		varies: '1500',
 		continuous: true,
-		type: default_load_types.CONVENIENCE_OUTLET
+		type: default_load_types.CONVENIENCE_OUTLET,
+		dwelling_circuit: 'small_appliance'
 	},
 	{
 		description: 'Laundry Circuit Load',
+		// PEC 2017 2.20.3.13(B): at least 1500 VA for each laundry circuit.
 		varies: '1500',
 		continuous: true,
-		type: default_load_types.CONVENIENCE_OUTLET
+		type: default_load_types.CONVENIENCE_OUTLET,
+		dwelling_circuit: 'laundry'
 	},
 	{
 		description: 'Bathroom Branch Circuit',
-		varies: '1500',
+		// PEC 2017 2.20.2.5(J)(1): a dwelling's bathroom receptacles are in its 24 VA/m²
+		// general lighting load; "No additional load calculations shall be required."
+		varies: '0',
 		continuous: true,
-		type: default_load_types.CONVENIENCE_OUTLET
+		type: default_load_types.CONVENIENCE_OUTLET,
+		dwelling_circuit: 'bathroom'
 	},
 	{
 		description: 'Garage Branch Circuit',
-		varies: '1500',
+		// PEC 2017 2.20.2.5(J)(1): general-use receptacles of 20 A or less are in the
+		// dwelling's 24 VA/m² general lighting load.
+		varies: '0',
 		continuous: true,
-		type: default_load_types.CONVENIENCE_OUTLET
+		type: default_load_types.CONVENIENCE_OUTLET,
+		dwelling_circuit: 'garage'
 	},
 	{
 		description: 'Convenience Outlet (Simplex)',

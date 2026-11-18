@@ -30,37 +30,79 @@ mod breaker_rating_pec_2017_table_2_40_1_6_a_and_2_10_2_3_a {
     use super::*;
 
     #[test]
-    fn lighting_20_a_times_1_25_is_25_a() {
-        assert_eq!(ampere_trip(20.0, Some(LIGHTING_LOAD)), 25.0);
+    fn a_continuous_load_takes_125_percent() {
+        // 2.10.2.3(A): 20 A × 1.25 = 25 A; 17 A × 1.25 = 21.25 A, next rating 25 A, not 30 A.
+        assert_eq!(ampere_trip(20.0, Some(LIGHTING_LOAD), true, false), 25.0);
+        assert_eq!(
+            ampere_trip(17.0, Some(CONVENIENCE_OUTLET), true, false),
+            25.0
+        );
     }
 
     #[test]
-    fn outlets_17_a_times_1_25_is_21_25_a_next_rating_25_a_not_30_a() {
-        assert_eq!(ampere_trip(17.0, Some(CONVENIENCE_OUTLET)), 25.0);
+    fn a_noncontinuous_load_takes_100_percent() {
+        // 2.10.2.3(A) adds 25 % to the continuous load only: 17 A → 20 A, 20 A → 20 A.
+        assert_eq!(
+            ampere_trip(17.0, Some(CONVENIENCE_OUTLET), false, false),
+            20.0
+        );
+        assert_eq!(ampere_trip(20.0, Some(LIGHTING_LOAD), false, false), 20.0);
     }
 
     #[test]
     fn three_hp_1p_motor_flc_17_a_times_2_5_is_42_5_a_next_45_a() {
-        // Table 4.30.14.2: 3 hp at 230 V is 17 A; Table 4.30.4.2: inverse time breaker 250 %.
-        assert_eq!(ampere_trip(17.0, Some(ONE_P_MOTOR_HORSE_POWER)), 45.0);
+        // Table 4.30.14.2: 3 hp at 230 V is 17 A; Table 4.30.4.2: inverse time breaker 250 %,
+        // whether or not the load is marked continuous.
+        assert_eq!(
+            ampere_trip(17.0, Some(ONE_P_MOTOR_HORSE_POWER), true, false),
+            45.0
+        );
+        assert_eq!(
+            ampere_trip(17.0, Some(ONE_P_MOTOR_HORSE_POWER), false, false),
+            45.0
+        );
     }
 
     #[test]
     fn heating_is_continuous_per_4_24_1_3_b() {
-        assert_eq!(ampere_trip(20.0, Some(HEATING_EQUIPMENT)), 25.0);
+        assert_eq!(
+            ampere_trip(20.0, Some(HEATING_EQUIPMENT), false, false),
+            25.0
+        );
+    }
+
+    #[test]
+    fn a_small_load_takes_the_smallest_rating_15_a() {
+        // Table 2.40.1.6(A) starts at 15 A, which also protects 2.0 mm² (2.40.1.4(D)(3)).
+        assert_eq!(
+            ampere_trip(5.0, Some(CONVENIENCE_OUTLET), true, false),
+            15.0
+        );
+        assert_eq!(ampere_trip(5.0, Some(LIGHTING_LOAD), true, false), 15.0);
+        assert_eq!(
+            ampere_trip(0.0, Some(CONVENIENCE_OUTLET), false, false),
+            15.0
+        );
+    }
+
+    #[test]
+    fn dwelling_circuits_of_2_10_1_11_c_are_20_a() {
+        // A 1500 VA small-appliance circuit (2.20.3.13) is 6.52 A × 1.25 = 8.15 A, yet
+        // 2.10.1.11(C)(1)–(4) make it, and the laundry, bathroom and garage ones, 20 A.
+        assert_eq!(
+            ampere_trip(1500.0 / 230.0, Some(CONVENIENCE_OUTLET), true, true),
+            20.0
+        );
+        assert_eq!(
+            ampere_trip(0.0, Some(CONVENIENCE_OUTLET), false, true),
+            20.0
+        );
     }
 
     #[test]
     fn panels_72_a_gives_90_a_and_350_a_gives_437_5_a_next_450_a() {
-        assert_eq!(ampere_trip(72.0, None), 90.0);
-        assert_eq!(ampere_trip(350.0, None), 450.0);
-    }
-
-    #[test]
-    fn floors_30_a_for_panels_20_a_for_non_lighting_loads() {
-        assert_eq!(ampere_trip(5.0, None), 30.0);
-        assert_eq!(ampere_trip(5.0, Some(CONVENIENCE_OUTLET)), 20.0);
-        assert_eq!(ampere_trip(5.0, Some(LIGHTING_LOAD)), 15.0);
+        assert_eq!(main_trip(72.0), 90.0);
+        assert_eq!(main_trip(350.0), 450.0);
     }
 }
 
@@ -120,7 +162,7 @@ mod conductor_size_pec_2017_3_10_2_6_b_and_1_10_1_14_c_1 {
         let motor = ConductorInput {
             sizing: Sizing::Load(THREE_P_MOTOR_RATED_CURRENT),
             current: 17.0,
-            at: ampere_trip(17.0, Some(THREE_P_MOTOR_RATED_CURRENT)),
+            at: ampere_trip(17.0, Some(THREE_P_MOTOR_RATED_CURRENT), true, false),
             ..at_ambient(0.0, Rating::C90, 20.0)
         };
         assert_eq!(motor.at, 45.0);

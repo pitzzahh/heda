@@ -8,7 +8,7 @@ import {
 } from '../index.js';
 import type { Node, Project } from '#lib/types/db.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
-import { default_phases } from '#lib/constants.js';
+import { default_phases, PEC_2017_REVISION } from '#lib/constants.js';
 
 export async function createProject(
 	project_name: string,
@@ -27,6 +27,7 @@ export async function createProject(
 			highest_unit_form: highest_unit_form && {
 				...highest_unit_form,
 				pec_2017_sizing: true,
+				pec_2017_revision: PEC_2017_REVISION,
 				...(highest_unit_form.phase === default_phases.THREE_PHASE_WYE && {
 					wye_circuit_defaults: true
 				})

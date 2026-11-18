@@ -103,45 +103,52 @@ pub fn volt_ampere(load_type: Option<&str>, quantity: f64, varies: f64, line_vol
     }
 }
 
-/// Breaker multiplier on the load current. Motors: PEC 2017 Table 4.30.4.2, inverse
-/// time breaker 250 %. Continuous loads: 125 % (2.10.2.3(A)); heating is continuous
-/// per 4.24.1.3(B), and 125 % stays under the 150 % ceiling of 4.22.2.2(E)(3).
-fn load_type_z_value(load_type: &str) -> Option<f64> {
-    match load_type {
-        LIGHTING_LOAD | CONVENIENCE_OUTLET | GENERAL_LIGHTING | HEATING_EQUIPMENT
-        | THREE_P_EQUIPMENT => Some(1.25),
-        ONE_P_MOTOR_HORSE_POWER
-        | ONE_P_MOTOR_RATED_CURRENT
-        | THREE_P_MOTOR_HORSE_POWER
-        | THREE_P_MOTOR_RATED_CURRENT => Some(2.5),
-        _ => None,
+/// The dwelling-unit circuits PEC 2017 2.10.1.11(C)(1)–(4) requires at 20 A.
+pub const DWELLING_CIRCUITS: [&str; 4] = ["small_appliance", "laundry", "bathroom", "garage"];
+
+/// Breaker multiplier on a branch circuit's load current; None for an unknown load type.
+/// Motors: Table 4.30.4.2, inverse time breaker 250 %. Heating is continuous whatever the
+/// load says (4.24.1.3(B)), and its 125 % stays under the 150 % of 4.22.2.2(E)(3). Any
+/// other load: 125 % when continuous, 100 % when not (2.10.2.3(A)).
+pub fn load_factor(load_type: Option<&str>, continuous: bool) -> Option<f64> {
+    let by_duty = if continuous { 1.25 } else { 1.0 };
+    match load_type.filter(|t| !t.is_empty()) {
+        None => Some(by_duty),
+        Some(HEATING_EQUIPMENT) => Some(1.25),
+        Some(LIGHTING_LOAD | CONVENIENCE_OUTLET | GENERAL_LIGHTING | THREE_P_EQUIPMENT) => {
+            Some(by_duty)
+        }
+        Some(t) if MOTOR_LOAD_TYPES.contains(&t) => Some(2.5),
+        Some(_) => None,
     }
 }
 
-/// Breaker rating (PEC 2017 Table 2.40.1.6(A)) for a current: the multiplier of the
-/// load type (1.25 for a panel's main), at least 30 A for a panel and 20 A for any
-/// load but lighting. 0 when the current is past the table.
-pub fn ampere_trip(current: f64, load_type: Option<&str>) -> f64 {
-    const PANEL_Z_VALUE: f64 = 1.25;
-    // `load_type ? z[load_type] : 1.25`: the empty string counts as no load type.
-    let load_type = load_type.filter(|t| !t.is_empty());
-    let calculated_at = current
-        * match load_type {
-            Some(t) => load_type_z_value(t).unwrap_or(f64::NAN),
-            None => PANEL_Z_VALUE,
-        };
-    if load_type.is_none() && calculated_at < 30.0 {
-        return 30.0;
-    }
-    if load_type != Some(LIGHTING_LOAD)
-        && load_type != Some(GENERAL_LIGHTING)
-        && calculated_at < 20.0
-    {
+/// A branch circuit's breaker: its current times `load_factor`, up to the next standard
+/// rating of PEC 2017 Table 2.40.1.6(A) (15 A at the least), and 20 A at the least for a
+/// dwelling circuit of 2.10.1.11(C). 0 when the current is past the table.
+pub fn ampere_trip(
+    current: f64,
+    load_type: Option<&str>,
+    continuous: bool,
+    dwelling_circuit: bool,
+) -> f64 {
+    let calculated_at = current * load_factor(load_type, continuous).unwrap_or(f64::NAN);
+    if dwelling_circuit && calculated_at < 20.0 {
         return 20.0;
     }
+    next_rating(calculated_at)
+}
+
+/// A panel main's breaker: 125 % of its circuits' current, at least 30 A.
+pub fn main_trip(current: f64) -> f64 {
+    next_rating((1.25 * current).max(30.0))
+}
+
+/// The smallest standard rating of Table 2.40.1.6(A) at or above `at`; 0 past the table.
+fn next_rating(at: f64) -> f64 {
     STANDARD_AMPERE_RATINGS
         .into_iter()
-        .find(|rating| calculated_at <= *rating)
+        .find(|rating| at <= *rating)
         .unwrap_or(0.0)
 }
 

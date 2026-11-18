@@ -116,7 +116,15 @@ pub fn load_row<'g>(
         current,
         rating: Rating::of(node.conductor_insulation.as_deref()),
     };
-    let at = js::or(node.overrided_at, sizing::ampere_trip(current, load_type));
+    let load_data = node.load_data.as_ref();
+    let continuous = load_data.and_then(|d| d.continuous).unwrap_or(true);
+    let dwelling_circuit = load_data
+        .and_then(|d| d.dwelling_circuit.as_deref())
+        .is_some_and(|c| sizing::DWELLING_CIRCUITS.contains(&c));
+    let at = js::or(
+        node.overrided_at,
+        sizing::ampere_trip(current, load_type, continuous, dwelling_circuit),
+    );
     let own_sizing = input(current, at, Sizing::of(load_type), ambient_temp);
     let conductor_size = js::or(
         node.overrided_conductor_size,
@@ -141,7 +149,7 @@ pub fn load_row<'g>(
         );
         let main_at = js::or(
             node.overrided_at,
-            service_rating(graph, node, sizing::ampere_trip(totals.current, None), memo),
+            service_rating(graph, node, sizing::main_trip(totals.current), memo),
         );
         let main_current = js::round_js(totals.current, 2);
         let main_sizing = input(

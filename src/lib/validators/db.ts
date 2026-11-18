@@ -57,7 +57,9 @@ export const NODE_DOC_SCHEMA = v.object({
 			varies: v.string(),
 			continuous: v.boolean(),
 			load_type: v.string(),
-			config_preference: v.string()
+			config_preference: v.string(),
+			/** The PEC 2017 2.10.1.11(C) dwelling circuit this is (20 A), if any. */
+			dwelling_circuit: v.optional(v.string())
 		})
 	),
 	highest_unit_form: v.optional(
@@ -72,7 +74,9 @@ export const NODE_DOC_SCHEMA = v.object({
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
 			wye_circuit_defaults: v.optional(v.boolean()),
 			/** Set once a file is opened under the PEC 2017 sizing tables, so its notice and migration run once. */
-			pec_2017_sizing: v.optional(v.boolean())
+			pec_2017_sizing: v.optional(v.boolean()),
+			/** The PEC 2017 sizing revision the file was last migrated to (see `migrations.ts`). */
+			pec_2017_revision: v.optional(v.number())
 		})
 	),
 	parent_id: v.optional(v.string()),

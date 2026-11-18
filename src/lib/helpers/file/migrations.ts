@@ -1,10 +1,12 @@
 import {
+	DEFAULT_LOADS,
 	DEFAULT_LOAD_TYPES,
 	DEFAULT_PHASES,
 	DEFAULT_TERMINAL_TEMPERATURES,
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
-	default_phases
+	default_phases,
+	PEC_2017_REVISION
 } from '#lib/constants.js';
 import type { Node } from '#lib/types/db.js';
 import type { FileExport } from '#lib/types/main.js';
@@ -135,25 +137,72 @@ const LEGACY_CONDUIT_SIZES: Record<number, number> = {
 };
 
 /**
- * A file saved before the PEC 2017 sizing tables (breaker ratings, 38 mm² at 60°C,
- * heating at 125%, Ch. 10 conduit fill) that has circuits whose sizes now change on open.
+ * The PEC 2017 sizing revision a file was migrated to. 1: the sizing tables (breaker
+ * ratings, Ch. 10 conduit fill, heating at 125 %), once marked only by `pec_2017_sizing`.
+ * 2: conductors by 3.10.2.6(B) and 1.10.1.14(C), continuous loads, dwelling circuits and
+ * motor feeders.
  */
-export function needsPec2017Notice(file_export: FileExport): boolean {
-	const root = file_export.nodes.find((node) => node.node_type === 'root');
-	return !root?.highest_unit_form?.pec_2017_sizing && file_export.nodes.length > 1;
+function revisionOf(root: Node | undefined): number {
+	const form = root?.highest_unit_form;
+	return form?.pec_2017_revision ?? (form?.pec_2017_sizing ? 1 : 0);
 }
 
-/** Once only: renames old conduit overrides and marks the file as sized by PEC 2017. */
+/** A file from before the current PEC 2017 revision, with circuits whose sizes change on open. */
+export function needsPec2017Notice(file_export: FileExport): boolean {
+	const root = file_export.nodes.find((node) => node.node_type === 'root');
+	return revisionOf(root) < PEC_2017_REVISION && file_export.nodes.length > 1;
+}
+
+const DWELLING_PRESETS = new Map(
+	DEFAULT_LOADS.filter((preset) => preset.dwelling_circuit).map((preset) => [
+		preset.description,
+		preset
+	])
+);
+
+/**
+ * Revision 2: a load named after a dwelling-circuit preset gets its PEC 2017 2.10.1.11(C)
+ * marker, which keeps it at 20 A. A default load also takes the preset's VA: bathroom and
+ * garage circuits drop the 1500 VA heda used to give them for the 0 VA of 2.20.2.5(J).
+ * Default loads cannot edit their VA, so that value was heda's; a custom load's is the user's.
+ */
+function migrateDwellingCircuit(node: Node): Node {
+	const load_data = node.load_data;
+	if (!load_data || load_data.dwelling_circuit) return node;
+	const preset = DWELLING_PRESETS.get(load_data.load_description.split(' - ')[1]);
+	if (!preset) return node;
+	return {
+		...node,
+		load_data: {
+			...load_data,
+			dwelling_circuit: preset.dwelling_circuit,
+			...(load_data.config_preference === 'DEFAULT' && { varies: preset.varies })
+		}
+	};
+}
+
+/** Once per revision: brings the file's nodes up to `PEC_2017_REVISION` and records it. */
 function migratePec2017Sizing(nodes: Node[]): Node[] {
 	const root = nodes.find((node) => node.node_type === 'root');
-	if (!root || root.highest_unit_form?.pec_2017_sizing) return nodes;
+	const revision = revisionOf(root);
+	if (!root || revision >= PEC_2017_REVISION) return nodes;
 	return nodes.map((node) => {
 		if (node.node_type === 'root') {
-			return { ...node, highest_unit_form: { ...node.highest_unit_form, pec_2017_sizing: true } };
+			return {
+				...node,
+				highest_unit_form: {
+					...node.highest_unit_form,
+					pec_2017_sizing: true,
+					pec_2017_revision: PEC_2017_REVISION
+				}
+			};
 		}
 		const conduit_size =
-			node.overrided_conduit_size && LEGACY_CONDUIT_SIZES[node.overrided_conduit_size];
-		return conduit_size ? { ...node, overrided_conduit_size: conduit_size } : node;
+			revision < 1 && node.overrided_conduit_size
+				? LEGACY_CONDUIT_SIZES[node.overrided_conduit_size]
+				: undefined;
+		const migrated = conduit_size ? { ...node, overrided_conduit_size: conduit_size } : node;
+		return revision < 2 ? migrateDwellingCircuit(migrated) : migrated;
 	});
 }
 

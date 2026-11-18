@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+	PEC_2017_REVISION,
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
@@ -236,6 +237,44 @@ describe('db', () => {
 		// 200 A on 2 sets × 2 wires: 4 current-carrying conductors at 80 %, 100 A a set;
 		// 30 mm² THHN is 115 A × 0.8 = 92 A, 38 mm² 104 A (and 115 A at its 75 °C terminations).
 		expect(getNodeById('f')?.conductor_size).toBe(38);
+	});
+
+	it('rates branch breakers by duty and dwelling circuit (PEC 2017 2.10.2.3(A), 2.10.1.11(C))', async () => {
+		resetData();
+		const created = await createProject('Branches', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = created!.root_node_id;
+		const outlet = (circuit_number: number, varies: string, extra: object) =>
+			addNode({
+				parent_id: root,
+				load_data: {
+					load_type: default_load_types.CONVENIENCE_OUTLET,
+					quantity: 1,
+					varies,
+					load_description: `1 - Outlet ${circuit_number}`,
+					continuous: true,
+					circuit_number,
+					length: 10,
+					ambient_temperature: 30,
+					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+					config_preference: 'CUSTOM',
+					...extra
+				}
+			})!.id;
+		// 3910 VA / 230 V = 17 A: 21.25 A continuous → 25 A; 17 A noncontinuous → 20 A.
+		const continuous = outlet(1, '3910', {});
+		const noncontinuous = outlet(2, '3910', { continuous: false });
+		// 180 VA (2.20.2.5(I)) is 0.98 A at 125 %: 15 A, the smallest rating, on 2.0 mm².
+		const plain = outlet(3, '180', {});
+		// The same outlet on a dwelling's bathroom circuit is 20 A, on 3.5 mm² (2.40.1.4(D)).
+		const bathroom = outlet(4, '0', { dwelling_circuit: 'bathroom' });
+		await settled();
+		const at = (id: string) => getNodeById(id)?.at;
+		expect([at(continuous), at(noncontinuous), at(plain), at(bathroom)]).toEqual([25, 20, 15, 20]);
+		expect(getNodeById(plain)?.conductor_size).toBe(2);
+		expect(getNodeById(bathroom)?.conductor_size).toBe(3.5);
 	});
 
 	it('keeps computed rows stable until their inputs change', async () => {
@@ -905,6 +944,7 @@ describe('incremental writes and reads', () => {
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE,
 			pec_2017_sizing: true,
+			pec_2017_revision: PEC_2017_REVISION,
 			...source
 		});
 		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();

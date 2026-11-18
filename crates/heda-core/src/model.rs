@@ -98,6 +98,14 @@ pub struct LoadData {
     pub varies: Option<Value>,
     #[serde(default)]
     pub load_type: Option<String>,
+    /// PEC 2017 2.10.2.3(A): whether the load runs 3 hours or more (Article 1.0,
+    /// "Continuous Load"). Absent reads as continuous.
+    #[serde(default, deserialize_with = "boolean")]
+    pub continuous: Option<bool>,
+    /// The dwelling-unit circuit of 2.10.1.11(C) this load is, if any: `small_appliance`,
+    /// `laundry`, `bathroom` or `garage`, each a 20 A circuit.
+    #[serde(default)]
+    pub dwelling_circuit: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -130,4 +138,8 @@ impl Node {
 
 fn number<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<f64>, D::Error> {
     Ok(Value::deserialize(deserializer)?.as_f64())
+}
+
+fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<bool>, D::Error> {
+    Ok(Value::deserialize(deserializer)?.as_bool())
 }

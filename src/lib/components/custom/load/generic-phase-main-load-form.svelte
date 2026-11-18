@@ -41,7 +41,12 @@
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
-	import { LoadDescriptionField, LoadTypeField, VariesField } from './(components)/index.js';
+	import {
+		DwellingCircuitField,
+		LoadDescriptionField,
+		LoadTypeField,
+		VariesField
+	} from './(components)/index.js';
 	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load.js';
 	import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 	import { page } from '$app/state';
@@ -51,6 +56,7 @@
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import type { Node } from '#lib/types/db.js';
 	import type {
+		DwellingCircuit,
 		LoadType,
 		QuantityLabel,
 		TerminalTemperature,
@@ -94,6 +100,7 @@
 				supplyPhaseOf(node_to_edit.parent_id ? getNode(node_to_edit.parent_id) : undefined)
 			),
 			continuous: node_to_edit.load_data.continuous,
+			dwelling_circuit: node_to_edit.load_data.dwelling_circuit as DwellingCircuit | undefined,
 			length: node_to_edit.length
 		};
 	}
@@ -325,17 +332,18 @@
 			/>
 			<VariesField {form} {load_type} varies_label={variesLabel} {hp_currents} />
 			<LoadTypeField {form} {load_type} {allow_three_phase} />
+			<DwellingCircuitField {form} {load_type} />
 			<Field of={form} path={['continuous']}>
 				{#snippet children(field)}
 					<div class="flex min-w-0 flex-col gap-2">
 						<Label class={cn(field.errors && 'text-destructive')}>Continuous</Label>
+						<!-- PEC 2017 Art. 1.0: 3 hours or more, a fact of the site, so presets leave it editable. -->
 						<div class="flex h-9 items-center">
-							<Checkbox
-								disabled={load_type === 'DEFAULT'}
-								checked={field.input ?? false}
-								onCheckedChange={(v) => field.onInput(v)}
-							/>
+							<Checkbox checked={field.input ?? false} onCheckedChange={(v) => field.onInput(v)} />
 						</div>
+						<p class="text-[0.8rem] text-muted-foreground">
+							Runs 3 hours or more: the breaker takes 125% (PEC 2017 2.10.2.3(A)).
+						</p>
 					</div>
 				{/snippet}
 			</Field>

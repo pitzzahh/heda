@@ -2,6 +2,7 @@ import type { Node } from '#lib/types/db.js';
 import type * as v from 'valibot';
 import type {
 	DEFAULT_LOAD_SCHEMA,
+	DWELLING_CIRCUIT_FIELD,
 	GENERIC_PHASE_MAIN_LOAD_SCHEMA,
 	LOAD_TYPE_FIELD,
 	QUANTITY_LABEL_FIELD,
@@ -22,3 +23,5 @@ export type VariesLabel = v.InferOutput<typeof VARIES_LABEL_FIELD>;
 export type QuantityLabel = v.InferOutput<typeof QUANTITY_LABEL_FIELD>;
 
 export type DefaultLoad = v.InferOutput<typeof DEFAULT_LOAD_SCHEMA>;
+
+export type DwellingCircuit = v.InferOutput<typeof DWELLING_CIRCUIT_FIELD>;
