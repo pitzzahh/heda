@@ -303,6 +303,25 @@ mod tests {
     }
 
     #[test]
+    fn a_circuit_no_conductor_fits_gets_no_conduit_either() {
+        let mut session = Session::default();
+        let root = json!({ "id": "root", "node_type": "root" });
+        let nodes = vec![
+            root,
+            panel("a", "root", 1.0),
+            load("x", "a", 1.0, 150_000.0),
+        ];
+        let all = session.open(json!({}), nodes).unwrap();
+        // 652 A on one set: the largest size of Table 3.10.2.6(B)(16), 500 mm², carries
+        // less, so there is no conductor (-1) and no conduit to fill (-1), not a message.
+        assert_eq!(all.rows["x"].conductor_size, -1.0);
+        assert_eq!(
+            all.rows["x"].conduit_size,
+            crate::sizing::Conduit::Size(-1.0)
+        );
+    }
+
+    #[test]
     fn renaming_the_project_recomputes_nothing() {
         let mut session = session();
         assert!(session

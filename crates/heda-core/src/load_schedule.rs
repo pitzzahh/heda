@@ -126,6 +126,8 @@ fn count(value: Option<f64>) -> f64 {
 fn conduit(node: &Node, conductor_size: f64) -> Conduit {
     match sizing::overridden(node.overrided_conduit_size) {
         Some(size) => Conduit::Size(size),
+        // No conductor fits, so neither does a conduit: -1, "none in the table".
+        None if conductor_size == -1.0 => Conduit::Size(-1.0),
         None => sizing::conduit_size(
             conductor_size,
             count(node.conductor_sets) * count(node.conductor_qty) + 1.0,

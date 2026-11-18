@@ -165,6 +165,8 @@ describe('panel board sheet', () => {
 		const row = rowValues(sheet, 7);
 		expect(row[5]).toBe(700);
 		expect([row[11], row[13]]).toEqual(['-', 50]);
+		// No conductor, so no conduit either: a dash, as on screen, not the engine's old text.
+		expect(row[15]).toBe('-');
 		expect(rowValues(sheet, 8)[11]).toBe('-');
 	});
 });
