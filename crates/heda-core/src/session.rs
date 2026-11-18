@@ -292,6 +292,16 @@ mod tests {
     }
 
     #[test]
+    fn the_header_sizes_a_load_breaker_by_its_load_type() {
+        let session = &mut session();
+        let all = session.snapshot().computed;
+        // 180 VA outlets: 0.78 A × 1.25, raised to the 20 A floor for loads; the
+        // 30 A floor is a panel's (PEC 2017 Table 2.40.1.6(A) ratings).
+        assert_eq!(all.rows["x"].at, 20.0);
+        assert_eq!(all.results["x"], all.rows["x"]);
+    }
+
+    #[test]
     fn switching_the_adjustment_factor_recomputes_everything() {
         let mut session = session();
         assert!(session

@@ -196,8 +196,7 @@ pub fn load_row<'g>(
 }
 
 /// The sidebar/header result of a node (`getNodeById`), memoized per node. A panel
-/// totals its circuits' results; the root and loads size their own load. Breakers
-/// here are sized without the load type, as the app does today.
+/// totals its circuits' results; the root and loads size their own load.
 pub fn node_result<'g>(
     graph: &'g Graph,
     node: &'g Node,
@@ -208,20 +207,22 @@ pub fn node_result<'g>(
         return row.clone();
     }
     let (voltage, phase) = voltage_and_phase(node);
-    let common = |va: f64, current: f64, sizing: Sizing<'g>, ambient_temp: f64| {
-        let at = js::or(node.overrided_at, sizing::ampere_trip(current, None));
-        let input = ConductorInput {
-            sets: count(node.conductor_sets),
-            qty: count(node.conductor_qty),
-            ambient_temp,
-            sizing,
-            at,
-            current,
-            is_dynamic,
+    let common =
+        |va: f64, current: f64, load_type: Option<&str>, sizing: Sizing<'g>, ambient_temp: f64| {
+            let at = js::or(node.overrided_at, sizing::ampere_trip(current, load_type));
+            let input = ConductorInput {
+                sets: count(node.conductor_sets),
+                qty: count(node.conductor_qty),
+                ambient_temp,
+                sizing,
+                at,
+                current,
+                is_dynamic,
+            };
+            let conductor_size =
+                js::or(node.overrided_conductor_size, sizing::conductor_size(input));
+            (va, at, conductor_size, sizing::adjusted_current(input))
         };
-        let conductor_size = js::or(node.overrided_conductor_size, sizing::conductor_size(input));
-        (va, at, conductor_size, sizing::adjusted_current(input))
-    };
 
     let (va, current, (_, at, conductor_size, adjusted_current), wye) = if node.node_type == "panel"
     {
@@ -244,7 +245,7 @@ pub fn node_result<'g>(
             node.panel_data.as_ref().and_then(|d| d.ambient_temperature),
             30.0,
         );
-        let common = common(totals.va, totals.current, Sizing::Main, ambient);
+        let common = common(totals.va, totals.current, None, Sizing::Main, ambient);
         (totals.va, totals.current, common, totals.wye)
     } else {
         let (va, current) = own_load(node);
@@ -255,7 +256,13 @@ pub fn node_result<'g>(
                 30.0,
             ),
         );
-        let common = common(va, current, Sizing::of(node.load_type()), ambient);
+        let common = common(
+            va,
+            current,
+            node.load_type(),
+            Sizing::of(node.load_type()),
+            ambient,
+        );
         (va, current, common, None)
     };
     let description = if node.node_type == "panel" {
