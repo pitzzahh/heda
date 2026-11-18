@@ -17,7 +17,12 @@ pub struct Graph {
 impl Graph {
     pub fn new(nodes: Vec<Node>) -> Self {
         let mut graph = Graph::default();
-        graph.upsert(nodes);
+        for node in nodes {
+            graph.order.insert(node.id.clone(), graph.next_order);
+            graph.next_order += 1;
+            graph.nodes.insert(node.id.clone(), node);
+        }
+        graph.index_children();
         graph
     }
 
@@ -31,6 +36,17 @@ impl Graph {
 
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
+    }
+
+    /// Every node id in insertion order.
+    pub fn ids_in_order(&self) -> Vec<&str> {
+        let mut ids: Vec<(u64, &str)> = self
+            .order
+            .iter()
+            .map(|(id, order)| (*order, id.as_str()))
+            .collect();
+        ids.sort_unstable();
+        ids.into_iter().map(|(_, id)| id).collect()
     }
 
     /// The first root in insertion order.
@@ -64,46 +80,134 @@ impl Graph {
         chain
     }
 
-    /// Inserts or replaces nodes, then rebuilds the child index.
+    /// Inserts or replaces nodes. An edit or an added node updates only its parent's
+    /// child list; a move rebuilds the whole index (moves are what can loop a chain).
     pub fn upsert(&mut self, nodes: Vec<Node>) {
+        let mut moved = false;
+        let mut added = Vec::new();
+        let mut parents = std::collections::HashSet::new();
         for node in nodes {
-            if !self.order.contains_key(&node.id) {
-                self.order.insert(node.id.clone(), self.next_order);
-                self.next_order += 1;
+            match self.nodes.get(&node.id) {
+                Some(old) => moved |= old.parent_id != node.parent_id,
+                None => {
+                    self.order.insert(node.id.clone(), self.next_order);
+                    self.next_order += 1;
+                    added.push(node.id.clone());
+                }
             }
+            parents.extend(parent_of(&node).map(str::to_owned));
             self.nodes.insert(node.id.clone(), node);
         }
-        self.index_children();
+        if moved {
+            return self.index_children();
+        }
+        let mut anchored = HashMap::new();
+        let links: Vec<(String, String)> = added
+            .iter()
+            .filter_map(|id| {
+                let parent = parent_of(&self.nodes[id])?;
+                self.is_anchored(id, &mut anchored)
+                    .then(|| (parent.to_owned(), id.clone()))
+            })
+            .collect();
+        for (parent, id) in links {
+            self.children.entry(parent).or_default().push(id);
+        }
+        for parent in parents {
+            self.sort_children(&parent);
+        }
     }
 
     pub fn remove(&mut self, ids: &[String]) {
+        let mut unlinked = false;
         for id in ids {
-            self.nodes.remove(id);
             self.order.remove(id);
+            let Some(node) = self.nodes.remove(id) else {
+                continue;
+            };
+            let siblings = parent_of(&node).and_then(|parent| self.children.get_mut(parent));
+            match siblings.and_then(|list| Some((list.iter().position(|c| c == id)?, list))) {
+                Some((index, list)) => {
+                    list.remove(index);
+                }
+                // Not linked: it sat on a loop, whose other nodes may now be anchored.
+                None => unlinked |= parent_of(&node).is_some(),
+            }
         }
-        self.index_children();
+        if unlinked {
+            self.index_children();
+        }
+    }
+
+    fn sort_children(&mut self, parent: &str) {
+        let Some(mut ids) = self.children.remove(parent) else {
+            return;
+        };
+        let mut keyed: Vec<(f64, u64, String)> = ids
+            .drain(..)
+            .map(|id| {
+                let circuit = self.nodes[&id].circuit_number.unwrap_or(0.0);
+                (circuit, self.order[&id], id)
+            })
+            .collect();
+        keyed.sort_by(|a, b| {
+            a.0.partial_cmp(&b.0)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then(a.1.cmp(&b.1))
+        });
+        self.children.insert(
+            parent.to_owned(),
+            keyed.into_iter().map(|(_, _, id)| id).collect(),
+        );
     }
 
     fn index_children(&mut self) {
+        // A tampered file can loop a parent chain; nodes on or below a loop stay
+        // unlinked, so no calculation can recurse forever.
+        let mut anchored: HashMap<&str, bool> = HashMap::new();
         let mut children: HashMap<String, Vec<String>> = HashMap::new();
         for node in self.nodes.values() {
-            if let Some(parent_id) = node.parent_id.as_deref().filter(|id| !id.is_empty()) {
+            if let Some(parent_id) = parent_of(node) {
+                if !self.is_anchored(&node.id, &mut anchored) {
+                    continue;
+                }
                 children
                     .entry(parent_id.to_owned())
                     .or_default()
                     .push(node.id.clone());
             }
         }
-        for ids in children.values_mut() {
-            ids.sort_by(|a, b| {
-                let key = |id: &String| self.nodes[id].circuit_number.unwrap_or(0.0);
-                key(a)
-                    .partial_cmp(&key(b))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-                    .then(self.order[a].cmp(&self.order[b]))
-            });
-        }
         self.children = children;
+        let parents: Vec<String> = self.children.keys().cloned().collect();
+        for parent in parents {
+            self.sort_children(&parent);
+        }
+    }
+
+    /// Whether the parent chain above `id` ends (at a node without a parent, or a
+    /// missing one) instead of looping. Answers are memoized in `known`.
+    fn is_anchored<'a>(&'a self, id: &'a str, known: &mut HashMap<&'a str, bool>) -> bool {
+        let mut chain: Vec<&str> = Vec::new();
+        let mut current = Some(id);
+        let answer = loop {
+            let Some(id) = current else { break true };
+            if let Some(&answer) = known.get(id) {
+                break answer;
+            }
+            if chain.contains(&id) {
+                break false;
+            }
+            chain.push(id);
+            current = self
+                .nodes
+                .get(id)
+                .and_then(|node| node.parent_id.as_deref())
+                .filter(|parent| !parent.is_empty() && self.nodes.contains_key(*parent));
+        };
+        for id in chain {
+            known.insert(id, answer);
+        }
+        answer
     }
 
     /// Every node below the root, each before its subtree, children in order.
@@ -118,4 +222,8 @@ impl Graph {
         }
         order
     }
+}
+
+fn parent_of(node: &Node) -> Option<&str> {
+    node.parent_id.as_deref().filter(|id| !id.is_empty())
 }
