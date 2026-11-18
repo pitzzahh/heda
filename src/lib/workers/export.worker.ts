@@ -15,7 +15,8 @@ self.onmessage = async (event: MessageEvent) => {
 				highest_unit: payload.highest_unit,
 				file_name: payload.file_name,
 				nodes: payload.nodes,
-				is_dynamic: Boolean(payload.is_dynamic)
+				rows: payload.rows,
+				voltage_drops: payload.voltage_drops
 			});
 			(
 				self as unknown as {

@@ -7,7 +7,7 @@ import {
 } from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
 import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
-import { loadSnapshot } from '#lib/db/queries/snapshot.js';
+import { getExportInputs } from '#lib/db/queries/export.js';
 import { processVoltageDropSheet } from './voltage-drop-sheet.js';
 import type { Phase } from '#lib/types/phase.js';
 
@@ -34,7 +34,7 @@ async function sheetFor(system: Phase) {
 		} as never
 	});
 	const workbook = new ExcelJS.Workbook();
-	await processVoltageDropSheet(workbook, loadSnapshot().nodes, false);
+	await processVoltageDropSheet(workbook, await getExportInputs('VOLTAGE_DROP'));
 	const sheet = workbook.getWorksheet('Voltage Drop')!;
 	return { headers: sheet.getRow(1).values as unknown[], row: sheet.getRow(3).values as unknown[] };
 }

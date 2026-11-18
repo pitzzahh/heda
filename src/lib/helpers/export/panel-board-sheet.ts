@@ -1,12 +1,11 @@
 import type ExcelJS from 'exceljs';
 import type { Node } from '#lib/types/db.js';
 import { buildChildrenByParent, getNodeDepthFromNodes } from '#lib/db/queries/loads-core.js';
-import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
 import { DEFAULT_PHASES, PHASE_ASSIGNMENTS, default_phases } from '#lib/constants.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
 import { rowPhaseVa, supplyPhaseOf } from '#lib/utils/computations/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
-import type { ExportProcessResult, Header } from './types.js';
+import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
 
 type CellValue = string | number | undefined;
@@ -126,21 +125,22 @@ function supplyDescription(phase: string | undefined): string {
 /** Lookups built once per export and shared by every panel it writes. */
 interface ExportTree {
 	nodes_by_id: Map<string, Node>;
-	context: LoadComputationContext;
+	children_by_parent: Map<string, Node[]>;
+	rows: ExportInputs['rows'];
 }
 
 /** Writes the schedule of `node_id` and every panel under it, one sheet per depth. */
 export async function processExcelPanelBoardSchedule(
 	workbook: ExcelJS.Workbook,
 	node_id: string,
-	highest_unit?: Node['highest_unit_form'],
-	nodes: Node[] = [],
-	is_dynamic = false
+	highest_unit: Node['highest_unit_form'] | undefined,
+	{ nodes, rows }: Pick<ExportInputs, 'nodes' | 'rows'>
 ): Promise<ExportProcessResult> {
 	// Built once: rebuilding them per panel scanned every node for every panel.
 	const tree: ExportTree = {
 		nodes_by_id: new Map(nodes.map((node) => [node.id, node])),
-		context: { children_by_parent: buildChildrenByParent(nodes), is_dynamic, memo: new Map() }
+		children_by_parent: buildChildrenByParent(nodes),
+		rows
 	};
 	const depth = getNodeDepthFromNodes(nodes, node_id);
 	const result = await writePanelSchedule(workbook, node_id, depth, highest_unit, tree);
@@ -157,16 +157,14 @@ async function writePanelSchedule(
 	highest_unit: Node['highest_unit_form'] | undefined,
 	tree: ExportTree
 ): Promise<ExportProcessResult> {
-	const { nodes_by_id, context } = tree;
+	const { nodes_by_id, children_by_parent, rows } = tree;
 	const current_node = nodes_by_id.get(node_id);
-	if (!current_node) {
+	const computed_current_node = rows[node_id];
+	if (!current_node || !computed_current_node) {
 		return { valid: false, message: 'Node not found', is_system_error: true };
 	}
-	const computed_current_node = computeNodeLoad(current_node, context);
-	// One computed list serves both the load rows and the recursion into sub-panels.
-	const loads = (context.children_by_parent.get(node_id) ?? []).map((child) =>
-		computeNodeLoad(child, context)
-	);
+	// One list serves both the load rows and the recursion into sub-panels.
+	const loads = (children_by_parent.get(node_id) ?? []).flatMap((child) => rows[child.id] ?? []);
 
 	const panel_level = getOrdinalSuffix(depth);
 	const parent_node = current_node.parent_id ? nodes_by_id.get(current_node.parent_id) : undefined;

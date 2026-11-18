@@ -7,7 +7,7 @@ import {
 } from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
 import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
-import { loadSnapshot } from '#lib/db/queries/snapshot.js';
+import { getExportInputs } from '#lib/db/queries/export.js';
 import { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
 import type { Phase } from '#lib/types/phase.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
@@ -50,13 +50,12 @@ async function sheetFor(system: Phase, panel_phase: Phase, loads: [string, strin
 		addNode({ parent_id: lp.id, load_data: load(index * 2 + 1, type, varies) })
 	);
 	const workbook = new ExcelJS.Workbook();
-	const { nodes } = loadSnapshot();
+	const inputs = await getExportInputs('LOAD_SCHEDULE');
 	const result = await processExcelPanelBoardSchedule(
 		workbook,
 		lp.id,
-		nodes.find((node) => node.node_type === 'root')!.highest_unit_form,
-		nodes,
-		false
+		inputs.nodes.find((node) => node.node_type === 'root')!.highest_unit_form,
+		inputs
 	);
 	expect(result.valid).toBe(true);
 	return workbook.getWorksheet('2nd')!;

@@ -1,14 +1,11 @@
 import type ExcelJS from 'exceljs';
-import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
 import { default_phases } from '#lib/constants.js';
-import type { Node } from '#lib/types/db.js';
-import type { ExportProcessResult, Header } from './types.js';
+import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
 
 export async function processVoltageDropSheet(
 	workbook: ExcelJS.Workbook,
-	nodes: Node[] = [],
-	is_dynamic = false
+	{ nodes, voltage_drops }: Pick<ExportInputs, 'nodes' | 'voltage_drops'>
 ): Promise<ExportProcessResult> {
 	const worksheet = workbook.addWorksheet('Voltage Drop');
 
@@ -68,7 +65,6 @@ export async function processVoltageDropSheet(
 		current_header_column += header.cols;
 	});
 
-	const voltage_drops = computeVoltageDropsFromNodes(nodes, is_dynamic);
 	let current_load_row = startRow + 2;
 
 	for (const voltage_drop_node of voltage_drops) {

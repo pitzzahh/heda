@@ -1,4 +1,5 @@
 import type { Node } from '#lib/types/db.js';
+import type { ExportInputs } from '#lib/types/misc.js';
 import type { GeneratedWorkbook } from '#lib/helpers/export/generate.js';
 
 type PendingTask = {
@@ -62,9 +63,7 @@ export async function generateWorkbookInWorker(
 		node_id: string;
 		highest_unit?: Node['highest_unit_form'];
 		file_name?: string;
-		nodes: Node[];
-		is_dynamic: boolean;
-	},
+	} & ExportInputs,
 	timeout_ms = 60_000
 ): Promise<GeneratedWorkbook> {
 	const current_worker = getWorker();

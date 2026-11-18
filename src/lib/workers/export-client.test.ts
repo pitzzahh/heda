@@ -21,7 +21,7 @@ vi.stubGlobal('Worker', FakeWorker);
 
 const { generateWorkbookInWorker } = await import('./export-client.js');
 
-const payload = { type: 'xlsx', node_id: 'n1', nodes: [], is_dynamic: false };
+const payload = { type: 'xlsx', node_id: 'n1', nodes: [], rows: {}, voltage_drops: [] };
 
 afterEach(() => {
 	vi.useRealTimers();
