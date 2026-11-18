@@ -13,7 +13,7 @@ Philippine Electrical Code 2017.
 [![Publish](https://img.shields.io/github/actions/workflow/status/pitzzahh/heda/publish.yml?style=flat-square&label=build)](https://github.com/pitzzahh/heda/actions/workflows/publish.yml)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational?style=flat-square)
 
-[Download](https://github.com/pitzzahh/heda/releases/latest) · [Changelog](changelog.md) · [Sample projects](samples/README.md)
+[Download](https://github.com/pitzzahh/heda/releases/latest) · [Changelog](changelog.md) · [Sample projects](samples/README.md) · [Roadmap](https://github.com/pitzzahh/heda/milestones)
 
 </div>
 
@@ -46,6 +46,15 @@ with the column widths already set.
 
 **Large projects.** The tree, undo history and tables stay responsive on
 projects with more than a thousand panels.
+
+## Roadmap
+
+Next up: 3-phase delta load schedules, then permit-ready output (a riser
+diagram generated from the tree, a PDF sheet set and phase balancing), then
+motor circuits, service and transformer sizing and a bill of materials.
+Progress is tracked on the
+[milestones](https://github.com/pitzzahh/heda/milestones) and the
+[project board](https://github.com/users/pitzzahh/projects/10).
 
 ## Download
 
