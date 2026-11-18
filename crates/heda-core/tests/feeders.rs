@@ -52,6 +52,25 @@ fn d10_three_motors_take_125_percent_of_the_largest_and_a_125_a_breaker() {
 }
 
 #[test]
+fn the_ceiling_takes_the_largest_branch_breaker_even_on_a_smaller_motor() {
+    // D10's motors, with the 10 hp motor's breaker overridden to 100 A, now the largest
+    // device (4.30.5.2(A)). Load still 83.5 A (125 % of the 34 A motor, 4.30.2.4(1)).
+    // Ceiling: 100 + 34 + 27 = 161 A → 150 A. Taking the 34 A motor's 90 A instead would
+    // give 131 A → 125 A.
+    let motor = |id, circuit, flc| load(id, circuit, "three_phase_motor_rated_current", flc, true);
+    let mut m10 = motor("m10", 3.0, 14.0);
+    m10["overrided_at"] = json!(100);
+    let nodes = vec![
+        root("three_phase_delta"),
+        panel("three_phase_delta"),
+        motor("m25", 1.0, 34.0),
+        motor("m20", 2.0, 27.0),
+        m10,
+    ];
+    assert_eq!(rows(nodes), (150.0, 22.0));
+}
+
+#[test]
 fn a_feeder_adds_25_percent_to_its_continuous_load_only() {
     // 2.15.1.3: 3680 VA of continuous lighting (16 A × 1.25 = 20 A) and 2300 VA of
     // noncontinuous outlets (10 A) need 30 A, on 5.5 mm² (30 A at 60 °C). At 125 % of all

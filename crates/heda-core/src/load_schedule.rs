@@ -37,13 +37,16 @@ pub struct LoadRow {
 
 /// A circuit's share of its panel's feeder load, PEC 2017 2.15.1.2(A)(1) and 4.30.2.4:
 /// 125 % of its continuous and 100 % of its noncontinuous non-motor load, plus each
-/// motor's full-load current; and the largest motor at or below it, whose extra 25 % (and,
-/// for the main's breaker, branch breaker) the panel adds once.
+/// motor's full-load current. Also the motor at or below it with the highest full-load
+/// current, whose extra 25 % the feeder load adds once (4.30.2.4(1)), and the one with the
+/// largest branch breaker, which the breaker's ceiling takes in place of its full-load
+/// current (4.30.5.2(A)); usually the same motor, not when a breaker is overridden.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct FeederShare {
     pub va: f64,
     pub current: f64,
     pub largest_motor: Option<Motor>,
+    pub largest_breaker: Option<Motor>,
 }
 
 /// A motor circuit as a feeder sees it: VA, full-load current and branch breaker.
@@ -235,6 +238,7 @@ pub fn load_row<'g>(
                     va,
                     current,
                     largest_motor: Some(Motor { va, current, at }),
+                    largest_breaker: Some(Motor { va, current, at }),
                 }
             } else {
                 // An unknown load type has no factor; it adds its VA as it is.
@@ -243,6 +247,7 @@ pub fn load_row<'g>(
                     va: va * factor,
                     current: current * factor,
                     largest_motor: None,
+                    largest_breaker: None,
                 }
             },
         }
@@ -259,15 +264,14 @@ struct Feeder {
     share: FeederShare,
 }
 
-/// The circuits' feeder shares through the panel's own phase totals, plus the largest
-/// motor once: 25 % more of its full-load current for the load, and its branch breaker in
-/// place of that current for the ceiling (App. D Ex. D10).
-// shortcut: the largest motor is the one with the highest full-load current (4.30.2.4(1)),
-// whose breaker 4.30.5.2(A) then takes as the largest; true unless a smaller motor has a
-// larger breaker override.
+/// The circuits' feeder shares through the panel's own phase totals, plus once: 25 % more
+/// of the highest full-load current for the load (4.30.2.4(1)), and for the ceiling the
+/// largest motor branch breaker in place of that motor's full-load current (4.30.5.2(A);
+/// App. D Ex. D10). Two motors with the same largest rating count one of them.
 fn feeder_load(panel: &Node, circuits: &[(&Node, LoadRow)]) -> Feeder {
-    let motor = largest(circuits);
-    let total = |extra: f64| {
+    let motor = largest(circuits, |share| share.largest_motor, |m| m.current);
+    let breaker = largest(circuits, |share| share.largest_breaker, |m| m.at);
+    let total = |extra: Option<(Motor, &str, f64)>| {
         let mut parts: Vec<CircuitTotal> = circuits
             .iter()
             .map(|(_, row)| CircuitTotal {
@@ -276,18 +280,18 @@ fn feeder_load(panel: &Node, circuits: &[(&Node, LoadRow)]) -> Feeder {
                 phase: &row.phase,
             })
             .collect();
-        if let Some((motor, phase)) = motor {
+        if let Some((motor, phase, factor)) = extra {
             parts.push(CircuitTotal {
-                va: motor.va * extra,
-                current: motor.current * extra,
+                va: motor.va * factor,
+                current: motor.current * factor,
                 phase,
             });
         }
         phases::panel_totals(panel, &parts).current
     };
-    let load = total(0.25);
-    let ceiling = match motor {
-        Some((motor, _)) if motor.current > 0.0 => total(motor.at / motor.current - 1.0),
+    let load = total(motor.map(|(m, phase)| (m, phase, 0.25)));
+    let ceiling = match breaker {
+        Some((m, phase)) if m.current > 0.0 => total(Some((m, phase, m.at / m.current - 1.0))),
         _ => load,
     };
     Feeder {
@@ -295,21 +299,26 @@ fn feeder_load(panel: &Node, circuits: &[(&Node, LoadRow)]) -> Feeder {
         ceiling: ceiling.max(load),
         share: FeederShare {
             va: circuits.iter().fold(0.0, |va, (_, row)| va + row.feeder.va),
-            current: total(0.0),
-            largest_motor: motor.map(|(motor, _)| motor),
+            current: total(None),
+            largest_motor: motor.map(|(m, _)| m),
+            largest_breaker: breaker.map(|(m, _)| m),
         },
     }
 }
 
-/// The motor with the highest full-load current at or below the circuits, and the phase
-/// of the circuit it is on.
-fn largest<'r>(circuits: &'r [(&Node, LoadRow)]) -> Option<(Motor, &'r str)> {
+/// The motor at or below the circuits that is largest by `key`, and the phase of the
+/// circuit it is on.
+fn largest<'r>(
+    circuits: &'r [(&Node, LoadRow)],
+    pick: impl Fn(&FeederShare) -> Option<Motor>,
+    key: impl Fn(&Motor) -> f64,
+) -> Option<(Motor, &'r str)> {
     circuits
         .iter()
-        .filter_map(|(_, row)| row.feeder.largest_motor.map(|m| (m, row.phase.as_str())))
-        .fold(None, |best, (motor, phase)| match best {
-            Some((top, _)) if top.current >= motor.current => best,
-            _ => Some((motor, phase)),
+        .filter_map(|(_, row)| pick(&row.feeder).map(|m| (m, row.phase.as_str())))
+        .fold(None, |best, (m, phase)| match best {
+            Some((top, _)) if key(&top) >= key(&m) => best,
+            _ => Some((m, phase)),
         })
 }
 
