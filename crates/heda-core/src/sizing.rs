@@ -180,7 +180,6 @@ pub struct ConductorInput<'a> {
     pub at: f64,
     pub current: f64,
     pub rating: Rating,
-    pub is_dynamic: bool,
 }
 
 /// The smallest conductor (mm²) of PEC 2017 Table 3.10.2.6(B)(16) that meets both checks
@@ -189,7 +188,7 @@ pub struct ConductorInput<'a> {
 /// ambient). Motors take at least 3.5 mm², a design floor of heda's, not a PEC rule.
 pub fn conductor_size(input: ConductorInput) -> f64 {
     let required = required_ampacity(input) / input.sets;
-    let adjustment = adjustment_factor(input.sets * input.qty, input.is_dynamic);
+    let adjustment = adjustment_factor(current_carrying(input.sets, input.qty));
     let size = COPPER_AMPACITIES
         .iter()
         .map(|(size, _)| *size)
@@ -243,12 +242,19 @@ fn ampacity(size: f64, rating: Rating) -> f64 {
     lookup(&COPPER_AMPACITIES, size).map_or(f64::NAN, |columns| columns[rating.column()])
 }
 
-/// PEC 2017 Table 3.10.2.6(B)(3)(a): adjustment factors for more than three
-/// current-carrying conductors, applied only when the project turns it on.
-fn adjustment_factor(conductors: f64, is_dynamic: bool) -> f64 {
-    if !is_dynamic {
-        return 1.0;
-    }
+/// Current-carrying conductors in the raceway, which holds every set of the circuit (the
+/// one conduit heda sizes for it): not the neutral of a three-phase 4-wire wye circuit,
+/// which carries only the unbalanced current (PEC 2017 3.10.2.6(B)(5)(a)), nor the EGC,
+/// which is not in `qty` ((B)(6)).
+// shortcut: a wye neutral whose load is mostly nonlinear counts ((B)(5)(c)); heda has no
+// input for it, so add it if the load form ever records harmonic loads.
+fn current_carrying(sets: f64, qty: f64) -> f64 {
+    sets * if qty == 4.0 { 3.0 } else { qty }
+}
+
+/// PEC 2017 Table 3.10.2.6(B)(3)(a) (p. 172): adjustment factors for more than three
+/// current-carrying conductors in a raceway.
+fn adjustment_factor(conductors: f64) -> f64 {
     if conductors <= 3.0 {
         1.0
     } else if conductors <= 6.0 {

@@ -12,9 +12,9 @@ import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 export const PROJECT_DOC_SCHEMA = v.object({
 	id: v.string(),
 	project_name: v.optional(v.string()),
-	settings: v.object({
-		is_adjustment_factor_dynamic: v.optional(v.boolean())
-	}),
+	// Older files carry is_adjustment_factor_dynamic here; PEC 2017 3.10.2.6(B)(3)(a) is
+	// not optional, so the engine always applies it and the key is dropped.
+	settings: v.object({}),
 	root_node_id: v.string()
 });
 

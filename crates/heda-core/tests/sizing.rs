@@ -14,7 +14,6 @@ fn panel(at: f64) -> ConductorInput<'static> {
         at,
         current: 0.0,
         rating: Rating::C90,
-        is_dynamic: false,
     }
 }
 
@@ -177,12 +176,48 @@ mod conductor_size_pec_2017_3_10_2_6_b_and_1_10_1_14_c_1 {
         // 30 A on 6 conductors: 5.5 mm² THHN is 40 A × 0.8 = 32 A, and terminates at 30 A.
         let input = ConductorInput {
             qty: 6.0,
-            is_dynamic: true,
             ..panel(30.0)
         };
         assert_eq!(conductor_size(input), 5.5);
         // 45 A: 8.0 mm² is 55 A × 0.8 = 44 A, short; 14 mm² is 60 A.
         assert_eq!(conductor_size(ConductorInput { at: 45.0, ..input }), 14.0);
+    }
+
+    /// 3.10.2.6(B)(3)(a) applies whenever more than three current-carrying conductors share
+    /// the raceway, and every set of a circuit shares the one conduit heda sizes for it.
+    #[test]
+    fn the_wye_neutral_is_not_a_current_carrying_conductor() {
+        // (B)(5)(a): one set of a 4-wire wye feeder is 3 conductors, no adjustment, so 125 A
+        // takes 50 mm² (150 A at 90 °C, terminating at 140 A); at 80 % it would be 60 mm².
+        let feeder = ConductorInput {
+            qty: 4.0,
+            ..panel(125.0)
+        };
+        assert_eq!(conductor_size(feeder), 50.0);
+    }
+
+    #[test]
+    fn parallel_sets_in_one_raceway_are_adjusted() {
+        // 2 sets × 2 wires = 4 conductors, 80 %: 100 A a set; 30 mm² is 115 A × 0.8 = 92 A.
+        let two_wire = ConductorInput {
+            sets: 2.0,
+            ..panel(200.0)
+        };
+        assert_eq!(conductor_size(two_wire), 38.0);
+        // 2 sets of a wye feeder = 6 conductors, 80 %: 125 A a set; 50 mm² is 120 A.
+        let wye = ConductorInput {
+            sets: 2.0,
+            qty: 4.0,
+            ..panel(250.0)
+        };
+        assert_eq!(conductor_size(wye), 60.0);
+        // 3 sets × 3 wires = 9 conductors, 70 %: 150 A a set; 80 mm² is 205 A × 0.7 = 143.5 A.
+        let three_wire = ConductorInput {
+            sets: 3.0,
+            qty: 3.0,
+            ..panel(450.0)
+        };
+        assert_eq!(conductor_size(three_wire), 100.0);
     }
 
     #[test]

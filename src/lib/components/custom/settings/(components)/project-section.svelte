@@ -17,7 +17,7 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import { setServiceEntrance, updateProjectSettings } from '#lib/db/mutations/index.js';
+	import { setServiceEntrance } from '#lib/db/mutations/index.js';
 	import { getRootNode } from '#lib/db/queries/index.js';
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
@@ -34,19 +34,6 @@
 	const root_node = $derived(project_state.loaded ? getRootNode() : undefined);
 	// Absent means the utility service supplies the project (PEC 2017 2.30.6.10).
 	const is_service = $derived(root_node?.highest_unit_form?.is_service !== false);
-
-	async function savePreference(message: string) {
-		if (!project_state.loaded) return;
-
-		const updated = updateProjectSettings(project_state.id, {
-			is_adjustment_factor_dynamic: settingsState.is_adjustment_factor_dynamic
-		});
-
-		if (!updated) return toast.warning('Failed to save the preference');
-
-		undo_redo_state.setHasUnsavedActions();
-		toast.success(message);
-	}
 
 	function saveServiceEntrance(value: boolean) {
 		const previous = root_node;
@@ -95,24 +82,6 @@
 			<FileIcon />
 			New Project
 		</Button>
-	</div>
-
-	<Separator class="my-1 w-full" />
-	<div class="flex flex-row items-center justify-between gap-3">
-		<div class="space-y-0.5">
-			<Label for="adjustment_factor">Adjustment Factor</Label>
-			<p class="text-xs text-muted-foreground">
-				{settingsState.is_adjustment_factor_dynamic
-					? 'The adjustment factor for each load may vary between 100%, 80%, 70%, 50%, 45%, 40%, and 35%, depending on the total number of conductors.'
-					: 'The adjustment factor for all loads will be set to 100%.'}
-			</p>
-		</div>
-		<Switch
-			disabled={!project_state.loaded}
-			id="adjustment_factor"
-			bind:checked={settingsState.is_adjustment_factor_dynamic}
-			onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
-		/>
 	</div>
 
 	<Separator class="my-1 w-full" />

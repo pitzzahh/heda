@@ -14,8 +14,7 @@ export const samples = readdirSync(SAMPLES_DIR)
 
 /**
  * The sample with a fault source (PEC 2017 App. D Ex. D14: 1 000 MVA utility,
- * 300 kVA at 5 %), the dynamic adjustment factor, and an explicit phase on
- * every fourth circuit of each 3P-Y panel.
+ * 300 kVA at 5 %) and an explicit phase on every fourth circuit of each 3P-Y panel.
  */
 export function withEverythingOn(file_export: FileExport): FileExport {
 	const wye_panels = new Set(
@@ -25,10 +24,7 @@ export function withEverythingOn(file_export: FileExport): FileExport {
 	);
 	const phases = ['A', 'B', 'C'] as const;
 	return {
-		project: {
-			...file_export.project,
-			settings: { ...file_export.project.settings, is_adjustment_factor_dynamic: true }
-		},
+		project: file_export.project,
 		nodes: file_export.nodes.map((node) => {
 			if (node.node_type === 'root') {
 				return {

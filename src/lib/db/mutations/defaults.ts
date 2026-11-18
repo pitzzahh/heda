@@ -67,7 +67,7 @@ export function withProjectDefaults<T extends { id: string; settings: Project['s
 ): T {
 	return {
 		...project,
-		settings: { is_adjustment_factor_dynamic: false, ...project.settings }
+		settings: { ...project.settings }
 	};
 }
 

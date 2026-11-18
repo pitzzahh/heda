@@ -9,8 +9,7 @@
  *
  * Each sample also runs as a variant that switches on what the samples leave
  * off: a short-circuit source (the utility and transformer of PEC 2017 App. D
- * Ex. D14), the dynamic adjustment factor, and phase overrides on 3P-Y
- * panels.
+ * Ex. D14) and phase overrides on 3P-Y panels.
  *
  * A changed golden is a changed result: update one only on purpose
  * (`bunx vitest run src/lib/core/golden.test.ts -u`), with the reason in the

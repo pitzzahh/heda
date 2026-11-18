@@ -63,7 +63,6 @@ describe('validators', () => {
 				font: 'default',
 				theme_mode: 'light',
 				show_loads_on_unit_hierarchy: false,
-				is_adjustment_factor_dynamic: false,
 				is_panel_multi_copy: false,
 				is_load_multi_copy: false,
 				auto_save_enabled: false,

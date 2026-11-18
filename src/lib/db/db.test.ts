@@ -158,7 +158,7 @@ describe('db', () => {
 			project: {
 				id: 'p1',
 				project_name: 'Imported',
-				settings: { is_adjustment_factor_dynamic: false },
+				settings: {},
 				root_node_id: 'root'
 			},
 			nodes: [
@@ -200,6 +200,42 @@ describe('db', () => {
 		const fetched = getNodeById('a');
 		expect(fetched?.panel_data?.name).toBe('LP-A');
 		expect(fetched?.panel_data?.phase).toBe(default_phases.ONE_PHASE);
+	});
+
+	it('derates parallel sets whatever an older file says (PEC 2017 3.10.2.6(B)(3)(a))', async () => {
+		resetData();
+		await loadCurrentProject({
+			project: {
+				id: 'p1',
+				// Files from before the adjustment became mandatory could switch it off here.
+				settings: { is_adjustment_factor_dynamic: false } as never,
+				root_node_id: 'root'
+			},
+			nodes: [
+				{ id: 'root', node_type: 'root', child_ids: ['f'] },
+				{
+					id: 'f',
+					node_type: 'panel',
+					circuit_number: 1,
+					parent_id: 'root',
+					child_ids: [],
+					length: 5,
+					conductor_sets: 2,
+					conductor_qty: 2,
+					overrided_at: 200,
+					panel_data: {
+						name: 'LP-F',
+						ambient_temperature: 30,
+						terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+						phase: default_phases.ONE_PHASE
+					}
+				}
+			]
+		});
+		await settled();
+		// 200 A on 2 sets × 2 wires: 4 current-carrying conductors at 80 %, 100 A a set;
+		// 30 mm² THHN is 115 A × 0.8 = 92 A, 38 mm² 104 A (and 115 A at its 75 °C terminations).
+		expect(getNodeById('f')?.conductor_size).toBe(38);
 	});
 
 	it('keeps computed rows stable until their inputs change', async () => {

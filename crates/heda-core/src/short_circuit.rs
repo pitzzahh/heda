@@ -147,11 +147,7 @@ fn is_single_phase(phase: Option<&str>) -> bool {
 /// motor below it in parallel, as D14 step 10.2 does. A node's breaker sits on its
 /// supply bus, so its interrupting rating is checked against that bus (PEC 2017
 /// 1.10.1.9: the current available at the line terminals). Rows come in preorder.
-pub fn short_circuits(
-    graph: &Graph,
-    is_dynamic: bool,
-    memo: &mut HashMap<String, LoadRow>,
-) -> Vec<ShortCircuitRow> {
+pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<ShortCircuitRow> {
     let Some(root) = graph.root() else {
         return Vec::new();
     };
@@ -185,7 +181,7 @@ pub fn short_circuits(
     let mut motor_pu: HashMap<&str, f64> = HashMap::new();
 
     for node in &order {
-        let computed = load_row(graph, node, is_dynamic, memo);
+        let computed = load_row(graph, node, memo);
         // Unlisted sizes count as zero impedance: that overstates fault current, the safe side.
         let ohms = conductor_impedance_ohm(
             js::or(node.overrided_conductor_size, computed.conductor_size),

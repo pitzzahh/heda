@@ -23,7 +23,6 @@ pub struct Session {
     /// Every node exactly as stored, fields the engine does not read included.
     docs: HashMap<String, Value>,
     project: Value,
-    is_dynamic: bool,
     load_rows: HashMap<String, LoadRow>,
 }
 
@@ -48,7 +47,6 @@ impl Session {
     pub fn open(&mut self, project: Value, nodes: Vec<Value>) -> Result<Computed, String> {
         let parsed = parse_nodes(&nodes)?;
         *self = Session {
-            is_dynamic: is_dynamic(&project),
             project,
             graph: Graph::new(parsed),
             docs: nodes.into_iter().map(|doc| (id_of(&doc), doc)).collect(),
@@ -57,15 +55,10 @@ impl Session {
         Ok(self.compute_all())
     }
 
+    /// Replaces the project document; no result reads it, so nothing recomputes.
     pub fn set_project(&mut self, project: Value) -> Computed {
-        let is_dynamic = is_dynamic(&project);
         self.project = project;
-        if is_dynamic == self.is_dynamic {
-            return Computed::default();
-        }
-        self.is_dynamic = is_dynamic;
-        self.load_rows.clear();
-        self.compute_all()
+        Computed::default()
     }
 
     /// Inserts or replaces nodes.
@@ -137,11 +130,11 @@ impl Session {
     }
 
     pub fn voltage_drops(&mut self) -> Vec<VoltageDropRow> {
-        voltage_drops(&self.graph, self.is_dynamic, &mut self.load_rows)
+        voltage_drops(&self.graph, &mut self.load_rows)
     }
 
     pub fn short_circuits(&mut self) -> Vec<ShortCircuitRow> {
-        short_circuits(&self.graph, self.is_dynamic, &mut self.load_rows)
+        short_circuits(&self.graph, &mut self.load_rows)
     }
 
     fn compute_all(&mut self) -> Computed {
@@ -173,7 +166,7 @@ impl Session {
             let Some(node) = self.graph.get(id) else {
                 continue;
             };
-            let row = load_row(&self.graph, node, self.is_dynamic, &mut self.load_rows);
+            let row = load_row(&self.graph, node, &mut self.load_rows);
             computed.rows.insert(id.clone(), row);
         }
         computed
@@ -188,13 +181,6 @@ fn parse_nodes(docs: &[Value]) -> Result<Vec<Node>, String> {
 
 fn id_of(doc: &Value) -> String {
     doc["id"].as_str().unwrap_or_default().to_owned()
-}
-
-fn is_dynamic(project: &Value) -> bool {
-    project
-        .pointer("/settings/is_adjustment_factor_dynamic")
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -317,14 +303,11 @@ mod tests {
     }
 
     #[test]
-    fn switching_the_adjustment_factor_recomputes_everything() {
+    fn renaming_the_project_recomputes_nothing() {
         let mut session = session();
         assert!(session
             .set_project(json!({ "title": "renamed" }))
             .rows
             .is_empty());
-        let all =
-            session.set_project(json!({ "settings": { "is_adjustment_factor_dynamic": true } }));
-        assert_eq!(all.rows.len(), 4);
     }
 }

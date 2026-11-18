@@ -1,6 +1,6 @@
 import { untrack } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
-import { getNodes, getProject, onSessionWrite } from '../index.js';
+import { getNodes, onSessionWrite } from '../index.js';
 import type { Node } from '#lib/types/db.js';
 
 export type LoadSnapshot = {
@@ -8,7 +8,6 @@ export type LoadSnapshot = {
 	node_by_id: Map<string, Node>;
 	children_by_parent: Map<string, Node[]>;
 	root: Node | undefined;
-	is_dynamic: boolean;
 };
 
 const EMPTY_CHILDREN: Node[] = [];
@@ -63,8 +62,7 @@ function buildSnapshot(previous: LoadSnapshot | null): LoadSnapshot {
 		nodes,
 		node_by_id,
 		children_by_parent,
-		root,
-		is_dynamic: getProject()?.settings.is_adjustment_factor_dynamic ?? false
+		root
 	};
 }
 

@@ -94,7 +94,6 @@ fn egc(node: &Node, at: f64) -> Egc {
 pub fn load_row<'g>(
     graph: &'g Graph,
     node: &'g Node,
-    is_dynamic: bool,
     memo: &mut HashMap<String, LoadRow>,
 ) -> LoadRow {
     if let Some(row) = memo.get(&node.id) {
@@ -116,7 +115,6 @@ pub fn load_row<'g>(
         at,
         current,
         rating: Rating::of(node.conductor_insulation.as_deref()),
-        is_dynamic,
     };
     let at = js::or(node.overrided_at, sizing::ampere_trip(current, load_type));
     let own_sizing = input(current, at, Sizing::of(load_type), ambient_temp);
@@ -128,7 +126,7 @@ pub fn load_row<'g>(
     let row = if let Some(panel_data) = &node.panel_data {
         let circuits: Vec<(&Node, LoadRow)> = graph
             .children(&node.id)
-            .map(|child| (child, load_row(graph, child, is_dynamic, memo)))
+            .map(|child| (child, load_row(graph, child, memo)))
             .collect();
         let totals = phases::panel_totals(
             node,
@@ -143,13 +141,7 @@ pub fn load_row<'g>(
         );
         let main_at = js::or(
             node.overrided_at,
-            service_rating(
-                graph,
-                node,
-                sizing::ampere_trip(totals.current, None),
-                is_dynamic,
-                memo,
-            ),
+            service_rating(graph, node, sizing::ampere_trip(totals.current, None), memo),
         );
         let main_current = js::round_js(totals.current, 2);
         let main_sizing = input(
@@ -216,7 +208,6 @@ fn service_rating(
     graph: &Graph,
     panel: &Node,
     at: f64,
-    is_dynamic: bool,
     memo: &mut HashMap<String, LoadRow>,
 ) -> f64 {
     let Some(supply) = panel.parent_id.as_deref().and_then(|id| graph.get(id)) else {
@@ -246,7 +237,7 @@ fn service_rating(
     let others: f64 = graph
         .children(&supply.id)
         .filter(|child| child.id != panel.id)
-        .map(|child| load_row(graph, child, is_dynamic, memo).at)
+        .map(|child| load_row(graph, child, memo).at)
         .sum();
     let needed = minimum - others;
     if at >= needed {

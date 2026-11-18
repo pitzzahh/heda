@@ -30,11 +30,7 @@ pub struct VoltageDropRow {
 }
 
 /// One row per node in preorder (each node, then its subtree).
-pub fn voltage_drops(
-    graph: &Graph,
-    is_dynamic: bool,
-    memo: &mut HashMap<String, LoadRow>,
-) -> Vec<VoltageDropRow> {
+pub fn voltage_drops(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<VoltageDropRow> {
     let Some(root) = graph.root() else {
         return Vec::new();
     };
@@ -43,7 +39,7 @@ pub fn voltage_drops(
     let mut end_fraction: HashMap<&str, f64> = HashMap::new();
     let mut rows = Vec::new();
     for node in graph.preorder(root) {
-        let computed = load_row(graph, node, is_dynamic, memo);
+        let computed = load_row(graph, node, memo);
         let parent = node.parent_id.as_deref().and_then(|id| graph.get(id));
         let parent_end_fraction = node
             .parent_id

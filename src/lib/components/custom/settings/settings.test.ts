@@ -36,11 +36,11 @@ describe('Settings', () => {
 	test('opens each section through the extracted components', () => {
 		const component = mount(SettingsFixture, { target: document.body });
 		flushSync();
-		expect(document.body.textContent).not.toContain('Adjustment Factor');
+		expect(document.body.textContent).not.toContain('Utility Service Entrance');
 
 		document.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		flushSync();
-		expect(document.body.textContent).toContain('Adjustment Factor');
+		expect(document.body.textContent).toContain('Utility Service Entrance');
 
 		click_label('Preferences');
 		expect(document.body.textContent).toContain('Theme');

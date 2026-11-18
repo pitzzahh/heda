@@ -39,9 +39,7 @@ export async function createProject(
 			id: crypto.randomUUID(),
 			root_node_id,
 			project_name,
-			settings: {
-				is_adjustment_factor_dynamic: false
-			}
+			settings: {}
 		});
 		setProject(project as Project);
 		await settled();
@@ -53,10 +51,6 @@ export async function createProject(
 	} catch (err) {
 		console.error(`Error in creating project: ${JSON.stringify(err)}`);
 	}
-}
-
-export function updateProjectSettings(project_id: string, settings: Partial<Project['settings']>) {
-	return patchProject(project_id, { settings: settings as Project['settings'] });
 }
 
 export function updateProjectTitle(id: string, project_name: string) {
