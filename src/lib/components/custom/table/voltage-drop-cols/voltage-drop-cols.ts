@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/table-core';
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import VdCurrentCell from '../(components)/vd-current-cell.svelte';
 import { ActionsColumnDropdown } from '../(components)/index.js';
+import { dashIfNone } from '#lib/utils/format.js';
 
 export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
@@ -31,9 +32,7 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 			{
 				accessorKey: 'conductor_size',
 				header: () => 'Size (mm²)',
-				cell: (info) => {
-					return info.getValue();
-				}
+				cell: (info) => dashIfNone(info.getValue())
 			}
 		]
 	},
@@ -42,7 +41,7 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 		columns: [
 			{
 				accessorKey: 'z',
-				cell: (info) => info.getValue(),
+				cell: (info) => dashIfNone(info.getValue()),
 				header: () => '(Ω/305m)'
 			}
 		]
@@ -81,7 +80,7 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 		columns: [
 			{
 				accessorKey: 'actual_z',
-				cell: (info) => info.getValue(),
+				cell: (info) => dashIfNone(info.getValue()),
 				header: () => '(Ω)'
 			}
 		]
@@ -91,12 +90,12 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 		columns: [
 			{
 				accessorKey: 'voltage_per_segment',
-				cell: (info) => info.getValue(),
+				cell: (info) => dashIfNone(info.getValue()),
 				header: () => 'Per Segment'
 			},
 			{
 				accessorKey: 'voltage_at_end_circuit',
-				cell: (info) => info.getValue(),
+				cell: (info) => dashIfNone(info.getValue()),
 				header: () => 'At End Circuit'
 			}
 		]
@@ -104,12 +103,12 @@ export const voltageDropColumns = <T extends VoltageDrop>(): ColumnDef<T>[] => [
 	{
 		header: 'VOLTAGE AT RECEIVING END (V)',
 		accessorKey: 'voltage_at_receiving_end',
-		cell: (info) => info.getValue()
+		cell: (info) => dashIfNone(info.getValue())
 	},
 	{
 		header: 'PERCENT VOLTAGE DROP (%)',
 		accessorKey: 'percent_voltage_drop',
-		cell: (info) => info.getValue()
+		cell: (info) => dashIfNone(info.getValue())
 	},
 
 	{

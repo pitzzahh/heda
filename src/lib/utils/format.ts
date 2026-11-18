@@ -51,3 +51,14 @@ export function convertToNormalText(
 
 	return trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1).toLowerCase();
 }
+
+/**
+ * A result the engine has none for as a dash: -1 is "none in the PEC table" (no conductor
+ * fits), null, undefined or NaN a value it could not compute without one (the run's
+ * impedance and voltage drop).
+ */
+export function dashIfNone<T>(value: T): T | '-' {
+	return value === -1 || value == null || (typeof value === 'number' && Number.isNaN(value))
+		? '-'
+		: value;
+}

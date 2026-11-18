@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { convertToNormalText, formatFraction, getOptionLabel } from './format.js';
+import { convertToNormalText, dashIfNone, formatFraction, getOptionLabel } from './format.js';
+
+describe('dashIfNone', () => {
+	it('dashes the values the engine has none for', () => {
+		expect(dashIfNone(-1)).toBe('-');
+		expect(dashIfNone(null)).toBe('-');
+		expect(dashIfNone(undefined)).toBe('-');
+		expect(dashIfNone(Number.NaN)).toBe('-');
+	});
+
+	it('keeps real values, zero included', () => {
+		expect(dashIfNone(3.5)).toBe(3.5);
+		expect(dashIfNone(0)).toBe(0);
+	});
+});
 
 describe('formatFraction', () => {
 	it('renders mixed fractions', () => {

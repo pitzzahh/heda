@@ -2,6 +2,7 @@ import type ExcelJS from 'exceljs';
 import { isThreePhaseSupply } from '#lib/utils/computations/index.js';
 import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
+import { dashIfNone } from '#lib/utils/format.js';
 
 export async function processVoltageDropSheet(
 	workbook: ExcelJS.Workbook,
@@ -75,15 +76,17 @@ export async function processVoltageDropSheet(
 			...(is_wye ? [voltage_drop_node.phase, voltage_drop_node.voltage] : []),
 			voltage_drop_node.conductor_sets,
 			voltage_drop_node.conductor_qty,
-			voltage_drop_node.conductor_size,
-			voltage_drop_node.z,
+			dashIfNone(voltage_drop_node.conductor_size),
+			dashIfNone(voltage_drop_node.z),
 			voltage_drop_node.length,
 			voltage_drop_node.current,
-			voltage_drop_node.actual_z,
-			voltage_drop_node.voltage_per_segment,
-			voltage_drop_node.voltage_at_end_circuit,
-			voltage_drop_node.voltage_at_receiving_end,
-			voltage_drop_node.percent_voltage_drop
+			...[
+				voltage_drop_node.actual_z,
+				voltage_drop_node.voltage_per_segment,
+				voltage_drop_node.voltage_at_end_circuit,
+				voltage_drop_node.voltage_at_receiving_end,
+				voltage_drop_node.percent_voltage_drop
+			].map(dashIfNone)
 		];
 
 		loadCells.forEach((value, index) => {

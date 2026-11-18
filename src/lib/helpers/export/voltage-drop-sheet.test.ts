@@ -15,7 +15,7 @@ beforeAll(async () => {
 	await initializeDatabase();
 });
 
-async function sheetFor(system: Phase) {
+async function sheetFor(system: Phase, varies = '1000') {
 	resetData();
 	const created = await createProject('VD', { distribution_unit: 'Transformer', phase: system });
 	addNode({
@@ -23,7 +23,7 @@ async function sheetFor(system: Phase) {
 		load_data: {
 			load_type: default_load_types.LIGHTING_LOAD,
 			quantity: 1,
-			varies: '1000',
+			varies,
 			load_description: 'Lights',
 			continuous: false,
 			circuit_number: 1,
@@ -43,6 +43,14 @@ describe('processVoltageDropSheet', () => {
 	it('keeps the single-phase layout', async () => {
 		const { headers } = await sheetFor(default_phases.ONE_PHASE);
 		expect(headers.slice(1, 4)).toEqual(['From NODE', 'To NODE', 'CABLE']);
+	});
+
+	it('dashes a run no conductor of Table 3.10.2.6(B)(16) fits, and its voltage drop', async () => {
+		// 150 000 VA at 230 V is 652 A on one set, more than 500 mm² carries.
+		const { row } = await sheetFor(default_phases.ONE_PHASE, '150000');
+		// Size and Z (cols 5–6), then Actual Z through % drop (cols 9–13).
+		expect(row.slice(5, 7)).toEqual(['-', '-']);
+		expect(row.slice(9, 14)).toEqual(['-', '-', '-', '-', '-']);
 	});
 
 	it('names the phase and voltage of every run on a 3P-Y system (D15)', async () => {
