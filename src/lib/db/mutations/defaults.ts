@@ -29,7 +29,7 @@ export function withNodeDefaults<T extends { id: string }>(node: T): T & typeof 
  * On 230 V delta (3-wire, no neutral, D14/D15 "3 x 250 mm²"):
  * - delta sub-panel or three-phase load: 3-pole, three wires;
  * - single-phase load or panel: line to line, so 2-pole on two wires, a pole on
- *   each ungrounded conductor (PEC 2017 2.40.4.15).
+ *   each ungrounded conductor that opens both together (PEC 2017 2.40.1.15(A), (B)).
  * Single-phase systems keep NODE_DEFAULTS.
  */
 export function circuitDefaults(

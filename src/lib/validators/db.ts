@@ -33,7 +33,7 @@ export const NODE_DOC_SCHEMA = v.object({
 	egc_insulation: v.optional(v.string()),
 	conduit_type: v.optional(v.string()),
 	pole: v.optional(v.string()),
-	/** Override of the circuit-number phase on a 3P-Y panel; absent means the default rotation. */
+	/** Override of the circuit-number phase (3P-Y) or line pair (delta); absent means the default rotation. */
 	phase_assignment: v.optional(PHASE_ASSIGNMENT_FIELD),
 	kaic: v.optional(v.string()),
 	length: v.optional(v.number()),

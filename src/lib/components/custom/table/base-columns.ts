@@ -39,7 +39,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'voltage',
 		header: 'VOLTAGE (V)',
-		// The panel's own voltage: on a 3P-Y panel its rows mix 230 V and 400 V circuits.
+		// The panel's own voltage: on a 3P-Y panel its rows mix 230 V and 400 V circuits (delta: all 230 V).
 		footer: () => current_node.voltage
 	},
 	{

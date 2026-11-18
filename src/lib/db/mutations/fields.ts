@@ -117,7 +117,7 @@ export function updateShortCircuitSource(root_id: string, source: ShortCircuitSo
 	}
 }
 
-/** Overrides the circuit-number phase of a circuit on a 3P-Y panel; undefined restores the default. */
+/** Overrides the circuit-number phase (or delta line pair) of a circuit; undefined restores the default. */
 export function changePhaseAssignment(node_id: string, phase: PhaseAssignment | undefined) {
 	try {
 		return patchNode(node_id, { phase_assignment: phase });

@@ -201,7 +201,8 @@ export const default_hp_current_relationship = {
 } as const;
 
 // PEC 2017 Table 4.30.14.4: full-load current of three-phase induction motors, 230 V column (A),
-// for 220–240 V systems (the table's footnote): a 230 V delta supply.
+// for 220–240 V systems (the table's note): a 230 V delta supply. 250–500 HP are marked
+// "Based on UL 508" in the table.
 export const THREE_PHASE_MOTOR_FLC_230V = {
 	'1/2': '2.2',
 	'3/4': '3.2',

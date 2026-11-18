@@ -4,6 +4,7 @@
 
 use heda_core::dispatch::dispatch;
 use heda_core::model::{load_types, phases};
+use heda_core::phases::{delta_line_currents, PairVa};
 use heda_core::session::Session;
 use serde_json::{json, Value};
 
@@ -278,4 +279,35 @@ fn balancing_a_delta_panel_assigns_line_pairs() {
         answer,
         json!([["big", "AB"], ["mid", "BC"], ["small", "CA"]])
     );
+}
+
+#[test]
+fn line_currents_equal_the_phasor_differences_of_the_pair_currents() {
+    // Independent check of the closed form: I_AB at 0°, I_BC at −120°, I_CA at +120°
+    // (same power factor on every pair), and each line carries the difference of its
+    // two pairs, I_A = I_AB − I_CA, I_B = I_BC − I_AB, I_C = I_CA − I_BC.
+    let phasor = |magnitude: f64, degrees: f64| {
+        let radians = degrees.to_radians();
+        (magnitude * radians.cos(), magnitude * radians.sin())
+    };
+    let length = |(x, y): (f64, f64), (u, w): (f64, f64)| (x - u).hypot(y - w);
+    let mut seed: u64 = 0x2017;
+    let mut next = || {
+        seed = seed.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+        (seed >> 11) as f64 / (1u64 << 53) as f64 * 50_000.0
+    };
+    for _ in 0..1_000 {
+        let pair_va = PairVa {
+            AB: next(),
+            BC: next(),
+            CA: next(),
+        };
+        let ab = phasor(pair_va.AB / 230.0, 0.0);
+        let bc = phasor(pair_va.BC / 230.0, -120.0);
+        let ca = phasor(pair_va.CA / 230.0, 120.0);
+        let lines = delta_line_currents(pair_va);
+        close(lines.A, length(ab, ca), 1e-9);
+        close(lines.B, length(bc, ab), 1e-9);
+        close(lines.C, length(ca, bc), 1e-9);
+    }
 }
