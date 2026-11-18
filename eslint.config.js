@@ -39,7 +39,9 @@ export default [
 			'src-tauri/target/',
 			'crates/heda-core/target/',
 			'src/lib/core/pkg/',
-			'coverage/'
+			'coverage/',
+			// Local agent worktrees: other checkouts of this repo, not source.
+			'.claude/'
 		]
 	}
 ];

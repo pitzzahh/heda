@@ -7,6 +7,7 @@ singleQuote = true
 trailingComma = "none"
 ignorePatterns = [
 	"build/",
+	".claude/",
 	".svelte-kit/",
 	"dist/",
 	"coverage/",
