@@ -228,14 +228,17 @@ mod conductor_size_pec_2017_3_10_2_6_b_and_1_10_1_14_c_1 {
     }
 
     #[test]
-    fn motors_take_heda_s_3_5_mm2_floor() {
+    fn small_motors_take_2_0_mm2_per_4_30_2_2_g() {
+        // Table 4.30.14.2: 1/2 hp at 230 V is 4.9 A; 125 % is 6.125 A, and 2.0 mm² carries
+        // 15 A at its 60 °C terminations. Its 15 A breaker (250 % is 12.25 A) may exceed
+        // what 2.40.1.4(D) allows 2.0 mm², since Table 2.40.1.4(G) sends motors to 4.30.
         let motor = ConductorInput {
-            sizing: Sizing::Load(ONE_P_MOTOR_RATED_CURRENT),
-            current: 4.0,
-            at: 20.0,
+            sizing: Sizing::Load(ONE_P_MOTOR_HORSE_POWER),
+            current: 4.9,
+            at: 15.0,
             ..panel(0.0)
         };
-        assert_eq!(conductor_size(motor), 3.5);
+        assert_eq!(conductor_size(motor), 2.0);
     }
 }
 

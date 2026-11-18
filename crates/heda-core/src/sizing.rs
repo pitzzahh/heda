@@ -185,7 +185,8 @@ pub struct ConductorInput<'a> {
 /// The smallest conductor (mm²) of PEC 2017 Table 3.10.2.6(B)(16) that meets both checks
 /// of App. D Ex. D21, the terminations and the conditions of use, for the current each set
 /// carries; -1 when none does (more sets are needed, or the insulation cannot take the
-/// ambient). Motors take at least 3.5 mm², a design floor of heda's, not a PEC rule.
+/// ambient). The table starts at 2.0 mm², the smallest conductor PEC 2017 Table 3.10.3.3(A)
+/// allows, which 4.30.2.2(G) also sets for motors.
 pub fn conductor_size(input: ConductorInput) -> f64 {
     let required = required_ampacity(input) / input.sets;
     let adjustment = adjustment_factor(current_carrying(input.sets, input.qty));
@@ -197,11 +198,7 @@ pub fn conductor_size(input: ConductorInput) -> f64 {
                 && corrected_ampacity(*size, input.rating, input.ambient_temp, adjustment)
                     >= required
         });
-    match size {
-        Some(size) if input.sizing.is_motor() && size <= 2.0 => 3.5,
-        Some(size) => size,
-        None => -1.0,
-    }
+    size.unwrap_or(-1.0)
 }
 
 /// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), else
