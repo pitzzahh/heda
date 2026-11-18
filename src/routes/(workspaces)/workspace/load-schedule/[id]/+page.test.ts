@@ -2,11 +2,11 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { schedule, project_state, onePhaseMainOrWyeCols, threePhaseWyeCols } = vi.hoisted(() => ({
+const { schedule, project_state, onePhaseMainOrWyeCols, threePhaseCols } = vi.hoisted(() => ({
 	schedule: { panel_phase: 'one_phase' },
 	project_state: { loaded: true, schedule_tab: 'voltage-drop' },
 	onePhaseMainOrWyeCols: vi.fn(() => []),
-	threePhaseWyeCols: vi.fn(() => [])
+	threePhaseCols: vi.fn(() => [])
 }));
 
 vi.mock('$app/state', () => ({
@@ -48,8 +48,8 @@ vi.mock('#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-
 	onePhaseMainOrWyeCols
 }));
 
-vi.mock('#lib/components/custom/table/three-phase-wye-cols.js', () => ({
-	threePhaseWyeCols
+vi.mock('#lib/components/custom/table/three-phase-cols.js', () => ({
+	threePhaseCols
 }));
 
 vi.mock('#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js', () => ({
@@ -111,7 +111,7 @@ describe('load schedule page', () => {
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
 		expect(onePhaseMainOrWyeCols).toHaveBeenCalled();
-		expect(threePhaseWyeCols).not.toHaveBeenCalled();
+		expect(threePhaseCols).not.toHaveBeenCalled();
 		unmount(component);
 	});
 
@@ -119,7 +119,16 @@ describe('load schedule page', () => {
 		schedule.panel_phase = 'three_phase_wye';
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
-		expect(threePhaseWyeCols).toHaveBeenCalled();
+		expect(threePhaseCols).toHaveBeenCalled();
+		expect(onePhaseMainOrWyeCols).not.toHaveBeenCalled();
+		unmount(component);
+	});
+
+	test('uses the phase and VA-per-line-pair columns for a delta panel', () => {
+		schedule.panel_phase = 'three_phase_delta';
+		const component = mount(LoadSchedulePage, { target: document.body });
+		flushSync();
+		expect(threePhaseCols).toHaveBeenCalledWith(expect.anything(), 'three_phase_delta');
 		expect(onePhaseMainOrWyeCols).not.toHaveBeenCalled();
 		unmount(component);
 	});

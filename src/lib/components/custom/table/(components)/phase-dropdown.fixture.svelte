@@ -4,12 +4,13 @@
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import PhaseDropdown from './phase-dropdown.svelte';
 
-	let { phase }: { phase: CircuitPhase } = $props();
+	let { phase, supply_phase }: { phase: CircuitPhase; supply_phase?: string } = $props();
 
 	setUndoRedoState();
 </script>
 
 <PhaseDropdown
 	{phase}
+	{supply_phase}
 	node={{ id: 'node-a', parent_id: 'panel', circuit_number: 3 } as unknown as PhaseLoadSchedule}
 />

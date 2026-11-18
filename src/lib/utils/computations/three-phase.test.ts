@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { THREE_PHASE_MOTOR_FLC_400V, default_load_types, default_phases } from '#lib/constants.js';
+import {
+	THREE_PHASE_MOTOR_FLC_230V,
+	THREE_PHASE_MOTOR_FLC_400V,
+	default_load_types,
+	default_phases
+} from '#lib/constants.js';
 import { horsepowerOfCurrent } from './index.js';
 import {
 	defaultPhaseAssignment,
@@ -20,6 +25,20 @@ describe('PEC 2017 Table 4.30.14.4: three-phase motor full-load current, 400 V c
 		['500', '786']
 	])('%s HP → %s A', (hp, amps) => {
 		expect(THREE_PHASE_MOTOR_FLC_400V[hp as keyof typeof THREE_PHASE_MOTOR_FLC_400V]).toBe(amps);
+	});
+});
+
+describe('PEC 2017 Table 4.30.14.4: three-phase motor full-load current, 230 V column (delta picker)', () => {
+	it.each([
+		['1/2', '2.2'],
+		['1', '4.2'],
+		['10', '28'],
+		['25', '68'],
+		['100', '248'],
+		['450', '1030'],
+		['500', '1180']
+	])('%s HP → %s A', (hp, amps) => {
+		expect(THREE_PHASE_MOTOR_FLC_230V[hp as keyof typeof THREE_PHASE_MOTOR_FLC_230V]).toBe(amps);
 	});
 });
 
@@ -126,6 +145,14 @@ describe('horsepowerOfCurrent', () => {
 		expect(horsepowerOfCurrent(default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER, '1.3')).toBe(
 			'1/2'
 		);
+		// On delta the same 25 HP motor is stored as its 230 V current.
+		expect(
+			horsepowerOfCurrent(
+				default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+				'68',
+				default_phases.THREE_PHASE_DELTA
+			)
+		).toBe('25');
 	});
 
 	it('passes other load types through and drops currents off the table', () => {

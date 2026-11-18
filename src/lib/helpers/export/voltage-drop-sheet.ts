@@ -1,5 +1,5 @@
 import type ExcelJS from 'exceljs';
-import { default_phases } from '#lib/constants.js';
+import { isThreePhaseSupply } from '#lib/utils/computations/index.js';
 import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
 
@@ -11,10 +11,11 @@ export async function processVoltageDropSheet(
 
 	const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
 
-	// A 3P-Y study mixes 400 V and 230 V runs (PEC 2017 App. D Ex. D15), so each row names its phase and voltage.
-	const is_wye =
-		nodes.find((node) => node.node_type === 'root')?.highest_unit_form?.phase ===
-		default_phases.THREE_PHASE_WYE;
+	// A three-phase study mixes three-phase and single-phase runs (PEC 2017 App. D Ex. D15), and
+	// 3P-Y also 400 V and 230 V ones, so each row names its phase and voltage.
+	const is_wye = isThreePhaseSupply(
+		nodes.find((node) => node.node_type === 'root')?.highest_unit_form?.phase
+	);
 	const table_headers: Header[] = [
 		{ text: 'From NODE', cols: 1 },
 		{ text: 'To NODE', cols: 1 },

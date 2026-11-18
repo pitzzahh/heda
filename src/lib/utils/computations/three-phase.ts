@@ -102,8 +102,8 @@ export function circuitPhase(
 	return isThreePhaseCircuit(node) ? 'ABC' : phaseOf(node, supply_phase);
 }
 
-/** Whether a supply of this phase has three lines to give. */
-function isThreePhaseSupply(phase: string | undefined): boolean {
+/** Whether a supply of this phase has three lines to give (3P-Y or delta). */
+export function isThreePhaseSupply(phase: string | undefined): boolean {
 	return phase === default_phases.THREE_PHASE_WYE || phase === default_phases.THREE_PHASE_DELTA;
 }
 

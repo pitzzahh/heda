@@ -27,12 +27,12 @@
 		default_load_types,
 		load_type_to_varies_label,
 		default_hp_current_relationship,
-		default_phases,
-		load_type_to_quantity_label,
-		THREE_PHASE_MOTOR_FLC_400V
+		load_type_to_quantity_label
 	} from '#lib/constants.js';
 	import {
 		horsepowerOfCurrent,
+		horsepowerTable,
+		isThreePhaseSupply,
 		supplyError,
 		supplyPhaseOf
 	} from '#lib/utils/computations/index.js';
@@ -88,7 +88,11 @@
 			terminal_temperature: node_to_edit.load_data.terminal_temperature as TerminalTemperature,
 			load_type: node_to_edit.load_data.load_type as LoadType,
 			quantity: node_to_edit.load_data.quantity,
-			varies: horsepowerOfCurrent(node_to_edit.load_data.load_type, node_to_edit.load_data.varies),
+			varies: horsepowerOfCurrent(
+				node_to_edit.load_data.load_type,
+				node_to_edit.load_data.varies,
+				supplyPhaseOf(node_to_edit.parent_id ? getNode(node_to_edit.parent_id) : undefined)
+			),
 			continuous: node_to_edit.load_data.continuous,
 			length: node_to_edit.length
 		};
@@ -154,10 +158,9 @@
 								data.varies as keyof typeof default_hp_current_relationship
 							]
 					}),
-					// PEC 2017 Table 4.30.14.4, 400 V column: stored as full-load current, like 1P motors.
+					// PEC 2017 Table 4.30.14.4 at the supply's line voltage: stored as full-load current, like 1P motors.
 					...(data.load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER && {
-						varies:
-							THREE_PHASE_MOTOR_FLC_400V[data.varies as keyof typeof THREE_PHASE_MOTOR_FLC_400V]
+						varies: horsepowerTable(data.load_type, supply_phase)?.[data.varies]
 					})
 				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 				switch (action) {
@@ -199,15 +202,14 @@
 
 	// The parent node (panel) of the loads, taken from the route id.
 	const panel_id_from_params = nodeIdFromRouteId(page.params?.id) || '';
-	// Three-phase loads need a 400Y/230 V panel (PEC 2017 App. D Ex. D6, a 400/230 V three-phase service).
-	const allow_three_phase = $derived(
-		supplyPhaseOf(getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params)) ===
-			default_phases.THREE_PHASE_WYE
+	const supply_phase = $derived(
+		supplyPhaseOf(getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params))
 	);
+	// Three-phase loads need a three-phase panel: 400Y/230 V (PEC 2017 App. D Ex. D6) or 230 V delta (D14).
+	const allow_three_phase = $derived(isThreePhaseSupply(supply_phase));
 	const hp_currents = $derived(
-		getInput(form, { path: ['load_type'] }) === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
-			? THREE_PHASE_MOTOR_FLC_400V
-			: default_hp_current_relationship
+		horsepowerTable(getInput(form, { path: ['load_type'] }), supply_phase) ??
+			default_hp_current_relationship
 	);
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(

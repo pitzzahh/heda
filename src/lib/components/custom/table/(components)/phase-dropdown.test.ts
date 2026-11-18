@@ -24,6 +24,16 @@ describe('PhaseDropdown', () => {
 		unmount(component);
 	});
 
+	test('shows the line pair of a circuit on a delta panel', () => {
+		const component = mount(PhaseDropdownFixture, {
+			target: document.body,
+			props: { phase: 'BC', supply_phase: 'three_phase_delta' }
+		});
+		flushSync();
+		expect(document.querySelector('[aria-label="Phase"]')?.textContent?.trim()).toBe('BC');
+		unmount(component);
+	});
+
 	test('shows ABC with nothing to pick for a three-phase circuit', () => {
 		const component = mount(PhaseDropdownFixture, {
 			target: document.body,

@@ -37,6 +37,7 @@ export async function generateWorkbook(
 	switch (highest_unit?.phase) {
 		case default_phases.ONE_PHASE:
 		case default_phases.THREE_PHASE_WYE:
+		case default_phases.THREE_PHASE_DELTA:
 			workbook.subject = `${phase_label} ${convertToNormalText(payload.type, true)}`;
 			workbook.category = [
 				phase_label,
@@ -66,8 +67,6 @@ export async function generateWorkbook(
 				}
 			}
 			break;
-		case default_phases.THREE_PHASE_DELTA:
-			throw new Error('Three-phase delta load schedule is not yet supported');
 		default:
 			throw new Error('Unknown phase');
 	}

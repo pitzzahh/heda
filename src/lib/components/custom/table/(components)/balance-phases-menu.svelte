@@ -3,8 +3,10 @@
 	import type { PhaseAssignment } from '#lib/types/phase.js';
 
 	interface Props {
-		/** The circuits of one 3P-Y panel (or a 3P-Y root), as the schedule computes them. */
+		/** The circuits of one three-phase panel (or root), as the schedule computes them. */
 		loads: PhaseLoadSchedule[];
+		/** That panel's phase: delta balances line pairs, 3P-Y phases. */
+		supply_phase: string | undefined;
 	}
 
 	type PhaseChange = [node_id: string, PhaseAssignment | undefined];
@@ -17,11 +19,12 @@
 	import { changePhaseAssignments } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { phaseOverride } from '#lib/utils/computations/index.js';
+	import { phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
 	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
 
-	let { loads }: Props = $props();
+	let { loads, supply_phase }: Props = $props();
+	const labels = $derived(phaseLabels(supply_phase));
 
 	const undo_redo_state = getUndoRedoState();
 
@@ -44,6 +47,7 @@
 		let assignments: [string, PhaseAssignment][];
 		try {
 			assignments = await engine('balanced_phases', {
+				supply: supply_phase,
 				circuits: loads.map((load) => ({
 					id: load.id,
 					va: load.va || 0,
@@ -57,8 +61,11 @@
 		}
 		const by_id = new Map(loads.map((load) => [load.id, load]));
 		applyChanges(
-			assignments.map(([id, phase]) => [id, phaseOverride(phase, by_id.get(id)?.circuit_number)]),
-			'Single-phase circuits balanced across A, B and C'
+			assignments.map(([id, phase]) => [
+				id,
+				phaseOverride(phase, by_id.get(id)?.circuit_number, supply_phase)
+			]),
+			`Single-phase circuits balanced across ${labels.join(', ')}`
 		);
 	}
 
@@ -85,15 +92,18 @@
 			<ScalesIcon />
 			<div class="grid gap-0.5">
 				<span class="text-sm">Auto-balance</span>
-				<span class="text-xs text-muted-foreground">Largest load first onto the lightest phase</span
-				>
+				<span class="text-xs text-muted-foreground">
+					Largest load first onto the lightest {labels[0]!.length > 1 ? 'line pair' : 'phase'}
+				</span>
 			</div>
 		</DropdownMenu.Item>
 		<DropdownMenu.Item onclick={resetToCircuitNumbers}>
 			<ArrowCounterClockwiseIcon />
 			<div class="grid gap-0.5">
 				<span class="text-sm">By circuit number</span>
-				<span class="text-xs text-muted-foreground">1–2 on A, 3–4 on B, 5–6 on C, then repeat</span>
+				<span class="text-xs text-muted-foreground">
+					1–2 on {labels[0]}, 3–4 on {labels[1]}, 5–6 on {labels[2]}, then repeat
+				</span>
 			</div>
 		</DropdownMenu.Item>
 	</DropdownMenu.Content>

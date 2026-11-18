@@ -117,4 +117,41 @@ describe('panel board sheet', () => {
 		// Most loaded phase (A, 3 840 VA ÷ 230 V) beats the balanced 7 840 VA ÷ 692.8 V.
 		expect(total[4]).toBe('16.7');
 	});
+
+	it('adds phase and VA per line pair for a 230 V delta panel (PEC 2017 App. D Ex. D14)', async () => {
+		const sheet = await sheetFor(
+			default_phases.THREE_PHASE_DELTA,
+			default_phases.THREE_PHASE_DELTA,
+			[
+				[default_load_types.LIGHTING_LOAD, '2300'], // ckt 1 → AB, 10 A line to line
+				[default_load_types.THREE_P_EQUIPMENT, '6000'] // ckt 3 → ABC, 2 000 VA each pair
+			]
+		);
+		expect(sheet.getCell('B2').value).toBe(': 3P-Δ + E, 230V, 60Hz');
+		expect(rowValues(sheet, 5).slice(0, 7)).toEqual([
+			' ',
+			' ',
+			' ',
+			' ',
+			' ',
+			' ',
+			'VA PER LINE PAIR'
+		]);
+		expect(rowValues(sheet, 6).slice(4, 9)).toEqual(['CURRENT (A)', 'PHASE', 'AB', 'BC', 'CA']);
+		const [ckt, , voltage, va, current, phase, ab, bc, ca, , , pole] = rowValues(sheet, 7);
+		expect([ckt, voltage, va, current, phase, ab, bc, ca, pole]).toEqual([
+			1,
+			230,
+			2300,
+			10,
+			'AB',
+			2300,
+			'',
+			'',
+			'2'
+		]);
+		const total = rowValues(sheet, 9);
+		expect(total.slice(0, 3)).toEqual(['TOTAL', 'MAIN', '230']);
+		expect(total.slice(5, 9)).toEqual(['ABC', '4300', '2000', '2000']);
+	});
 });

@@ -27,9 +27,8 @@
 		getRootNode
 	} from '#lib/db/queries/index.js';
 	import { BalancePhasesMenu } from '#lib/components/custom/table/(components)/index.js';
-	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
+	import { isThreePhaseSupply, supplyPhaseOf } from '#lib/utils/computations/index.js';
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
-	import { default_phases } from '#lib/constants.js';
 	import { page } from '$app/state';
 	import {
 		CaretRightIcon,
@@ -50,15 +49,16 @@
 	const on_load_schedule = $derived(page.url.pathname.includes('load-schedule'));
 	const project_id = $derived(page.url.searchParams.get('project_id') ?? undefined);
 
-	// The circuits of the open schedule when it is 3P-Y and its Load Schedule tab shows, for the
-	// header's Phases menu.
-	const wye_schedule_loads = $derived.by(() => {
+	// The open schedule's phase and circuits when it is three-phase and its Load Schedule tab
+	// shows, for the header's Phases menu.
+	const three_phase_schedule = $derived.by(() => {
 		const on_load_tab = on_load_schedule && project_state.schedule_tab === 'load-sched';
 		const node_id = on_load_tab ? nodeIdFromRouteId(page.params.id) : undefined;
-		if (!node_id) return [];
-		const is_wye =
-			supplyPhaseOf(getNodeById(node_id) ?? undefined) === default_phases.THREE_PHASE_WYE;
-		return is_wye ? getComputedLoads(node_id) : [];
+		const supply_phase = node_id ? supplyPhaseOf(getNodeById(node_id) ?? undefined) : undefined;
+		return {
+			supply_phase,
+			loads: node_id && isThreePhaseSupply(supply_phase) ? getComputedLoads(node_id) : []
+		};
 	});
 
 	// Live workspace rows: the session snapshot subscribes to every write
@@ -109,8 +109,11 @@
 				</div>
 
 				<div class="flex shrink-0 items-center gap-2">
-					{#if wye_schedule_loads.length > 0}
-						<BalancePhasesMenu loads={wye_schedule_loads} />
+					{#if three_phase_schedule.loads.length > 0}
+						<BalancePhasesMenu
+							loads={three_phase_schedule.loads}
+							supply_phase={three_phase_schedule.supply_phase}
+						/>
 					{/if}
 					<div
 						class={cn(

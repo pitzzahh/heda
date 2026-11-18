@@ -16,7 +16,7 @@
 	import * as Popover from '#lib/components/ui/popover/index.js';
 	import * as Command from '#lib/components/ui/command/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
-	import { DEFAULT_PHASES, SUPPORTED_PANEL_PHASES, default_phases } from '#lib/constants.js';
+	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
 	import { cn } from '#lib/utils/index.js';
 	import { useId } from 'bits-ui';
@@ -25,6 +25,13 @@
 	let { form, main_phase }: Props = $props();
 
 	const is_one_phase = $derived(main_phase === default_phases.ONE_PHASE);
+	// A panel is single-phase or the supply's own three-phase system: heda models no
+	// transformer between 400Y/230 V and 230 V delta (PEC 2017 2.20.1.5(A)).
+	const phase_options = $derived(
+		DEFAULT_PHASES.filter(
+			(option) => option.value === default_phases.ONE_PHASE || option.value === main_phase
+		)
+	);
 
 	let open = $state(false);
 	const trigger_id = useId();
@@ -60,7 +67,7 @@
 						<Command.Input autofocus placeholder="Search a panel phase..." class="h-9" />
 						<Command.Empty>No panel phase found.</Command.Empty>
 						<Command.Group>
-							{#each SUPPORTED_PANEL_PHASES as phase_option (phase_option.value)}
+							{#each phase_options as phase_option (phase_option.value)}
 								<Command.Item
 									value={phase_option.value}
 									onSelect={() => {

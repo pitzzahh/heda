@@ -921,6 +921,104 @@ describe('incremental writes and reads', () => {
 	});
 });
 
+describe('three-phase delta, 230 V (PEC 2017 2.20.1.5(A), App. D Ex. D14/D15)', () => {
+	const panel = (name: string, circuit_number: number, phase: string): GenericPhasePanelSchema => ({
+		name,
+		circuit_number,
+		ambient_temperature: 30,
+		length: 10,
+		terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+		phase: phase as GenericPhasePanelSchema['phase']
+	});
+	const load = (circuit_number: number, load_type: string, varies: string) =>
+		({
+			load_type,
+			quantity: 1,
+			varies,
+			load_description: `Load ${circuit_number}`,
+			continuous: false,
+			circuit_number,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		}) as never;
+
+	// root (3P-Δ) ─ MDP (3P-Δ) ─┬─ 1: 23 000 VA lighting → AB
+	//                           ├─ 3: 20 700 VA lighting → BC
+	//                           ├─ 5: 14 400 VA lighting → CA
+	//                           └─ 7: 20 A 3P motor (D15) → ABC at 230 V
+	async function buildDeltaTree() {
+		resetData();
+		const created = await createProject('Delta', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.THREE_PHASE_DELTA
+		});
+		const root = created!.root_node_id;
+		const mdp = addNode({
+			parent_id: root,
+			panel_data: panel('MDP', 1, default_phases.THREE_PHASE_DELTA)
+		})!;
+		const [ab, bc, ca] = [
+			[1, '23000'],
+			[3, '20700'],
+			[5, '14400']
+		].map(([n, va]) =>
+			addNode({
+				parent_id: mdp.id,
+				load_data: load(n as number, default_load_types.LIGHTING_LOAD, va as string)
+			})!
+		);
+		const motor = addNode({
+			parent_id: mdp.id,
+			load_data: load(7, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '20')
+		})!;
+		await settled();
+		return { root, mdp, ab: ab!, bc: bc!, ca: ca!, motor };
+	}
+
+	it('wires circuits line to line: 3-pole 3-wire three-phase, 2-pole 2-wire single-phase', async () => {
+		const { mdp, ab, motor } = await buildDeltaTree();
+		expect([mdp.pole, mdp.conductor_qty]).toEqual(['3', 3]);
+		expect([motor.pole, motor.conductor_qty]).toEqual(['3', 3]);
+		expect([ab.pole, ab.conductor_qty]).toEqual(['2', 2]);
+	});
+
+	it('puts single-phase loads on line pairs and sizes on the most loaded line', async () => {
+		const { root, mdp } = await buildDeltaTree();
+		const loads = new Map(getComputedLoads(mdp.id).map((l) => [l.circuit_number, l]));
+		expect(loads.get(1)).toMatchObject({ phase: 'AB', voltage: 230, current: 100 });
+		expect(loads.get(3)?.phase).toBe('BC');
+		expect(loads.get(5)?.phase).toBe('CA');
+		expect(loads.get(7)).toMatchObject({ phase: 'ABC', voltage: 230, current: 20 });
+
+		const [row] = getComputedLoads(root);
+		const share = (20 * 230 * 1.732) / 3;
+		expect(row?.voltage).toBe(230);
+		expect(row?.pair_va?.AB).toBeCloseTo(23_000 + share, 6);
+		expect(row?.phase_va).toBeUndefined();
+		// I_B = √(I_BC² + I_AB² + I_BC·I_AB), the heaviest line here.
+		const [i_ab, i_bc] = [(23_000 + share) / 230, (20_700 + share) / 230];
+		expect(row?.line_current?.B).toBeCloseTo(Math.sqrt(i_bc ** 2 + i_ab ** 2 + i_bc * i_ab), 2);
+		expect(row?.current).toBe(row?.line_current?.B);
+		expect(row!.current).toBeGreaterThan(row!.balanced_current!);
+	});
+
+	it('feeds a single-phase sub-panel line to line', async () => {
+		const { mdp, ab } = await buildDeltaTree();
+		const lp = addNode({
+			parent_id: mdp.id,
+			panel_data: panel('LP', 9, default_phases.ONE_PHASE)
+		})!;
+		addNode({ parent_id: lp.id, load_data: load(1, default_load_types.LIGHTING_LOAD, '100') });
+		await settled();
+		// A single-phase panel on delta takes the pair of its circuit number (9–10 → BC).
+		const row = getComputedLoads(mdp.id).find((l) => l.id === lp.id);
+		expect(row).toMatchObject({ phase: 'BC', voltage: 230, pole: '2', conductor_qty: 2 });
+		expect(getComputedLoads(mdp.id).find((l) => l.id === ab.id)?.phase).toBe('AB');
+	});
+});
+
 describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 	const wyePanel = (name: string, circuit_number: number): GenericPhasePanelSchema => ({
 		name,

@@ -19,7 +19,7 @@
 	import { cn } from '#lib/utils/index.js';
 	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
 	import type { Phase } from '#lib/types/phase.js';
-	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
+	import { DEFAULT_PHASES, PHASE_SYSTEM_VOLTAGES } from '#lib/constants.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
@@ -256,30 +256,14 @@
 										variant: 'outline',
 										className:
 											'h-11 w-full justify-between px-4 font-medium hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary'
-									}),
-									{
-										'cursor-not-allowed opacity-60':
-											phase_option.value === default_phases.THREE_PHASE_DELTA
-									}
+									})
 								)}
 							>
-								<!-- 1P and 3P-Y (400Y/230 V) are supported; delta is not yet -->
-								<RadioGroup.Item
-									value={phase_option.value}
-									disabled={phase_option.value === default_phases.THREE_PHASE_DELTA}
-									class="sr-only"
-								/>
+								<RadioGroup.Item value={phase_option.value} class="sr-only" />
 								<span>{phase_option.label}</span>
-								{#if phase_option.value === default_phases.THREE_PHASE_DELTA}
-									<span
-										class="text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase"
-										>Soon</span
-									>
-								{:else}
-									<span class="text-[9px] font-bold tracking-[0.2em] text-primary/70 uppercase"
-										>Available</span
-									>
-								{/if}
+								<span class="text-[9px] font-bold tracking-[0.2em] text-primary/70 uppercase"
+									>{PHASE_SYSTEM_VOLTAGES[phase_option.value]}</span
+								>
 							</Label>
 						{/each}
 					</RadioGroup.Root>

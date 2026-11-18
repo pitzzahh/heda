@@ -149,19 +149,18 @@ export const default_phases = {
 	THREE_PHASE_DELTA: 'three_phase_delta'
 } as const;
 
+/** Nominal voltage of each phase system (PEC 2017 2.20.1.5(A)). */
+export const PHASE_SYSTEM_VOLTAGES = {
+	[default_phases.ONE_PHASE]: '230 V',
+	[default_phases.THREE_PHASE_WYE]: '400Y/230 V',
+	[default_phases.THREE_PHASE_DELTA]: '230 V'
+} as const;
+
 export const DEFAULT_PHASES = [
 	{ value: default_phases.ONE_PHASE, label: '1P' },
 	{ value: default_phases.THREE_PHASE_WYE, label: '3P-Y' },
 	{ value: default_phases.THREE_PHASE_DELTA, label: '3P-Δ' }
 ] as const;
-
-/**
- * Panel phases heda computes: a 400Y/230 V supply feeds 3P-Y panels or 230 V
- * single-phase ones (PEC 2017 App. D Ex. D6). Delta is not supported yet.
- */
-export const SUPPORTED_PANEL_PHASES = DEFAULT_PHASES.filter(
-	(option) => option.value !== default_phases.THREE_PHASE_DELTA
-);
 
 export const load_type_to_varies_label = {
 	[default_load_types.LIGHTING_LOAD]: 'Unit Wattage',
@@ -199,6 +198,38 @@ export const default_hp_current_relationship = {
 	'5': '28',
 	'7 1/2': '40',
 	'10': '50'
+} as const;
+
+// PEC 2017 Table 4.30.14.4: full-load current of three-phase induction motors, 230 V column (A),
+// for 220–240 V systems (the table's footnote): a 230 V delta supply.
+export const THREE_PHASE_MOTOR_FLC_230V = {
+	'1/2': '2.2',
+	'3/4': '3.2',
+	'1': '4.2',
+	'1 1/2': '6',
+	'2': '6.8',
+	'3': '9.6',
+	'5': '15.2',
+	'7 1/2': '22',
+	'10': '28',
+	'15': '42',
+	'20': '54',
+	'25': '68',
+	'30': '80',
+	'40': '104',
+	'50': '130',
+	'60': '154',
+	'75': '192',
+	'100': '248',
+	'125': '312',
+	'150': '360',
+	'200': '480',
+	'250': '604',
+	'300': '722',
+	'350': '828',
+	'400': '954',
+	'450': '1030',
+	'500': '1180'
 } as const;
 
 // PEC 2017 Table 4.30.14.4: full-load current of three-phase induction motors, 400 V column (A).

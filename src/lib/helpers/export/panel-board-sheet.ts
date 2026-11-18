@@ -1,9 +1,14 @@
 import type ExcelJS from 'exceljs';
 import type { Node } from '#lib/types/db.js';
 import { buildChildrenByParent, getNodeDepthFromNodes } from '#lib/db/queries/loads-core.js';
-import { DEFAULT_PHASES, PHASE_ASSIGNMENTS, default_phases } from '#lib/constants.js';
+import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
-import { rowPhaseVa, supplyPhaseOf } from '#lib/utils/computations/index.js';
+import {
+	isThreePhaseSupply,
+	phaseLabels,
+	rowPhaseVa,
+	supplyPhaseOf
+} from '#lib/utils/computations/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
@@ -94,8 +99,13 @@ function baseGroups(): SheetGroup[] {
 	];
 }
 
-/** A 400Y/230 V panel also lists each circuit's phase and VA per phase (PEC 2017 App. D Ex. D6). */
-function wyeGroups(): SheetGroup[] {
+/**
+ * A three-phase panel also lists each circuit's phase and the VA per phase of a
+ * 400Y/230 V panel (PEC 2017 App. D Ex. D6), or per line pair of a 230 V delta one.
+ */
+function threePhaseGroups(panel_phase: string | undefined): SheetGroup[] {
+	const labels = phaseLabels(panel_phase);
+	const is_delta = panel_phase === default_phases.THREE_PHASE_DELTA;
 	return [
 		{
 			text: ' ',
@@ -105,12 +115,16 @@ function wyeGroups(): SheetGroup[] {
 			total: () => ['ABC']
 		},
 		{
-			text: 'VA PER PHASE',
+			text: is_delta ? 'VA PER LINE PAIR' : 'VA PER PHASE',
 			cols: 3,
-			sub_cols: [...PHASE_ASSIGNMENTS],
-			row: (l) => PHASE_ASSIGNMENTS.map((phase) => rowPhaseVa(l, phase)),
-			total: (p) =>
-				PHASE_ASSIGNMENTS.map((phase) => Number((p.phase_va?.[phase] ?? 0).toFixed(2)).toString())
+			sub_cols: [...labels],
+			row: (l) => labels.map((phase) => rowPhaseVa(l, phase)),
+			total: (p) => {
+				const totals: Partial<Record<string, number>> | undefined = is_delta
+					? p.pair_va
+					: p.phase_va;
+				return labels.map((phase) => Number((totals?.[phase] ?? 0).toFixed(2)).toString());
+			}
 		}
 	];
 }
@@ -119,7 +133,7 @@ function wyeGroups(): SheetGroup[] {
 function supplyDescription(phase: string | undefined): string {
 	return phase === default_phases.THREE_PHASE_WYE
 		? `${getOptionLabel(DEFAULT_PHASES, phase)} + N + E, 400Y/230V, 60Hz`
-		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`;
+		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`; // 1P and 3P-Δ: no neutral
 }
 
 /** Lookups built once per export and shared by every panel it writes. */
@@ -197,10 +211,9 @@ async function writePanelSchedule(
 	worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
 	// What this panel distributes: the project's supply at the root, else the panel's own phase.
 	const panel_phase = supplyPhaseOf(current_node) ?? highest_unit?.phase;
-	const groups =
-		panel_phase === default_phases.THREE_PHASE_WYE
-			? [...baseGroups().slice(0, 5), ...wyeGroups(), ...baseGroups().slice(5)]
-			: baseGroups();
+	const groups = isThreePhaseSupply(panel_phase)
+		? [...baseGroups().slice(0, 5), ...threePhaseGroups(panel_phase), ...baseGroups().slice(5)]
+		: baseGroups();
 	worksheet.getCell(`B${startRow + 1}`).value = `: ${supplyDescription(panel_phase)}`;
 	worksheet.getCell(`B${startRow + 2}`).value = `: ${from_supply_name}`;
 	worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;
