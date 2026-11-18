@@ -142,7 +142,16 @@ pub fn load_row<'g>(
                 })
                 .collect::<Vec<_>>(),
         );
-        let main_at = js::or(node.overrided_at, sizing::ampere_trip(totals.current, None));
+        let main_at = js::or(
+            node.overrided_at,
+            service_rating(
+                graph,
+                node,
+                sizing::ampere_trip(totals.current, None),
+                is_dynamic,
+                memo,
+            ),
+        );
         let main_current = js::round_js(totals.current, 2);
         let main_sizing = input(
             main_current,
@@ -199,4 +208,55 @@ pub fn load_row<'g>(
     };
     memo.insert(node.id.clone(), row.clone());
     row
+}
+
+/// The rating of `panel`'s main when it is the service disconnecting means: the first
+/// panel the utility service feeds. PEC 2017 2.30.6.10 sets its minimum (30 A for no
+/// more than two 2-wire branch circuits, (C); 60 A otherwise, (D) and (E)), and
+/// 2.30.6.11 lets every disconnect on the service count toward it, so this one makes
+/// up what the others lack. Any other panel keeps `at`.
+fn service_rating(
+    graph: &Graph,
+    panel: &Node,
+    at: f64,
+    is_dynamic: bool,
+    memo: &mut HashMap<String, LoadRow>,
+) -> f64 {
+    let Some(supply) = panel.parent_id.as_deref().and_then(|id| graph.get(id)) else {
+        return at;
+    };
+    let is_service = supply.node_type == "root"
+        && supply.highest_unit_form.as_ref().and_then(|f| f.is_service) != Some(false);
+    let is_first_panel = graph
+        .children(&supply.id)
+        .find(|child| child.panel_data.is_some())
+        .is_some_and(|first| first.id == panel.id);
+    if !is_service || !is_first_panel {
+        return at;
+    }
+    let branch_circuits: Vec<&Node> = graph
+        .preorder(supply)
+        .into_iter()
+        .filter(|node| node.load_data.is_some() && node.panel_data.is_none())
+        .collect();
+    let minimum = if branch_circuits.len() <= 2
+        && branch_circuits.iter().all(|c| c.conductor_qty == Some(2.0))
+    {
+        30.0
+    } else {
+        60.0
+    };
+    let others: f64 = graph
+        .children(&supply.id)
+        .filter(|child| child.id != panel.id)
+        .map(|child| load_row(graph, child, is_dynamic, memo).at)
+        .sum();
+    let needed = minimum - others;
+    if at >= needed {
+        return at;
+    }
+    crate::tables::STANDARD_AMPERE_RATINGS
+        .into_iter()
+        .find(|rating| *rating >= needed)
+        .unwrap_or(at)
 }

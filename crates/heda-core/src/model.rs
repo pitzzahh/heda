@@ -109,6 +109,10 @@ pub struct HighestUnitForm {
     pub transformer_kva: Option<f64>,
     #[serde(default, deserialize_with = "number")]
     pub transformer_z_percent: Option<f64>,
+    /// Whether the supply is the utility service, so the panels it feeds hold the
+    /// service disconnecting means (PEC 2017 2.30.6.10). Absent means yes.
+    #[serde(default)]
+    pub is_service: Option<bool>,
 }
 
 impl Node {

@@ -17,7 +17,9 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import { updateProjectSettings } from '#lib/db/mutations/index.js';
+	import { setServiceEntrance, updateProjectSettings } from '#lib/db/mutations/index.js';
+	import { getRootNode } from '#lib/db/queries/index.js';
+	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
 	import { isAndroidApp } from '#lib/helpers/platform.js';
@@ -29,6 +31,9 @@
 	const undo_redo_state = getUndoRedoState();
 	let dialogs_state = getState<DialogState>(DIALOG_STATE_CTX);
 	const leave = createLeaveProject();
+	const root_node = $derived(project_state.loaded ? getRootNode() : undefined);
+	// Absent means the utility service supplies the project (PEC 2017 2.30.6.10).
+	const is_service = $derived(root_node?.highest_unit_form?.is_service !== false);
 
 	async function savePreference(message: string) {
 		if (!project_state.loaded) return;
@@ -41,6 +46,19 @@
 
 		undo_redo_state.setHasUnsavedActions();
 		toast.success(message);
+	}
+
+	function saveServiceEntrance(value: boolean) {
+		const previous = root_node;
+		if (!previous) return;
+		const updated = setServiceEntrance(previous.id, value);
+		if (!updated) return toast.warning('Failed to save the service entrance');
+		undo_redo_state.setActionToUndo({
+			action: 'update_node',
+			previous_data: previous as unknown as PhaseLoadSchedule,
+			data: updated as unknown as PhaseLoadSchedule
+		});
+		toast.success(value ? 'Service entrance minimums applied' : 'Supplied as a feeder');
 	}
 
 	function handleHomeClick(event: MouseEvent) {
@@ -94,6 +112,24 @@
 			id="adjustment_factor"
 			bind:checked={settingsState.is_adjustment_factor_dynamic}
 			onCheckedChange={async () => await savePreference('Adjustment factor applied successfully')}
+		/>
+	</div>
+
+	<Separator class="my-1 w-full" />
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label for="service_entrance">Utility Service Entrance</Label>
+			<p class="text-xs text-muted-foreground">
+				{is_service
+					? 'The first panel holds the service disconnecting means: at least 60 A, or 30 A for up to two 2-wire circuits (PEC 2017 2.30.6.10).'
+					: 'The supply is a feeder from another service, so no service minimum applies.'}
+			</p>
+		</div>
+		<Switch
+			disabled={!root_node}
+			id="service_entrance"
+			checked={is_service}
+			onCheckedChange={saveServiceEntrance}
 		/>
 	</div>
 

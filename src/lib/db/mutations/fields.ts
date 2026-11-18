@@ -117,6 +117,21 @@ export function updateShortCircuitSource(root_id: string, source: ShortCircuitSo
 	}
 }
 
+/**
+ * Marks whether the utility service supplies the project. When it does, the first
+ * panel on the supply holds the service disconnecting means and takes the minimum
+ * rating of PEC 2017 2.30.6.10; a supply that is itself a feeder skips it.
+ */
+export function setServiceEntrance(root_id: string, is_service: boolean) {
+	try {
+		const root = findNode(root_id);
+		if (root?.node_type !== 'root') return undefined;
+		return patchNode(root_id, { highest_unit_form: { ...root.highest_unit_form, is_service } });
+	} catch (err) {
+		console.error(`Error updating the service entrance: ${JSON.stringify(err)}`);
+	}
+}
+
 /** Overrides the circuit-number phase (or delta line pair) of a circuit; undefined restores the default. */
 export function changePhaseAssignment(node_id: string, phase: PhaseAssignment | undefined) {
 	try {

@@ -22,6 +22,7 @@ export {
 	changePhaseAssignments,
 	changePole,
 	overrideField,
+	setServiceEntrance,
 	updateConductorSets,
 	updateLoadDescription,
 	updateShortCircuitSource,

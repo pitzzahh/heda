@@ -4,8 +4,9 @@
 //!
 //! A row depends on the node, its descendants and the phase of the panel feeding it,
 //! so a write recomputes the written nodes, their ancestors (old and new parents)
-//! and their direct children; everything else stays cached. Each write answers with
-//! the rows it recomputed.
+//! and their direct children, plus the service disconnect, the first panel on the
+//! supply (its minimum rating counts every circuit, PEC 2017 2.30.6.10); everything
+//! else stays cached. Each write answers with the rows it recomputed.
 
 use crate::graph::Graph;
 use crate::load_schedule::{load_row, LoadRow};
@@ -87,15 +88,17 @@ impl Session {
             .flat_map(|id| self.graph.children(id).map(|child| child.id.clone()))
             .collect();
         touched.extend(children);
+        touched.extend(self.service_panels());
         Ok(self.recompute(touched))
     }
 
     pub fn remove(&mut self, ids: &[String]) -> Computed {
-        let touched: Vec<String> = ids
+        let mut touched: Vec<String> = ids
             .iter()
             .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
         self.graph.remove(ids);
+        touched.extend(self.service_panels());
         for id in ids {
             self.docs.remove(id);
         }
@@ -113,6 +116,20 @@ impl Session {
                 .collect(),
             computed: self.compute_all(),
         }
+    }
+
+    /// The first panel on the supply: as the service disconnect, its minimum rating
+    /// counts every circuit and its siblings' ratings (PEC 2017 2.30.6.10, 2.30.6.11).
+    fn service_panels(&self) -> Vec<String> {
+        self.graph
+            .root()
+            .and_then(|root| {
+                self.graph
+                    .children(&root.id)
+                    .find(|child| child.panel_data.is_some())
+            })
+            .map(|panel| vec![panel.id.clone()])
+            .unwrap_or_default()
     }
 
     pub fn graph(&self) -> &Graph {

@@ -119,6 +119,18 @@ describe('validators', () => {
 		expect(name(undefined)).toBe('Transformer');
 	});
 
+	it('treats the supply as the utility service unless told otherwise (PEC 2017 2.30.6.10)', () => {
+		const service = (is_service?: boolean) => {
+			const result = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				phase: default_phases.ONE_PHASE,
+				is_service
+			});
+			return result.success ? result.output.is_service : null;
+		};
+		expect(service(undefined)).toBe(true);
+		expect(service(false)).toBe(false);
+	});
+
 	it('trims an optional project name and caps its length', () => {
 		const parse = (project_name?: string) =>
 			v.safeParse(HIGHEST_UNIT_SCHEMA, { phase: default_phases.ONE_PHASE, project_name });

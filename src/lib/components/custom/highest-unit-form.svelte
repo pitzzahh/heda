@@ -53,7 +53,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { use_password: false }
+		initialInput: { use_password: false, is_service: true }
 	});
 
 	let submitting = $state(false);
@@ -72,7 +72,8 @@
 			// session and seals the file; otherwise the device key does both.
 			const project_input = {
 				distribution_unit: data.distribution_unit,
-				phase: data.phase
+				phase: data.phase,
+				is_service: data.is_service
 			};
 			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
@@ -269,6 +270,18 @@
 					</RadioGroup.Root>
 					<FieldErrors errors={field.errors} />
 				</fieldset>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['is_service']}>
+			{#snippet children(field)}
+				<div class="rounded-xl border p-3">
+					<Checkbox
+						checked={field.input ?? true}
+						onCheckedChange={(v) => field.onInput(v)}
+						label="Utility service entrance"
+						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+					/>
+				</div>
 			{/snippet}
 		</Field>
 		<Field of={form} path={['use_password']}>

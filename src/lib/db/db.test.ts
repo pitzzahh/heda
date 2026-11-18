@@ -27,6 +27,7 @@ import {
 	updateLoadDescription,
 	updateNode,
 	updateShortCircuitSource,
+	setServiceEntrance,
 	changePhaseAssignment,
 	changePhaseAssignments,
 	updateNodeParentById
@@ -921,6 +922,52 @@ describe('incremental writes and reads', () => {
 		resetData();
 		expect(await copying).toEqual([]);
 		expect(countNodes()).toBe(0);
+	});
+});
+
+describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
+	const lighting = (circuit_number: number) =>
+		({
+			load_type: default_load_types.LIGHTING_LOAD,
+			quantity: 1,
+			varies: '400',
+			load_description: `Light ${circuit_number}`,
+			continuous: false,
+			circuit_number,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		}) as never;
+
+	it('gives the service panel 60 A for three circuits, and a feeder-supplied one its own rating', async () => {
+		resetData();
+		const created = await createProject('Service', {
+			distribution_unit: 'Utility Meter',
+			phase: default_phases.ONE_PHASE,
+			is_service: true
+		});
+		const root = created!.root_node_id;
+		const panel = addNode({
+			parent_id: root,
+			panel_data: {
+				name: 'SP',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})!;
+		for (const n of [1, 2, 3]) addNode({ parent_id: panel.id, load_data: lighting(n) });
+		await settled();
+		// (E): 3 × 400 VA is 5.2 A, but the service disconnect is at least 60 A.
+		expect(getComputedLoads(root)[0]?.at).toBe(60);
+
+		expect(setServiceEntrance(root, false)?.highest_unit_form?.is_service).toBe(false);
+		await settled();
+		expect(getComputedLoads(root)[0]?.at).toBe(30);
+		expect(setServiceEntrance(panel.id, true)).toBeUndefined();
 	});
 });
 
