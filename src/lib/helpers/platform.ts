@@ -16,3 +16,11 @@ export function isCompactViewport(): boolean {
 	// Optional: no matchMedia during prerender or in jsdom.
 	return globalThis.matchMedia?.('(max-width: 1023px)').matches ?? false;
 }
+
+/**
+ * A preview build: its version carries a semver pre-release tag (`2.9.0-3`), the
+ * builds `preview` publishes. Stable releases from `main` have none.
+ */
+export function isPreviewVersion(version: string): boolean {
+	return version.includes('-');
+}

@@ -38,7 +38,7 @@
 		importIntoLibrary,
 		listLibraryProjects
 	} from '#lib/helpers/file/library.js';
-	import { isAndroidApp } from '#lib/helpers/platform.js';
+	import { isAndroidApp, isPreviewVersion } from '#lib/helpers/platform.js';
 	import type { RecentProject } from '#lib/types/main.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -274,7 +274,16 @@
 			<img src={heda_logo_for_light} alt="" class="block size-7 dark:hidden" />
 			<span class="text-sm font-semibold tracking-tight">HEDA</span>
 		</div>
-		<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
+		<div class="flex items-center gap-2">
+			{#if isPreviewVersion(pj.version)}
+				<span
+					class="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-warning-strong uppercase"
+					title="Not production ready: check results against PEC 2017 before using them."
+					>Preview</span
+				>
+			{/if}
+			<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
+		</div>
 	</header>
 
 	<main

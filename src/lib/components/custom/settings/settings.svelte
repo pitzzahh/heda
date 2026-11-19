@@ -33,7 +33,10 @@
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { Update } from '@tauri-apps/plugin-updater';
-	import { isAndroidApp } from '#lib/helpers/platform.js';
+	import { isAndroidApp, isPreviewVersion } from '#lib/helpers/platform.js';
+	import * as Alert from '#lib/components/ui/alert/index.js';
+	import { FlaskIcon } from '#lib/assets/icons.js';
+	import * as pj from '../../../../../package.json';
 	import { PreferencesSection, ProjectSection, UpdatesSection } from './(components)/index.js';
 
 	const component_state = new PersistedState<Pick<SettingsComponentType, 'active_setting'>>(
@@ -50,6 +53,7 @@
 
 	// The Android app has no in-app updater: it updates through a new APK.
 	const show_updates = !isAndroidApp();
+	const is_preview = isPreviewVersion(pj.version);
 	const nav_items = show_updates
 		? settings_links.nav
 		: settings_links.nav.filter((item) => item.name !== 'Updates');
@@ -148,6 +152,17 @@
 
 				{#key component_state.current.active_setting}
 					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
+						{#if is_preview}
+							<!-- On every section: preview builds go to testers, never to real designs. -->
+							<Alert.Root variant="warning">
+								<FlaskIcon class="size-4" />
+								<Alert.Title>Preview build · v{pj.version}</Alert.Title>
+								<Alert.Description>
+									Not production ready. Results can change between previews and may be wrong; check
+									them against PEC 2017 before using them on a real design.
+								</Alert.Description>
+							</Alert.Root>
+						{/if}
 						{#if component_state.current.active_setting === 'Project'}
 							<ProjectSection close_settings={() => (settings_open = false)} />
 						{:else if component_state.current.active_setting === 'Preferences'}
