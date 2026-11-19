@@ -5,7 +5,7 @@
 use crate::model::Node;
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Graph {
     nodes: HashMap<String, Node>,
     /// Insertion order: an update keeps a node's place, a re-insert goes last.
