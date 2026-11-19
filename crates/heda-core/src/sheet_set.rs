@@ -872,7 +872,7 @@ fn draw_short_circuits(w: &mut Writer, input: &mut SheetSetInputs) {
                 fault.from_node_name.clone(),
                 fault.to_node_name.clone(),
                 node.conductor_sets.map(num).unwrap_or_default(),
-                num(conductor),
+                size(conductor),
                 node.conduit_type.clone().unwrap_or_default(),
                 num(fault.length),
                 impedance(Some(fault.conductor_z_ohm)),
