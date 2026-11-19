@@ -5,7 +5,8 @@ build: the web build compiles `src/`, and the desktop bundle takes only the
 icons.
 
 Open any of them with the password **`heda-sample-2026`**. They are sealed
-with the file password, so they open on any machine.
+with the file password, so they open on any machine. They are written in the
+data shape the app stores today, so opening one converts nothing.
 
 | File                            | Project                        | Size                         |
 | ------------------------------- | ------------------------------ | ---------------------------- |

@@ -682,10 +682,9 @@ function checkStructure(file_export: FileExport, name: string): void {
 		}
 	}
 
-	// The load path runs every file through the migration before it inserts it.
-	const migrated = migrateFileExport(file_export);
-	if (migrated.nodes.length !== file_export.nodes.length) {
-		throw new Error(`${name}: the migration changed the node count`);
+	// Written in the shape the app stores today, so opening a sample converts nothing.
+	if (JSON.stringify(migrateFileExport(file_export)) !== JSON.stringify(file_export)) {
+		throw new Error(`${name}: opening the file would still migrate it`);
 	}
 }
 
@@ -725,7 +724,8 @@ async function main() {
 	}
 
 	for (const spec of SAMPLES) {
-		const file_export = buildFile(spec);
+		// The builder writes the base shape; the app's own migrations bring it up to date.
+		const file_export = migrateFileExport(buildFile(spec));
 		checkStructure(file_export, spec.file_name);
 
 		const written: string[] = [];
