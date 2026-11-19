@@ -70,8 +70,10 @@ fn line(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
 }
 
 fn place(symbol: &str, x: f64, y: f64) -> Use {
+    // `xlink:href` too: SVG 1.1 tools (older Inkscape, Illustrator, CAD importers) ignore `href`.
     Use::new()
         .set("href", format!("#{symbol}"))
+        .set("xlink:href", format!("#{symbol}"))
         .set("x", x)
         .set("y", y)
 }
@@ -169,6 +171,7 @@ pub fn riser_svg(layout: &RiserLayout) -> String {
             .add(line(x + 10.0, y + 22.0, x + 14.0, y + 22.0));
     }
     Document::new()
+        .set("xmlns:xlink", "http://www.w3.org/1999/xlink")
         .set("role", "img")
         .set("aria-label", "Riser diagram")
         .set("font-size", 12)
