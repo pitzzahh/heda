@@ -214,6 +214,11 @@
 	</div>
 	<!-- Drawers keep Save in reach while the fields scroll. -->
 	<div class="mt-4 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
-		<Button type="submit" class="w-full" loading={submitting}>Save</Button>
+		<Button
+			type="submit"
+			class="w-full"
+			loading={submitting}
+			disabled={action === 'edit' && !form.isDirty}>Save</Button
+		>
 	</div>
 </form>

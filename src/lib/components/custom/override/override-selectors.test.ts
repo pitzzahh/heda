@@ -53,13 +53,12 @@ describe('override pickers', () => {
 		expect(isPicked(40, 30)).toBe(true);
 	});
 
-	test('saving a circuit no conductor fits writes no conductor or conduit override', () => {
-		const closeDialog = vi.fn();
+	test('a circuit no conductor fits offers no override until something changes', () => {
 		const component = mount(OverrideSelectors, {
 			target: document.body,
 			props: {
 				node_id: 'x',
-				closeDialog,
+				closeDialog: vi.fn(),
 				current_at: 700,
 				current_ampere_frames: 700,
 				current_conductor_size: -1,
@@ -72,10 +71,8 @@ describe('override pickers', () => {
 		const override = [...document.querySelectorAll('button')].find((button) =>
 			button.textContent?.trim().startsWith('Override')
 		);
-		override?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		flushSync();
-		expect(overrideField).not.toHaveBeenCalled();
-		expect(closeDialog).toHaveBeenCalledOnce();
+		// Disabled is the whole guarantee: browsers drop clicks on it (jsdom does not).
+		expect(override?.disabled).toBe(true);
 		unmount(component);
 	});
 });

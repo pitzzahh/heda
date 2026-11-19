@@ -316,7 +316,12 @@
 						: undefined}
 			</Button>
 		{/if}
-		<Button type="submit" class="min-w-0 flex-1" loading={submitting}>Save</Button>
+		<Button
+			type="submit"
+			class="min-w-0 flex-1"
+			loading={submitting}
+			disabled={action === 'edit' && !form.isDirty}>Save</Button
+		>
 	</div>
 </form>
 

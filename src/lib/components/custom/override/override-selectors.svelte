@@ -125,6 +125,16 @@
 
 	let length = $state(initial_override_inputs.length);
 	let z = $state(initial_override_inputs.z);
+	// Same conditions handleOverride writes on, so Override is off exactly when it would do nothing.
+	const has_changes = $derived(
+		isPicked(selected_ampere_rating, current_at) ||
+			isPicked(selected_conductor_size, current_conductor_size) ||
+			isPicked(selected_egc_size, current_egc_size) ||
+			isPicked(selected_conduit_size, current_conduit_size) ||
+			ampere_frames !== current_ampere_frames.toString() ||
+			(!!current_length && length !== current_length) ||
+			(!!current_z && z !== current_z)
+	);
 
 	function handleOverride() {
 		const overridden_fields: string[] = [];
@@ -356,5 +366,5 @@
 		</div>
 	{/if}
 
-	<Button class="w-full" onclick={handleOverride}>Override</Button>
+	<Button class="w-full" disabled={!has_changes} onclick={handleOverride}>Override</Button>
 </div>
