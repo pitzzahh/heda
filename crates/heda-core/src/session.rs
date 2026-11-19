@@ -15,6 +15,7 @@ use crate::riser::{layout_riser, riser_tree, RiserLayout};
 use crate::sheet_set::{self, SheetSetInputs};
 use crate::short_circuit::{short_circuits, InterruptingRatingStatus, ShortCircuitRow};
 use crate::voltage_drop::{voltage_drops, VoltageDropRow};
+use crate::workbook::{self, Kind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -153,6 +154,35 @@ impl Session {
     /// block stored on the project.
     pub fn sheet_set(&mut self, project_name: String, date: String) -> Result<Vec<u8>, String> {
         sheet_set::build(self.sheet_set_inputs(project_name, date)?)
+    }
+
+    /// An Excel export (`workbook::layout`), as an xlsx file.
+    pub fn workbook(
+        &mut self,
+        kind: Kind,
+        node_id: &str,
+        title: String,
+    ) -> Result<Vec<u8>, String> {
+        workbook::render(&self.workbook_layout(kind, node_id, title)?)
+    }
+
+    /// An Excel export's sheets and cells, before they are written.
+    pub fn workbook_layout(
+        &mut self,
+        kind: Kind,
+        node_id: &str,
+        title: String,
+    ) -> Result<workbook::Layout, String> {
+        let voltage_drops = match kind {
+            Kind::VoltageDrop => self.voltage_drops(),
+            Kind::LoadSchedule => Vec::new(),
+        };
+        let input = workbook::Inputs {
+            graph: &self.graph,
+            docs: &self.docs,
+            rows: &mut self.load_rows,
+        };
+        workbook::layout(input, kind, node_id, title, &voltage_drops)
     }
 
     /// Each sheet's title and texts (`sheet_set::sheet_texts`).

@@ -30,12 +30,6 @@ export default defineConfig(({ command, mode, isPreview }) => ({
 					'import.meta.env.VITE_LEGACY_FILE_SALT': '""'
 				}
 			: undefined,
-	// ES output keeps the export worker's `import('exceljs')` as a separate
-	// lazy chunk instead of inlining ~1 MB into the worker entry (the default
-	// worker format is iife, which has no code splitting).
-	worker: {
-		format: 'es'
-	},
 	// The Rust engine needs its `.wasm` before any test computes; see the setup file.
 	test: {
 		setupFiles: ['./src/lib/core/vitest-setup.ts'],

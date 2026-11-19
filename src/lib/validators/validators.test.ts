@@ -35,11 +35,7 @@ import {
 } from './schedule.js';
 import { VOLTAGE_DROP_RESULT_SCHEMA } from './voltage-drop.js';
 import { FILE_EXPORT_SCHEMA, FILE_PROTECTION_FIELD, RECENT_PROJECT_SCHEMA } from './file.js';
-import {
-	EXPORT_HEADER_SCHEMA,
-	EXPORT_PROCESS_RESULT_SCHEMA,
-	OVERRIDE_FIELD_TYPE_FIELD
-} from './misc.js';
+import { OVERRIDE_FIELD_TYPE_FIELD } from './misc.js';
 import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD } from './load.js';
 import { DEFAULT_LOADS } from '#lib/constants.js';
 
@@ -421,11 +417,6 @@ describe('validators', () => {
 		).toEqual(['1500', '1500', '0', '0']);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'z').success).toBe(true);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'va').success).toBe(false);
-		expect(v.safeParse(EXPORT_PROCESS_RESULT_SCHEMA, { valid: true }).success).toBe(true);
-		expect(
-			v.safeParse(EXPORT_HEADER_SCHEMA, { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Type'] })
-				.success
-		).toBe(true);
 	});
 
 	describe('TITLE_BLOCK_SCHEMA (PEC 2017 1.3.2.2)', () => {

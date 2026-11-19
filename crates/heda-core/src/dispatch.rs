@@ -63,8 +63,24 @@ pub fn dispatch_file(session: &mut Session, command: &str, args: Value) -> Resul
             let SheetSet { project_name, date } = parse(args)?;
             session.sheet_set(project_name, date)
         }
+        "workbook" => {
+            let Workbook {
+                kind,
+                node_id,
+                title,
+            } = parse(args)?;
+            session.workbook(kind, &node_id, title)
+        }
         _ => Err(format!("unknown file command: {command}")),
     }
+}
+
+#[derive(Deserialize)]
+struct Workbook {
+    kind: crate::workbook::Kind,
+    /// The schedule's top panel; the voltage drop table covers the whole project.
+    node_id: String,
+    title: String,
 }
 
 #[derive(Deserialize)]

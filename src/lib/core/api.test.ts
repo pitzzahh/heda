@@ -23,3 +23,16 @@ describe('engineFile', () => {
 		await expect(engineFile('nope')).rejects.toThrow('unknown file command');
 	});
 });
+
+describe('engineFile workbook', () => {
+	it('writes an xlsx through the WASM build too', async () => {
+		await engine('open', { project, nodes });
+		const xlsx = await engineFile('workbook', {
+			kind: 'VOLTAGE_DROP',
+			node_id: 'root',
+			title: 'T'
+		});
+		// An xlsx is a zip.
+		expect(new TextDecoder().decode(xlsx.slice(0, 2))).toBe('PK');
+	});
+});
