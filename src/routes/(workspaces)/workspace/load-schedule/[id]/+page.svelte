@@ -6,7 +6,8 @@
 	const TABS = [
 		{ value: 'load-sched', label: 'Load Schedule' },
 		{ value: 'voltage-drop', label: 'Voltage Drop' },
-		{ value: 'short-circuit', label: 'Short Circuit' }
+		{ value: 'short-circuit', label: 'Short Circuit' },
+		{ value: 'riser', label: 'Riser' }
 	] as const;
 	type TabValue = (typeof TABS)[number]['value'];
 </script>
@@ -33,6 +34,7 @@
 	import { voltageDropColumns } from '#lib/components/custom/table/voltage-drop-cols/voltage-drop-cols.js';
 	import { shortCircuitColumns } from '#lib/components/custom/table/short-circuit-cols/index.js';
 	import { ShortCircuitSourceForm } from '#lib/components/custom/short-circuit/index.js';
+	import { RiserDiagram } from '#lib/components/custom/riser/index.js';
 	import { ArrowSquareOutIcon, LightningAIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Poppable } from '#lib/components/custom/popout/index.js';
@@ -51,7 +53,8 @@
 	let visited_tabs = $state<Record<string, boolean>>({
 		'load-sched': true,
 		'voltage-drop': false,
-		'short-circuit': false
+		'short-circuit': false,
+		riser: false
 	});
 	let voltage_activated = $state(false);
 	// Any tab's content can move into its own window; see Poppable.
@@ -59,12 +62,14 @@
 	let popped_tabs = $state<Record<TabValue, boolean>>({
 		'load-sched': false,
 		'voltage-drop': false,
-		'short-circuit': false
+		'short-circuit': false,
+		riser: false
 	});
 	const panels = {
 		'load-sched': loadSchedulePanel,
 		'voltage-drop': voltageDropPanel,
-		'short-circuit': shortCircuitPanel
+		'short-circuit': shortCircuitPanel,
+		riser: riserPanel
 	} satisfies Record<TabValue, unknown>;
 
 	// A fresh page starts on its first tab; tell the workspace header, which outlives the page.
@@ -251,7 +256,7 @@
 		<div class="flex items-center justify-end gap-2">
 			<Tabs.List>
 				{#each TABS as tab (tab.value)}
-					<!-- Tighter on phones, so all three labels fit without scrolling. -->
+					<!-- Tighter on phones, so all four labels fit without scrolling. -->
 					<Tabs.Trigger value={tab.value} class="px-2 sm:px-3">{tab.label}</Tabs.Trigger>
 				{/each}
 			</Tabs.List>
@@ -330,5 +335,11 @@
 			columns={short_circuit_columns}
 			is_in_vd_table
 		/>
+	{/if}
+{/snippet}
+
+{#snippet riserPanel()}
+	{#if visited_tabs['riser'] || popped_tabs['riser']}
+		<RiserDiagram {node_id} />
 	{/if}
 {/snippet}
