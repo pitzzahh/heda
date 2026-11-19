@@ -47,16 +47,16 @@
 
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	// The parent mounts this dialog per opening, so the stored block is read fresh each time.
-	const form = createForm({ schema: TITLE_BLOCK_SCHEMA, initialInput: buildInitialInput() });
 	// PEC 2017 1.3.1.1(C): A3 only for a dwelling of at most 3680 VA (and 50 m², which heda
-	// does not record, so the engineer confirms it).
+	// does not record, so the engineer confirms it). The engine refuses A3 past it too.
 	const total_va = $derived(
 		getComputedLoads(getRootNode()?.id ?? '').reduce((sum, row) => sum + (row.va || 0), 0)
 	);
 	const sizes = $derived(
 		SHEET_SIZES.filter((size) => size.value !== 'A3' || total_va <= A3_SHEET_MAX_VA)
 	);
+	// The parent mounts this dialog per opening, so the stored block is read fresh each time.
+	const form = createForm({ schema: TITLE_BLOCK_SCHEMA, initialInput: buildInitialInput() });
 	let exporting = $state(false);
 
 	async function handleSubmit() {
@@ -74,14 +74,22 @@
 			open = false;
 		} catch (error) {
 			console.error('Sheet set export failed:', error);
-			toast.error('Could not build the sheet set');
+			// The engine's refusals (e.g. A3 past 3680 VA) are plain text worth showing.
+			toast.error('Could not build the sheet set', {
+				description: typeof error === 'string' ? error : undefined
+			});
 		} finally {
 			exporting = false;
 		}
 	}
 
 	function buildInitialInput(): TitleBlock {
-		return { sheet_size: SHEET_SIZES[0].value, ...getProject()?.title_block };
+		const stored = getProject()?.title_block;
+		// A stored size the load has outgrown (A3, 1.3.1.1(C)) is not offered, so start from the first.
+		const sheet_size = sizes.some((size) => size.value === stored?.sheet_size)
+			? stored?.sheet_size
+			: SHEET_SIZES[0].value;
+		return { ...stored, sheet_size };
 	}
 </script>
 

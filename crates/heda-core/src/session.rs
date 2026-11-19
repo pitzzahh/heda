@@ -181,11 +181,26 @@ impl Session {
         {
             short_circuits.clear();
         }
-        let title_block = self
+        let title_block: sheet_set::TitleBlock = self
             .project
             .get("title_block")
             .and_then(|block| serde_json::from_value(block.clone()).ok())
             .unwrap_or_default();
+        if title_block.sheet_size.as_deref() == Some("A3") {
+            // As the app totals it: the rows under the root, a NaN row counting as 0.
+            let total_va: f64 = self
+                .graph
+                .children(&root_id)
+                .map(|child| load_row(&self.graph, child, &mut self.load_rows).va)
+                .filter(|va| !va.is_nan())
+                .sum();
+            if total_va > sheet_set::A3_SHEET_MAX_VA {
+                return Err(format!(
+                    "A3 sheets are only for a dwelling unit of at most 3680 VA (PEC 2017 1.3.1.1(C)); this project is {} VA. Pick a larger sheet.",
+                    crate::js::number_to_string(total_va)
+                ));
+            }
+        }
         Ok(SheetSetInputs {
             graph: &self.graph,
             docs: &self.docs,
