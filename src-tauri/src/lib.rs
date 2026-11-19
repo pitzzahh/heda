@@ -28,22 +28,21 @@ fn heda(
     heda_core::dispatch::dispatch(&mut session, &command, args)
 }
 
-/// The permit sheet set PDF of the open project (`heda_core::sheet_set`), as raw bytes
-/// rather than JSON, so it is its own command beside `heda`. Async, so it builds off the
-/// main thread; it builds on a copy of the session, so the lock (which the sync `heda`
-/// command waits on, on the main thread) is held only for the copy.
+/// Every file the engine writes (`heda_core::dispatch::dispatch_file`), as raw bytes
+/// rather than JSON. Async, so it builds off the main thread, and on a copy of the
+/// session, so the lock (which the sync `heda` command waits on, on the main thread) is
+/// held only for the copy.
 #[tauri::command]
-async fn sheet_set(
+async fn heda_file(
     session: tauri::State<'_, Mutex<heda_core::session::Session>>,
-    project_name: String,
-    date: String,
+    command: String,
+    args: serde_json::Value,
 ) -> Result<tauri::ipc::Response, String> {
     let mut copy = session
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .clone();
-    copy.sheet_set(project_name, date)
-        .map(tauri::ipc::Response::new)
+    heda_core::dispatch::dispatch_file(&mut copy, &command, args).map(tauri::ipc::Response::new)
 }
 
 #[tauri::command]
@@ -364,7 +363,7 @@ pub fn run() {
     let app = builder
         .invoke_handler(tauri::generate_handler![
             heda,
-            sheet_set,
+            heda_file,
             get_file_name,
             get_file_metadata,
             allow_project_folder,

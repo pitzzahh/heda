@@ -18,6 +18,15 @@ pub fn dispatch_json(command: &str, args: &str) -> Result<String, String> {
     serde_json::to_string(&result).map_err(|error| error.to_string())
 }
 
+/// Writes one engine file (`dispatch_file`); arguments are JSON text, the result its bytes.
+#[wasm_bindgen]
+pub fn dispatch_file(command: &str, args: &str) -> Result<Vec<u8>, String> {
+    let args = serde_json::from_str(args).map_err(|error| format!("invalid JSON: {error}"))?;
+    // As the app does: on a copy, so the session the other commands see is untouched.
+    let mut copy = SESSION.with(|session| session.borrow().clone());
+    crate::dispatch::dispatch_file(&mut copy, command, args)
+}
+
 /// `Number(value.toFixed(digits))`, rounded exactly like JavaScript.
 #[wasm_bindgen(js_name = roundJs)]
 pub fn round_js(value: f64, digits: u32) -> f64 {

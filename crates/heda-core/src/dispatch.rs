@@ -1,6 +1,7 @@
-//! The engine's command table: every call from the app is a command name and JSON
-//! arguments, answered with JSON. The Tauri backend and the WASM build used by
-//! tests and browser development both go through here, so they cannot drift apart.
+//! The engine's command tables: every call from the app is a command name and JSON
+//! arguments, answered with JSON (`dispatch`) or, for a file the engine writes, with its
+//! bytes (`dispatch_file`). The Tauri backend and the WASM build used by tests both go
+//! through here, so they cannot drift apart.
 
 use crate::phases::{self, BalanceCircuit, Supply};
 use crate::session::Session;
@@ -52,6 +53,25 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
         }
         _ => Err(format!("unknown command: {command}")),
     }
+}
+
+/// The files the engine writes, as their bytes. The app runs these on a copy of the
+/// session, so a long build never holds up the `dispatch` calls behind it.
+pub fn dispatch_file(session: &mut Session, command: &str, args: Value) -> Result<Vec<u8>, String> {
+    match command {
+        "sheet_set" => {
+            let SheetSet { project_name, date } = parse(args)?;
+            session.sheet_set(project_name, date)
+        }
+        _ => Err(format!("unknown file command: {command}")),
+    }
+}
+
+#[derive(Deserialize)]
+struct SheetSet {
+    project_name: String,
+    /// Date drawn, PEC 2017 1.3.2.2(E).
+    date: String,
 }
 
 #[derive(Deserialize)]
