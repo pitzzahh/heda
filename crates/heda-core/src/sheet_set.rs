@@ -119,8 +119,8 @@ impl Metrics {
         let charmap = font.charmap();
         let em: f32 = text
             .chars()
-            .filter_map(|c| charmap.map(c))
-            .filter_map(|glyph| metrics.advance_width(glyph))
+            // Same glyphs as `glyphs`: an unmapped character is .notdef (glyph 0).
+            .filter_map(|c| metrics.advance_width(charmap.map(c).unwrap_or_default()))
             .sum();
         f64::from(em) * size
     }
