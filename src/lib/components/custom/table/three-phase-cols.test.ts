@@ -42,6 +42,25 @@ describe('rowPhaseVa', () => {
 		expect(['A', 'B', 'C'].map((p) => rowPhaseVa(row, p as 'A'))).toEqual([2_000, 2_000, 2_000]);
 	});
 
+	test("shows a three-phase sub-panel's own VA per phase, as its feeder's totals add it", () => {
+		// 20 280 VA, all of it on phases A and B.
+		const row = {
+			va: 20_280,
+			phase: 'ABC',
+			phase_va: { A: 11_960, B: 8_320, C: 0 }
+		} as PhaseLoadSchedule;
+		expect(['A', 'B', 'C'].map((p) => rowPhaseVa(row, p as 'A'))).toEqual([11_960, 8_320, 0]);
+		// A delta sub-panel on a delta panel uses its line pairs.
+		const delta = {
+			va: 900,
+			phase: 'ABC',
+			pair_va: { AB: 100, BC: 300, CA: 500 }
+		} as PhaseLoadSchedule;
+		expect(['AB', 'BC', 'CA'].map((p) => rowPhaseVa(delta, p as 'AB'))).toEqual([100, 300, 500]);
+		// A wye sub-panel on a delta panel has no line-pair split: a third each.
+		expect(rowPhaseVa({ ...row, phase_va: undefined, pair_va: undefined }, 'AB')).toBe(6_760);
+	});
+
 	test('puts a line-to-line circuit on its pair only', () => {
 		const row = { va: 2_300, phase: 'BC' } as PhaseLoadSchedule;
 		expect(['AB', 'BC', 'CA'].map((p) => rowPhaseVa(row, p as 'AB'))).toEqual(['', 2_300, '']);
