@@ -25,6 +25,7 @@ export { default as DatabaseIcon } from 'phosphor-svelte/lib/DatabaseIcon';
 export { default as DotsThreeIcon } from 'phosphor-svelte/lib/DotsThreeIcon';
 export { default as FileArrowUpIcon } from 'phosphor-svelte/lib/FileArrowUpIcon';
 export { default as FileIcon } from 'phosphor-svelte/lib/FileIcon';
+export { default as FilePdfIcon } from 'phosphor-svelte/lib/FilePdfIcon';
 export { default as FlaskIcon } from 'phosphor-svelte/lib/FlaskIcon';
 export { default as FloppyDiskIcon } from 'phosphor-svelte/lib/FloppyDiskIcon';
 export { default as FolderOpenIcon } from 'phosphor-svelte/lib/FolderOpenIcon';

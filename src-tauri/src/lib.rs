@@ -28,6 +28,22 @@ fn heda(
     heda_core::dispatch::dispatch(&mut session, &command, args)
 }
 
+/// The permit sheet set PDF of the open project (`heda_core::sheet_set`), as raw bytes
+/// rather than JSON. Async, so a large project builds off the main thread.
+#[tauri::command]
+async fn sheet_set(
+    session: tauri::State<'_, Mutex<heda_core::session::Session>>,
+    project_name: String,
+    date: String,
+) -> Result<tauri::ipc::Response, String> {
+    let mut session = session
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    session
+        .sheet_set(project_name, date)
+        .map(tauri::ipc::Response::new)
+}
+
 #[tauri::command]
 fn get_file_name(path: String) -> String {
     let path = Path::new(path.as_str());
@@ -346,6 +362,7 @@ pub fn run() {
     let app = builder
         .invoke_handler(tauri::generate_handler![
             heda,
+            sheet_set,
             get_file_name,
             get_file_metadata,
             allow_project_folder,

@@ -3,6 +3,7 @@
 		CheckIcon,
 		CircleNotchIcon,
 		ExportIcon,
+		FilePdfIcon,
 		HouseIcon,
 		LockKeyIcon,
 		FloppyDiskIcon,
@@ -41,6 +42,7 @@
 	import { Portal } from 'bits-ui';
 	import { cn } from '#lib/utils/index.js';
 	import PasswordDialog from '../password-dialog.svelte';
+	import SheetSetDialog from '../sheet-set-dialog.svelte';
 	import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 	import { untrack } from 'svelte';
@@ -85,6 +87,7 @@
 	}
 
 	let share_open = $state(false);
+	let sheet_set_open = $state(false);
 	let share_error = $state<string | null>(null);
 	let share_busy = $state(false);
 
@@ -291,6 +294,10 @@
 							/>
 							Export whole project voltage drop</DropdownMenu.Item
 						>
+						<DropdownMenu.Item onclick={() => (sheet_set_open = true)}>
+							<FilePdfIcon class="mr-0.5 block h-4 w-4" />
+							Export sheet set (PDF)</DropdownMenu.Item
+						>
 						<DropdownMenu.Item onclick={() => (share_open = true)}>
 							<LockKeyIcon class="mr-0.5 block h-4 w-4" />
 							Export password-protected copy</DropdownMenu.Item
@@ -319,6 +326,10 @@
 		</Button>
 	{/if}
 </div>
+
+{#if sheet_set_open}
+	<SheetSetDialog bind:open={sheet_set_open} />
+{/if}
 
 <PasswordDialog
 	bind:open={share_open}
