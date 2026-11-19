@@ -150,6 +150,12 @@ impl Session {
         Some(layout_riser(&tree, source.as_ref()))
     }
 
+    /// The riser diagram from `id` down as an SVG file (`riser_svg`).
+    pub fn riser_svg(&mut self, id: &str) -> Result<Vec<u8>, String> {
+        let layout = self.riser(id).ok_or("Node not found")?;
+        Ok(crate::riser_svg::riser_svg(&layout).into_bytes())
+    }
+
     /// The permit sheet set PDF of the whole project (`sheet_set::build`), with the title
     /// block stored on the project.
     pub fn sheet_set(&mut self, project_name: String, date: String) -> Result<Vec<u8>, String> {
