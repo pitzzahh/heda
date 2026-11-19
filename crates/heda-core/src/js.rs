@@ -244,45 +244,10 @@ pub fn hypot(a: f64, b: f64) -> f64 {
     sum.sqrt() * max
 }
 
-/// `String(value)` for a number (ECMAScript Number::toString): shortest round-trip
-/// digits, exponent form below 1e-6 and from 1e21, and `NaN`/`Infinity` spelled as JS does.
+/// `String(value)` for a number (ECMAScript Number::toString), from ryu-js (boa-dev):
+/// shortest round-trip digits, exponent form below 1e-6 and from 1e21, `NaN`/`Infinity`.
 pub fn number_to_string(value: f64) -> String {
-    if value.is_nan() {
-        return "NaN".into();
-    }
-    if value == 0.0 {
-        return "0".into(); // -0 too
-    }
-    if value.is_infinite() {
-        return if value > 0.0 { "Infinity" } else { "-Infinity" }.into();
-    }
-    let sign = if value < 0.0 { "-" } else { "" };
-    // `{:e}` gives the same shortest round-trip digits JS picks, as d.ddde±x.
-    let sci = format!("{:e}", value.abs());
-    let (mantissa, exponent) = sci.split_once('e').expect("{:e} has an exponent");
-    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
-    let k = digits.len() as i32;
-    let n = exponent.parse::<i32>().expect("{:e} exponent") + 1;
-    let body = if k <= n && n <= 21 {
-        format!("{digits}{}", "0".repeat((n - k) as usize))
-    } else if 0 < n && n <= 21 {
-        format!("{}.{}", &digits[..n as usize], &digits[n as usize..])
-    } else if -6 < n && n <= 0 {
-        format!("0.{}{digits}", "0".repeat((-n) as usize))
-    } else {
-        let e = n - 1;
-        let e = if e < 0 {
-            format!("-{}", -e)
-        } else {
-            format!("+{e}")
-        };
-        if k == 1 {
-            format!("{digits}e{e}")
-        } else {
-            format!("{}.{}e{e}", &digits[..1], &digits[1..])
-        }
-    };
-    format!("{sign}{body}")
+    ryu_js::Buffer::new().format(value).to_owned()
 }
 
 #[cfg(test)]
