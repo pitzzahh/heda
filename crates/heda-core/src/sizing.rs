@@ -225,6 +225,20 @@ pub fn conductor_size(input: ConductorInput) -> f64 {
     size.unwrap_or(-1.0)
 }
 
+/// The allowable ampacity of `size` as installed, every set together: the lower of the
+/// termination limit (1.10.1.14(C)) and the corrected ampacity (3.10.2.6(B)), the two
+/// checks `conductor_size` sizes on, to 0.01 A. PEC 2017 1.3.2.1(G)(3)(d) has the one-line
+/// diagram show it over the design load current. `None` where either check has no value
+/// (no listed size, a TW conductor over 100 A, an ambient past the table).
+pub fn allowable_ampacity(size: f64, input: ConductorInput) -> Option<f64> {
+    let adjustment = adjustment_factor(current_carrying(input.sets, input.qty));
+    let termination = termination_ampacity(size, input.rating, input.at);
+    let corrected = corrected_ampacity(size, input.rating, input.ambient_temp, adjustment);
+    let total = termination.min(corrected) * input.sets;
+    (termination.is_finite() && corrected.is_finite() && total > 0.0)
+        .then(|| js::round_js(total, 2))
+}
+
 /// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), a
 /// motor feeder's 4.30.2.4 load, else the breaker rating, which then protects the conductor
 /// at its ampacity (2.40.1.4).

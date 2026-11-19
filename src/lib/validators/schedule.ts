@@ -31,7 +31,9 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	/** Three-phase panels: balanced current, VA ÷ (line voltage × 1.732) (PEC 2017 App. D Ex. D6); `current` is the design value. */
 	balanced_current: v.optional(v.number()),
 	/** Three-phase panels: largest deviation of the phase (or line pair) VA from their average, in % (NEMA MG-1 14.35; PEC 2017 sets none). */
-	unbalance: v.optional(v.number())
+	unbalance: v.optional(v.number()),
+	/** Allowable ampacity of the conductors, all sets: the lower of the termination limit (PEC 2017 1.10.1.14(C)) and the corrected ampacity (3.10.2.6(B)); absent where the code gives none. */
+	ampacity: v.optional(v.number())
 };
 
 /** One row of the load schedule table (computeNodeLoad). */

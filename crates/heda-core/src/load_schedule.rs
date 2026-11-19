@@ -32,6 +32,9 @@ pub struct LoadRow {
     pub balanced_current: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unbalance: Option<f64>,
+    /// Allowable ampacity of the circuit's conductors, all sets (`sizing::allowable_ampacity`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ampacity: Option<f64>,
     /// What the circuit adds to its panel's feeder load.
     #[serde(skip)]
     pub feeder: FeederShare,
@@ -241,6 +244,7 @@ pub fn load_row<'g>(
             line_current: totals.line_current,
             balanced_current: totals.balanced_current,
             unbalance: totals.unbalance,
+            ampacity: sizing::allowable_ampacity(main_conductor_size, main_sizing),
             feeder: feeder.share.on(label),
         }
     } else {
@@ -266,6 +270,7 @@ pub fn load_row<'g>(
             line_current: None,
             balanced_current: None,
             unbalance: None,
+            ampacity: sizing::allowable_ampacity(conductor_size, own_sizing),
             feeder: if sizing::is_motor(load_type) {
                 FeederShare {
                     va,
