@@ -253,33 +253,28 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="mt-2 grid gap-4 sm:grid-cols-2">
-		<div class="flex min-w-0 flex-col gap-4">
-			<NumberField
-				{form}
-				path={['circuit_number']}
-				label="Circuit number"
-				hint="This is the circuit number that will determine the circuit number of the wire to the main."
-				placeholder="Enter the circuit number"
-				invalid={is_circuit_number_taken}
-			/>
-			<AmbientTempField {form} />
-		</div>
-
-		<div class="flex min-w-0 flex-col gap-4">
-			<TerminalTempField
-				{form}
-				hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
-			/>
-
-			<NumberField
-				{form}
-				path={['length']}
-				label="Length"
-				hint="This is the length of the load"
-				placeholder="Enter the length"
-			/>
-		</div>
+	<!-- One grid, not two stacked columns, so each pair of fields shares a row. -->
+	<div class="mt-2 grid items-start gap-4 *:min-w-0 sm:grid-cols-2">
+		<NumberField
+			{form}
+			path={['circuit_number']}
+			label="Circuit number"
+			hint="This is the circuit number that will determine the circuit number of the wire to the main."
+			placeholder="Enter the circuit number"
+			invalid={is_circuit_number_taken}
+		/>
+		<NumberField
+			{form}
+			path={['length']}
+			label="Length"
+			hint="This is the length of the load"
+			placeholder="Enter the length"
+		/>
+		<TerminalTempField
+			{form}
+			hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
+		/>
+		<AmbientTempField {form} />
 	</div>
 
 	{#if !load_type}

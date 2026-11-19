@@ -176,44 +176,39 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid gap-4 sm:grid-cols-2">
-		<div class="flex min-w-0 flex-col gap-4">
-			<Field of={form} path={['name']}>
-				{#snippet children(field)}
-					<div class="space-y-2">
-						<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
-						<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
-						<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-			<NumberField
-				{form}
-				path={['circuit_number']}
-				label="Circuit number"
-				hint="This is the circuit number that will determine the circuit number of the wire to the main."
-				placeholder="Enter the circuit number"
-			/>
-			<TerminalTempField
-				{form}
-				hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
-			/>
-		</div>
-
-		<div class="flex min-w-0 flex-col gap-4">
-			<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
-			<PanelPhaseField {form} {main_phase} />
-			<AmbientTempField {form} />
-
-			<NumberField
-				{form}
-				path={['length']}
-				label="Length"
-				hint="This is the length of the panel"
-				placeholder="Enter the length"
-			/>
-		</div>
+	<!-- One grid, not two stacked columns, so each pair of fields shares a row. -->
+	<div class="grid items-start gap-4 *:min-w-0 sm:grid-cols-2">
+		<Field of={form} path={['name']}>
+			{#snippet children(field)}
+				<div class="space-y-2">
+					<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
+					<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
+					<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
+					<FieldErrors errors={field.errors} />
+				</div>
+			{/snippet}
+		</Field>
+		<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
+		<PanelPhaseField {form} {main_phase} />
+		<NumberField
+			{form}
+			path={['circuit_number']}
+			label="Circuit number"
+			hint="This is the circuit number that will determine the circuit number of the wire to the main."
+			placeholder="Enter the circuit number"
+		/>
+		<NumberField
+			{form}
+			path={['length']}
+			label="Length"
+			hint="This is the length of the panel"
+			placeholder="Enter the length"
+		/>
+		<TerminalTempField
+			{form}
+			hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
+		/>
+		<AmbientTempField {form} />
 	</div>
 </form>
 
