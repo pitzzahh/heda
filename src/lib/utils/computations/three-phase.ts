@@ -4,7 +4,7 @@ import {
 	THREE_PHASE_LOAD_TYPES,
 	default_phases
 } from '#lib/constants.js';
-import type { CircuitPhase, PhaseAssignment } from '#lib/types/phase.js';
+import type { CircuitPhase, PairVa, PhaseAssignment, PhaseVa } from '#lib/types/phase.js';
 
 // Three-phase wye (400Y/230 V, 4-wire) per PEC 2017 2.20.1.5(A) and Appendix D
 // Examples D6 and D8; three-phase delta (230 V, 3-wire) per 2.20.1.5(A) and D14/D15.
@@ -48,6 +48,21 @@ export function phaseOf(
 	return override && phaseLabels(supply_phase).includes(override)
 		? override
 		: defaultPhaseAssignment(node.circuit_number, supply_phase);
+}
+
+/**
+ * What the engine's balancer needs of a three-phase sub-panel: its own VA per phase
+ * (or line pair) in the panel's label order, since its feeder carries them as they are.
+ * Undefined for any other circuit, or when its split does not fit the panel's supply.
+ */
+export function balanceSplit(
+	row: { phase?: CircuitPhase; phase_va?: PhaseVa; pair_va?: PairVa },
+	supply_phase: string | undefined
+): number[] | undefined {
+	if (row.phase !== 'ABC') return undefined;
+	const shares: Partial<Record<string, number>> | undefined = row.pair_va ?? row.phase_va;
+	const split = phaseLabels(supply_phase).map((label) => shares?.[label]);
+	return split.every((va) => va !== undefined) ? split : undefined;
 }
 
 /** VA a circuit puts on one phase: all of it on its own phase, a third of it for three-phase circuits. */

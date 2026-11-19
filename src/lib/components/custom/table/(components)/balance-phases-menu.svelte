@@ -21,7 +21,7 @@
 	import { changePhaseAssignments } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
+	import { balanceSplit, phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
 	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
 
@@ -53,7 +53,8 @@
 				circuits: loads.map((load) => ({
 					id: load.id,
 					va: load.va || 0,
-					phase: load.phase ?? 'ABC'
+					phase: load.phase ?? 'ABC',
+					split: balanceSplit(load, supply_phase)
 				}))
 			});
 		} catch (error) {
