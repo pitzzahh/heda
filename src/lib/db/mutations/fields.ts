@@ -44,6 +44,18 @@ export function updateConductorSets({ node_id, sets }: { node_id: string; sets: 
 	}
 }
 
+/**
+ * The breaker's interrupting rating in kA, as marked on it (PEC 2017 1.10.1.9). Stored as
+ * the string the field has always held; unmarked breakers stay at the 5 kA default.
+ */
+export function updateInterruptingRating({ node_id, kaic }: { node_id: string; kaic: number }) {
+	try {
+		return patchNode(node_id, { kaic: String(kaic) });
+	} catch (err) {
+		console.error(`Error updating the interrupting rating: ${JSON.stringify(err)}`);
+	}
+}
+
 export function updateLoadDescription({
 	node_id,
 	load_description,

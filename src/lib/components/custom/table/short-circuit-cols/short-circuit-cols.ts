@@ -1,11 +1,19 @@
 import type { ShortCircuit } from '#lib/types/short-circuit.js';
 import type { ColumnDef } from '@tanstack/table-core';
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
-import { ScStatusCell } from '../(components)/index.js';
+import { KaicCell, ScStatusCell } from '../(components)/index.js';
 
 /** Fault current in whole amperes; a dash when there is no source to compute it from. */
 export function formatAmperes(value: number | null): string {
 	return value === null ? '—' : Math.round(value).toLocaleString('en-US');
+}
+
+/**
+ * The least interrupting rating a breaker needs (PEC 2017 1.10.1.9: at least the current
+ * available at its line terminals), in kA rounded up to 0.1 so it never reads below it.
+ */
+export function formatRequiredKiloamperes(fault_current: number | null): string {
+	return fault_current === null ? '—' : (Math.ceil(fault_current / 100) / 10).toFixed(1);
 }
 
 /** Per-unit and ohm values to four significant decimals; a dash when absent. */
@@ -102,8 +110,23 @@ export const shortCircuitColumns = <T extends ShortCircuit>(): ColumnDef<T>[] =>
 	},
 	{
 		header: 'kAIC',
-		accessorKey: 'interrupting_rating_ka',
-		cell: (info) => info.getValue()
+		columns: [
+			{
+				id: 'required_interrupting_rating_ka',
+				accessorFn: (row) => row.supply_fault_current,
+				header: () => 'Required',
+				cell: (info) => formatRequiredKiloamperes(info.getValue<number | null>())
+			},
+			{
+				accessorKey: 'interrupting_rating_ka',
+				header: () => 'Rating',
+				cell: (info) =>
+					renderComponent(KaicCell, {
+						kaic: info.row.original.interrupting_rating_ka,
+						node: info.row.original
+					})
+			}
+		]
 	},
 	{
 		header: 'STATUS',

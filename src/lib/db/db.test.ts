@@ -28,6 +28,7 @@ import {
 	updateLoadDescription,
 	updateNode,
 	updateShortCircuitSource,
+	updateInterruptingRating,
 	setServiceEntrance,
 	changePhaseAssignment,
 	changePhaseAssignments,
@@ -955,6 +956,29 @@ describe('incremental writes and reads', () => {
 		// PEC 2017 App. D Ex. D13 transformer on the 1000 MVA grid: 434.78 A / 0.0251 pu.
 		const first = after.find((row) => row.id === a.id)!;
 		expect(Math.round(first.supply_fault_current!)).toBe(17_322);
+	});
+
+	it('checks each breaker against the interrupting rating typed for it (PEC 2017 1.10.1.9)', async () => {
+		const { root, a } = await buildTree();
+		updateShortCircuitSource(root, {
+			utility_sc_kva: 1_000_000,
+			transformer_kva: 100,
+			transformer_z_percent: 2.5
+		});
+		// 17,322 A available (App. D Ex. D13) is over an unmarked 5 kA breaker.
+		const unmarked = (await getComputedShortCircuitsAsync()).find((row) => row.id === a.id)!;
+		expect(unmarked.interrupting_rating_ka).toBe(5);
+		expect(unmarked.status).toBe('under_rated');
+
+		updateInterruptingRating({ node_id: a.id, kaic: 18 });
+		expect(getNode(a.id)?.kaic).toBe('18');
+		const rated = (await getComputedShortCircuitsAsync()).find((row) => row.id === a.id)!;
+		expect(rated.interrupting_rating_ka).toBe(18);
+		expect(rated.status).toBe('ok');
+
+		updateInterruptingRating({ node_id: a.id, kaic: 17 });
+		const short = (await getComputedShortCircuitsAsync()).find((row) => row.id === a.id)!;
+		expect(short.status).toBe('under_rated');
 	});
 
 	it('rejects duplicate ids without writing anything', async () => {

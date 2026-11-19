@@ -7,7 +7,8 @@ import {
 	ErrorCell,
 	AtFooterCell,
 	InsulationsDropdown,
-	ActionsColumnDropdown
+	ActionsColumnDropdown,
+	KaicCell
 } from './(components)/index.js';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
@@ -124,9 +125,15 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			},
 			{
 				accessorKey: 'kaic',
-				cell: (info) => info.getValue(),
+				// Unmarked breakers count as 5 kA, as the engine checks them (PEC 2017 1.10.1.9).
+				cell: (info) =>
+					renderComponent(KaicCell, {
+						kaic: Number(info.row.original.kaic) || 5,
+						node: info.row.original
+					}),
 				header: () => 'kAIC',
-				footer: () => current_node.kaic || ''
+				footer: () =>
+					renderComponent(KaicCell, { kaic: Number(current_node.kaic) || 5, node: current_node })
 			}
 		]
 	}

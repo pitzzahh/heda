@@ -19,6 +19,7 @@ export {
 	overrideField,
 	setServiceEntrance,
 	updateConductorSets,
+	updateInterruptingRating,
 	updateLoadDescription,
 	updateShortCircuitSource,
 	useAtAsCurrentsValue,
