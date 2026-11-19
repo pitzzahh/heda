@@ -94,7 +94,7 @@ fn heads_each_schedule_with_its_panel_and_supply() {
 }
 
 #[test]
-fn keeps_each_value_s_type_and_totals_the_panel_as_text() {
+fn keeps_each_value_s_type_in_the_circuits_and_the_total() {
     let book = layout("one_phase", Kind::LoadSchedule, "root");
     let lp1 = &book.sheets[2];
     // Circuit 1: engine values are numbers, the stored pole "1" stays text.
@@ -103,10 +103,14 @@ fn keeps_each_value_s_type_and_totals_the_panel_as_text() {
     assert_eq!(cell(lp1, 6, 3).0, &Cell::Number(400.0));
     assert_eq!(cell(lp1, 6, 7).0, &text("1"));
     assert_eq!(cell(lp1, 6, 9).0, &Cell::Number(1.0));
-    // The panel's TOTAL row after its two circuits, every value as text.
+    // The panel's TOTAL row after its two circuits: numbers as numbers, so Excel can sum
+    // them, and the stored fields as stored.
     assert_eq!(cell(lp1, 8, 0), (&text("TOTAL"), Style::Total));
     assert_eq!(cell(lp1, 8, 1).0, &text("MAIN"));
-    assert!(matches!(cell(lp1, 8, 3).0, Cell::Text(va) if va == "800"));
+    assert_eq!(cell(lp1, 8, 2).0, &Cell::Number(230.0));
+    assert_eq!(cell(lp1, 8, 3).0, &Cell::Number(800.0));
+    assert!(matches!(cell(lp1, 8, 5).0, Cell::Number(_)));
+    assert_eq!(cell(lp1, 8, 7).0, &text("2"));
 }
 
 #[test]
