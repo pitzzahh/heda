@@ -7,6 +7,8 @@
 		loads: PhaseLoadSchedule[];
 		/** That panel's phase: delta balances line pairs, 3P-Y phases. */
 		supply_phase: string | undefined;
+		/** The panel's unbalance in % (engine); absent at the supply. */
+		unbalance?: number;
 	}
 
 	type PhaseChange = [node_id: string, PhaseAssignment | undefined];
@@ -23,7 +25,7 @@
 	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
 
-	let { loads, supply_phase }: Props = $props();
+	let { loads, supply_phase, unbalance }: Props = $props();
 	const labels = $derived(phaseLabels(supply_phase));
 
 	const undo_redo_state = getUndoRedoState();
@@ -83,6 +85,16 @@
 			<Button size="sm" variant="outline" {...props}>
 				<ScalesIcon class="size-4" />
 				Phases
+				{#if unbalance !== undefined}
+					<span
+						class="text-xs text-muted-foreground tabular-nums"
+						title="Unbalance: largest deviation of the {labels[0]!.length > 1
+							? 'line pair'
+							: 'phase'} VA from their average (NEMA MG-1 14.35; PEC 2017 sets no limit)"
+					>
+						{unbalance.toFixed(2)} %
+					</span>
+				{/if}
 				<CaretDownIcon class="size-3.5 opacity-60" />
 			</Button>
 		{/snippet}

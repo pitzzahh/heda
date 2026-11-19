@@ -30,6 +30,8 @@ pub struct LoadRow {
     pub line_current: Option<LineCurrent>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub balanced_current: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unbalance: Option<f64>,
     /// What the circuit adds to its panel's feeder load.
     #[serde(skip)]
     pub feeder: FeederShare,
@@ -238,6 +240,7 @@ pub fn load_row<'g>(
             pair_va: totals.pair_va,
             line_current: totals.line_current,
             balanced_current: totals.balanced_current,
+            unbalance: totals.unbalance,
             feeder: feeder.share.on(label),
         }
     } else {
@@ -262,6 +265,7 @@ pub fn load_row<'g>(
             pair_va: None,
             line_current: None,
             balanced_current: None,
+            unbalance: None,
             feeder: if sizing::is_motor(load_type) {
                 FeederShare {
                     va,

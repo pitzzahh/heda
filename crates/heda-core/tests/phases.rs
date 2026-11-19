@@ -126,6 +126,16 @@ fn unbalanced_wye_feeder_sizes_on_its_most_loaded_phase() {
 }
 
 #[test]
+fn unbalance_is_the_largest_deviation_from_the_average() {
+    // Average 11 500 / 3 = 3 833.33 VA; A is 5 366.67 VA over it: 140 %.
+    assert_eq!(unbalance_percent([9_200.0, 2_300.0, 0.0]), 140.0);
+    // The balancer's result below: average 3 500 VA, A 1 500 VA over: 42.857 → 42.86 %.
+    assert_eq!(unbalance_percent([5_000.0, 3_000.0, 2_500.0]), 42.86);
+    assert_eq!(unbalance_percent([56_000.0, 56_000.0, 56_000.0]), 0.0);
+    assert_eq!(unbalance_percent([0.0, 0.0, 0.0]), 0.0);
+}
+
+#[test]
 fn empty_wye_feeder_is_zero() {
     assert_eq!(wye_feeder_current(PhaseVa::default()), (0.0, 0.0, 0.0));
 }

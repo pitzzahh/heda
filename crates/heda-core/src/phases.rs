@@ -260,6 +260,22 @@ pub fn delta_feeder_current(pair_va: PairVa) -> (f64, LineCurrent, f64) {
     (balanced, lines, js::max(balanced, highest_line))
 }
 
+/// Percent unbalance of three phase (or line pair) loads: the largest deviation from
+/// their average over the average, to 0.01 %. PEC 2017 sets no such measure for
+/// buildings (only 2.10.1.11(B)'s "evenly proportioned" and App. D Ex. D6 6.1's
+/// "balanced distribution"; the 15 % of 9.6.5.2 covers watercraft), so this is NEMA
+/// MG-1 14.35's definition. An empty panel reads 0.
+pub fn unbalance_percent(loads: [f64; 3]) -> f64 {
+    let average = (loads[0] + loads[1] + loads[2]) / 3.0;
+    if average <= 0.0 {
+        return 0.0;
+    }
+    let deviation = loads
+        .iter()
+        .fold(0.0_f64, |worst, load| worst.max((load - average).abs()));
+    js::round_js(deviation / average * 100.0, 2)
+}
+
 /// A computed circuit as a panel total sees it.
 pub struct CircuitTotal<'a> {
     pub va: f64,
@@ -295,6 +311,8 @@ pub struct PanelTotals {
     pub line_current: Option<LineCurrent>,
     /// Three-phase panels: the balanced current, rounded to 0.01 A like the table.
     pub balanced_current: Option<f64>,
+    /// Three-phase panels: `unbalance_percent` of the phase or line pair VA.
+    pub unbalance: Option<f64>,
 }
 
 /// A single-phase panel adds the circuit currents; a three-phase panel sums VA per
@@ -329,6 +347,7 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
                 current: design,
                 phase_va: Some(phase_va),
                 balanced_current: Some(js::round_js(balanced, 2)),
+                unbalance: Some(unbalance_percent([phase_va.A, phase_va.B, phase_va.C])),
                 ..PanelTotals::default()
             }
         }
@@ -354,6 +373,7 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
                     C: js::round_js(lines.C, 2),
                 }),
                 balanced_current: Some(js::round_js(balanced, 2)),
+                unbalance: Some(unbalance_percent([pair_va.AB, pair_va.BC, pair_va.CA])),
                 ..PanelTotals::default()
             }
         }
