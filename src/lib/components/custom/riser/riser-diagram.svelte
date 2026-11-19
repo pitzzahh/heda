@@ -1,6 +1,5 @@
 <script lang="ts" module>
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
-	import type { RiserTree } from '#lib/types/riser.js';
+	import type { RiserLayout } from '#lib/types/riser.js';
 	import type { View } from './viewport.js';
 
 	interface Props {
@@ -19,21 +18,6 @@
 	};
 
 	const transformOf = (view: View) => `translate(${view.x} ${view.y}) scale(${view.k})`;
-
-	/** A panelboard and everything below it, from the engine's computed rows. */
-	function buildTree(
-		row: PhaseLoadSchedule,
-		loadsOf: (id: string) => PhaseLoadSchedule[]
-	): RiserTree {
-		const children = loadsOf(row.id);
-		return {
-			row,
-			panels: children
-				.filter((child) => child.node_type === 'panel')
-				.map((child) => buildTree(child, loadsOf)),
-			branch_ats: children.filter((child) => child.node_type !== 'panel').map((child) => child.at)
-		};
-	}
 </script>
 
 <script lang="ts">
@@ -44,13 +28,14 @@
 		MagnifyingGlassPlusIcon
 	} from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { getComputedLoads, getNodeById } from '#lib/db/queries/index.js';
+	import { getRiserAsync } from '#lib/db/queries/index.js';
+	import { getSnapshotRevision } from '#lib/db/queries/snapshot.js';
 	import { exportRiserSvg } from '#lib/helpers/export/riser-svg.js';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import RiserDrawing from './riser-drawing.svelte';
-	import { layoutRiser, visibleItems } from './layout.js';
+	import { visibleItems } from './layout.js';
 	import { DETAIL_ZOOM, fitView, visibleRect, zoomAt } from './viewport.js';
 
 	let { node_id }: Props = $props();
@@ -59,14 +44,20 @@
 	let view = $state<View>({ x: 0, y: 0, k: 1 });
 	let dragging = $state(false);
 
-	const start = $derived(getNodeById(node_id) as PhaseLoadSchedule | null);
-	// Laid out once per data change; panning and zooming only move one transform.
-	const drawn = $derived.by(() => {
-		if (!start) return undefined;
-		const tree = buildTree(start, getComputedLoads);
-		return start.node_type === 'root'
-			? layoutRiser(tree, start.highest_unit_form ?? {})
-			: layoutRiser(tree);
+	// Laid out by the engine once per data change; panning and zooming only move one transform.
+	let drawn = $state<RiserLayout | null>();
+	// The engine answers asynchronously; stale answers are dropped (external async, so an effect).
+	$effect(() => {
+		const revision = getSnapshotRevision();
+		const id = node_id;
+		void getRiserAsync(id)
+			.then((layout) => {
+				if (getSnapshotRevision() === revision && id === node_id) drawn = layout;
+			})
+			.catch((error: unknown) => {
+				console.error('Riser layout failed:', error);
+				drawn = null;
+			});
 	});
 	const detail = $derived(view.k >= DETAIL_ZOOM);
 	// Only what the frame shows goes into the DOM; zoomed out, outlines are one path anyway.
@@ -246,8 +237,12 @@
 			class="absolute inset-0 size-full font-sans text-foreground"
 		/>
 	</div>
-{:else}
+{:else if drawn === null}
 	<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
 		Could not draw the riser diagram.
+	</div>
+{:else}
+	<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
+		Drawing the riser diagram…
 	</div>
 {/if}

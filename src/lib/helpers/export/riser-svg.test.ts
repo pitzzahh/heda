@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { printableSvg, riserSvgText } from './riser-svg.js';
-import { layoutRiser } from '#lib/components/custom/riser/layout.js';
-import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+import type { RiserLayout } from '#lib/types/riser.js';
 
 describe('printableSvg', () => {
 	it('prints black on white without theme classes', () => {
@@ -34,17 +33,29 @@ describe('printableSvg', () => {
 	});
 
 	it('saves every panel, whatever the screen culled', () => {
-		const panel = (id: string) => ({
-			row: { id, panel_data: { name: id }, at: 60 } as PhaseLoadSchedule,
-			panels: [],
-			branch_ats: [20]
-		});
-		const layout = layoutRiser({ ...panel('MDP'), panels: [panel('LP-1'), panel('LP-2')] });
+		// Three panels across 10 000 px, far wider than any screen shows at once.
+		const layout: RiserLayout = {
+			width: 10_000,
+			height: 400,
+			boxes: ['MDP', 'LP-1', 'LP-2'].map((id, i) => ({
+				id,
+				x: i * 4_000,
+				y: 100,
+				width: 240,
+				height: 80,
+				title: id,
+				lines: []
+			})),
+			wires: [],
+			labels: [{ id: 'LP-2', x: 8_016, y: 20, lines: ['CKT 2: 60 AT / 60 AF, 2P'] }],
+			breakers: [0, 4_000, 8_000].map((x) => [x, 8] as [number, number]),
+			ticks: []
+		};
 		const printed = new DOMParser().parseFromString(riserSvgText(layout), 'image/svg+xml');
 		expect(printed.querySelector('parsererror')).toBeNull();
 		const titles = [...printed.querySelectorAll('text')].map((t) => t.textContent);
 		expect(titles).toEqual(
-			expect.arrayContaining(['MDP', 'LP-1', 'LP-2', 'CKT -: 60 AT / - AF, -P'])
+			expect.arrayContaining(['MDP', 'LP-1', 'LP-2', 'CKT 2: 60 AT / 60 AF, 2P'])
 		);
 		// Breakers on all three feeders.
 		expect(printed.querySelectorAll('use[href="#riser-breaker"]')).toHaveLength(3);

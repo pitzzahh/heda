@@ -1,0 +1,476 @@
+//! Layout of the riser (one-line) diagram, PEC 2017 1.3.2.1(G): each panelboard with
+//! its main and branch circuit ratings ((1)(a)), each feeder labelled with its wire size
+//! and type, raceway, protective device and allowable ampacity over design load current
+//! as a ratio ((3)(a)–(d)), and the load center's incoming supply ((4)). Every value is
+//! a computed row; this only places text. The app draws it on screen and the sheet set
+//! prints it, so both show the same diagram.
+
+use crate::graph::Graph;
+use crate::js;
+use crate::load_schedule::{load_row, LoadRow};
+use crate::model::{phases, HighestUnitForm, Node};
+use crate::sizing::{Conduit, Egc};
+use serde::Serialize;
+use serde_json::Value;
+use std::collections::HashMap;
+
+pub const COLUMN: f64 = 300.0;
+pub const BOX_WIDTH: f64 = 240.0;
+pub const LINE: f64 = 16.0;
+const PADDING: f64 = 12.0;
+const MARGIN: f64 = 24.0;
+/// Feeder labels have five lines; the drop to each panel leaves room for them.
+const DROP: f64 = 5.0 * LINE + 40.0;
+const BUS: f64 = 24.0;
+const BRANCHES_PER_LINE: usize = 4;
+/// Feeder labels start beside their drop and can run past the last column.
+const LABEL_OVERHANG: f64 = 100.0;
+/// The circuit breaker symbol (Appendix A 1.11) breaks the feeder this far below the bus.
+const BREAKER_AT: f64 = 8.0;
+pub const BREAKER_HEIGHT: f64 = 22.0;
+/// Where the cross-lines counting the wires (Appendix A 1.37) sit on a feeder.
+const TICKS_AT: f64 = 48.0;
+/// Room above the service for the transformer (Appendix A 3.1).
+const TRANSFORMER_SPACE: f64 = 64.0;
+/// Height of the transformer symbol, leads included.
+pub const TRANSFORMER_HEIGHT: f64 = 40.0;
+
+pub type Point = [f64; 2];
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct RiserBox {
+    pub id: String,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub title: String,
+    pub lines: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct RiserLabel {
+    pub id: String,
+    pub x: f64,
+    pub y: f64,
+    pub lines: Vec<String>,
+}
+
+/// Cross-lines on a feeder, one per wire (Appendix A 1.37).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Tick {
+    pub x: f64,
+    pub y: f64,
+    pub count: f64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct RiserLayout {
+    pub width: f64,
+    pub height: f64,
+    pub boxes: Vec<RiserBox>,
+    /// Polylines of [x, y] points.
+    pub wires: Vec<Vec<Point>>,
+    pub labels: Vec<RiserLabel>,
+    /// Top of each feeder's circuit breaker (Appendix A 1.11).
+    pub breakers: Vec<Point>,
+    pub ticks: Vec<Tick>,
+    /// Top of the service transformer (Appendix A 3.1), when the project has one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transformer: Option<Point>,
+    /// Earth ground (Appendix A 1.3), at the service.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ground: Option<Point>,
+    /// Kilowatt-hour meter (Appendix A 1.7), on the service drop.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub meter: Option<Point>,
+}
+
+/// What the diagram reads of a circuit: its stored node and document, and its row.
+#[derive(Debug, Clone)]
+pub struct Circuit<'a> {
+    pub node: &'a Node,
+    /// The stored document, for the fields the calculations do not read (pole, EGC insulation).
+    pub doc: Option<&'a Value>,
+    pub row: LoadRow,
+}
+
+impl Circuit<'_> {
+    fn text(&self, key: &str) -> Option<&str> {
+        self.doc?.get(key)?.as_str()
+    }
+}
+
+/// A panelboard and everything below it.
+#[derive(Debug, Clone)]
+pub struct RiserTree<'a> {
+    pub circuit: Circuit<'a>,
+    pub panels: Vec<RiserTree<'a>>,
+    /// Breaker ratings (AT) of the branch circuits on this panelboard.
+    pub branch_ats: Vec<f64>,
+}
+
+/// The tree under `id` from the computed rows.
+pub fn riser_tree<'a>(
+    graph: &'a Graph,
+    docs: &'a HashMap<String, Value>,
+    rows: &mut HashMap<String, LoadRow>,
+    id: &str,
+) -> Option<RiserTree<'a>> {
+    let node = graph.get(id)?;
+    let circuit = |node: &'a Node, rows: &mut HashMap<String, LoadRow>| Circuit {
+        node,
+        doc: docs.get(&node.id),
+        row: load_row(graph, node, rows),
+    };
+    let mut panels = Vec::new();
+    let mut branch_ats = Vec::new();
+    let children: Vec<&Node> = graph.children(id).collect();
+    for child in children {
+        if child.node_type == "panel" {
+            panels.extend(riser_tree(graph, docs, rows, &child.id));
+        } else {
+            branch_ats.push(circuit(child, rows).row.at);
+        }
+    }
+    Some(RiserTree {
+        circuit: circuit(node, rows),
+        panels,
+        branch_ats,
+    })
+}
+
+/// A number as JavaScript prints it in a template string (`${value}`).
+fn num(value: f64) -> String {
+    if value == 0.0 {
+        "0".into()
+    } else {
+        format!("{value}")
+    }
+}
+
+/// Like the Excel export: -1 (none in the table) prints as "-".
+fn size(value: Option<f64>) -> String {
+    match value {
+        None => "-".into(),
+        Some(-1.0) => "-".into(),
+        Some(v) => num(v),
+    }
+}
+
+fn egc_size(egc: Egc) -> String {
+    match egc {
+        Egc::Size(v) => size(Some(v)),
+        Egc::Error => "error".into(),
+    }
+}
+
+fn conduit_size(conduit: Conduit) -> String {
+    match conduit {
+        Conduit::Size(v) => size(Some(v)),
+        Conduit::Text(text) => text.into(),
+    }
+}
+
+/// The app's short phase labels (`DEFAULT_PHASES`), or the stored value itself.
+pub fn phase_label(phase: Option<&str>) -> String {
+    match phase {
+        Some(phases::ONE_PHASE) => "1P".into(),
+        Some(phases::THREE_PHASE_WYE) => "3P-Y".into(),
+        Some(phases::THREE_PHASE_DELTA) => "3P-Δ".into(),
+        other => other.unwrap_or("").into(),
+    }
+}
+
+/// Branch breakers by rating, largest first: "6 × 20 AT".
+pub fn branch_summary(ats: &[f64]) -> Vec<String> {
+    let mut counts: Vec<(f64, usize)> = Vec::new();
+    for &at in ats {
+        match counts.iter_mut().find(|(rating, _)| *rating == at) {
+            Some((_, count)) => *count += 1,
+            None => counts.push((at, 1)),
+        }
+    }
+    counts.sort_by(|(a, _), (b, _)| b.total_cmp(a));
+    let groups: Vec<String> = counts
+        .iter()
+        .map(|(at, count)| format!("{count} × {} AT", num(*at)))
+        .collect();
+    if groups.is_empty() {
+        return vec!["No branch circuits".into()];
+    }
+    std::iter::once("Branch CBs:".to_string())
+        .chain(
+            groups
+                .chunks(BRANCHES_PER_LINE)
+                .map(|chunk| chunk.join(", ")),
+        )
+        .collect()
+}
+
+/// The five lines beside a feeder, PEC 2017 1.3.2.1(G)(3).
+pub fn feeder_lines(circuit: &Circuit) -> Vec<String> {
+    let Circuit { node, row, .. } = circuit;
+    let sets = node.conductor_sets.unwrap_or(1.0);
+    let ratio = match row.ampacity {
+        Some(ampacity) if row.current > 0.0 => format!(
+            "{} A / {} A = {}",
+            num(ampacity),
+            num(row.current),
+            js::to_fixed_js(ampacity / row.current, 2)
+        ),
+        _ => "-".into(),
+    };
+    let or_dash = |value: Option<f64>| value.map_or("-".into(), num);
+    let conductor = format!(
+        "{}{} × {} mm² {}",
+        if sets > 1.0 {
+            format!("{} sets × ", num(sets))
+        } else {
+            String::new()
+        },
+        or_dash(node.conductor_qty),
+        size(Some(row.conductor_size)),
+        node.conductor_insulation.as_deref().unwrap_or("")
+    );
+    let egc = ["+ 1 ×", &egc_size(row.egc_size), "mm²"]
+        .into_iter()
+        .chain(circuit.text("egc_insulation"))
+        .chain(["EGC"])
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    let conduit = format!(
+        "in {} mm ø {}",
+        conduit_size(row.conduit_size),
+        node.conduit_type.as_deref().unwrap_or("")
+    );
+    vec![
+        format!(
+            "CKT {}: {} AT / {} AF, {}P",
+            or_dash(node.circuit_number),
+            num(row.at),
+            num(row.ampere_frames),
+            circuit.text("pole").unwrap_or("-")
+        ),
+        conductor.trim().into(),
+        egc,
+        conduit.trim().into(),
+        format!("Ampacity/load: {ratio}"),
+    ]
+}
+
+fn panel_box(tree: &RiserTree) -> (String, Vec<String>) {
+    let Circuit { node, row, .. } = &tree.circuit;
+    let panel = node.panel_data.as_ref();
+    let phase = phase_label(panel.and_then(|p| p.phase.as_deref()));
+    let voltage = if js::truthy(row.voltage) {
+        format!("{} V", num(row.voltage))
+    } else {
+        String::new()
+    };
+    let title = panel
+        .and_then(|p| p.name.clone())
+        .unwrap_or_else(|| row.load_description.clone());
+    let mut lines = vec![
+        [phase, voltage]
+            .into_iter()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" · "),
+        format!("Main: {} AT / {} AF", num(row.at), num(row.ampere_frames)),
+    ];
+    lines.extend(branch_summary(&tree.branch_ats));
+    (title, lines)
+}
+
+/// System voltages of PEC 2017 2.20.1.5(A), as the schedule header shows them.
+fn supply_voltage(phase: Option<&str>) -> &'static str {
+    match phase {
+        Some(phases::ONE_PHASE) | Some(phases::THREE_PHASE_DELTA) => "230 V",
+        Some(phases::THREE_PHASE_WYE) => "400Y/230 V",
+        _ => "",
+    }
+}
+
+fn source_lines(source: &HighestUnitForm) -> Vec<String> {
+    let phase = source.phase.as_deref();
+    let first = [phase_label(phase), supply_voltage(phase).to_string()]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · ");
+    let truthy = |value: Option<f64>| value.filter(|v| js::truthy(*v));
+    [
+        Some(first),
+        truthy(source.transformer_kva).map(|kva| format!("Transformer: {} kVA", num(kva))),
+        truthy(source.utility_sc_kva).map(|kva| format!("Utility fault level: {} kVA", num(kva))),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|line| !line.is_empty())
+    .collect()
+}
+
+/// A box's title and lines, for a tree at a depth.
+type BoxOf<'a> = dyn Fn(&RiserTree, usize) -> (String, Vec<String>) + 'a;
+
+fn box_height(lines: usize) -> f64 {
+    PADDING * 2.0 + LINE * (lines as f64 + 1.0)
+}
+
+fn leaves(tree: &RiserTree) -> f64 {
+    if tree.panels.is_empty() {
+        1.0
+    } else {
+        tree.panels.iter().map(leaves).sum()
+    }
+}
+
+/// Places the panels top-down, each centred over the panels it feeds. With a `source`,
+/// `tree` is the service (the project root) and its box shows the supply; otherwise
+/// `tree` is a panel and its own feeder is drawn coming in from above.
+pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> RiserLayout {
+    let mut layout = RiserLayout::default();
+    let source_lines = source.map(source_lines).unwrap_or_default();
+    let box_of = |node: &RiserTree, depth: usize| match source {
+        Some(source) if depth == 0 => (
+            source
+                .distribution_unit
+                .clone()
+                .unwrap_or_else(|| "Service".into()),
+            source_lines.clone(),
+        ),
+        _ => panel_box(node),
+    };
+
+    // A level starts below the tallest box of the one above it.
+    let mut level_height: Vec<f64> = Vec::new();
+    fn measure(node: &RiserTree, depth: usize, level_height: &mut Vec<f64>, box_of: &BoxOf<'_>) {
+        let height = box_height(box_of(node, depth).1.len());
+        if level_height.len() <= depth {
+            level_height.push(0.0);
+        }
+        level_height[depth] = level_height[depth].max(height);
+        for panel in &node.panels {
+            measure(panel, depth + 1, level_height, box_of);
+        }
+    }
+    measure(tree, 0, &mut level_height, &box_of);
+    let has_transformer = source.is_some_and(|s| s.transformer_kva.is_some_and(js::truthy));
+    let mut bottom = MARGIN
+        + match (source, has_transformer) {
+            (Some(_), true) => TRANSFORMER_SPACE,
+            (Some(_), false) => 0.0,
+            (None, _) => DROP,
+        };
+    let mut level_y = Vec::new();
+    for height in &level_height {
+        level_y.push(bottom);
+        bottom += height + BUS + DROP;
+    }
+
+    struct Placer<'l, 'b> {
+        layout: &'l mut RiserLayout,
+        level_y: &'l [f64],
+        box_of: &'b BoxOf<'b>,
+        source: bool,
+        has_transformer: bool,
+    }
+
+    impl Placer<'_, '_> {
+        /// A feeder from `top` down to its panel at `bottom`: breaker, wire count, label.
+        fn feeder(&mut self, circuit: &Circuit, x: f64, top: f64, bottom: f64) {
+            let breaker_top = top + BREAKER_AT;
+            self.layout.wires.push(vec![[x, top], [x, breaker_top]]);
+            self.layout
+                .wires
+                .push(vec![[x, breaker_top + BREAKER_HEIGHT], [x, bottom]]);
+            self.layout.breakers.push([x, breaker_top]);
+            if let Some(count) = circuit.node.conductor_qty.filter(|q| js::truthy(*q)) {
+                self.layout.ticks.push(Tick {
+                    x,
+                    y: top + TICKS_AT,
+                    count,
+                });
+            }
+            self.layout.labels.push(RiserLabel {
+                id: circuit.node.id.clone(),
+                x: x + 16.0,
+                y: top + LINE + 4.0,
+                lines: feeder_lines(circuit),
+            });
+        }
+
+        fn place(&mut self, node: &RiserTree, depth: usize, left: f64) -> f64 {
+            let cx = left + leaves(node) * COLUMN / 2.0;
+            let top = self.level_y[depth];
+            let (title, lines) = (self.box_of)(node, depth);
+            let height = box_height(lines.len());
+            self.layout.boxes.push(RiserBox {
+                id: node.circuit.node.id.clone(),
+                x: cx - BOX_WIDTH / 2.0,
+                y: top,
+                width: BOX_WIDTH,
+                height,
+                title,
+                lines,
+            });
+            if depth == 0 && self.has_transformer {
+                self.layout
+                    .wires
+                    .push(vec![[cx, MARGIN + TRANSFORMER_HEIGHT], [cx, top]]);
+            }
+            if depth == 0 && !self.source {
+                // The start panel's own feeder, from a supply the diagram does not draw.
+                self.feeder(&node.circuit, cx, top - DROP, top);
+            }
+            let mut child_left = left;
+            let centres: Vec<f64> = node
+                .panels
+                .iter()
+                .map(|panel| {
+                    let child_cx = self.place(panel, depth + 1, child_left);
+                    child_left += leaves(panel) * COLUMN;
+                    child_cx
+                })
+                .collect();
+            if !centres.is_empty() {
+                let bus_y = top + height + BUS;
+                let low = centres.iter().copied().fold(cx, f64::min);
+                let high = centres.iter().copied().fold(cx, f64::max);
+                self.layout
+                    .wires
+                    .push(vec![[cx, top + height], [cx, bus_y]]);
+                self.layout.wires.push(vec![[low, bus_y], [high, bus_y]]);
+                for (panel, centre) in node.panels.iter().zip(centres) {
+                    self.feeder(&panel.circuit, centre, bus_y, self.level_y[depth + 1]);
+                }
+            }
+            cx
+        }
+    }
+
+    Placer {
+        layout: &mut layout,
+        level_y: &level_y,
+        box_of: &box_of,
+        source: source.is_some(),
+        has_transformer,
+    }
+    .place(tree, 0, MARGIN);
+
+    layout.width = leaves(tree) * COLUMN + MARGIN * 2.0 + LABEL_OVERHANG;
+    layout.height = bottom - BUS - DROP + MARGIN;
+    if source.is_some() {
+        let service = &layout.boxes[0];
+        let centre = service.x + service.width / 2.0;
+        let base = service.y + service.height;
+        if has_transformer {
+            layout.transformer = Some([centre, MARGIN]);
+        }
+        layout.ground = Some([service.x, base]);
+        layout.meter = Some([centre, base + BUS / 2.0]);
+    }
+    layout
+}

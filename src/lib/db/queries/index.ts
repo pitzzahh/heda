@@ -17,4 +17,5 @@ export {
 } from './loads.js';
 export { getComputedVoltageDropsAsync } from './voltage-drops.js';
 export { getComputedShortCircuitsAsync } from './short-circuits.js';
+export { getRiserAsync } from './riser.js';
 export { getSnapshotRevision } from './snapshot.js';

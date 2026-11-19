@@ -11,6 +11,7 @@
 use crate::graph::Graph;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::Node;
+use crate::riser::{layout_riser, riser_tree, RiserLayout};
 use crate::short_circuit::{short_circuits, ShortCircuitRow};
 use crate::voltage_drop::{voltage_drops, VoltageDropRow};
 use serde::{Deserialize, Serialize};
@@ -135,6 +136,15 @@ impl Session {
 
     pub fn short_circuits(&mut self) -> Vec<ShortCircuitRow> {
         short_circuits(&self.graph, &mut self.load_rows)
+    }
+
+    /// The riser diagram from `id` down; from the project root it starts at the service.
+    pub fn riser(&mut self, id: &str) -> Option<RiserLayout> {
+        let tree = riser_tree(&self.graph, &self.docs, &mut self.load_rows, id)?;
+        let node = tree.circuit.node;
+        let source =
+            (node.node_type == "root").then(|| node.highest_unit_form.clone().unwrap_or_default());
+        Some(layout_riser(&tree, source.as_ref()))
     }
 
     fn compute_all(&mut self) -> Computed {
