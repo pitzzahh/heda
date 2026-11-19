@@ -8,6 +8,7 @@
 <script lang="ts">
 	import {
 		FileIcon,
+		FlaskIcon,
 		FolderOpenIcon,
 		LockKeyIcon,
 		PlusIcon,
@@ -277,10 +278,12 @@
 		<div class="flex items-center gap-2">
 			{#if isPreviewVersion(pj.version)}
 				<span
-					class="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-warning-strong uppercase"
+					class="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary"
 					title="Not production ready: check results against PEC 2017 before using them."
-					>Preview</span
 				>
+					<FlaskIcon class="size-3.5" />
+					Preview
+				</span>
 			{/if}
 			<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
 		</div>

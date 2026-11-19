@@ -33,10 +33,13 @@
 	import {
 		CaretRightIcon,
 		CheckCircleIcon,
+		FlaskIcon,
 		LightningAIcon,
 		WarningCircleIcon
 	} from '#lib/assets/icons.js';
 	import { cn } from '#lib/utils/index.js';
+	import { isPreviewVersion } from '#lib/helpers/platform.js';
+	import * as pj from '../../../package.json';
 
 	let { data, children } = $props();
 
@@ -114,6 +117,16 @@
 							loads={three_phase_schedule.loads}
 							supply_phase={three_phase_schedule.supply_phase}
 						/>
+					{/if}
+					{#if isPreviewVersion(pj.version)}
+						<!-- Primary, not amber: beside the amber Unsaved pill it must not read as a save warning. -->
+						<div
+							class="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary sm:flex"
+							title="Preview v{pj.version}: not production ready. Check results against PEC 2017 before using them."
+						>
+							<FlaskIcon class="size-3.5" />
+							Preview
+						</div>
 					{/if}
 					<div
 						class={cn(
