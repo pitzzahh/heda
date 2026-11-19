@@ -19,7 +19,7 @@ export async function exportSheetSet(project_name: string): Promise<void> {
 	if (!path) return;
 	// The engine reads the project and nodes as written; let pending writes land first.
 	await settled();
-	const date = new Date().toISOString().slice(0, 10);
+	const date = localDate(new Date());
 	const bytes = await invoke<ArrayBuffer>('sheet_set', { projectName: project_name, date });
 	await writeFile(path, new Uint8Array(bytes));
 	toast.success('Sheet set saved.', {
@@ -28,4 +28,13 @@ export async function exportSheetSet(project_name: string): Promise<void> {
 		action: showInFolderAction(path),
 		position: 'bottom-center'
 	});
+}
+
+/**
+ * The date drawn (PEC 2017 1.3.2.2(E)) as YYYY-MM-DD on the engineer's own calendar.
+ * `toISOString` would give the UTC date, a day behind before 08:00 in the Philippines.
+ */
+export function localDate(now: Date): string {
+	const pad = (value: number) => String(value).padStart(2, '0');
+	return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
