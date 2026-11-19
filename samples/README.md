@@ -30,5 +30,6 @@ in the repository. The script also rewrites the files in this folder, which
 gives every file a new salt and therefore new bytes.
 
 Every board in the samples stays inside what the app can size: its
-conductor table stops at 500 mm², which covers a single set up to about
-900 A, and its trip ratings stop at 6,000 A.
+conductor table stops at 500 mm², so feeders past one set (the Harborview
+risers, the Business Park data centre and its UPS panel) run in parallel
+sets, and its trip ratings stop at 6,000 A.
