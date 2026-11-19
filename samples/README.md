@@ -34,3 +34,14 @@ Every board in the samples stays inside what the app can size: its
 conductor table stops at 500 mm², so feeders past one set (the Harborview
 risers, the Business Park data centre and its UPS panel) run in parallel
 sets, and its trip ratings stop at 6,000 A.
+
+## Short-circuit data
+
+Each sample carries its fault source, so the short-circuit table opens
+computed. Homes take the pole transformer of PEC 2017 App. D Ex. D13
+(100 kVA, 2.5 %); the others take the kVA their distribution unit names at
+the 5 % of Ex. D14, one unit of a bank per incoming section. All sit on the
+1,000 MVA grid level of D14 step 3. Every breaker's kAIC is the smallest
+common catalog rating (10, 14, 18, 22, 25, 35, 42, 50, 65, 85, 100, 125,
+150 or 200 kA) that covers the fault at its line side, so every row reads
+OK under PEC 2017 1.10.1.9.

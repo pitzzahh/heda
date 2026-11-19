@@ -25,12 +25,13 @@ import {
 } from '#lib/helpers/file/format.js';
 import { dispatch_json, initSync } from '#lib/core/pkg/heda_core.js';
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
-import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES } from '#lib/constants.js';
+import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES, METRO_MANILA_UTILITY_SC_KVA } from '#lib/constants.js';
 import type { FileExport } from '#lib/types/main.js';
 import type { LoadSpec, Overrides, PanelSpec, SampleSpec } from './sample-types.js';
 import { buildBusinessPark, buildCondominium } from './large-projects.js';
 import type { Node } from '#lib/types/db.js';
 import type { VoltageDrop } from '#lib/types/voltage-drop.js';
+import type { ShortCircuit } from '#lib/types/short-circuit.js';
 
 const LOAD_TYPES = new Set<string>(DEFAULT_LOAD_TYPES.map((option) => option.value));
 const PHASES = new Set<string>(DEFAULT_PHASES.map((option) => option.value));
@@ -49,6 +50,45 @@ function voltageDrops(
 ): Pick<VoltageDrop, 'id' | 'current' | 'percent_voltage_drop'>[] {
 	dispatch_json('open', JSON.stringify({ project: null, nodes }));
 	return JSON.parse(dispatch_json('voltage_drops', '{}'));
+}
+
+/**
+ * Each sample's fault source, so its short-circuit table opens computed. Homes take the
+ * pole transformer of PEC 2017 App. D Ex. D13 (100 kVA, 2.5 %); the rest take the kVA
+ * their distribution unit names at the 5 % of Ex. D14. A bank's units feed separate
+ * incoming sections, so a bank counts as one of its units.
+ * All sit on the Metro Manila grid level of D14 step 3.
+ */
+const SOURCES: Record<string, { transformer_kva: number; transformer_z_percent: number }> = {
+	'sunrise-apartment-7a.heda': { transformer_kva: 100, transformer_z_percent: 2.5 },
+	'maple-street-residence.heda': { transformer_kva: 100, transformer_z_percent: 2.5 },
+	'meridian-office-building.heda': { transformer_kva: 500, transformer_z_percent: 5 },
+	'northpoint-cold-storage.heda': { transformer_kva: 1500, transformer_z_percent: 5 },
+	'harborview-residences.heda': { transformer_kva: 1500, transformer_z_percent: 5 },
+	'meridian-business-park.heda': { transformer_kva: 2000, transformer_z_percent: 5 }
+};
+
+/**
+ * Interrupting ratings (kA) breakers are commonly sold in. Sample data only, as a designer
+ * picks from a catalog: PEC 2017 1.10.1.9 asks only that the rating cover the fault.
+ */
+const CATALOG_KAIC = [10, 14, 18, 22, 25, 35, 42, 50, 65, 85, 100, 125, 150, 200];
+
+/** Gives every breaker the least catalog rating that covers the fault on its line side. */
+function rateBreakers(file_export: FileExport, name: string): void {
+	dispatch_json('open', JSON.stringify({ project: null, nodes: file_export.nodes }));
+	const rows: Pick<ShortCircuit, 'id' | 'supply_fault_current'>[] = JSON.parse(
+		dispatch_json('short_circuits', '{}')
+	);
+	const by_id = new Map(file_export.nodes.map((node) => [node.id, node]));
+	for (const row of rows) {
+		if (row.supply_fault_current === null) throw new Error(`${name}: ${row.id} has no source`);
+		const kaic = CATALOG_KAIC.find((rating) => rating * 1000 >= row.supply_fault_current!);
+		if (kaic === undefined) {
+			throw new Error(`${name}: ${row.id} sees ${row.supply_fault_current} A, over any rating`);
+		}
+		by_id.get(row.id)!.kaic = String(kaic);
+	}
 }
 
 const NODE_DEFAULTS = {
@@ -113,7 +153,12 @@ function buildFile(spec: SampleSpec): FileExport {
 		...NODE_DEFAULTS,
 		id: root_id,
 		node_type: 'root',
-		highest_unit_form: { distribution_unit: spec.distribution_unit, phase: spec.phase },
+		highest_unit_form: {
+			distribution_unit: spec.distribution_unit,
+			phase: spec.phase,
+			utility_sc_kva: METRO_MANILA_UTILITY_SC_KVA,
+			...SOURCES[spec.file_name]!
+		},
 		child_ids: [],
 		length: 0,
 		circuit_number: 0
@@ -726,6 +771,8 @@ async function main() {
 	for (const spec of SAMPLES) {
 		// The builder writes the base shape; the app's own migrations bring it up to date.
 		const file_export = migrateFileExport(buildFile(spec));
+		// Rated on the migrated tree: the wye defaults decide which circuits fault three-phase.
+		rateBreakers(file_export, spec.file_name);
 		checkStructure(file_export, spec.file_name);
 
 		const written: string[] = [];
