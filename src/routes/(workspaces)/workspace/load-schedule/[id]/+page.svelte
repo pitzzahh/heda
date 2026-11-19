@@ -16,14 +16,13 @@
 	import { DataTable } from '#lib/components/custom/table/index.js';
 	import { page } from '$app/state';
 	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
-	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
-	import { threePhaseWyeCols } from '#lib/components/custom/table/three-phase-wye-cols.js';
+	import { isThreePhaseSupply, supplyPhaseOf } from '#lib/utils/computations/index.js';
+	import { threePhaseCols } from '#lib/components/custom/table/three-phase-cols.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
 	import { onePhaseMainOrWyeCols } from '#lib/components/custom/table/one-phase-load-cols/one-phase-main-or-wye-cols.js';
 	import {
 		getComputedLoads,
-		getComputedShortCircuits,
-		peekComputedShortCircuits,
+		getComputedShortCircuitsAsync,
 		getComputedVoltageDropsAsync,
 		getNode,
 		getNodeById,
@@ -106,36 +105,38 @@
 
 	// Column definitions are expensive to rebuild and invalidate TanStack's
 	// row model, so keep them stable across tab switches.
-	// A 400Y/230 V panel (or a wye root) lists each circuit's phase and VA per phase.
-	const is_wye_schedule = $derived(
-		supplyPhaseOf(current_node ?? undefined) === default_phases.THREE_PHASE_WYE
-	);
+	// A three-phase panel (or root) lists each circuit's phase and VA per phase or line pair.
+	const supply_phase = $derived(supplyPhaseOf(current_node ?? undefined));
 	const load_columns = $derived(
 		current_node
-			? is_wye_schedule
-				? threePhaseWyeCols(current_node as PhaseLoadSchedule)
+			? isThreePhaseSupply(supply_phase)
+				? threePhaseCols(current_node as PhaseLoadSchedule, supply_phase)
 				: onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule)
 			: []
 	);
 	const voltage_drop_columns = voltageDropColumns();
 	const short_circuit_columns = shortCircuitColumns<ShortCircuit>();
 
-	// Recomputes on each snapshot revision only while the tab shows (here or in its
-	// popout window); hidden, the table keeps the last result instead of walking
-	// the whole tree on every edit.
-	const short_circuits = $derived(
-		active_tab === 'short-circuit' || popped_tabs['short-circuit']
-			? getComputedShortCircuits()
-			: visited_tabs['short-circuit']
-				? peekComputedShortCircuits()
-				: ([] as ShortCircuit[])
+	// Recomputed on each snapshot revision only while the tab shows (here or in its
+	// popout window); hidden, the table keeps the last result.
+	let short_circuits = $state<ShortCircuit[]>([]);
+	const short_circuits_shown = $derived(
+		active_tab === 'short-circuit' || !!popped_tabs['short-circuit']
 	);
+	// The engine answers asynchronously; stale answers are dropped (external async, so an effect).
+	$effect(() => {
+		const revision = getSnapshotRevision();
+		if (!short_circuits_shown) return;
+		void getComputedShortCircuitsAsync()
+			.then((faults) => {
+				if (getSnapshotRevision() === revision) short_circuits = faults;
+			})
+			.catch((error: unknown) => console.error('Short-circuit calculation failed:', error));
+	});
 
-	// Async worker fetch keyed to the revision. Snapshot load and worker clone
-	// are synchronous costs, so dispatch them off the reactive flush to keep the
-	// UI responsive. `revision` is read here to track changes; stale results are
-	// dropped. External async coordination (not derivable state) requires an
-	// effect.
+	// Engine fetch keyed to the revision, dispatched off the reactive flush.
+	// `revision` is read here to track changes; stale results are dropped.
+	// External async coordination (not derivable state) requires an effect.
 	$effect(() => {
 		const revision = getSnapshotRevision();
 		const timer = setTimeout(() => {
@@ -221,6 +222,8 @@
 					{getOptionLabel(DEFAULT_PHASES, root_node?.highest_unit_form?.phase) || '-'}
 					{#if root_node?.highest_unit_form?.phase === default_phases.THREE_PHASE_WYE}
 						<span class="text-muted-foreground">· 400Y/230 V</span>
+					{:else if root_node?.highest_unit_form?.phase === default_phases.THREE_PHASE_DELTA}
+						<span class="text-muted-foreground">· 230 V</span>
 					{/if}
 				</dd>
 			</div>

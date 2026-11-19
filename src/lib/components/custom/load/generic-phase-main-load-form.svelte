@@ -15,7 +15,7 @@
 	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import { Separator } from '#lib/components/ui/separator/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -27,12 +27,12 @@
 		default_load_types,
 		load_type_to_varies_label,
 		default_hp_current_relationship,
-		default_phases,
-		load_type_to_quantity_label,
-		THREE_PHASE_MOTOR_FLC_400V
+		load_type_to_quantity_label
 	} from '#lib/constants.js';
 	import {
 		horsepowerOfCurrent,
+		horsepowerTable,
+		isThreePhaseSupply,
 		supplyError,
 		supplyPhaseOf
 	} from '#lib/utils/computations/index.js';
@@ -41,7 +41,12 @@
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
-	import { LoadDescriptionField, LoadTypeField, VariesField } from './(components)/index.js';
+	import {
+		DwellingCircuitField,
+		LoadDescriptionField,
+		LoadTypeField,
+		VariesField
+	} from './(components)/index.js';
 	import { GENERIC_PHASE_MAIN_LOAD_SCHEMA } from '#lib/validators/load.js';
 	import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 	import { page } from '$app/state';
@@ -51,6 +56,7 @@
 	import { nodeIdFromRouteId } from '#lib/helpers/navigation.js';
 	import type { Node } from '#lib/types/db.js';
 	import type {
+		DwellingCircuit,
 		LoadType,
 		QuantityLabel,
 		TerminalTemperature,
@@ -88,8 +94,13 @@
 			terminal_temperature: node_to_edit.load_data.terminal_temperature as TerminalTemperature,
 			load_type: node_to_edit.load_data.load_type as LoadType,
 			quantity: node_to_edit.load_data.quantity,
-			varies: horsepowerOfCurrent(node_to_edit.load_data.load_type, node_to_edit.load_data.varies),
+			varies: horsepowerOfCurrent(
+				node_to_edit.load_data.load_type,
+				node_to_edit.load_data.varies,
+				supplyPhaseOf(node_to_edit.parent_id ? getNode(node_to_edit.parent_id) : undefined)
+			),
 			continuous: node_to_edit.load_data.continuous,
+			dwelling_circuit: node_to_edit.load_data.dwelling_circuit as DwellingCircuit | undefined,
 			length: node_to_edit.length
 		};
 	}
@@ -154,10 +165,9 @@
 								data.varies as keyof typeof default_hp_current_relationship
 							]
 					}),
-					// PEC 2017 Table 4.30.14.4, 400 V column: stored as full-load current, like 1P motors.
+					// PEC 2017 Table 4.30.14.4 at the supply's line voltage: stored as full-load current, like 1P motors.
 					...(data.load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER && {
-						varies:
-							THREE_PHASE_MOTOR_FLC_400V[data.varies as keyof typeof THREE_PHASE_MOTOR_FLC_400V]
+						varies: horsepowerTable(data.load_type, supply_phase)?.[data.varies]
 					})
 				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 				switch (action) {
@@ -199,15 +209,14 @@
 
 	// The parent node (panel) of the loads, taken from the route id.
 	const panel_id_from_params = nodeIdFromRouteId(page.params?.id) || '';
-	// Three-phase loads need a 400Y/230 V panel (PEC 2017 App. D Ex. D6, a 400/230 V three-phase service).
-	const allow_three_phase = $derived(
-		supplyPhaseOf(getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params)) ===
-			default_phases.THREE_PHASE_WYE
+	const supply_phase = $derived(
+		supplyPhaseOf(getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params))
 	);
+	// Three-phase loads need a three-phase panel: 400Y/230 V (PEC 2017 App. D Ex. D6) or 230 V delta (D14).
+	const allow_three_phase = $derived(isThreePhaseSupply(supply_phase));
 	const hp_currents = $derived(
-		getInput(form, { path: ['load_type'] }) === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER
-			? THREE_PHASE_MOTOR_FLC_400V
-			: default_hp_current_relationship
+		horsepowerTable(getInput(form, { path: ['load_type'] }), supply_phase) ??
+			default_hp_current_relationship
 	);
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(
@@ -226,9 +235,11 @@
 		return node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined;
 	}
 	let load_type = $state<FormLoadTypeOption | undefined>(initialLoadType());
+	const form_id = $props.id();
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -242,33 +253,28 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="mt-2 grid gap-4 sm:grid-cols-2">
-		<div class="flex min-w-0 flex-col gap-4">
-			<NumberField
-				{form}
-				path={['circuit_number']}
-				label="Circuit number"
-				hint="This is the circuit number that will determine the circuit number of the wire to the main."
-				placeholder="Enter the circuit number"
-				invalid={is_circuit_number_taken}
-			/>
-			<AmbientTempField {form} />
-		</div>
-
-		<div class="flex min-w-0 flex-col gap-4">
-			<TerminalTempField
-				{form}
-				hint="This is the terminal temp that will determine the terminal temp of the wire to the main."
-			/>
-
-			<NumberField
-				{form}
-				path={['length']}
-				label="Length"
-				hint="This is the length of the load"
-				placeholder="Enter the length"
-			/>
-		</div>
+	<!-- One grid, not two stacked columns, so each pair of fields shares a row. -->
+	<div class="mt-2 grid items-start gap-4 *:min-w-0 sm:grid-cols-2">
+		<NumberField
+			{form}
+			path={['circuit_number']}
+			label="Circuit number"
+			hint="This is the circuit number that will determine the circuit number of the wire to the main."
+			placeholder="Enter the circuit number"
+			invalid={is_circuit_number_taken}
+		/>
+		<NumberField
+			{form}
+			path={['length']}
+			label="Length"
+			hint="This is the length of the load"
+			placeholder="Enter the length"
+		/>
+		<TerminalTempField
+			{form}
+			hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
+		/>
+		<AmbientTempField {form} />
 	</div>
 
 	{#if !load_type}
@@ -286,30 +292,35 @@
 	>
 		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
 			{@render SubFields(load_type)}
-			<Separator class="my-4" />
 		{/if}
-	</div>
-
-	<!-- Drawers keep Save in reach while the fields scroll. -->
-	<div class="flex gap-3 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
-		{#if load_type}
-			<Button
-				variant="ghost"
-				class="shrink-0"
-				onclick={() =>
-					(load_type =
-						load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
-			>
-				Change to {load_type === 'DEFAULT'
-					? 'Custom'
-					: load_type === 'CUSTOM'
-						? 'Default'
-						: undefined}
-			</Button>
-		{/if}
-		<Button type="submit" class="min-w-0 flex-1" loading={submitting}>Save</Button>
 	</div>
 </form>
+
+<!-- The footer sits outside the scroll area, so drawers keep Save in reach. -->
+<Dialog.Footer>
+	{#if load_type}
+		<Button
+			variant="ghost"
+			class="mr-auto"
+			onclick={() =>
+				(load_type =
+					load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
+		>
+			Change to {load_type === 'DEFAULT'
+				? 'Custom'
+				: load_type === 'CUSTOM'
+					? 'Default'
+					: undefined}
+		</Button>
+	{/if}
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button
+		type="submit"
+		form={form_id}
+		loading={submitting}
+		disabled={action === 'edit' && !form.isDirty}>Save</Button
+	>
+</Dialog.Footer>
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="space-y-4">
@@ -323,17 +334,18 @@
 			/>
 			<VariesField {form} {load_type} varies_label={variesLabel} {hp_currents} />
 			<LoadTypeField {form} {load_type} {allow_three_phase} />
+			<DwellingCircuitField {form} {load_type} />
 			<Field of={form} path={['continuous']}>
 				{#snippet children(field)}
 					<div class="flex min-w-0 flex-col gap-2">
 						<Label class={cn(field.errors && 'text-destructive')}>Continuous</Label>
+						<!-- PEC 2017 Art. 1.0: 3 hours or more, a fact of the site, so presets leave it editable. -->
 						<div class="flex h-9 items-center">
-							<Checkbox
-								disabled={load_type === 'DEFAULT'}
-								checked={field.input ?? false}
-								onCheckedChange={(v) => field.onInput(v)}
-							/>
+							<Checkbox checked={field.input ?? false} onCheckedChange={(v) => field.onInput(v)} />
 						</div>
+						<p class="text-[0.8rem] text-muted-foreground">
+							Runs 3 hours or more: the breaker takes 125% (PEC 2017 2.10.2.3(A)).
+						</p>
 					</div>
 				{/snippet}
 			</Field>

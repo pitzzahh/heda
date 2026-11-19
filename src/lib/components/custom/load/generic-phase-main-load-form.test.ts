@@ -98,6 +98,26 @@ describe('GenericPhaseMainLoadForm', () => {
 		unmount(component);
 	});
 
+	test('a dwelling preset fills its PEC 2017 2.10.1.11(C) circuit, and duty stays editable', async () => {
+		const component = mount(LoadFormFixture, { target: document.body });
+		flushSync();
+		click_button('Default');
+		click_button('Select a load description');
+		await tick();
+		flushSync();
+		const bathroom = [...document.querySelectorAll('[role="option"]')].find((element) =>
+			element.textContent?.includes('Bathroom Branch Circuit')
+		);
+		bathroom?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		await tick();
+		flushSync();
+
+		expect(document.body.textContent).toContain('Bathroom, 2.10.1.11(C)(3)');
+		const continuous_box = document.querySelector('[role="checkbox"]');
+		expect(continuous_box?.hasAttribute('disabled')).toBe(false);
+		unmount(component);
+	});
+
 	test('invalid submit reaches no mutation', async () => {
 		const component = mount(LoadFormFixture, { target: document.body });
 		flushSync();

@@ -35,14 +35,13 @@ export async function exportToExcel(
 	});
 
 	try {
-		const snapshot = (await import('#lib/db/queries/snapshot.js')).loadSnapshot();
+		const { getExportInputs } = await import('#lib/db/queries/export.js');
 		const generated = await generateWorkbookInWorker({
 			type,
 			node_id,
 			highest_unit,
 			file_name: _file_name,
-			nodes: snapshot.nodes,
-			is_dynamic: snapshot.is_dynamic
+			...(await getExportInputs(type))
 		});
 
 		const output_file_name = `${generated.title}.xlsx`;

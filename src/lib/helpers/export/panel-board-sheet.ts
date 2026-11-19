@@ -1,12 +1,16 @@
 import type ExcelJS from 'exceljs';
 import type { Node } from '#lib/types/db.js';
 import { buildChildrenByParent, getNodeDepthFromNodes } from '#lib/db/queries/loads-core.js';
-import { computeNodeLoad, type LoadComputationContext } from '#lib/db/queries/compute.js';
-import { DEFAULT_PHASES, PHASE_ASSIGNMENTS, default_phases } from '#lib/constants.js';
+import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 import { getOrdinalSuffix, getOptionLabel } from '#lib/utils/format.js';
-import { rowPhaseVa, supplyPhaseOf } from '#lib/utils/computations/index.js';
+import {
+	isThreePhaseSupply,
+	phaseLabels,
+	rowPhaseVa,
+	supplyPhaseOf
+} from '#lib/utils/computations/index.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
-import type { ExportProcessResult, Header } from './types.js';
+import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
 
 type CellValue = string | number | undefined;
@@ -19,6 +23,9 @@ type SheetGroup = Header & {
 
 const text = (value: number | string | undefined, fallback = 'N/A') =>
 	value === undefined ? fallback : value.toString();
+
+/** -1 is the engine's "none in the PEC table": a dash, as the load schedule shows it. */
+const size = (value: number | string) => (value === -1 ? '-' : value);
 
 /** Columns of a single-phase panelboard schedule, A–Q. */
 function baseGroups(): SheetGroup[] {
@@ -70,11 +77,16 @@ function baseGroups(): SheetGroup[] {
 			text: 'CONDUCTOR',
 			cols: 4,
 			sub_cols: ['Sets', 'Qty', 'Size (mm2)', 'Insulation'],
-			row: (l) => [l.conductor_sets, l.conductor_qty, l.conductor_size, l.conductor_insulation],
+			row: (l) => [
+				l.conductor_sets,
+				l.conductor_qty,
+				size(l.conductor_size),
+				l.conductor_insulation
+			],
 			total: (p) => [
 				text(p.conductor_sets),
 				text(p.conductor_qty),
-				p.conductor_size.toString(),
+				text(size(p.conductor_size)),
 				text(p.conductor_insulation)
 			]
 		},
@@ -82,21 +94,26 @@ function baseGroups(): SheetGroup[] {
 			text: 'EGC',
 			cols: 2,
 			sub_cols: ['Size', 'Insulation'],
-			row: (l) => [l.egc_size, l.egc_insulation],
-			total: (p) => [p.egc_size.toString(), text(p.egc_insulation)]
+			row: (l) => [size(l.egc_size), l.egc_insulation],
+			total: (p) => [text(size(p.egc_size)), text(p.egc_insulation)]
 		},
 		{
 			text: 'CONDUIT',
 			cols: 2,
 			sub_cols: ['Size', 'Type'],
-			row: (l) => [l.conduit_size, l.conduit_type],
-			total: (p) => [p.conduit_size.toString(), text(p.conduit_type)]
+			row: (l) => [size(l.conduit_size), l.conduit_type],
+			total: (p) => [text(size(p.conduit_size)), text(p.conduit_type)]
 		}
 	];
 }
 
-/** A 400Y/230 V panel also lists each circuit's phase and VA per phase (PEC 2017 App. D Ex. D6). */
-function wyeGroups(): SheetGroup[] {
+/**
+ * A three-phase panel also lists each circuit's phase and the VA per phase of a
+ * 400Y/230 V panel (PEC 2017 App. D Ex. D6), or per line pair of a 230 V delta one.
+ */
+function threePhaseGroups(panel_phase: string | undefined): SheetGroup[] {
+	const labels = phaseLabels(panel_phase);
+	const is_delta = panel_phase === default_phases.THREE_PHASE_DELTA;
 	return [
 		{
 			text: ' ',
@@ -106,12 +123,16 @@ function wyeGroups(): SheetGroup[] {
 			total: () => ['ABC']
 		},
 		{
-			text: 'VA PER PHASE',
+			text: is_delta ? 'VA PER LINE PAIR' : 'VA PER PHASE',
 			cols: 3,
-			sub_cols: [...PHASE_ASSIGNMENTS],
-			row: (l) => PHASE_ASSIGNMENTS.map((phase) => rowPhaseVa(l, phase)),
-			total: (p) =>
-				PHASE_ASSIGNMENTS.map((phase) => Number((p.phase_va?.[phase] ?? 0).toFixed(2)).toString())
+			sub_cols: [...labels],
+			row: (l) => labels.map((phase) => rowPhaseVa(l, phase)),
+			total: (p) => {
+				const totals: Partial<Record<string, number>> | undefined = is_delta
+					? p.pair_va
+					: p.phase_va;
+				return labels.map((phase) => Number((totals?.[phase] ?? 0).toFixed(2)).toString());
+			}
 		}
 	];
 }
@@ -120,27 +141,28 @@ function wyeGroups(): SheetGroup[] {
 function supplyDescription(phase: string | undefined): string {
 	return phase === default_phases.THREE_PHASE_WYE
 		? `${getOptionLabel(DEFAULT_PHASES, phase)} + N + E, 400Y/230V, 60Hz`
-		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`;
+		: `${getOptionLabel(DEFAULT_PHASES, phase)} + E, ${230}V, ${60}Hz`; // 1P and 3P-Δ: no neutral
 }
 
 /** Lookups built once per export and shared by every panel it writes. */
 interface ExportTree {
 	nodes_by_id: Map<string, Node>;
-	context: LoadComputationContext;
+	children_by_parent: Map<string, Node[]>;
+	rows: ExportInputs['rows'];
 }
 
 /** Writes the schedule of `node_id` and every panel under it, one sheet per depth. */
 export async function processExcelPanelBoardSchedule(
 	workbook: ExcelJS.Workbook,
 	node_id: string,
-	highest_unit?: Node['highest_unit_form'],
-	nodes: Node[] = [],
-	is_dynamic = false
+	highest_unit: Node['highest_unit_form'] | undefined,
+	{ nodes, rows }: Pick<ExportInputs, 'nodes' | 'rows'>
 ): Promise<ExportProcessResult> {
 	// Built once: rebuilding them per panel scanned every node for every panel.
 	const tree: ExportTree = {
 		nodes_by_id: new Map(nodes.map((node) => [node.id, node])),
-		context: { children_by_parent: buildChildrenByParent(nodes), is_dynamic, memo: new Map() }
+		children_by_parent: buildChildrenByParent(nodes),
+		rows
 	};
 	const depth = getNodeDepthFromNodes(nodes, node_id);
 	const result = await writePanelSchedule(workbook, node_id, depth, highest_unit, tree);
@@ -157,16 +179,14 @@ async function writePanelSchedule(
 	highest_unit: Node['highest_unit_form'] | undefined,
 	tree: ExportTree
 ): Promise<ExportProcessResult> {
-	const { nodes_by_id, context } = tree;
+	const { nodes_by_id, children_by_parent, rows } = tree;
 	const current_node = nodes_by_id.get(node_id);
-	if (!current_node) {
+	const computed_current_node = rows[node_id];
+	if (!current_node || !computed_current_node) {
 		return { valid: false, message: 'Node not found', is_system_error: true };
 	}
-	const computed_current_node = computeNodeLoad(current_node, context);
-	// One computed list serves both the load rows and the recursion into sub-panels.
-	const loads = (context.children_by_parent.get(node_id) ?? []).map((child) =>
-		computeNodeLoad(child, context)
-	);
+	// One list serves both the load rows and the recursion into sub-panels.
+	const loads = (children_by_parent.get(node_id) ?? []).flatMap((child) => rows[child.id] ?? []);
 
 	const panel_level = getOrdinalSuffix(depth);
 	const parent_node = current_node.parent_id ? nodes_by_id.get(current_node.parent_id) : undefined;
@@ -199,10 +219,9 @@ async function writePanelSchedule(
 	worksheet.getCell(`B${startRow}`).value = `: PANELBOARD SCHEDULE`;
 	// What this panel distributes: the project's supply at the root, else the panel's own phase.
 	const panel_phase = supplyPhaseOf(current_node) ?? highest_unit?.phase;
-	const groups =
-		panel_phase === default_phases.THREE_PHASE_WYE
-			? [...baseGroups().slice(0, 5), ...wyeGroups(), ...baseGroups().slice(5)]
-			: baseGroups();
+	const groups = isThreePhaseSupply(panel_phase)
+		? [...baseGroups().slice(0, 5), ...threePhaseGroups(panel_phase), ...baseGroups().slice(5)]
+		: baseGroups();
 	worksheet.getCell(`B${startRow + 1}`).value = `: ${supplyDescription(panel_phase)}`;
 	worksheet.getCell(`B${startRow + 2}`).value = `: ${from_supply_name}`;
 	worksheet.getCell(`B${startRow + 3}`).value = `: ${panel_name}`;

@@ -5,19 +5,20 @@
 	interface Props {
 		phase: CircuitPhase;
 		node: PhaseLoadSchedule;
+		/** The panel's phase: line pairs to pick from on delta, else A, B, C. */
+		supply_phase?: string;
 	}
 </script>
 
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
-	import { PHASE_ASSIGNMENTS } from '#lib/constants.js';
 	import { changePhaseAssignment } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { phaseOverride } from '#lib/utils/computations/index.js';
+	import { phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
 
-	let { node, phase }: Props = $props();
+	let { node, phase, supply_phase }: Props = $props();
 	// User picks override until undo/redo recomputes it.
 	let selected_phase = $derived(phase);
 
@@ -26,7 +27,10 @@
 	function handleChangePhase(next: PhaseAssignment) {
 		const previous_node = getNode(node.id);
 		// Picking the circuit-number phase clears the override instead of pinning it.
-		const updated_node = changePhaseAssignment(node.id, phaseOverride(next, node.circuit_number));
+		const updated_node = changePhaseAssignment(
+			node.id,
+			phaseOverride(next, node.circuit_number, supply_phase)
+		);
 		undo_redo_state.setActionToUndo({
 			action: 'update_node',
 			data: updated_node as unknown as PhaseLoadSchedule,
@@ -49,11 +53,11 @@
 			}
 		}}
 	>
-		<Select.Trigger size="sm" class="w-12.5 text-xs" aria-label="Phase">
+		<Select.Trigger size="sm" class="w-14 text-xs" aria-label="Phase">
 			{selected_phase}
 		</Select.Trigger>
 		<Select.Content class="text-sm">
-			{#each PHASE_ASSIGNMENTS as option (option)}
+			{#each phaseLabels(supply_phase) as option (option)}
 				<Select.Item value={option} disabled={selected_phase === option}>
 					{option}
 				</Select.Item>

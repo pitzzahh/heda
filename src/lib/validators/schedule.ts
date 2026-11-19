@@ -1,6 +1,11 @@
 import * as v from 'valibot';
 import { LOAD_TYPE_FIELD } from './load.js';
-import { CIRCUIT_PHASE_FIELD, PHASE_VA_SCHEMA } from './shared.js';
+import {
+	CIRCUIT_PHASE_FIELD,
+	LINE_CURRENT_SCHEMA,
+	PAIR_VA_SCHEMA,
+	PHASE_VA_SCHEMA
+} from './shared.js';
 
 // Computed load-schedule values. The node's stored fields merge in at the type
 // level (lib/types), so these schemas hold only what the computation adds.
@@ -12,14 +17,18 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	va: v.number(),
 	current: v.number(),
 	at: v.number(),
+	/** -1 when no conductor of PEC 2017 Table 3.10.2.6(B)(16) meets the circuit. */
 	conductor_size: v.number(),
-	adjusted_current: v.number(),
 	ampere_frames: v.number(),
-	/** Phases the circuit draws from on a 3P-Y supply: A/B/C (single-phase) or ABC. */
+	/** What the circuit draws from: A/B/C on 3P-Y, AB/BC/CA on delta (single-phase), or ABC. */
 	phase: v.optional(CIRCUIT_PHASE_FIELD),
 	/** 3P-Y panels: VA on each phase. */
 	phase_va: v.optional(PHASE_VA_SCHEMA),
-	/** 3P-Y panels: PEC 2017 App. D Ex. D6 balanced current, VA ÷ (400 × 1.732); `current` is the design value. */
+	/** Delta panels: VA on each line pair. */
+	pair_va: v.optional(PAIR_VA_SCHEMA),
+	/** Delta panels: current in each line, from the pair currents 120° apart. */
+	line_current: v.optional(LINE_CURRENT_SCHEMA),
+	/** Three-phase panels: balanced current, VA ÷ (line voltage × 1.732) (PEC 2017 App. D Ex. D6); `current` is the design value. */
 	balanced_current: v.optional(v.number())
 };
 

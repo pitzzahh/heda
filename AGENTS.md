@@ -1,10 +1,10 @@
 # heda AGENTS.md
 
-SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formisch. Package manager: `bun`.
+SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop, Android) + a Rust engine (`crates/heda-core`) + Valibot + Formisch. Package manager: `bun`.
 
 ## Commands
 
-- Web dev: `bun run dev` · production web build: `bun run build` · desktop dev: `bunx tauri dev` · desktop build: `bunx tauri build`
+- Desktop dev: `bunx tauri dev` (it starts `bun run dev`, the Vite server; the app needs the Tauri backend and does not run in a plain browser) · desktop build: `bunx tauri build` (runs `bun run build`)
 - Tests (vitest, colocated `*.test.ts`): `bun run test`
 - Formatting: `bun run format` (`bun fmt`, built into bun). Settings live in the `[fmt]` section of `bunfig.toml`; never reintroduce Prettier or its plugins.
 - `.env` is optional: `BASE_PATH` (web builds only; dev and Tauri builds ignore it) and the legacy v1 migration keys `VITE_LEGACY_FILE_*` (production web builds define them empty; dev servers and tests still read them). Without those keys, v1 `.heda` files cannot be upgraded; v2/v3 files never need `.env`. See `.env.example`.
@@ -53,7 +53,7 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 - EVERY domain type lives in `src/lib/types/` and is derived from a validator: `export type PanelInput = v.InferOutput<typeof GENERIC_PHASE_PANEL_SCHEMA>;` Compose with `Pick`/`Omit`/`Extract`/intersections only, never redeclare fields by hand.
 - Never hand-write an interface/type that duplicates a schema shape.
 - Composite types (`FileExport`, `PhaseLoadSchedule`, `VoltageDrop`, …) intersect/extend derived types; their leaf domain values still come from validators.
-- Exempt from derivation but still in `lib/types`: SignalDB `Collection<…>` aliases, generic helpers (`LabelValuePair`, …), and tiny UI/persisted shapes with no validation site.
+- Exempt from derivation but still in `lib/types`: engine payload shapes (`EngineComputed`), generic helpers (`LabelValuePair`, …), and tiny UI/persisted shapes with no validation site.
 - `Props` interfaces and per-page types live in `<script module>` of their component, importing leaf types from `#lib/types/*`.
 
 ## Forms (Formisch)
@@ -89,18 +89,22 @@ SvelteKit 3 + Svelte 5 (runes) + Tauri 2 (desktop) + SignalDB + Valibot + Formis
 - `validators.test.ts` (inside `validators/`) is the one place outside Formisch allowed to call `v.safeParse`.
 - Never run `vite build` to validate code, except when touching Vite/adapter/prerender-affecting config (the one area `check` cannot see). No `svelte-kit sync` except as part of `bun run check`.
 
-## Database (SignalDB)
+## Database (session store)
 
-- Store: `@signaldb/core` v2 `Collection<Project>` / `Collection<Node>` on one `DefaultDataAdapter` (see `src/lib/db/index.ts`). Never reintroduce RxDB.
-- Every write goes through `afterWrite()` or the `*Collection` helpers in `src/lib/db/index.ts`: core 2 emits collection events only after storage lands, so that hook is what keeps the load snapshot in sync within the same tick.
-- Persistence: `@pitzzahh/signaldb-adapter-tauri` in Tauri, pure memory in web dev/preview. Detect via `isTauri()` from `@tauri-apps/api/core`.
-- Session encryption key is a per-session random passphrase kept in a Stronghold vault (`tauri-plugin-stronghold`, argon2 snapshot KDF, registered in `src-tauri` builders + `stronghold:default` capability). The vault password is the session secret (the open file's password, or the device key for device-encrypted files). Never hardcoded, never persisted.
-- Never await Stronghold bare: its Rust memory protection can panic (sandboxed kernels, locked-memory limits) and leave the IPC promise unsettled, hanging the UI at loading. Every vault access races `withTimeout` (5s) and degrades to memory-only on timeout: no retry after a hang, only after an active throw (corrupt vault).
-- Session-scoped by design: `databaseInstance()` wipes the session files (including the vault) on launch so every start begins empty. Do NOT add cross-session restore without a product decision.
-- Session files are deliberately nondescript and extensionless (`heda-p`, `heda-n`, `heda-v` in `$APPLOCALDATA`); never rename them to something advertising their contents.
-- The store is schemaless: every insert path MUST merge `withNodeDefaults` / `withProjectDefaults` (in `src/lib/db/mutations/`); that is where the old schema defaults live now.
-- Queries/mutations return plain objects and keep async signatures even though SignalDB calls are sync. After `updateOne`, re-fetch with `findOne` for the updated doc. Sort uses `{ field: 1 | -1 }`, never `'asc'`/`'desc'`.
-- DB changes extend `src/lib/db/db.test.ts` (runs on memory under node).
+- The open project lives in the Rust engine (`Session` in `crates/heda-core/src/session.rs`), held by the Tauri backend, so a webview reload finds it again and a fresh launch starts empty. Never reintroduce SignalDB, RxDB, session files or a Stronghold vault.
+- `src/lib/db/index.ts` keeps a mirror of the documents for synchronous reads. Every write goes through its helpers (`openSession`, `insertNodes`, `replaceNodes`, `removeNodes`, `setProject`): the mirror changes at once, the engine gets the write in order and answers with the rows it recomputed. Computed reads (`getComputedLoads`, `getNodeById`) show a written node once that answer lands; `await settled()` in tests before reading them.
+- Same-session restore: on a webview reload, `initializeDatabase()` takes the engine's `snapshot` only while `getSessionPassword()` is set (cleared on home/reset); otherwise it closes the engine session. There is no browser-only mode: the app needs Tauri (`bunx tauri dev`).
+- Documents are schemaless: every insert path MUST merge `withNodeDefaults` / `withProjectDefaults` (in `src/lib/db/mutations/`); that is where the old schema defaults live now.
+- Queries/mutations return plain objects. Voltage drops and short circuits come from the engine on demand (`getComputed*Async`, cached per snapshot revision).
+- DB changes extend `src/lib/db/db.test.ts` (runs on the WASM engine under node).
+
+## Rust engine (crates/heda-core)
+
+- New calculations and features go in Rust (`crates/heda-core`, pure, no Tauri deps); Svelte is UI only. Pages and the Excel export read the engine's results (the export reads them on the page through `getExportInputs` and posts them to its worker). `#lib/utils/computations` keeps only UI helpers (phase picks, supply checks, the horsepower picker); never add a calculation there.
+- One entry point: `dispatch(session, command, args) -> Result<Value, String>` (`src/dispatch.rs`). The app reaches it through the single Tauri `heda` command (`engine()` in `#lib/core/api.ts`, calls run in order); vitest reaches the same `dispatch` through the WASM build (`bun run core`, run by `test`/`check`; needs `wasm-bindgen-cli` at the exact version pinned in `Cargo.toml`). Only `MODE === 'test'` loads it, so no app build ships it.
+- Byte-for-byte parity with the results first defined in TypeScript: `src/js.rs` reproduces JS `toFixed`, `Number(string)`, `Math.hypot` (V8), `||` and `Math.max`; use those helpers, never `f64::hypot`/`format!` rounding, for anything a golden covers. `src/lib/core/golden.test.ts` runs every sample through the app's queries (and so the engine) against `src/lib/core/golden/`, recorded from the TS engine; a golden only changes in a commit that says why.
+- PEC tables live in `src/tables.rs`, each citing its table; verify values on rendered page images (`pdftoppm`), the PDF text layer is corrupt in places. Worked examples (App. D) are cargo integration tests in `crates/heda-core/tests/`.
+- `bun run lint` includes `cargo fmt --check` and `cargo clippy -D warnings`; `bun run test` includes `cargo test`.
 
 ## Crypto & file passwords
 

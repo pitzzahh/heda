@@ -19,7 +19,6 @@
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
-	import { Separator } from '#lib/components/ui/separator/index.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
@@ -88,7 +87,6 @@
 				</dl>
 			</div>
 		</Dialog.Header>
-		<Separator class="mb-4" />
 		<svelte:boundary>
 			<GenericPhaseMainPanelForm
 				action="add"

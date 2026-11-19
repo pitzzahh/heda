@@ -142,8 +142,12 @@
 			>
 				{expanded ? 'Hide' : 'Edit'}
 			</Button>
-			<Button type="submit" size="sm" class={cn({ 'max-lg:hidden': !expanded })} loading={saving}
-				>Save source</Button
+			<Button
+				type="submit"
+				size="sm"
+				class={cn({ 'max-lg:hidden': !expanded })}
+				loading={saving}
+				disabled={!form.isDirty}>Save source</Button
 			>
 		</div>
 	</div>

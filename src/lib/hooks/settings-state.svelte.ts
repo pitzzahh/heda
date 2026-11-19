@@ -13,7 +13,6 @@ export class SettingsState {
 	themeMode = $state<ThemeMode>('light');
 	font = $state<Font>('default');
 	show_loads_on_unit_hierarchy = $state(false);
-	is_adjustment_factor_dynamic = $state(false);
 	is_panel_multi_copy = $state(false);
 	is_load_multi_copy = $state(false);
 	auto_save_enabled = $state(false);
@@ -24,7 +23,6 @@ export class SettingsState {
 			color: 'excel',
 			font: 'default',
 			show_loads_on_unit_hierarchy: false,
-			is_adjustment_factor_dynamic: false,
 			is_panel_multi_copy: false,
 			is_load_multi_copy: false,
 			theme_mode: mode,
@@ -45,9 +43,6 @@ export class SettingsState {
 		this.setGlobalFont(_persisted_state?.current?.font ?? 'default');
 		this.setShowLoadsOnUnitHeirarchy(
 			_persisted_state?.current?.show_loads_on_unit_hierarchy || false
-		);
-		this.setIsAdjustmentFactorDynamic(
-			_persisted_state?.current?.is_adjustment_factor_dynamic || false
 		);
 		this.setIsPanelMultiCopy(_persisted_state?.current?.is_panel_multi_copy || false);
 		this.setIsLoadMultiCopy(_persisted_state?.current?.is_load_multi_copy || false);
@@ -118,14 +113,6 @@ export class SettingsState {
 		this.persisted_state.current = {
 			...this.persisted_state.current,
 			show_loads_on_unit_hierarchy
-		};
-	}
-
-	setIsAdjustmentFactorDynamic(is_adjustment_factor_dynamic: boolean) {
-		this.is_adjustment_factor_dynamic = is_adjustment_factor_dynamic;
-		this.persisted_state.current = {
-			...this.persisted_state.current,
-			is_adjustment_factor_dynamic
 		};
 	}
 

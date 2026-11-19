@@ -16,7 +16,6 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { GenericPhaseMainPanelForm } from '#lib/components/custom/panel/index.js';
-	import { Separator } from '#lib/components/ui/separator/index.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { supplyPhaseOf } from '#lib/utils/computations/index.js';
 	import ParentPanelPopover from '../parent-panel-popover.svelte';
@@ -90,7 +89,6 @@
 				</dl>
 			</div>
 		</Dialog.Header>
-		<Separator class="mb-4" />
 		<svelte:boundary>
 			<GenericPhaseMainPanelForm
 				action="edit"

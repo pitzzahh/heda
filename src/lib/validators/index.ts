@@ -22,6 +22,9 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 			'Transformer'
 		),
 		phase: PHASE_FIELD,
+		// The utility service supplies the project, so its first panel holds the service
+		// disconnecting means and its PEC 2017 2.30.6.10 minimum rating.
+		is_service: v.optional(v.boolean(), true),
 		// Android only: desktop names the file in the save dialog. Blank means
 		// "Untitled project"; unsafe characters are replaced when the file is made.
 		project_name: v.optional(

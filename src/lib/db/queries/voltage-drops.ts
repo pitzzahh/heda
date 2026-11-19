@@ -1,59 +1,34 @@
-import { computed_loads, voltage_drop_result_reuse } from './cache.js';
-import { getSnapshotRevision, loadSnapshot, peekSnapshot, type LoadSnapshot } from './snapshot.js';
-import { walkVoltageDrops } from './voltage-drop-core.js';
-import { nextTask } from './loads.js';
+import { voltage_drop_result_reuse } from './cache.js';
+import { getSnapshotRevision, peekSnapshot } from './snapshot.js';
+import { getRow, settled } from '../index.js';
+import { engine } from '#lib/core/api.js';
 import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
-// Work done per task before yielding back to the event loop.
-const SLICE_MS = 8;
-
-function walk(snapshot: LoadSnapshot) {
-	return walkVoltageDrops(snapshot.root, snapshot.node_by_id, {
-		children_by_parent: snapshot.children_by_parent,
-		is_dynamic: snapshot.is_dynamic,
-		memo: computed_loads
-	});
-}
-
-function remember(revision: number, value: VoltageDrop[]): VoltageDrop[] {
-	voltage_drop_result_reuse.revision = revision;
-	voltage_drop_result_reuse.value = value;
-	return value;
-}
-
-export function getComputedVoltageDrops(): VoltageDrop[] {
-	const revision = getSnapshotRevision();
-	if (voltage_drop_result_reuse.value && voltage_drop_result_reuse.revision === revision) {
-		return voltage_drop_result_reuse.value;
-	}
-	return remember(revision, [...walk(loadSnapshot())]);
-}
-
-/**
- * The UI entry point. Walks the tree in slices of a few milliseconds and
- * yields between them, so a large project never blocks input or paint. A
- * write during the walk restarts it on the new revision; results are cached
- * per revision.
- */
+/** The voltage drop of every run, from the engine, cached per snapshot revision. */
 export async function getComputedVoltageDropsAsync(): Promise<VoltageDrop[]> {
 	for (;;) {
+		// Pending writes answer first, so the revision read here is the one computed.
+		await settled();
 		const revision = getSnapshotRevision();
 		if (voltage_drop_result_reuse.value && voltage_drop_result_reuse.revision === revision) {
 			return voltage_drop_result_reuse.value;
 		}
-		const drops: VoltageDrop[] = [];
-		let slice_start = performance.now();
-		let stale = false;
-		for (const drop of walk(peekSnapshot())) {
-			drops.push(drop);
-			if (performance.now() - slice_start < SLICE_MS) continue;
-			await nextTask();
-			if (getSnapshotRevision() !== revision) {
-				stale = true;
-				break;
-			}
-			slice_start = performance.now();
-		}
-		if (!stale) return remember(revision, drops);
+		const drops = await engine<(Partial<VoltageDrop> & { id: string })[]>('voltage_drops');
+		// A write meanwhile makes these stale; ask again on the new revision.
+		if (getSnapshotRevision() !== revision) continue;
+		const { node_by_id } = peekSnapshot();
+		const value = drops.map(
+			(drop) =>
+				({
+					...node_by_id.get(drop.id),
+					...getRow(drop.id),
+					...drop,
+					// The run's length, or undefined without one, whatever the node stored.
+					length: drop.length
+				}) as VoltageDrop
+		);
+		voltage_drop_result_reuse.revision = revision;
+		voltage_drop_result_reuse.value = value;
+		return value;
 	}
 }

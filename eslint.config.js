@@ -32,6 +32,16 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/', 'src-tauri/target/', 'coverage/']
+		ignores: [
+			'build/',
+			'.svelte-kit/',
+			'dist/',
+			'src-tauri/target/',
+			'crates/heda-core/target/',
+			'src/lib/core/pkg/',
+			'coverage/',
+			// Local agent worktrees: other checkouts of this repo, not source.
+			'.claude/'
+		]
 	}
 ];

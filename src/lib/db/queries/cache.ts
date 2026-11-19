@@ -3,15 +3,14 @@ import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type { ShortCircuit } from '#lib/types/short-circuit.js';
 import type { VoltageDrop } from '#lib/types/voltage-drop.js';
 
-// Per-node results that depend only on the node and its descendants. They
-// survive across revisions; the load snapshot evicts changed nodes and their
-// ancestors (see `invalidateComputed`), so an edit recomputes one branch.
-export const computed_loads = new Map<string, PhaseLoadSchedule>();
-export const node_results = new Map<string, NodeByIdResult>();
-
 // Last value handed to the UI, kept so an unchanged result keeps its identity.
 export const computed_load_arrays = new Map<string, PhaseLoadSchedule[]>();
 export const node_by_id_reuse = new Map<string, NodeByIdResult>();
+// A node merged with its engine row, rebuilt only when either one changes.
+export const merged_rows = new Map<
+	string,
+	{ node: object; row: object; value: PhaseLoadSchedule }
+>();
 
 export const voltage_drop_result_reuse: { revision: number; value: VoltageDrop[] | null } = {
 	revision: -1,
@@ -61,17 +60,11 @@ export function reuseArrayIfEqual<T>(previous: T[] | undefined, next: T[]): T[] 
 }
 
 export function clearQueryCache(): void {
-	computed_loads.clear();
-	node_results.clear();
 	computed_load_arrays.clear();
 	node_by_id_reuse.clear();
+	merged_rows.clear();
 	voltage_drop_result_reuse.revision = -1;
 	voltage_drop_result_reuse.value = null;
 	short_circuit_result_reuse.revision = -1;
 	short_circuit_result_reuse.value = null;
-}
-
-export function evictNodeFromCache(node_id: string): void {
-	computed_loads.delete(node_id);
-	node_results.delete(node_id);
 }

@@ -13,13 +13,14 @@
 	import { PasswordInput } from '#lib/components/ui/password-input/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import { cn } from '#lib/utils/index.js';
 	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
 	import type { Phase } from '#lib/types/phase.js';
-	import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
+	import { DEFAULT_PHASES, PHASE_SYSTEM_VOLTAGES } from '#lib/constants.js';
 	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
@@ -53,10 +54,11 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { use_password: false }
+		initialInput: { use_password: false, is_service: true }
 	});
 
 	let submitting = $state(false);
+	const form_id = $props.id();
 
 	async function handleSubmit() {
 		if (submitting) return;
@@ -72,7 +74,8 @@
 			// session and seals the file; otherwise the device key does both.
 			const project_input = {
 				distribution_unit: data.distribution_unit,
-				phase: data.phase
+				phase: data.phase,
+				is_service: data.is_service
 			};
 			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
@@ -204,6 +207,7 @@
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -256,35 +260,31 @@
 										variant: 'outline',
 										className:
 											'h-11 w-full justify-between px-4 font-medium hover:border-primary/40 hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/10 has-data-[state=checked]:text-primary'
-									}),
-									{
-										'cursor-not-allowed opacity-60':
-											phase_option.value === default_phases.THREE_PHASE_DELTA
-									}
+									})
 								)}
 							>
-								<!-- 1P and 3P-Y (400Y/230 V) are supported; delta is not yet -->
-								<RadioGroup.Item
-									value={phase_option.value}
-									disabled={phase_option.value === default_phases.THREE_PHASE_DELTA}
-									class="sr-only"
-								/>
+								<RadioGroup.Item value={phase_option.value} class="sr-only" />
 								<span>{phase_option.label}</span>
-								{#if phase_option.value === default_phases.THREE_PHASE_DELTA}
-									<span
-										class="text-[9px] font-bold tracking-[0.2em] text-muted-foreground uppercase"
-										>Soon</span
-									>
-								{:else}
-									<span class="text-[9px] font-bold tracking-[0.2em] text-primary/70 uppercase"
-										>Available</span
-									>
-								{/if}
+								<span class="text-[9px] font-bold tracking-[0.2em] text-primary/70 uppercase"
+									>{PHASE_SYSTEM_VOLTAGES[phase_option.value]}</span
+								>
 							</Label>
 						{/each}
 					</RadioGroup.Root>
 					<FieldErrors errors={field.errors} />
 				</fieldset>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['is_service']}>
+			{#snippet children(field)}
+				<div class="rounded-xl border p-3">
+					<Checkbox
+						checked={field.input ?? true}
+						onCheckedChange={(v) => field.onInput(v)}
+						label="Utility service entrance"
+						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+					/>
+				</div>
 			{/snippet}
 		</Field>
 		<Field of={form} path={['use_password']}>
@@ -336,8 +336,12 @@
 			{/snippet}
 		</Field>
 	</div>
-	<Button type="submit" size="lg" class="mt-5 w-full" loading={submitting}>
+</form>
+
+<Dialog.Footer>
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button type="submit" form={form_id} loading={submitting}>
 		<LockKeyIcon class="size-4" />
 		Proceed
 	</Button>
-</form>
+</Dialog.Footer>

@@ -10,19 +10,16 @@ export {
 	updateNodeParentById,
 	restoreNodeFields
 } from './nodes.js';
-export {
-	createProject,
-	deleteProject,
-	updateProjectSettings,
-	updateProjectTitle
-} from './projects.js';
+export { createProject, deleteProject, updateProjectTitle } from './projects.js';
 export {
 	changeInsulation,
 	changePhaseAssignment,
 	changePhaseAssignments,
 	changePole,
 	overrideField,
+	setServiceEntrance,
 	updateConductorSets,
+	updateInterruptingRating,
 	updateLoadDescription,
 	updateShortCircuitSource,
 	useAtAsCurrentsValue,

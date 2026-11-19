@@ -1,23 +1,22 @@
 import type ExcelJS from 'exceljs';
-import { computeVoltageDropsFromNodes } from '#lib/db/queries/voltage-drop-core.js';
-import { default_phases } from '#lib/constants.js';
-import type { Node } from '#lib/types/db.js';
-import type { ExportProcessResult, Header } from './types.js';
+import { isThreePhaseSupply } from '#lib/utils/computations/index.js';
+import type { ExportInputs, ExportProcessResult, Header } from './types.js';
 import { fitColumnWidths } from './column-widths.js';
+import { dashIfNone } from '#lib/utils/format.js';
 
 export async function processVoltageDropSheet(
 	workbook: ExcelJS.Workbook,
-	nodes: Node[] = [],
-	is_dynamic = false
+	{ nodes, voltage_drops }: Pick<ExportInputs, 'nodes' | 'voltage_drops'>
 ): Promise<ExportProcessResult> {
 	const worksheet = workbook.addWorksheet('Voltage Drop');
 
 	const startRow = worksheet.rowCount > 0 ? worksheet.rowCount + 1 : 1;
 
-	// A 3P-Y study mixes 400 V and 230 V runs (PEC 2017 App. D Ex. D15), so each row names its phase and voltage.
-	const is_wye =
-		nodes.find((node) => node.node_type === 'root')?.highest_unit_form?.phase ===
-		default_phases.THREE_PHASE_WYE;
+	// A three-phase study mixes three-phase and single-phase runs (PEC 2017 App. D Ex. D15), and
+	// 3P-Y also 400 V and 230 V ones, so each row names its phase and voltage.
+	const is_wye = isThreePhaseSupply(
+		nodes.find((node) => node.node_type === 'root')?.highest_unit_form?.phase
+	);
 	const table_headers: Header[] = [
 		{ text: 'From NODE', cols: 1 },
 		{ text: 'To NODE', cols: 1 },
@@ -68,7 +67,6 @@ export async function processVoltageDropSheet(
 		current_header_column += header.cols;
 	});
 
-	const voltage_drops = computeVoltageDropsFromNodes(nodes, is_dynamic);
 	let current_load_row = startRow + 2;
 
 	for (const voltage_drop_node of voltage_drops) {
@@ -78,15 +76,17 @@ export async function processVoltageDropSheet(
 			...(is_wye ? [voltage_drop_node.phase, voltage_drop_node.voltage] : []),
 			voltage_drop_node.conductor_sets,
 			voltage_drop_node.conductor_qty,
-			voltage_drop_node.conductor_size,
-			voltage_drop_node.z,
+			dashIfNone(voltage_drop_node.conductor_size),
+			dashIfNone(voltage_drop_node.z),
 			voltage_drop_node.length,
 			voltage_drop_node.current,
-			voltage_drop_node.actual_z,
-			voltage_drop_node.voltage_per_segment,
-			voltage_drop_node.voltage_at_end_circuit,
-			voltage_drop_node.voltage_at_receiving_end,
-			voltage_drop_node.percent_voltage_drop
+			...[
+				voltage_drop_node.actual_z,
+				voltage_drop_node.voltage_per_segment,
+				voltage_drop_node.voltage_at_end_circuit,
+				voltage_drop_node.voltage_at_receiving_end,
+				voltage_drop_node.percent_voltage_drop
+			].map(dashIfNone)
 		];
 
 		loadCells.forEach((value, index) => {

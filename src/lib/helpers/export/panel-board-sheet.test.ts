@@ -7,7 +7,7 @@ import {
 } from '#lib/constants.js';
 import { initializeDatabase } from '#lib/db/index.js';
 import { addNode, createProject, resetData } from '#lib/db/mutations/index.js';
-import { loadSnapshot } from '#lib/db/queries/snapshot.js';
+import { getExportInputs } from '#lib/db/queries/export.js';
 import { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
 import type { Phase } from '#lib/types/phase.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
@@ -50,13 +50,12 @@ async function sheetFor(system: Phase, panel_phase: Phase, loads: [string, strin
 		addNode({ parent_id: lp.id, load_data: load(index * 2 + 1, type, varies) })
 	);
 	const workbook = new ExcelJS.Workbook();
-	const { nodes } = loadSnapshot();
+	const inputs = await getExportInputs('LOAD_SCHEDULE');
 	const result = await processExcelPanelBoardSchedule(
 		workbook,
 		lp.id,
-		nodes.find((node) => node.node_type === 'root')!.highest_unit_form,
-		nodes,
-		false
+		inputs.nodes.find((node) => node.node_type === 'root')!.highest_unit_form,
+		inputs
 	);
 	expect(result.valid).toBe(true);
 	return workbook.getWorksheet('2nd')!;
@@ -117,5 +116,57 @@ describe('panel board sheet', () => {
 		expect(total.slice(5, 9)).toEqual(['ABC', '3840', '2000', '2000']);
 		// Most loaded phase (A, 3 840 VA ÷ 230 V) beats the balanced 7 840 VA ÷ 692.8 V.
 		expect(total[4]).toBe('16.7');
+	});
+
+	it('adds phase and VA per line pair for a 230 V delta panel (PEC 2017 App. D Ex. D14)', async () => {
+		const sheet = await sheetFor(
+			default_phases.THREE_PHASE_DELTA,
+			default_phases.THREE_PHASE_DELTA,
+			[
+				[default_load_types.LIGHTING_LOAD, '2300'], // ckt 1 → AB, 10 A line to line
+				[default_load_types.THREE_P_EQUIPMENT, '6000'] // ckt 3 → ABC, 2 000 VA each pair
+			]
+		);
+		expect(sheet.getCell('B2').value).toBe(': 3P-Δ + E, 230V, 60Hz');
+		expect(rowValues(sheet, 5).slice(0, 7)).toEqual([
+			' ',
+			' ',
+			' ',
+			' ',
+			' ',
+			' ',
+			'VA PER LINE PAIR'
+		]);
+		expect(rowValues(sheet, 6).slice(4, 9)).toEqual(['CURRENT (A)', 'PHASE', 'AB', 'BC', 'CA']);
+		const [ckt, , voltage, va, current, phase, ab, bc, ca, , , pole] = rowValues(sheet, 7);
+		expect([ckt, voltage, va, current, phase, ab, bc, ca, pole]).toEqual([
+			1,
+			230,
+			2300,
+			10,
+			'AB',
+			2300,
+			'',
+			'',
+			'2'
+		]);
+		const total = rowValues(sheet, 9);
+		expect(total.slice(0, 3)).toEqual(['TOTAL', 'MAIN', '230']);
+		expect(total.slice(5, 9)).toEqual(['ABC', '4300', '2000', '2000']);
+	});
+
+	it('shows a dash where no conductor of PEC 2017 Table 3.10.2.6(B)(16) carries the circuit', async () => {
+		// 150 000 VA ÷ 230 V = 652 A, noncontinuous (100 %, 2.10.2.3(A)) → a 700 A breaker; one
+		// set of 500 mm² terminates at 530 A (75 °C), so the circuit needs more sets. Its EGC is
+		// 50 mm² (Table 2.50.6.13, p. 124: not exceeding 800 A).
+		const sheet = await sheetFor(default_phases.ONE_PHASE, default_phases.ONE_PHASE, [
+			[default_load_types.LIGHTING_LOAD, '150000']
+		]);
+		const row = rowValues(sheet, 7);
+		expect(row[5]).toBe(700);
+		expect([row[11], row[13]]).toEqual(['-', 50]);
+		// No conductor, so no conduit either: a dash, as on screen, not the engine's old text.
+		expect(row[15]).toBe('-');
+		expect(rowValues(sheet, 8)[11]).toBe('-');
 	});
 });

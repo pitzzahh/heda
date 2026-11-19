@@ -1,5 +1,10 @@
 import * as v from 'valibot';
-import { DEFAULT_LOAD_TYPES, default_load_types, FIELD_VALIDATION } from '#lib/constants.js';
+import {
+	DEFAULT_LOAD_TYPES,
+	DWELLING_CIRCUITS,
+	default_load_types,
+	FIELD_VALIDATION
+} from '#lib/constants.js';
 import type { ObjectPathItem } from 'valibot';
 import {
 	AMBIENT_TEMPERATURE_FIELD,
@@ -25,12 +30,19 @@ export const LOAD_TYPE_FIELD = v.picklist(
 	'Please select a valid load type.'
 );
 
+/** The dwelling-unit circuit of PEC 2017 2.10.1.11(C) a load is, which makes it 20 A. */
+export const DWELLING_CIRCUIT_FIELD = v.picklist(
+	DWELLING_CIRCUITS.map((option) => option.value),
+	'Please select a valid dwelling circuit.'
+);
+
 /** A preset in the load description picker. */
 export const DEFAULT_LOAD_SCHEMA = v.object({
 	description: v.string(),
 	varies: v.string(),
 	continuous: v.boolean(),
-	type: LOAD_TYPE_FIELD
+	type: LOAD_TYPE_FIELD,
+	dwelling_circuit: v.optional(DWELLING_CIRCUIT_FIELD)
 });
 
 export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
@@ -43,7 +55,8 @@ export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
 		load_description: LOAD_DESCRIPTION_FIELD,
 		varies: v.string('This field is required'),
 		continuous: CONTINUOUS_FIELD,
-		load_type: LOAD_TYPE_FIELD
+		load_type: LOAD_TYPE_FIELD,
+		dwelling_circuit: v.optional(DWELLING_CIRCUIT_FIELD)
 	}),
 	v.rawCheck(({ dataset, addIssue }) => {
 		if (!dataset.typed) return;

@@ -64,6 +64,7 @@
 				</div>
 			</Dialog.Header>
 			<form
+				id="password-form"
 				onsubmit={(e) => {
 					e.preventDefault();
 					submit();
@@ -102,10 +103,15 @@
 						</div>
 					{/if}
 				</div>
-				<Button type="submit" size="lg" disabled={busy} loading={busy} class="mt-5 w-full">
+			</form>
+			<Dialog.Footer>
+				<Button type="button" variant="ghost" onclick={() => (open = false)} disabled={busy}
+					>Cancel</Button
+				>
+				<Button type="submit" form="password-form" disabled={busy} loading={busy}>
 					{mode === 'unlock' ? 'Unlock file' : 'Set password and save'}
 				</Button>
-			</form>
+			</Dialog.Footer>
 			<Dialog.Close />
 		{/key}
 	</Dialog.Content>

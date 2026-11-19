@@ -1,309 +1,175 @@
-import { Collection, DefaultDataAdapter } from '@signaldb/core';
-import type { BaseItem, Selector } from '@signaldb/core';
-import svelteReactivityAdapter from '@signaldb/svelte';
-import { adapter } from '@pitzzahh/signaldb-adapter-tauri';
+/**
+ * The session store. The open project lives in the Rust engine (`crates/heda-core`,
+ * reached through `engine()`); this module keeps a mirror of its documents for the
+ * app's synchronous reads, plus the results the engine sent back.
+ *
+ * A write lands in the mirror at once (so the next read sees it) and goes to the
+ * engine in order; the engine answers with the results it recomputed. `settled()`
+ * resolves once every answer is in.
+ */
 import { isTauri } from '@tauri-apps/api/core';
-import { appLocalDataDir } from '@tauri-apps/api/path';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
-import { Stronghold } from '@tauri-apps/plugin-stronghold';
-import type { MyDatabaseCollections, Node, Project } from '#lib/types/db.js';
-import { decryptGcm, encryptGcm, sessionStoreKey } from '#lib/helpers/security/index.js';
+import { engine } from '#lib/core/api.js';
+import type { ComputedRow, EngineComputed, Node, Project } from '#lib/types/db.js';
 import { getSessionPassword } from './session.js';
 
-// Session store files. Deliberately nondescript and extensionless so they do
-// not advertise their contents: p = projects, n = nodes, v = vault, k = KDF salt.
-const PROJECTS_FILE = 'heda-p';
-const NODES_FILE = 'heda-n';
-const VAULT_FILE = 'heda-v';
-// Pre-rename corpses, removed best-effort on launch (see initializeDatabase).
-const LEGACY_FILES = ['heda-projects.json', 'heda-nodes.json', 'heda-vault.hold', 'salt.txt'];
-// Web-only (non-Tauri) keepalive: tab-scoped `sessionStorage` snapshot so a
-// reload in the same window restores the in-memory collections. Cleared when
-// the tab closes; Tauri uses its encrypted files instead.
-const SESSION_DATA_KEY = 'heda-session-data';
+// Session files of earlier versions (node and project stores, vault and its salt),
+// removed best-effort on launch: the session now lives in the app process.
+const LEGACY_FILES = [
+	'heda-p',
+	'heda-n',
+	'heda-v',
+	'heda-k',
+	'heda-projects.json',
+	'heda-nodes.json',
+	'heda-vault.hold',
+	'salt.txt'
+];
 
-function sessionStorageOrNull(): Storage | null {
-	try {
-		return typeof sessionStorage === 'undefined' ? null : sessionStorage;
-	} catch {
-		return null;
-	}
+const nodes = new Map<string, Node>();
+let project: Project | undefined;
+const rows = new Map<string, ComputedRow>();
+let pending: Promise<void> = Promise.resolve();
+let ready: Promise<void> | null = null;
+
+const write_listeners = new Set<() => void>();
+
+/** Calls `listener` synchronously after every write and every engine answer; returns the unsubscribe. */
+export function onSessionWrite(listener: () => void): () => void {
+	write_listeners.add(listener);
+	return () => write_listeners.delete(listener);
+}
+
+function notify(): void {
+	for (const listener of write_listeners) listener();
+}
+
+function apply(computed: EngineComputed): void {
+	for (const [id, row] of Object.entries(computed.rows)) rows.set(id, row);
+	notify();
+}
+
+/** Sends one write to the engine and applies the results it recomputed. */
+function send(command: string, args: object): void {
+	pending = engine<EngineComputed>(command, args).then(apply, (error: unknown) => {
+		// The mirror already holds the write; only a reload would lose it.
+		console.error(`Engine ${command} failed:`, error);
+	});
+}
+
+/** Resolves once the engine has answered every write made so far. */
+export function settled(): Promise<void> {
+	return pending;
 }
 
 function hasKeepalive(): boolean {
 	return getSessionPassword() !== null;
 }
 
-let webSnapshotListenerAttached = false;
-
-function attachWebSnapshotSave(): void {
-	if (webSnapshotListenerAttached) return;
-	webSnapshotListenerAttached = true;
-	const save = () => {
-		if (!dbInstance) return;
-		try {
-			const payload = JSON.stringify({
-				projects: dbInstance.projects.find().fetch(),
-				nodes: dbInstance.nodes.find().fetch()
-			});
-			sessionStorageOrNull()?.setItem(SESSION_DATA_KEY, payload);
-		} catch {
-			// Best-effort: quota or private mode just skips the next reload restore.
-		}
-	};
-	try {
-		window.addEventListener('pagehide', save);
-	} catch {
-		// Node tests have no window.
-	}
-}
-
-function restoreWebSession(): void {
-	if (!hasKeepalive()) return;
-	let raw: string | null;
-	try {
-		raw = sessionStorageOrNull()?.getItem(SESSION_DATA_KEY) ?? null;
-	} catch {
-		return;
-	}
-	if (!raw || !dbInstance) return;
-	try {
-		const parsed = JSON.parse(raw) as { projects?: Project[]; nodes?: Node[] };
-		insertIntoCollection(dbInstance.projects, parsed.projects ?? []);
-		insertIntoCollection(dbInstance.nodes, parsed.nodes ?? []);
-	} catch {
-		// Corrupt snapshot: stay on the empty session instead of crashing.
-	}
-}
-
-/** Drop the web keepalive snapshot (called when the user ends the session). */
-export function clearSessionSnapshot(): void {
-	try {
-		sessionStorageOrNull()?.removeItem(SESSION_DATA_KEY);
-	} catch {
-		// Storage unavailable; nothing to clear.
-	}
-}
-
-/** Per-session random key material in a Stronghold vault; never hardcoded, never persisted. */
-async function loadPassphrase(vault_password: string, vault_path: string): Promise<string> {
-	const stronghold = await Stronghold.load(vault_path, vault_password);
-	let client;
-	try {
-		client = await stronghold.loadClient('signaldb');
-	} catch {
-		client = await stronghold.createClient('signaldb');
-	}
-	const store = client.getStore();
-
-	const existing = await store.get('signaldb-passphrase');
-	if (existing) return new TextDecoder().decode(existing);
-
-	const bytes = crypto.getRandomValues(new Uint8Array(32));
-	const passphrase = btoa(String.fromCharCode(...bytes));
-	await store.insert('signaldb-passphrase', Array.from(new TextEncoder().encode(passphrase)));
-	await stronghold.save();
-	return passphrase;
-}
-
-let dbInstance: MyDatabaseCollections | null = null;
-let dbReady: Promise<MyDatabaseCollections> | null = null;
-
-export class StrongholdTimeoutError extends Error {}
-
-// Stronghold runs in Rust; when its memory protection panics (sandboxed
-// kernels, locked-memory limits), the IPC promise never settles and the UI
-// would hang at loading forever. Race every vault access so we always
-// degrade to memory instead. Normal vault access takes milliseconds.
-export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-	let timer: ReturnType<typeof setTimeout>;
-	const timeout = new Promise<never>((_, reject) => {
-		timer = setTimeout(() => reject(new StrongholdTimeoutError(`timed out after ${ms}ms`)), ms);
-	});
-	return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
-async function wipeSessionFiles(): Promise<void> {
-	for (const file of [VAULT_FILE, PROJECTS_FILE, NODES_FILE]) {
-		try {
-			await remove(file, { baseDir: BaseDirectory.AppLocalData });
-		} catch {
-			// Already gone, nothing to wipe.
-		}
-	}
-}
-
-async function sessionKey(): Promise<string | null> {
-	const session_secret = getSessionPassword();
-	if (!session_secret) return null;
-	const vault_path = `${await appLocalDataDir()}/${VAULT_FILE}`;
-	try {
-		return await withTimeout(loadPassphrase(session_secret, vault_path), 5000);
-	} catch (err) {
-		if (err instanceof StrongholdTimeoutError) {
-			// Hung, not corrupt: a retry would hang too. Wipe and run on memory.
-			console.error(`Stronghold hung, running on memory only: ${err}`);
-			await wipeSessionFiles();
-			return null;
-		}
-		// Corrupt vault or rotated secrets: drop the vault plus the session
-		// files it protected and start over. Session data is ephemeral by design.
-		console.error(`Stronghold vault unusable, resetting session store: ${err}`);
-		await wipeSessionFiles();
-		try {
-			return await withTimeout(loadPassphrase(session_secret, vault_path), 5000);
-		} catch (retry_err) {
-			console.error(`Stronghold unavailable, running on memory only: ${retry_err}`);
-			return null;
-		}
-	}
-}
-
 /**
- * Session-scoped: fresh launches start empty, same-tab reloads restore.
- * The only async part of the database; after it settles, `getDatabase()` is sync.
+ * Session-scoped: fresh launches start empty, same-tab reloads restore. The root
+ * layout awaits this once; every read after it is synchronous.
  */
-export async function initializeDatabase(): Promise<MyDatabaseCollections> {
-	if (dbInstance) return dbInstance;
-	if (dbReady) return dbReady;
-	dbReady = (async () => {
-		const useTauri = isTauri();
-		const sameSession = hasKeepalive();
-		const key = useTauri ? await sessionKey() : null;
-		if (useTauri) {
-			for (const file of LEGACY_FILES) {
-				try {
-					await remove(file, { baseDir: BaseDirectory.AppLocalData });
-				} catch {
-					// A missing file means a fresh session. Nothing to wipe.
-				}
-			}
-			if (!sameSession) {
-				for (const file of [PROJECTS_FILE, NODES_FILE, VAULT_FILE]) {
-					try {
-						await remove(file, { baseDir: BaseDirectory.AppLocalData });
-					} catch {
-						// A missing file means a fresh session. Nothing to wipe.
-					}
-				}
+export function initializeDatabase(): Promise<void> {
+	ready ??= (async () => {
+		// Tests run without Tauri and start from an empty engine.
+		if (!isTauri()) return;
+		for (const file of LEGACY_FILES) {
+			try {
+				await remove(file, { baseDir: BaseDirectory.AppLocalData });
+			} catch {
+				// Already gone.
 			}
 		}
-		// Session files are written per operation; same-tick writes share one rewrite (adapter v4).
-		const storage = (name: string) => {
-			if (!useTauri || !key) return undefined;
-			const file = name === 'projects' ? PROJECTS_FILE : NODES_FILE;
-			return adapter<Project | Node>(file, {
-				encrypt: (data) => encryptGcm(JSON.stringify(data), sessionStoreKey(key)),
-				decrypt: async (encrypted) =>
-					JSON.parse(await decryptGcm(encrypted, sessionStoreKey(key))) as (Project | Node)[],
-				jsonCodec: true
-			});
-		};
-		const data_adapter = new DefaultDataAdapter({ storage });
-		const projects = new Collection<Project>('projects', data_adapter, {
-			reactivity: svelteReactivityAdapter
-		});
-		// No secondary indices: all graph reads go through the load snapshot (queries/snapshot.ts).
-		const nodes = new Collection<Node>('nodes', data_adapter, {
-			reactivity: svelteReactivityAdapter
-		});
-		await Promise.all([projects.ready(), nodes.ready()]);
-		dbInstance = { projects, nodes };
-		// Graph reads go through the load snapshot, which listens to collection
-		// events directly, so only a handful of listeners remain.
-		projects.setMaxListeners(1_000);
-		nodes.setMaxListeners(1_000);
-		if (!useTauri) {
-			restoreWebSession();
-			attachWebSnapshotSave();
+		if (!hasKeepalive()) {
+			// A webview reload after the user left the project: nothing to restore.
+			openSession(undefined, []);
+			return;
 		}
-		return dbInstance;
+		const snapshot = await engine<EngineComputed & { project: Project | null; nodes: Node[] }>(
+			'snapshot'
+		);
+		project = snapshot.project ?? undefined;
+		for (const node of snapshot.nodes) nodes.set(node.id, node);
+		apply(snapshot);
 	})();
-	return dbReady;
+	return ready;
 }
 
-/** Sync access; the root layout awaits `initializeDatabase()` first. */
-export function getDatabase(): MyDatabaseCollections {
-	if (!dbInstance) {
-		throw new Error('Database accessed before initializeDatabase() completed');
-	}
-	return dbInstance;
+export function getProject(): Project | undefined {
+	return project;
 }
 
-// Generic `T` hides `id` from `Selector<T>`; every item here is a `BaseItem<string>`.
-function byId<T extends BaseItem<string>>(id: string | { $in: string[] }): Selector<T> {
-	return { id } as unknown as Selector<T>;
+export function setProject(next: Project): void {
+	project = next;
+	notify();
+	send('set_project', { project: next });
 }
 
-const write_listeners = new Set<() => void>();
-
-/** Calls `listener` synchronously after every session write; returns the unsubscribe. */
-export function onSessionWrite(listener: () => void): () => void {
-	write_listeners.add(listener);
-	return () => write_listeners.delete(listener);
+/** The stored nodes, in insertion order. */
+export function getNodes(): Node[] {
+	return [...nodes.values()];
 }
 
-/**
- * Wraps a collection write. SignalDB 2 applies a write to memory synchronously
- * but emits its events only after the storage write lands, so readers are told
- * here, in the same tick, as they were with SignalDB 1. A failed session-file
- * write is logged: memory already holds the change and the file is session-only.
- */
-export function afterWrite<T>(write: Promise<T>): Promise<T | undefined> {
-	for (const listener of write_listeners) listener();
-	return write.catch((error: unknown) => {
-		console.error('Session store write failed:', error);
-		return undefined;
-	});
+export function findNode(id: string | undefined): Node | undefined {
+	return id ? nodes.get(id) : undefined;
 }
 
-/** Drops every item from a collection. */
-export function clearCollection<T extends BaseItem<string>>(
-	collection: Collection<T, string>
-): void {
-	if (collection.find({}, { reactive: false }).count() === 0) return;
-	void afterWrite(collection.removeMany({}));
+/** The engine's row for a node (its load-schedule row and sidebar/header result), once computed. */
+export function getRow(id: string): ComputedRow | undefined {
+	return rows.get(id);
 }
 
-/** Removes the items whose id is in `ids`, in one bulk delete. */
-export function removeFromCollection<T extends BaseItem<string>>(
-	collection: Collection<T, string>,
-	ids: ReadonlySet<string>
-): void {
-	if (ids.size === 0) return;
-	void afterWrite(collection.removeMany(byId<T>({ $in: [...ids] })));
-}
-
-/** Inserts items. Throws, writing nothing, on a duplicate id. */
-export function insertIntoCollection<T extends BaseItem<string>>(
-	collection: Collection<T, string>,
-	items: readonly T[]
-): void {
-	if (items.length === 0) return;
+function assertNewIds(items: readonly Node[], existing: ReadonlyMap<string, Node>): void {
 	// A tampered file must not smuggle in a second node under an existing id. Checked before any write.
 	const ids = new Set<string>();
 	for (const item of items) {
-		if (ids.has(item.id) || collection.findOne(byId<T>(item.id), { reactive: false })) {
+		if (ids.has(item.id) || existing.has(item.id)) {
 			throw new Error('Item with same id already exists');
 		}
 		ids.add(item.id);
 	}
-	void afterWrite(collection.insertMany(items as T[]));
 }
 
-/** Swaps items by id. Returns the items that were found. */
-export function replaceInCollection<T extends BaseItem<string>>(
-	collection: Collection<T, string>,
-	items: readonly T[]
-): T[] {
-	const replaced = items.filter((item) =>
-		collection.findOne(byId<T>(item.id), { reactive: false })
-	);
-	if (replaced.length === 0) return [];
-	void afterWrite(
-		Collection.batch([collection], () =>
-			Promise.all(replaced.map((item) => collection.replaceOne(byId<T>(item.id), item)))
-		)
-	);
+/** Replaces the whole session (`undefined` and no nodes to close it). Throws, writing nothing, on a duplicate id. */
+export function openSession(next_project: Project | undefined, next_nodes: readonly Node[]): void {
+	assertNewIds(next_nodes, new Map());
+	project = next_project;
+	nodes.clear();
+	rows.clear();
+	for (const node of next_nodes) nodes.set(node.id, node);
+	notify();
+	send('open', { project: next_project ?? null, nodes: next_nodes });
+}
+
+/** Inserts nodes. Throws, writing nothing, on a duplicate id. */
+export function insertNodes(items: readonly Node[]): void {
+	if (items.length === 0) return;
+	assertNewIds(items, nodes);
+	writeNodes(items);
+}
+
+/** Swaps nodes by id. Returns the ones that were found. */
+export function replaceNodes(items: readonly Node[]): Node[] {
+	const replaced = items.filter((item) => nodes.has(item.id));
+	writeNodes(replaced);
 	return replaced;
+}
+
+function writeNodes(items: readonly Node[]): void {
+	if (items.length === 0) return;
+	for (const item of items) nodes.set(item.id, item);
+	notify();
+	send('put', { nodes: items });
+}
+
+/** Removes the nodes whose id is in `ids`. */
+export function removeNodes(ids: ReadonlySet<string>): void {
+	if (ids.size === 0) return;
+	for (const id of ids) {
+		nodes.delete(id);
+		rows.delete(id);
+	}
+	notify();
+	send('remove', { ids: [...ids] });
 }

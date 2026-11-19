@@ -1,15 +1,20 @@
-import { afterWrite, clearCollection, getDatabase, initializeDatabase } from '../index.js';
+import {
+	getProject,
+	initializeDatabase,
+	insertNodes,
+	openSession,
+	setProject,
+	settled
+} from '../index.js';
 import type { Node, Project } from '#lib/types/db.js';
-import { removeNode } from './nodes.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
-import { default_phases } from '#lib/constants.js';
+import { default_phases, PEC_2017_REVISION } from '#lib/constants.js';
 
 export async function createProject(
 	project_name: string,
 	highest_unit_form: Node['highest_unit_form']
 ) {
 	await initializeDatabase();
-	const database = getDatabase();
 
 	try {
 		// creation of root node first to be referenced in project data
@@ -22,23 +27,23 @@ export async function createProject(
 			highest_unit_form: highest_unit_form && {
 				...highest_unit_form,
 				pec_2017_sizing: true,
+				pec_2017_revision: PEC_2017_REVISION,
 				...(highest_unit_form.phase === default_phases.THREE_PHASE_WYE && {
 					wye_circuit_defaults: true
 				})
 			},
 			child_ids: []
 		});
-		void afterWrite(database.nodes.insert(root_node));
+		insertNodes([root_node]);
 
 		const project = withProjectDefaults({
 			id: crypto.randomUUID(),
 			root_node_id,
 			project_name,
-			settings: {
-				is_adjustment_factor_dynamic: false
-			}
+			settings: {}
 		});
-		void afterWrite(database.projects.insert(project));
+		setProject(project as Project);
+		await settled();
 
 		return {
 			project: project as Project,
@@ -49,46 +54,26 @@ export async function createProject(
 	}
 }
 
-export function updateProjectSettings(project_id: string, settings: Partial<Project['settings']>) {
-	const database = getDatabase();
-
-	try {
-		void afterWrite(database.projects.updateOne({ id: project_id }, { $set: { settings } }));
-		return database.projects.findOne({ id: project_id });
-	} catch (error) {
-		console.error(`Error in updating project settings: ${JSON.stringify(error)}`);
-	}
-}
-
 export function updateProjectTitle(id: string, project_name: string) {
-	const database = getDatabase();
-
-	try {
-		// Use $set to update the project_name field
-		void afterWrite(database.projects.updateOne({ id }, { $set: { project_name } }));
-		return database.projects.findOne({ id });
-	} catch (err) {
-		console.error(`Error updating project title: ${JSON.stringify(err)}`);
-	}
+	return patchProject(id, { project_name });
 }
 
-export function deleteProject(project_id: string) {
-	const database = getDatabase();
-
-	try {
-		const project = database.projects.findOne({ id: project_id });
-
-		if (!project) {
-			throw Error(`Project with ID ${project_id} not found`);
-		}
-
-		const root_node_id = project.root_node_id;
-		if (root_node_id) {
-			removeNode(root_node_id);
-		}
-
-		clearCollection(database.projects); // this project and any others
-	} catch (error) {
-		console.error(`Failed to delete project ${project_id}:`, error);
+function patchProject(id: string, set: Partial<Project>): Project | undefined {
+	const project = getProject();
+	if (project?.id !== id) {
+		console.error(`Project with ID ${id} not found`);
+		return undefined;
 	}
+	const next = { ...project, ...set };
+	setProject(next);
+	return next;
+}
+
+/** Ends the session: the project and every node go. */
+export function deleteProject(project_id: string) {
+	if (getProject()?.id !== project_id) {
+		console.error(`Project with ID ${project_id} not found`);
+		return;
+	}
+	openSession(undefined, []);
 }

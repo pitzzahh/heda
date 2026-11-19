@@ -4,3 +4,7 @@
 # "Check the Windows binary's sync imports" step in .github/workflows/publish.yml.
 [toolchain]
 channel = "1.99.1"
+# Tests run the calculation engine (crates/heda-core) as WebAssembly under vitest;
+# release builds never need the target.
+targets = ["wasm32-unknown-unknown"]
+components = ["rustfmt", "clippy"]

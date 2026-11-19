@@ -14,7 +14,6 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { GenericPhaseMainLoadForm } from '#lib/components/custom/load/index.js';
-	import { Separator } from '#lib/components/ui/separator/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { DEFAULT_PHASES } from '#lib/constants.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
@@ -84,7 +83,6 @@
 				</dl>
 			</div>
 		</Dialog.Header>
-		<Separator class="mb-4" />
 		<svelte:boundary>
 			<GenericPhaseMainLoadForm
 				selected_parent_id={parent_display?.id}

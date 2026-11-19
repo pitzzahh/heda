@@ -6,15 +6,15 @@ import {
 } from './short-circuit.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 
-// Canonical data shapes for SignalDB documents. Types derive from these schemas
+// Canonical data shapes for the stored project and node documents. Types derive from these schemas
 // (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults
 // / withProjectDefaults); the store itself is schemaless.
 export const PROJECT_DOC_SCHEMA = v.object({
 	id: v.string(),
 	project_name: v.optional(v.string()),
-	settings: v.object({
-		is_adjustment_factor_dynamic: v.optional(v.boolean())
-	}),
+	// Older files carry is_adjustment_factor_dynamic here; PEC 2017 3.10.2.6(B)(3)(a) is
+	// not optional, so the engine always applies it and the key is dropped.
+	settings: v.object({}),
 	root_node_id: v.string()
 });
 
@@ -33,7 +33,7 @@ export const NODE_DOC_SCHEMA = v.object({
 	egc_insulation: v.optional(v.string()),
 	conduit_type: v.optional(v.string()),
 	pole: v.optional(v.string()),
-	/** Override of the circuit-number phase on a 3P-Y panel; absent means the default rotation. */
+	/** Override of the circuit-number phase (3P-Y) or line pair (delta); absent means the default rotation. */
 	phase_assignment: v.optional(PHASE_ASSIGNMENT_FIELD),
 	kaic: v.optional(v.string()),
 	length: v.optional(v.number()),
@@ -57,7 +57,9 @@ export const NODE_DOC_SCHEMA = v.object({
 			varies: v.string(),
 			continuous: v.boolean(),
 			load_type: v.string(),
-			config_preference: v.string()
+			config_preference: v.string(),
+			/** The PEC 2017 2.10.1.11(C) dwelling circuit this is (20 A), if any. */
+			dwelling_circuit: v.optional(v.string())
 		})
 	),
 	highest_unit_form: v.optional(
@@ -67,10 +69,14 @@ export const NODE_DOC_SCHEMA = v.object({
 			utility_sc_kva: v.optional(UTILITY_SC_KVA_FIELD),
 			transformer_kva: v.optional(TRANSFORMER_KVA_FIELD),
 			transformer_z_percent: v.optional(TRANSFORMER_Z_PERCENT_FIELD),
+			/** false when the supply is a feeder, not the utility service; absent means service (PEC 2017 2.30.6.10). */
+			is_service: v.optional(v.boolean()),
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
 			wye_circuit_defaults: v.optional(v.boolean()),
 			/** Set once a file is opened under the PEC 2017 sizing tables, so its notice and migration run once. */
-			pec_2017_sizing: v.optional(v.boolean())
+			pec_2017_sizing: v.optional(v.boolean()),
+			/** The PEC 2017 sizing revision the file was last migrated to (see `migrations.ts`). */
+			pec_2017_revision: v.optional(v.number())
 		})
 	),
 	parent_id: v.optional(v.string()),

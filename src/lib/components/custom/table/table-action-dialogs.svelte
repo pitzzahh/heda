@@ -16,7 +16,6 @@
 	import { DEFAULT_PHASES } from '#lib/constants.js';
 	import { getOptionLabel } from '#lib/utils/format.js';
 	import ParentPanelPopover from '#lib/components/custom/parent-panel-popover.svelte';
-	import Separator from '#lib/components/ui/separator/separator.svelte';
 	import { toast } from 'svelte-sonner';
 	import OverrideSelectors from '#lib/components/custom/override/override-selectors.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
@@ -113,7 +112,6 @@
 						</dl>
 					</div>
 				</Dialog.Header>
-				<Separator class="mb-4" />
 				<GenericPhaseMainLoadForm
 					action="edit"
 					selected_parent_id={parent_display?.id}
@@ -134,7 +132,6 @@
 						Override the data of <span class="font-semibold">{node.load_description}</span>
 					</Dialog.Description>
 				</Dialog.Header>
-				<Separator class="mb-4" />
 				<OverrideSelectors
 					closeDialog={() => (table_actions.override_open = false)}
 					node_id={node.id}

@@ -1,5 +1,5 @@
 import type { Node } from '#lib/types/db.js';
-import type { ExcelExportType } from '#lib/types/misc.js';
+import type { ExcelExportType, ExportInputs } from '#lib/types/misc.js';
 import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 import { convertToNormalText, getOptionLabel } from '#lib/utils/format.js';
 import { processExcelPanelBoardSchedule } from './panel-board-sheet.js';
@@ -10,14 +10,14 @@ export interface GeneratedWorkbook {
 	title: string;
 }
 
-export async function generateWorkbook(payload: {
-	type: ExcelExportType;
-	node_id: string;
-	highest_unit?: Node['highest_unit_form'];
-	file_name?: string;
-	nodes: Node[];
-	is_dynamic: boolean;
-}): Promise<GeneratedWorkbook> {
+export async function generateWorkbook(
+	payload: {
+		type: ExcelExportType;
+		node_id: string;
+		highest_unit?: Node['highest_unit_form'];
+		file_name?: string;
+	} & ExportInputs
+): Promise<GeneratedWorkbook> {
 	const { default: excel } = await import('exceljs');
 	const workbook = new excel.Workbook();
 	const file_name = payload.file_name ?? 'Exported Panelboard Schedule';
@@ -29,14 +29,15 @@ export async function generateWorkbook(payload: {
 		throw new Error('No highest unit found');
 	}
 
-	// Callers snapshot the node graph before posting it to the worker, so the
+	// Callers read the engine's results before posting them to the worker, so the
 	// worker never imports the database/Tauri graph.
-	const { nodes, is_dynamic } = payload;
+	const { nodes, rows, voltage_drops } = payload;
 
 	const phase_label = getOptionLabel(DEFAULT_PHASES, highest_unit?.phase);
 	switch (highest_unit?.phase) {
 		case default_phases.ONE_PHASE:
 		case default_phases.THREE_PHASE_WYE:
+		case default_phases.THREE_PHASE_DELTA:
 			workbook.subject = `${phase_label} ${convertToNormalText(payload.type, true)}`;
 			workbook.category = [
 				phase_label,
@@ -50,8 +51,7 @@ export async function generateWorkbook(payload: {
 						workbook,
 						payload.node_id,
 						highest_unit,
-						nodes,
-						is_dynamic
+						{ nodes, rows }
 					);
 					if (!result.valid) {
 						throw new Error(result.message ?? 'Failed to process load schedule');
@@ -59,7 +59,7 @@ export async function generateWorkbook(payload: {
 					break;
 				}
 				case 'VOLTAGE_DROP': {
-					const result = await processVoltageDropSheet(workbook, nodes, is_dynamic);
+					const result = await processVoltageDropSheet(workbook, { nodes, voltage_drops });
 					if (!result.valid) {
 						throw new Error(result.message ?? 'Failed to process voltage drop');
 					}
@@ -67,8 +67,6 @@ export async function generateWorkbook(payload: {
 				}
 			}
 			break;
-		case default_phases.THREE_PHASE_DELTA:
-			throw new Error('Three-phase delta load schedule is not yet supported');
 		default:
 			throw new Error('Unknown phase');
 	}

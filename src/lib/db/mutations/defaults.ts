@@ -21,16 +21,27 @@ export function withNodeDefaults<T extends { id: string }>(node: T): T & typeof 
 }
 
 /**
- * Breaker poles and conductor count of a new circuit on a 400Y/230 V system:
+ * Breaker poles and conductor count of a new circuit on a three-phase system.
+ * On 400Y/230 V:
  * - 3P-Y sub-panel: 3-pole, three phase conductors + neutral (PEC 2017 App. D Ex. D6 6.3–6.4, D8 8.6–8.7);
  * - three-phase load: 3-pole, three wires (D6 6.2 "3-wire", D9 9.2);
  * - single-phase 230 V load or panel: 1-pole, line + neutral (D6 6.2 "2-wire", D7 7.4).
+ * On 230 V delta (3-wire, no neutral, D14/D15 "3 x 250 mm²"):
+ * - delta sub-panel or three-phase load: 3-pole, three wires;
+ * - single-phase load or panel: line to line, so 2-pole on two wires, a pole on
+ *   each ungrounded conductor that opens both together (PEC 2017 2.40.1.15(A), (B)).
  * Single-phase systems keep NODE_DEFAULTS.
  */
 export function circuitDefaults(
 	node: { panel_data?: { phase?: string }; load_data?: { load_type?: string } },
 	system_phase: string | undefined
 ): { pole?: string; conductor_qty?: number } {
+	if (system_phase === default_phases.THREE_PHASE_DELTA) {
+		const three_phase =
+			node.panel_data?.phase === default_phases.THREE_PHASE_DELTA ||
+			isThreePhaseLoadType(node.load_data?.load_type);
+		return three_phase ? { pole: '3', conductor_qty: 3 } : { pole: '2', conductor_qty: 2 };
+	}
 	if (system_phase !== default_phases.THREE_PHASE_WYE) return {};
 	if (node.panel_data?.phase === default_phases.THREE_PHASE_WYE) {
 		return { pole: '3', conductor_qty: 4 };
@@ -56,7 +67,7 @@ export function withProjectDefaults<T extends { id: string; settings: Project['s
 ): T {
 	return {
 		...project,
-		settings: { is_adjustment_factor_dynamic: false, ...project.settings }
+		settings: { ...project.settings }
 	};
 }
 

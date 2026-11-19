@@ -1,52 +1,32 @@
-import {
-	afterWrite,
-	clearCollection,
-	getDatabase,
-	initializeDatabase,
-	insertIntoCollection
-} from '../index.js';
+import { initializeDatabase, openSession, settled } from '../index.js';
 import type { Project } from '#lib/types/db.js';
 import type { FileExport } from '#lib/types/main.js';
-import { clearQueryCache, warmComputedLoads } from '../queries/index.js';
+import { clearQueryCache } from '../queries/index.js';
 import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 import { withNodeDefaults, withProjectDefaults } from './defaults.js';
 
 export function resetData(minimumDeletedTime: number = 0) {
 	void minimumDeletedTime;
-	const db = getDatabase();
-	clearCollection(db.projects);
-	clearCollection(db.nodes);
+	openSession(undefined, []);
 	clearQueryCache();
 }
 
+/** Opens a file's project as the session. A rejected file (duplicate node ids) leaves it empty. */
 export async function loadCurrentProject(file_export: FileExport): Promise<Project> {
 	await initializeDatabase();
-	resetData(0);
-	const db = getDatabase();
 	const { project, nodes } = migrateFileExport(file_export);
-
-	const reconstructed_project = {
-		...project,
-		id: crypto.randomUUID()
-	};
-
-	// Nodes first: a file with duplicate ids throws here, before the
-	// project exists, so a rejected file leaves an empty session behind.
-	insertIntoCollection(
-		db.nodes,
-		nodes.map((node) => withNodeDefaults({ ...node }))
-	);
-
-	const inserted_loaded_project = withProjectDefaults({ ...project });
-	void afterWrite(db.projects.insert(inserted_loaded_project));
-
-	// Verify that the inserted project has the same project_name as the reconstructed project
-	if (inserted_loaded_project.project_name !== reconstructed_project.project_name) {
-		console.error('Project name mismatch after insertion');
+	const loaded_project = withProjectDefaults({ ...project });
+	clearQueryCache();
+	try {
+		openSession(
+			loaded_project,
+			nodes.map((node) => withNodeDefaults({ ...node }))
+		);
+	} catch (error) {
+		openSession(undefined, []);
+		throw error;
 	}
-
-	// Background: the first schedule opened after loading reads a warm cache.
-	void warmComputedLoads();
-
-	return inserted_loaded_project;
+	// The first schedule shown reads the engine's results, not an empty table.
+	await settled();
+	return loaded_project;
 }

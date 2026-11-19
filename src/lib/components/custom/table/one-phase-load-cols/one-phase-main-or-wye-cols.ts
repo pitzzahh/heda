@@ -39,19 +39,21 @@ export function onePhaseMainOrWyeCols(
 					header: () => 'Size (mm²)',
 					cell: (info) => {
 						const data = info.row.original;
-						if (data.adjusted_current > 530 && !data.overrided_conductor_size) {
+						if (data.conductor_size === -1) {
 							return renderComponent(ErrorCell, {
 								trigger_value: '-',
-								tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
+								tooltip_content:
+									'No conductor in PEC 2017 Table 3.10.2.6(B)(16) meets this circuit at its ambient and insulation: add conductor sets or change the insulation'
 							});
 						}
 						return info.getValue();
 					},
 					footer: () => {
-						if (current_node.adjusted_current > 530 && !current_node.overrided_conductor_size) {
+						if (current_node.conductor_size === -1) {
 							return renderComponent(ErrorCell, {
 								trigger_value: '-',
-								tooltip_content: 'The number of set is not sufficient to size the feeder conductor'
+								tooltip_content:
+									'No conductor in PEC 2017 Table 3.10.2.6(B)(16) meets this circuit at its ambient and insulation: add conductor sets or change the insulation'
 							});
 						}
 
@@ -64,7 +66,7 @@ export function onePhaseMainOrWyeCols(
 					cell: (info) => {
 						const data = info.row.original;
 						return renderComponent(InsulationsDropdown, {
-							adjusted_current: data.adjusted_current,
+							at: data.at,
 							type: 'conductor',
 							current_insulation: data.conductor_insulation as string,
 							node: data
@@ -72,7 +74,7 @@ export function onePhaseMainOrWyeCols(
 					},
 					footer: () =>
 						renderComponent(InsulationsDropdown, {
-							adjusted_current: current_node.adjusted_current,
+							at: current_node.at,
 							type: 'conductor',
 							current_insulation: current_node.conductor_insulation as string,
 							node: current_node

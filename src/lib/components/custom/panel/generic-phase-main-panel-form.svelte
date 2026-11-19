@@ -16,6 +16,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import * as Alert from '#lib/components/ui/alert/index.js';
@@ -83,6 +84,7 @@
 
 	let taken_circuit_number = $state(0);
 	let submitting = $state(false);
+	const form_id = $props.id();
 	const is_circuit_number_taken = $derived(
 		taken_circuit_number !== 0 &&
 			getInput(form, { path: ['circuit_number'] }) === taken_circuit_number
@@ -160,6 +162,7 @@
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -173,47 +176,49 @@
 			>
 		</Alert.Root>
 	{/if}
-	<div class="grid gap-4 sm:grid-cols-2">
-		<div class="flex min-w-0 flex-col gap-4">
-			<Field of={form} path={['name']}>
-				{#snippet children(field)}
-					<div class="space-y-2">
-						<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
-						<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
-						<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
-						<FieldErrors errors={field.errors} />
-					</div>
-				{/snippet}
-			</Field>
-			<NumberField
-				{form}
-				path={['circuit_number']}
-				label="Circuit number"
-				hint="This is the circuit number that will determine the circuit number of the wire to the main."
-				placeholder="Enter the circuit number"
-			/>
-			<TerminalTempField
-				{form}
-				hint="This is the terminal temp that will determine the terminal temp of the panel wire to the main."
-			/>
-		</div>
-
-		<div class="flex min-w-0 flex-col gap-4">
-			<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
-			<PanelPhaseField {form} {main_phase} />
-			<AmbientTempField {form} />
-
-			<NumberField
-				{form}
-				path={['length']}
-				label="Length"
-				hint="This is the length of the panel"
-				placeholder="Enter the length"
-			/>
-		</div>
-	</div>
-	<!-- Drawers keep Save in reach while the fields scroll. -->
-	<div class="mt-4 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
-		<Button type="submit" class="w-full" loading={submitting}>Save</Button>
+	<!-- One grid, not two stacked columns, so each pair of fields shares a row. -->
+	<div class="grid items-start gap-4 *:min-w-0 sm:grid-cols-2">
+		<Field of={form} path={['name']}>
+			{#snippet children(field)}
+				<div class="space-y-2">
+					<Label class={cn(field.errors && 'text-destructive')}>Name</Label>
+					<Input {...field.props} value={field.input ?? ''} placeholder="Enter panel name" />
+					<p class="text-[0.8rem] text-muted-foreground">This is the panel name.</p>
+					<FieldErrors errors={field.errors} />
+				</div>
+			{/snippet}
+		</Field>
+		<!-- The phase already says wye or delta, so the panel type picker stays hidden. -->
+		<PanelPhaseField {form} {main_phase} />
+		<NumberField
+			{form}
+			path={['circuit_number']}
+			label="Circuit number"
+			hint="This is the circuit number that will determine the circuit number of the wire to the main."
+			placeholder="Enter the circuit number"
+		/>
+		<NumberField
+			{form}
+			path={['length']}
+			label="Length"
+			hint="This is the length of the panel"
+			placeholder="Enter the length"
+		/>
+		<TerminalTempField
+			{form}
+			hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
+		/>
+		<AmbientTempField {form} />
 	</div>
 </form>
+
+<!-- The footer sits outside the scroll area, so drawers keep Save in reach. -->
+<Dialog.Footer>
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button
+		type="submit"
+		form={form_id}
+		loading={submitting}
+		disabled={action === 'edit' && !form.isDirty}>Save</Button
+	>
+</Dialog.Footer>

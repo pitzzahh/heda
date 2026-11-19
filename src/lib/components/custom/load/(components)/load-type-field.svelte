@@ -6,7 +6,7 @@
 	interface Props {
 		form: FormStore;
 		load_type: FormLoadTypeOption | undefined;
-		/** Three-phase load types are offered only on a 3P-Y panel. */
+		/** Three-phase load types are offered only on a three-phase (3P-Y or delta) panel. */
 		allow_three_phase: boolean;
 	}
 </script>

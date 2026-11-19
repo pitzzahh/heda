@@ -198,6 +198,8 @@ function buildCondominium(): SampleSpec {
 				name: `Riser ${String.fromCharCode(64 + section)}${riser}`,
 				phase: 'three_phase_wye',
 				length: 18,
+				// About 450 A: past one 500 mm² set at PEC 2017 3.10.2.6(B) and 1.10.1.14(C).
+				conductor_sets: 2,
 				conductor_qty: 3,
 				children: floors
 			});
@@ -844,6 +846,8 @@ function buildBusinessPark(): SampleSpec {
 		name: 'Data Centre',
 		phase: 'three_phase_wye',
 		length: 25,
+		// About 770 A: past one 500 mm² set at PEC 2017 3.10.2.6(B) and 1.10.1.14(C).
+		conductor_sets: 2,
 		conductor_qty: 3,
 		children: [
 			{
@@ -851,6 +855,8 @@ function buildBusinessPark(): SampleSpec {
 				name: 'UPS Panel A',
 				phase: 'three_phase_wye',
 				length: 30,
+				// 500 A: past one 500 mm² set at PEC 2017 3.10.2.6(B) and 1.10.1.14(C).
+				conductor_sets: 2,
 				conductor_qty: 3,
 				children: [
 					{

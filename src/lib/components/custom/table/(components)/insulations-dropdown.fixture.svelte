@@ -17,7 +17,7 @@
 </script>
 
 <InsulationsDropdown
-	adjusted_current={150}
+	at={150}
 	type="conductor"
 	current_insulation="TW-Cu"
 	node={{ id: 'node-a' } as unknown as PhaseLoadSchedule}

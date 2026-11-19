@@ -32,7 +32,7 @@ export const dialogFrame = tv({
 		// The icon-only close in the corner; a close with children styles itself.
 		close:
 			'absolute top-4 right-4 z-20 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:transition-none max-lg:top-3 max-lg:right-3',
-		header: 'mb-4 flex shrink-0 flex-col gap-2 pr-10 max-lg:mb-3 max-lg:gap-1 max-lg:pr-9',
+		header: 'flex shrink-0 flex-col gap-2 max-lg:gap-1',
 		footer: 'flex shrink-0 items-center justify-end gap-2',
 		body: 'relative overflow-hidden max-lg:flex max-lg:min-h-0 max-lg:flex-col',
 		// Drawers scroll only this middle; the header sits above it and the footer below it.
@@ -109,12 +109,20 @@ export const dialogFrame = tv({
 		variant: {
 			framed: {
 				panel: 'bg-card p-1',
+				header: 'mb-4 pr-10 max-lg:mb-3 max-lg:pr-9',
 				footer: 'px-2 pt-2 pb-1',
 				body: 'rounded-xl border border-border bg-popover p-5 max-lg:p-4'
 			},
 			default: {
 				// Drawers trade the desktop margins for room: space is tight on a phone.
 				panel: 'bg-popover p-6 max-lg:p-4',
+				// Full-bleed title bar mirroring the footer; its soft shadow lifts it over the
+				// fields scrolling beneath it in drawers. Right padding clears the close button.
+				header: [
+					'relative z-10 -mx-6 -mt-6 mb-6 rounded-t-2xl border-b border-border/60 bg-muted/25 py-5 pr-16 pl-6',
+					'shadow-[0_1px_3px_0_rgb(0_0_0/0.05)]',
+					'max-lg:-mx-4 max-lg:-mt-4 max-lg:mb-4 max-lg:py-4 max-lg:pr-13 max-lg:pl-4'
+				],
 				// Full-bleed action bar: the negative margins cancel the panel padding.
 				footer: [
 					'-mx-6 mt-6 -mb-6 rounded-b-2xl border-t border-border/60 bg-muted/25 px-6 py-4',

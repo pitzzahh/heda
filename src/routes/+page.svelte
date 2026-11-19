@@ -8,6 +8,7 @@
 <script lang="ts">
 	import {
 		FileIcon,
+		FlaskIcon,
 		FolderOpenIcon,
 		LockKeyIcon,
 		PlusIcon,
@@ -31,7 +32,6 @@
 		setSessionProtection
 	} from '#lib/db/session.js';
 	import { convertHedaFileToDevice } from '#lib/helpers/file/index.js';
-	import { clearSessionSnapshot } from '#lib/db/index.js';
 	import { ConfirmationDialog, PasswordDialog } from '#lib/components/custom/index.js';
 	import {
 		IMPORT_REJECTIONS,
@@ -39,7 +39,7 @@
 		importIntoLibrary,
 		listLibraryProjects
 	} from '#lib/helpers/file/library.js';
-	import { isAndroidApp } from '#lib/helpers/platform.js';
+	import { isAndroidApp, isPreviewVersion } from '#lib/helpers/platform.js';
 	import type { RecentProject } from '#lib/types/main.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -106,9 +106,9 @@
 					// The migration only lives in memory until saved: flag it so Save is enabled,
 					// auto-save writes it, and closing asks first.
 					undo_redo_state.setHasUnsavedActions();
-					toast.info('Sizes recalculated with PEC 2017 tables', {
+					toast.info('Sizes recalculated with PEC 2017', {
 						description:
-							'Breaker, conductor and conduit sizes now follow PEC 2017: all standard breaker ratings, 38 mm² at 100 A, heating at 125%, and Chapter 10 conduit fill in 15–150 mm sizes. Review the schedule, then save to keep the update.',
+							'Breakers, conductors and conduits now follow PEC 2017: conductors by insulation, ambient and conduit fill (3.10.2.6(B)) and terminal rating (1.10.1.14(C)), 125% only on continuous loads (2.10.2.3(A)), 20 A dwelling circuits (2.10.1.11(C)), and motor feeders by 4.30.2.4 and 4.30.5. Review the schedule, then save to keep the update.',
 						duration: 15_000
 					});
 				}
@@ -244,7 +244,6 @@
 		// inherit the flag (which would fire an immediate auto-save).
 		undo_redo_state.resetUnsavedActions();
 		clearSessionPassword();
-		clearSessionSnapshot();
 		void project_state.validateRecentProjects();
 		if (android) void refreshLibrary();
 	});
@@ -276,7 +275,18 @@
 			<img src={heda_logo_for_light} alt="" class="block size-7 dark:hidden" />
 			<span class="text-sm font-semibold tracking-tight">HEDA</span>
 		</div>
-		<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
+		<div class="flex items-center gap-2">
+			{#if isPreviewVersion(pj.version)}
+				<span
+					class="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary"
+					title="Not production ready: check results against PEC 2017 before using them."
+				>
+					<FlaskIcon class="size-3.5" />
+					Preview
+				</span>
+			{/if}
+			<span class="font-mono text-[11px] text-muted-foreground tabular-nums">v{pj.version}</span>
+		</div>
 	</header>
 
 	<main
@@ -464,13 +474,13 @@
 					</div>
 					<div class="grid gap-0.5">
 						<Dialog.Title>Upgrade legacy file</Dialog.Title>
-						<Dialog.Description>
-							This file uses the old format. Upgrade it to device encryption so it opens without a
-							password. A verified backup of the original is kept next to it.
-						</Dialog.Description>
 					</div>
 				</div>
 			</Dialog.Header>
+			<Dialog.Description class={migrate_error ? 'mb-4' : undefined}>
+				This file uses the old format. Upgrade it to device encryption so it opens without a
+				password. A verified backup of the original is kept next to it.
+			</Dialog.Description>
 			{#if migrate_error}
 				<div
 					class="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive"
@@ -480,14 +490,14 @@
 					<span>{migrate_error}</span>
 				</div>
 			{/if}
-			<div class="mt-5 flex justify-end gap-2">
+			<Dialog.Footer>
 				<Button variant="ghost" onclick={() => (migrate_open = false)} disabled={migrate_busy}
 					>Cancel</Button
 				>
 				<Button onclick={handleMigrationSubmit} disabled={migrate_busy} loading={migrate_busy}>
 					Upgrade file
 				</Button>
-			</div>
+			</Dialog.Footer>
 			<Dialog.Close />
 		</Dialog.Content>
 	</Dialog.Root>

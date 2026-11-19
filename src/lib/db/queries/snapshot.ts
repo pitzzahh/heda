@@ -1,7 +1,6 @@
 import { untrack } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
-import { getDatabase, onSessionWrite } from '../index.js';
-import { clearQueryCache, evictNodeFromCache } from './cache.js';
+import { getNodes, onSessionWrite } from '../index.js';
 import type { Node } from '#lib/types/db.js';
 
 export type LoadSnapshot = {
@@ -9,7 +8,6 @@ export type LoadSnapshot = {
 	node_by_id: Map<string, Node>;
 	children_by_parent: Map<string, Node[]>;
 	root: Node | undefined;
-	is_dynamic: boolean;
 };
 
 const EMPTY_CHILDREN: Node[] = [];
@@ -34,8 +32,7 @@ function bump(): void {
 	wakeTrackedScopes?.();
 }
 
-// A sync write hook, not a cursor (which re-diffs the whole collection on every
-// write) or collection events (which SignalDB 2 emits only after storage lands).
+// Every write, and every engine answer, bumps the revision synchronously.
 function ensureListening(): void {
 	if (listening) return;
 	listening = true;
@@ -43,8 +40,7 @@ function ensureListening(): void {
 }
 
 function buildSnapshot(previous: LoadSnapshot | null): LoadSnapshot {
-	const database = getDatabase();
-	const nodes = database.nodes.find({}, { reactive: false }).fetch();
+	const nodes = getNodes();
 	const node_by_id = new Map<string, Node>();
 	const children_by_parent = new Map<string, Node[]>();
 	let root: Node | undefined;
@@ -62,55 +58,12 @@ function buildSnapshot(previous: LoadSnapshot | null): LoadSnapshot {
 		const old = previous?.children_by_parent.get(parent_id);
 		if (old && sameItems(old, children)) children_by_parent.set(parent_id, old);
 	}
-	const snapshot: LoadSnapshot = {
+	return {
 		nodes,
 		node_by_id,
 		children_by_parent,
-		root,
-		is_dynamic:
-			database.projects.findOne({}, { reactive: false })?.settings.is_adjustment_factor_dynamic ??
-			false
+		root
 	};
-	invalidateComputed(previous, snapshot);
-	return snapshot;
-}
-
-/**
- * Drops cached computations for every node that changed and for its ancestors
- * (old and new parents), since a node's computed values depend only on itself
- * and its descendants. Items are replaced on every write, never mutated, so an
- * identity check finds the changed ones. Everything else stays cached, which is
- * what keeps an edit deep in a large tree from recomputing the whole project.
- */
-function invalidateComputed(previous: LoadSnapshot | null, next: LoadSnapshot): void {
-	if (!previous || previous.is_dynamic !== next.is_dynamic) {
-		clearQueryCache();
-		return;
-	}
-	const dirty: string[] = [];
-	for (const node of next.nodes) {
-		if (previous.node_by_id.get(node.id) !== node) dirty.push(node.id);
-	}
-	for (const node of previous.nodes) {
-		if (!next.node_by_id.has(node.id)) dirty.push(node.id);
-	}
-	const walks = [
-		{ graph: previous.node_by_id, seen: new Set<string>() },
-		{ graph: next.node_by_id, seen: new Set<string>() }
-	];
-	for (const id of dirty) {
-		// A node that did not exist before has nothing stale cached; a copy may
-		// have computed it ahead of the insert, so only its ancestors go.
-		const start = previous.node_by_id.has(id) ? id : next.node_by_id.get(id)?.parent_id;
-		for (const { graph, seen } of walks) {
-			let current = start;
-			while (current && !seen.has(current)) {
-				seen.add(current);
-				evictNodeFromCache(current);
-				current = graph.get(current)?.parent_id;
-			}
-		}
-	}
 }
 
 function sameItems(a: Node[], b: Node[]): boolean {
@@ -121,7 +74,7 @@ function sameItems(a: Node[], b: Node[]): boolean {
 	return true;
 }
 
-/** Monotonic counter bumped by every node/project collection change. */
+/** Monotonic counter bumped by every write and every engine answer. */
 export function getSnapshotRevision(): number {
 	ensureListening();
 	subscribeToSnapshot();

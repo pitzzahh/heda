@@ -11,7 +11,6 @@ export const SETTINGS_SCHEMA = v.object({
 	font: FONT_FIELD,
 	theme_mode: THEME_MODE_FIELD,
 	show_loads_on_unit_hierarchy: v.boolean(),
-	is_adjustment_factor_dynamic: v.boolean(),
 	is_panel_multi_copy: v.boolean(),
 	is_load_multi_copy: v.boolean(),
 	auto_save_enabled: v.boolean(),

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 const { is_tauri } = vi.hoisted(() => ({ is_tauri: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: is_tauri }));
 
-import { isAndroidApp, isCompactViewport } from './platform.js';
+import { isAndroidApp, isCompactViewport, isPreviewVersion } from './platform.js';
 
 const ANDROID_WEBVIEW =
 	'Mozilla/5.0 (Linux; Android 16; SM-A066B Build/BP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/142.0.0.0 Mobile Safari/537.36';
@@ -67,5 +67,12 @@ describe('isCompactViewport', () => {
 	test('is false without matchMedia (prerender, jsdom)', () => {
 		vi.stubGlobal('matchMedia', undefined);
 		expect(isCompactViewport()).toBe(false);
+	});
+});
+
+describe('isPreviewVersion', () => {
+	test('a pre-release tag marks a preview build', () => {
+		expect(isPreviewVersion('2.9.0-3')).toBe(true);
+		expect(isPreviewVersion('2.8.1')).toBe(false);
 	});
 });

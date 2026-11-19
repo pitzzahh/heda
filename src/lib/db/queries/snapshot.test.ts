@@ -6,7 +6,7 @@ import {
 	default_load_types,
 	default_phases
 } from '#lib/constants.js';
-import { initializeDatabase } from '#lib/db/index.js';
+import { initializeDatabase, settled } from '#lib/db/index.js';
 import { addNode, createProject, overrideField, resetData } from '#lib/db/mutations/index.js';
 import { getComputedLoads } from '#lib/db/queries/index.js';
 import SnapshotFixture from '#lib/db/queries/snapshot-fixture.svelte';
@@ -50,6 +50,7 @@ describe('load snapshot reactivity', () => {
 			} as const
 		});
 
+		await settled();
 		// A read outside any `$derived` (warmup, handler) primes the cache.
 		// The mounted derived afterwards must still stay subscribed.
 		expect(getComputedLoads(panel!.id)[0]?.at).toBe(15);
@@ -64,6 +65,9 @@ describe('load snapshot reactivity', () => {
 		flushSync(() => {
 			overrideField({ node_id: load!.id, field_data: 50, field_type: 'at' });
 		});
+		// The engine's answer alone must wake the mounted derived.
+		await settled();
+		flushSync();
 		expect(document.body.textContent).toContain('at:50');
 		unmount(app);
 		document.body.innerHTML = '';

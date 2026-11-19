@@ -14,6 +14,20 @@ use tauri_plugin_fs::FsExt;
 #[cfg(target_os = "android")]
 mod android;
 
+/// Every engine call (`crates/heda-core`): the open project lives here, in the app
+/// process, so a webview reload finds it again and a fresh launch starts empty.
+#[tauri::command]
+fn heda(
+    session: tauri::State<'_, Mutex<heda_core::session::Session>>,
+    command: String,
+    args: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let mut session = session
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    heda_core::dispatch::dispatch(&mut session, &command, args)
+}
+
 #[tauri::command]
 fn get_file_name(path: String) -> String {
     let path = Path::new(path.as_str());
@@ -217,8 +231,8 @@ fn popout_label(url: &tauri::Url) -> Option<String> {
         return None;
     }
     let id = url.fragment()?;
-    let valid = (1..=64).contains(&id.len())
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+    let valid =
+        (1..=64).contains(&id.len()) && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
     valid.then(|| format!("popout-{id}"))
 }
 
@@ -315,6 +329,7 @@ pub fn run() {
         }
     }));
     let builder = builder
+        .manage(Mutex::new(heda_core::session::Session::default()))
         .manage(FileOpenState::default())
         .manage(CloseRequestState::default())
         .plugin(log_plugin)
@@ -330,6 +345,7 @@ pub fn run() {
 
     let app = builder
         .invoke_handler(tauri::generate_handler![
+            heda,
             get_file_name,
             get_file_metadata,
             allow_project_folder,
@@ -353,15 +369,6 @@ pub fn run() {
                     log::warn!("failed to set window title: {err}");
                 }
             }
-            let salt_path = app
-                .path()
-                .app_local_data_dir()
-                .expect("could not resolve app local data path")
-                .join("heda-k");
-            app.handle()
-                .plugin(tauri_plugin_stronghold::Builder::with_argon2(&salt_path).build())
-                .expect("failed to register stronghold plugin");
-
             // Windows/Linux pass the opened file as a command line argument.
             if let Some(path) = std::env::args_os()
                 .filter_map(|arg| arg.into_string().ok())

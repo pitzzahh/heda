@@ -254,8 +254,8 @@ export async function handleLoadFile(
 			});
 		}
 
-		// The secret is proven correct (or is the device key). Cache it before
-		// the first db touch so the session store (Stronghold vault) unlocks.
+		// The secret is proven correct (or is the device key). Cache it now: a
+		// webview reload restores the session only while it is set.
 		if (protection === 'device' && device_key) {
 			setSession(device_key, 'device');
 		} else {

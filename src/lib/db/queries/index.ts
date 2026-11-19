@@ -1,4 +1,4 @@
-export { clearQueryCache, evictNodeFromCache } from './cache.js';
+export { clearQueryCache } from './cache.js';
 export {
 	checkNodeExists,
 	getAllProjects,
@@ -13,9 +13,8 @@ export {
 	getComputedLoads,
 	getNodeDepth,
 	getNumberOfChildren,
-	getParentNodes,
-	warmComputedLoads
+	getParentNodes
 } from './loads.js';
-export { getComputedVoltageDrops, getComputedVoltageDropsAsync } from './voltage-drops.js';
-export { getComputedShortCircuits, peekComputedShortCircuits } from './short-circuits.js';
+export { getComputedVoltageDropsAsync } from './voltage-drops.js';
+export { getComputedShortCircuitsAsync } from './short-circuits.js';
 export { getSnapshotRevision } from './snapshot.js';

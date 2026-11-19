@@ -24,8 +24,8 @@ vi.mock('@tauri-apps/api/core', () => ({ isTauri: is_tauri }));
 vi.mock('@tauri-apps/plugin-dialog', () => ({ save: save_dialog }));
 vi.mock('@tauri-apps/plugin-fs', () => ({ writeFile: write_file }));
 
-vi.mock('#lib/db/queries/snapshot.js', () => ({
-	loadSnapshot: () => ({ nodes: [], is_dynamic: false })
+vi.mock('#lib/db/queries/export.js', () => ({
+	getExportInputs: async () => ({ nodes: [], rows: {}, voltage_drops: [] })
 }));
 
 vi.mock('#lib/workers/export-client.js', () => ({

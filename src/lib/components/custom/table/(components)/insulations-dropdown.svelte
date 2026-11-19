@@ -2,13 +2,23 @@
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 	interface Props {
-		adjusted_current: number;
+		/** The circuit's breaker rating. */
+		at: number;
 		type: 'conductor' | 'egc';
 		current_insulation: string;
 		node: PhaseLoadSchedule;
 	}
 
 	const insulations = ['TW-Cu', 'THWN-Cu', 'THWN-2-Cu', 'THHN-Cu'] as const;
+
+	/**
+	 * PEC 2017 1.10.1.14(C)(1)(b): terminations of circuits rated over 100 A take conductors
+	 * rated 75 °C or more, so TW (60 °C) is not offered there; the engine shows a TW conductor
+	 * already on such a circuit as unsizable. An EGC is not held to this.
+	 */
+	export function isTwBarred(type: Props['type'], at: number) {
+		return type === 'conductor' && at > 100;
+	}
 
 	type Insulations = (typeof insulations)[number];
 </script>
@@ -20,27 +30,14 @@
 	import { toast } from 'svelte-sonner';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
-	let { adjusted_current, type, current_insulation, node }: Props = $props();
+	let { at, type, current_insulation, node }: Props = $props();
 	// User picks override until undo/redo recomputes it.
 	let selected_insulation = $derived(current_insulation as Insulations);
 	let undo_redo_state = getUndoRedoState();
 
 	const insulations_to_map = $derived(
-		type === 'egc'
-			? insulations
-			: adjusted_current > 100
-				? insulations.filter((i) => i !== 'TW-Cu')
-				: insulations
+		isTwBarred(type, at) ? insulations.filter((i) => i !== 'TW-Cu') : insulations
 	);
-
-	// Silent repair: TW-Cu past its rating upgrades without an undo entry, since
-	// it was never a user action; the file is still marked unsaved so it persists.
-	$effect(() => {
-		if (adjusted_current > 100 && current_insulation === 'TW-Cu') {
-			changeInsulation({ node_id: node.id, insulation: 'THHN-Cu', type });
-			undo_redo_state.setHasUnsavedActions();
-		}
-	});
 
 	function handleChangeInsulation(insulation: Insulations) {
 		const previous_node = getNode(node.id);

@@ -7,7 +7,8 @@ import {
 	ErrorCell,
 	AtFooterCell,
 	InsulationsDropdown,
-	ActionsColumnDropdown
+	ActionsColumnDropdown,
+	KaicCell
 } from './(components)/index.js';
 
 export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
@@ -39,7 +40,7 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	{
 		accessorKey: 'voltage',
 		header: 'VOLTAGE (V)',
-		// The panel's own voltage: on a 3P-Y panel its rows mix 230 V and 400 V circuits.
+		// The panel's own voltage: on a 3P-Y panel its rows mix 230 V and 400 V circuits (delta: all 230 V).
 		footer: () => current_node.voltage
 	},
 	{
@@ -124,9 +125,15 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 			},
 			{
 				accessorKey: 'kaic',
-				cell: (info) => info.getValue(),
+				// Unmarked breakers count as 5 kA, as the engine checks them (PEC 2017 1.10.1.9).
+				cell: (info) =>
+					renderComponent(KaicCell, {
+						kaic: Number(info.row.original.kaic) || 5,
+						node: info.row.original
+					}),
 				header: () => 'kAIC',
-				footer: () => current_node.kaic || ''
+				footer: () =>
+					renderComponent(KaicCell, { kaic: Number(current_node.kaic) || 5, node: current_node })
 			}
 		]
 	}
@@ -167,7 +174,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				cell: (info) => {
 					const data = info.row.original;
 					return renderComponent(InsulationsDropdown, {
-						adjusted_current: data.adjusted_current,
+						at: data.at,
 						type: 'egc',
 						current_insulation: data.egc_insulation as string,
 						node: data
@@ -176,7 +183,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				header: () => 'INSULATION',
 				footer: () =>
 					renderComponent(InsulationsDropdown, {
-						adjusted_current: current_node.adjusted_current,
+						at: current_node.at,
 						type: 'egc',
 						current_insulation: current_node.egc_insulation as string,
 						node: current_node
@@ -191,7 +198,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				accessorKey: 'conduit_size',
 				cell: (info) => {
 					const data = info.row.original;
-					if (data.adjusted_current > 530 && !data.overrided_conduit_size) {
+					if (data.conductor_size === -1 && !data.overrided_conduit_size) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
 							tooltip_content: 'Insufficient Information'
@@ -209,7 +216,7 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 				},
 				header: () => 'SIZE',
 				footer: () => {
-					if (current_node.adjusted_current > 530 && !current_node.overrided_conduit_size) {
+					if (current_node.conductor_size === -1 && !current_node.overrided_conduit_size) {
 						return renderComponent(ErrorCell, {
 							trigger_value: '-',
 							tooltip_content: 'Insufficient Information'

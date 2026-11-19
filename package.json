@@ -1,6 +1,6 @@
 {
 	"name": "heda",
-	"version": "2.9.0-2",
+	"version": "2.9.0-3",
 	"type": "module",
 	"private": true,
 	"imports": {
@@ -21,14 +21,15 @@
 		}
 	],
 	"scripts": {
+		"core": "bun scripts/build-core.ts",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"check": "bun run core && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "bun run core && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "bun fmt",
-		"lint": "bun fmt --check . && eslint .",
-		"test": "vitest run",
+		"lint": "bun fmt --check . && eslint . && cargo fmt --check --manifest-path crates/heda-core/Cargo.toml && cargo clippy --quiet --all-targets --all-features --manifest-path crates/heda-core/Cargo.toml -- -D warnings",
+		"test": "bun run core && cargo test --quiet --manifest-path crates/heda-core/Cargo.toml && vitest run",
 		"tauri": "tauri",
 		"site:td": "bun run build && bun run preview"
 	},
@@ -58,9 +59,6 @@
 	},
 	"dependencies": {
 		"@formisch/svelte": "^1.2.0",
-		"@pitzzahh/signaldb-adapter-tauri": "^4.0.0",
-		"@signaldb/core": "^2.0.2",
-		"@signaldb/svelte": "^2.0.0",
 		"@tanstack/table-core": "^8.21.3",
 		"@tanstack/virtual-core": "^3.19.11",
 		"@tauri-apps/api": "^2.12.4",
@@ -69,7 +67,6 @@
 		"@tauri-apps/plugin-log": "~2.10.2",
 		"@tauri-apps/plugin-opener": "~2.7.3",
 		"@tauri-apps/plugin-process": "~2.4.0",
-		"@tauri-apps/plugin-stronghold": "~2.4.0",
 		"@tauri-apps/plugin-updater": "~2.14.1",
 		"@thisux/sveltednd": "^0.8.0",
 		"cn": "^0.5.2",

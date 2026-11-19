@@ -1,1 +1,6 @@
-export { formatAmperes, formatImpedance, shortCircuitColumns } from './short-circuit-cols.js';
+export {
+	formatAmperes,
+	formatImpedance,
+	formatRequiredKiloamperes,
+	shortCircuitColumns
+} from './short-circuit-cols.js';

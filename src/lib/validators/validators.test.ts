@@ -20,7 +20,13 @@ import {
 	SHORT_CIRCUIT_RESULT_SCHEMA,
 	SHORT_CIRCUIT_SOURCE_SCHEMA
 } from './short-circuit.js';
-import { CIRCUIT_PHASE_FIELD, PHASE_ASSIGNMENT_FIELD, PHASE_VA_SCHEMA } from './shared.js';
+import {
+	CIRCUIT_PHASE_FIELD,
+	LINE_CURRENT_SCHEMA,
+	PAIR_VA_SCHEMA,
+	PHASE_ASSIGNMENT_FIELD,
+	PHASE_VA_SCHEMA
+} from './shared.js';
 import {
 	COMPUTE_COMMON_PROPERTIES_SCHEMA,
 	LOAD_SCHEDULE_ROW_SCHEMA,
@@ -33,7 +39,8 @@ import {
 	EXPORT_PROCESS_RESULT_SCHEMA,
 	OVERRIDE_FIELD_TYPE_FIELD
 } from './misc.js';
-import { DEFAULT_LOAD_SCHEMA } from './load.js';
+import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD } from './load.js';
+import { DEFAULT_LOADS } from '#lib/constants.js';
 
 describe('validators', () => {
 	it('accepts valid inputs', () => {
@@ -57,7 +64,6 @@ describe('validators', () => {
 				font: 'default',
 				theme_mode: 'light',
 				show_loads_on_unit_hierarchy: false,
-				is_adjustment_factor_dynamic: false,
 				is_panel_multi_copy: false,
 				is_load_multi_copy: false,
 				auto_save_enabled: false,
@@ -111,6 +117,18 @@ describe('validators', () => {
 		expect(name('')).toBe('Transformer');
 		expect(name('   ')).toBe('Transformer');
 		expect(name(undefined)).toBe('Transformer');
+	});
+
+	it('treats the supply as the utility service unless told otherwise (PEC 2017 2.30.6.10)', () => {
+		const service = (is_service?: boolean) => {
+			const result = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				phase: default_phases.ONE_PHASE,
+				is_service
+			});
+			return result.success ? result.output.is_service : null;
+		};
+		expect(service(undefined)).toBe(true);
+		expect(service(false)).toBe(false);
 	});
 
 	it('trims an optional project name and caps its length', () => {
@@ -263,11 +281,16 @@ describe('validators', () => {
 		).toBe(false);
 	});
 
-	it('validates 3P-Y phases', () => {
-		for (const phase of ['A', 'B', 'C']) {
+	it('validates 3P-Y phases and delta line pairs', () => {
+		for (const phase of ['A', 'B', 'C', 'AB', 'BC', 'CA']) {
 			expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, phase).success).toBe(true);
+			expect(v.safeParse(CIRCUIT_PHASE_FIELD, phase).success).toBe(true);
 		}
 		expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, 'ABC').success).toBe(false);
+		expect(v.safeParse(PHASE_ASSIGNMENT_FIELD, 'BA').success).toBe(false);
+		expect(v.safeParse(PAIR_VA_SCHEMA, { AB: 1, BC: 2, CA: 3 }).success).toBe(true);
+		expect(v.safeParse(PAIR_VA_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(false);
+		expect(v.safeParse(LINE_CURRENT_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(true);
 		expect(v.safeParse(CIRCUIT_PHASE_FIELD, 'ABC').success).toBe(true);
 		expect(v.safeParse(CIRCUIT_PHASE_FIELD, 'D').success).toBe(false);
 		expect(v.safeParse(PHASE_VA_SCHEMA, { A: 1, B: 2, C: 3 }).success).toBe(true);
@@ -307,7 +330,6 @@ describe('validators', () => {
 			at: 30,
 			conductor_size: 3.5,
 			egc_size: 2,
-			adjusted_current: 2,
 			conduit_size: 16,
 			ampere_frames: 30,
 			phase: 'ABC',
@@ -316,6 +338,15 @@ describe('validators', () => {
 		};
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, row).success).toBe(true);
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, phase: 'Z' }).success).toBe(false);
+		const delta_row = {
+			...row,
+			voltage: 230,
+			phase_va: undefined,
+			pair_va: { AB: 1, BC: 1, CA: 1 },
+			line_current: { A: 1, B: 1, C: 1 }
+		};
+		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, delta_row).success).toBe(true);
+		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, phase: 'CA' }).success).toBe(true);
 		expect(
 			v.safeParse(NODE_BY_ID_RESULT_SCHEMA, { ...row, egc_size: 'error', conduit_size: '16' })
 				.success
@@ -370,6 +401,19 @@ describe('validators', () => {
 				type: default_load_types.GENERAL_LIGHTING
 			}).success
 		).toBe(true);
+		// The four PEC 2017 2.10.1.11(C) dwelling circuits, and nothing else.
+		for (const circuit of ['small_appliance', 'laundry', 'bathroom', 'garage']) {
+			expect(v.safeParse(DWELLING_CIRCUIT_FIELD, circuit).success).toBe(true);
+		}
+		expect(v.safeParse(DWELLING_CIRCUIT_FIELD, 'kitchen').success).toBe(false);
+		// Every shipped preset parses; 2.20.3.13 gives the small-appliance and laundry
+		// circuits 1500 VA, 2.20.2.5(J)(1) bathroom and garage none beyond general lighting.
+		for (const preset of DEFAULT_LOADS) {
+			expect(v.safeParse(DEFAULT_LOAD_SCHEMA, preset).success).toBe(true);
+		}
+		expect(
+			DEFAULT_LOADS.filter((preset) => preset.dwelling_circuit).map((preset) => preset.varies)
+		).toEqual(['1500', '1500', '0', '0']);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'z').success).toBe(true);
 		expect(v.safeParse(OVERRIDE_FIELD_TYPE_FIELD, 'va').success).toBe(false);
 		expect(v.safeParse(EXPORT_PROCESS_RESULT_SCHEMA, { valid: true }).success).toBe(true);

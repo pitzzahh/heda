@@ -1,6 +1,4 @@
-import { computeNodeLoad, type LoadComputationContext } from './compute.js';
 import type { Node } from '#lib/types/db.js';
-import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 export function buildChildrenByParent(nodes: Node[]): Map<string, Node[]> {
 	const children_by_parent = new Map<string, Node[]>();
@@ -16,16 +14,6 @@ export function buildChildrenByParent(nodes: Node[]): Map<string, Node[]> {
 	return children_by_parent;
 }
 
-export function getComputedLoadsFromNodes(
-	nodes: Node[],
-	parent_id: string,
-	is_dynamic: boolean
-): PhaseLoadSchedule[] {
-	const children_by_parent = buildChildrenByParent(nodes);
-	const context: LoadComputationContext = { children_by_parent, is_dynamic, memo: new Map() };
-	return (children_by_parent.get(parent_id) ?? []).map((child) => computeNodeLoad(child, context));
-}
-
 export function getNodeDepthFromNodes(nodes: Node[], node_id: string): number {
 	const node_by_id = new Map(nodes.map((node) => [node.id, node]));
 	let depth = 1;
@@ -36,8 +24,4 @@ export function getNodeDepthFromNodes(nodes: Node[], node_id: string): number {
 		current = node_by_id.get(current.parent_id);
 	}
 	return depth;
-}
-
-export function getNodeByIdFromNodes(nodes: Node[], node_id: string): Node | undefined {
-	return nodes.find((node) => node.id === node_id);
 }
