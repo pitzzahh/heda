@@ -149,11 +149,7 @@ impl Metrics {
 
 /// A number as JavaScript prints it (`String(value)`).
 fn num(value: f64) -> String {
-    if value == 0.0 {
-        "0".into()
-    } else {
-        format!("{value}")
-    }
+    js::number_to_string(value)
 }
 
 /// -1 is the engine's "none in the PEC table": a dash, as the schedule shows it.

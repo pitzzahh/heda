@@ -244,9 +244,76 @@ pub fn hypot(a: f64, b: f64) -> f64 {
     sum.sqrt() * max
 }
 
+/// `String(value)` for a number (ECMAScript Number::toString): shortest round-trip
+/// digits, exponent form below 1e-6 and from 1e21, and `NaN`/`Infinity` spelled as JS does.
+pub fn number_to_string(value: f64) -> String {
+    if value.is_nan() {
+        return "NaN".into();
+    }
+    if value == 0.0 {
+        return "0".into(); // -0 too
+    }
+    if value.is_infinite() {
+        return if value > 0.0 { "Infinity" } else { "-Infinity" }.into();
+    }
+    let sign = if value < 0.0 { "-" } else { "" };
+    // `{:e}` gives the same shortest round-trip digits JS picks, as d.ddde±x.
+    let sci = format!("{:e}", value.abs());
+    let (mantissa, exponent) = sci.split_once('e').expect("{:e} has an exponent");
+    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
+    let k = digits.len() as i32;
+    let n = exponent.parse::<i32>().expect("{:e} exponent") + 1;
+    let body = if k <= n && n <= 21 {
+        format!("{digits}{}", "0".repeat((n - k) as usize))
+    } else if 0 < n && n <= 21 {
+        format!("{}.{}", &digits[..n as usize], &digits[n as usize..])
+    } else if -6 < n && n <= 0 {
+        format!("0.{}{digits}", "0".repeat((-n) as usize))
+    } else {
+        let e = n - 1;
+        let e = if e < 0 {
+            format!("-{}", -e)
+        } else {
+            format!("+{e}")
+        };
+        if k == 1 {
+            format!("{digits}e{e}")
+        } else {
+            format!("{}.{}e{e}", &digits[..1], &digits[1..])
+        }
+    };
+    format!("{sign}{body}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn number_to_string_follows_js_string() {
+        // Expected values are what `String(value)` returns in V8.
+        for (value, js) in [
+            (0.0, "0"),
+            (-0.0, "0"),
+            (1.0, "1"),
+            (-1.0, "-1"),
+            (3.5, "3.5"),
+            (0.1 + 0.2, "0.30000000000000004"),
+            (123456.789, "123456.789"),
+            (100.0, "100"),
+            (1e20, "100000000000000000000"),
+            (1e21, "1e+21"),
+            (1.5e21, "1.5e+21"),
+            (0.000001, "0.000001"),
+            (1e-7, "1e-7"),
+            (-1.25e-7, "-1.25e-7"),
+            (f64::NAN, "NaN"),
+            (f64::INFINITY, "Infinity"),
+            (f64::NEG_INFINITY, "-Infinity"),
+        ] {
+            assert_eq!(number_to_string(value), js, "{value:?}");
+        }
+    }
 
     #[test]
     fn number_from_str_follows_string_to_number() {
