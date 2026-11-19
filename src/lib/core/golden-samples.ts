@@ -1,9 +1,11 @@
 /** The sample projects the calculation goldens run on (`golden.test.ts`, `rust-parity.test.ts`). */
 import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { default_phases } from '#lib/constants.js';
 import type { FileExport } from '#lib/types/main.js';
 
-export const SAMPLES_DIR = new URL('../../../samples/', import.meta.url);
+// A path, not a URL: under jsdom `import.meta.url` is not a file URL.
+export const SAMPLES_DIR = join(import.meta.dirname, '../../../samples/');
 export const SAMPLE_PASSWORD = 'heda-sample-2026'; // published in samples/README.md
 export const HASHED = new Set(['harborview-residences', 'meridian-business-park']);
 
