@@ -176,7 +176,7 @@
 	async function saveSvg() {
 		if (!drawn) return;
 		try {
-			await exportRiserSvg(node_id, drawn.boxes[0]?.title ?? 'Project');
+			await exportRiserSvg(node_id);
 		} catch (error) {
 			console.error('Riser export failed:', error);
 			toast.error('Could not save the riser diagram');
