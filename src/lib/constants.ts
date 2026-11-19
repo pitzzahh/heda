@@ -388,3 +388,18 @@ export const MIN_VARIES = 0;
 export const MAX_VARIES = 100;
 
 export const AMBIENT_TEMPERATURES = Array.from({ length: 70 }, (_, index) => index + 1);
+
+/**
+ * Drawing sheet sizes of PEC 2017 1.3.1.1, landscape, in mm: (A) the three standard
+ * sizes, and (C) A3, permitted only for a dwelling unit of at most 50 m² with a total load
+ * of at most 3680 VA.
+ */
+export const SHEET_SIZES = [
+	{ value: '760x1000', label: '760 × 1000 mm', width: 1000, height: 760 },
+	{ value: '600x900', label: '600 × 900 mm', width: 900, height: 600 },
+	{ value: '500x760', label: '500 × 760 mm', width: 760, height: 500 },
+	{ value: 'A3', label: 'A3 (297 × 420 mm)', width: 420, height: 297 }
+] as const;
+
+/** PEC 2017 1.3.1.1(C): the largest total load an A3 sheet set may show, VA. */
+export const A3_SHEET_MAX_VA = 3680;

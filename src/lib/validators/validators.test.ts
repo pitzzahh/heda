@@ -13,6 +13,7 @@ import {
 } from './load.js';
 import { GENERIC_PHASE_PANEL_SCHEMA } from './panel.js';
 import { NODE_DOC_SCHEMA, PROJECT_DOC_SCHEMA } from './db.js';
+import { TITLE_BLOCK_SCHEMA } from './title-block.js';
 import { SETTINGS_SCHEMA } from './settings.js';
 import { BUTTON_STATE_FIELD, EXCEL_EXPORT_TYPE_FIELD } from './misc.js';
 import {
@@ -425,5 +426,32 @@ describe('validators', () => {
 			v.safeParse(EXPORT_HEADER_SCHEMA, { text: 'CONDUIT', cols: 2, sub_cols: ['Size', 'Type'] })
 				.success
 		).toBe(true);
+	});
+
+	describe('TITLE_BLOCK_SCHEMA (PEC 2017 1.3.2.2)', () => {
+		it('trims the title block and keeps it on the project', () => {
+			const result = v.safeParse(TITLE_BLOCK_SCHEMA, {
+				engineer_name: '  Juan Dela Cruz, PEE ',
+				prc_license_number: '0001234',
+				sheet_size: '760x1000'
+			});
+			expect(result.success && result.output.engineer_name).toBe('Juan Dela Cruz, PEE');
+			expect(
+				v.safeParse(PROJECT_DOC_SCHEMA, {
+					id: 'p1',
+					settings: {},
+					root_node_id: 'n1',
+					title_block: { location: 'Cebu City' }
+				}).success
+			).toBe(true);
+		});
+
+		it('takes only the PEC 2017 1.3.1.1 sheet sizes', () => {
+			for (const sheet_size of ['760x1000', '600x900', '500x760', 'A3']) {
+				expect(v.safeParse(TITLE_BLOCK_SCHEMA, { sheet_size }).success).toBe(true);
+			}
+			expect(v.safeParse(TITLE_BLOCK_SCHEMA, { sheet_size: 'A4' }).success).toBe(false);
+			expect(v.safeParse(TITLE_BLOCK_SCHEMA, { tin: 'x'.repeat(121) }).success).toBe(false);
+		});
 	});
 });

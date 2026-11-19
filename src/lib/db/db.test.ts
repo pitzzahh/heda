@@ -32,7 +32,8 @@ import {
 	setServiceEntrance,
 	changePhaseAssignment,
 	changePhaseAssignments,
-	updateNodeParentById
+	updateNodeParentById,
+	updateTitleBlock
 } from './mutations/index.js';
 import {
 	checkNodeExists,
@@ -78,6 +79,19 @@ describe('db', () => {
 		expect(created?.root_node_id).toBeTruthy();
 		expect(getProject()?.id).toBe(created?.project.id);
 		expect(getNodes()).toHaveLength(1);
+	});
+
+	it('remembers the title block on the project (PEC 2017 1.3.2.2)', async () => {
+		resetData();
+		const created = await createProject('Titled', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const title_block = { engineer_name: 'Juan Dela Cruz', sheet_size: 'A3' as const };
+		expect(updateTitleBlock(created!.project.id, title_block)?.title_block).toEqual(title_block);
+		expect(getProject()?.title_block).toEqual(title_block);
+		expect(getProject()?.project_name).toBe('Titled');
+		expect(updateTitleBlock('other', {})).toBeUndefined();
 	});
 
 	it('applies insert defaults to nodes', async () => {
