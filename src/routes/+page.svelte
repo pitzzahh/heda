@@ -462,13 +462,13 @@
 					</div>
 					<div class="grid gap-0.5">
 						<Dialog.Title>Upgrade legacy file</Dialog.Title>
-						<Dialog.Description>
-							This file uses the old format. Upgrade it to device encryption so it opens without a
-							password. A verified backup of the original is kept next to it.
-						</Dialog.Description>
 					</div>
 				</div>
 			</Dialog.Header>
+			<Dialog.Description class={migrate_error ? 'mb-4' : undefined}>
+				This file uses the old format. Upgrade it to device encryption so it opens without a
+				password. A verified backup of the original is kept next to it.
+			</Dialog.Description>
 			{#if migrate_error}
 				<div
 					class="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive"
@@ -478,14 +478,14 @@
 					<span>{migrate_error}</span>
 				</div>
 			{/if}
-			<div class="mt-5 flex justify-end gap-2">
+			<Dialog.Footer>
 				<Button variant="ghost" onclick={() => (migrate_open = false)} disabled={migrate_busy}
 					>Cancel</Button
 				>
 				<Button onclick={handleMigrationSubmit} disabled={migrate_busy} loading={migrate_busy}>
 					Upgrade file
 				</Button>
-			</div>
+			</Dialog.Footer>
 			<Dialog.Close />
 		</Dialog.Content>
 	</Dialog.Root>

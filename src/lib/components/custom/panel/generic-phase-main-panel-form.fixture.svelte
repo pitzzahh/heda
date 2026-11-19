@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 	import { default_phases } from '#lib/constants.js';
@@ -8,10 +9,15 @@
 	setCollapsiblesState();
 </script>
 
-<GenericPhaseMainPanelForm
-	action="add"
-	main_phase={default_phases.THREE_PHASE_WYE}
-	parent_id="unit-1"
-	selected_parent_id="unit-1"
-	closeDialog={() => {}}
-/>
+<!-- The forms hoist their actions into the dialog footer, so they need a dialog. -->
+<Dialog.Root open>
+	<Dialog.Content>
+		<GenericPhaseMainPanelForm
+			action="add"
+			main_phase={default_phases.THREE_PHASE_WYE}
+			parent_id="unit-1"
+			selected_parent_id="unit-1"
+			closeDialog={() => {}}
+		/>
+	</Dialog.Content>
+</Dialog.Root>

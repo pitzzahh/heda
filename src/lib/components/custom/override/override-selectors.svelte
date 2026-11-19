@@ -67,6 +67,7 @@
 
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { RemoveOverrideButton, StepperField } from './(components)/index.js';
 	import { overrideField, type FieldType } from '#lib/db/mutations/index.js';
 	import { toast } from 'svelte-sonner';
@@ -365,6 +366,9 @@
 			</div>
 		</div>
 	{/if}
-
-	<Button class="w-full" disabled={!has_changes} onclick={handleOverride}>Override</Button>
 </div>
+
+<Dialog.Footer>
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button disabled={!has_changes} onclick={handleOverride}>Override</Button>
+</Dialog.Footer>

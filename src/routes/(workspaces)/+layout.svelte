@@ -161,9 +161,7 @@
 	<Dialog.Root bind:open={dialogs_state.highestUnit}>
 		<Dialog.Content>
 			<Dialog.Header>
-				<Dialog.Title class="text-center font-bold">
-					Choose the Highest Unit for this project
-				</Dialog.Title>
+				<Dialog.Title>Choose the Highest Unit for this project</Dialog.Title>
 			</Dialog.Header>
 			<HighestUnitForm closeDialog={() => (dialogs_state.highestUnit = false)} />
 			<Dialog.Close />

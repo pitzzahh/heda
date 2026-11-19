@@ -16,6 +16,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import * as Alert from '#lib/components/ui/alert/index.js';
@@ -83,6 +84,7 @@
 
 	let taken_circuit_number = $state(0);
 	let submitting = $state(false);
+	const form_id = $props.id();
 	const is_circuit_number_taken = $derived(
 		taken_circuit_number !== 0 &&
 			getInput(form, { path: ['circuit_number'] }) === taken_circuit_number
@@ -160,6 +162,7 @@
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -212,13 +215,15 @@
 			/>
 		</div>
 	</div>
-	<!-- Drawers keep Save in reach while the fields scroll. -->
-	<div class="mt-4 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
-		<Button
-			type="submit"
-			class="w-full"
-			loading={submitting}
-			disabled={action === 'edit' && !form.isDirty}>Save</Button
-		>
-	</div>
 </form>
+
+<!-- The footer sits outside the scroll area, so drawers keep Save in reach. -->
+<Dialog.Footer>
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button
+		type="submit"
+		form={form_id}
+		loading={submitting}
+		disabled={action === 'edit' && !form.isDirty}>Save</Button
+	>
+</Dialog.Footer>

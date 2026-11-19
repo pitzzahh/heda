@@ -15,7 +15,7 @@
 	import { WarningCircleIcon } from '#lib/assets/icons.js';
 	import { scale } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import { Separator } from '#lib/components/ui/separator/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { createForm, Field, getInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -235,9 +235,11 @@
 		return node_to_edit?.load_data?.config_preference as FormLoadTypeOption | undefined;
 	}
 	let load_type = $state<FormLoadTypeOption | undefined>(initialLoadType());
+	const form_id = $props.id();
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -295,35 +297,35 @@
 	>
 		{#if load_type === 'DEFAULT' || load_type === 'CUSTOM'}
 			{@render SubFields(load_type)}
-			<Separator class="my-4" />
 		{/if}
-	</div>
-
-	<!-- Drawers keep Save in reach while the fields scroll. -->
-	<div class="flex gap-3 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:bg-popover max-lg:pt-3">
-		{#if load_type}
-			<Button
-				variant="ghost"
-				class="shrink-0"
-				onclick={() =>
-					(load_type =
-						load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
-			>
-				Change to {load_type === 'DEFAULT'
-					? 'Custom'
-					: load_type === 'CUSTOM'
-						? 'Default'
-						: undefined}
-			</Button>
-		{/if}
-		<Button
-			type="submit"
-			class="min-w-0 flex-1"
-			loading={submitting}
-			disabled={action === 'edit' && !form.isDirty}>Save</Button
-		>
 	</div>
 </form>
+
+<!-- The footer sits outside the scroll area, so drawers keep Save in reach. -->
+<Dialog.Footer>
+	{#if load_type}
+		<Button
+			variant="ghost"
+			class="mr-auto"
+			onclick={() =>
+				(load_type =
+					load_type === 'DEFAULT' ? 'CUSTOM' : load_type === 'CUSTOM' ? 'DEFAULT' : undefined)}
+		>
+			Change to {load_type === 'DEFAULT'
+				? 'Custom'
+				: load_type === 'CUSTOM'
+					? 'Default'
+					: undefined}
+		</Button>
+	{/if}
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button
+		type="submit"
+		form={form_id}
+		loading={submitting}
+		disabled={action === 'edit' && !form.isDirty}>Save</Button
+	>
+</Dialog.Footer>
 
 {#snippet SubFields(load_type: FormLoadTypeOption | undefined)}
 	<div class="space-y-4">

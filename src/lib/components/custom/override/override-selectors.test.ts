@@ -11,13 +11,8 @@ vi.mock('#lib/hooks/undo-redo.svelte.js', () => ({
 }));
 vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn() } }));
 
-const {
-	default: OverrideSelectors,
-	valueAt,
-	stepUp,
-	stepDown,
-	isPicked
-} = await import('./override-selectors.svelte');
+const { valueAt, stepUp, stepDown, isPicked } = await import('./override-selectors.svelte');
+const { default: OverrideSelectorsFixture } = await import('./override-selectors.fixture.svelte');
 
 afterEach(() => {
 	document.body.innerHTML = '';
@@ -54,7 +49,7 @@ describe('override pickers', () => {
 	});
 
 	test('a circuit no conductor fits offers no override until something changes', () => {
-		const component = mount(OverrideSelectors, {
+		const component = mount(OverrideSelectorsFixture, {
 			target: document.body,
 			props: {
 				node_id: 'x',

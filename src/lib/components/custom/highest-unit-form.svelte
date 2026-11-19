@@ -13,6 +13,7 @@
 	import { PasswordInput } from '#lib/components/ui/password-input/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as RadioGroup from '#lib/components/ui/radio-group/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
@@ -57,6 +58,7 @@
 	});
 
 	let submitting = $state(false);
+	const form_id = $props.id();
 
 	async function handleSubmit() {
 		if (submitting) return;
@@ -205,6 +207,7 @@
 </script>
 
 <form
+	id={form_id}
 	onsubmit={(e) => {
 		e.preventDefault();
 		handleSubmit();
@@ -333,8 +336,12 @@
 			{/snippet}
 		</Field>
 	</div>
-	<Button type="submit" size="lg" class="mt-5 w-full" loading={submitting}>
+</form>
+
+<Dialog.Footer>
+	<Button type="button" variant="ghost" onclick={closeDialog}>Cancel</Button>
+	<Button type="submit" form={form_id} loading={submitting}>
 		<LockKeyIcon class="size-4" />
 		Proceed
 	</Button>
-</form>
+</Dialog.Footer>
