@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0-3] - 2026-11-19
+
+### Added
+
+- 230 V three-phase delta systems: load schedules, calculations and the Excel export
+- Preview builds say so: a Preview badge on the home screen and beside the save status, and a not-production-ready notice in Settings
+- Each breaker's interrupting rating (kAIC) can be edited, and the short-circuit table shows the rating each breaker needs
+
+### Changed
+
+- Calculations run in a new Rust engine, which also keeps the open project across a window reload
+- Every dialog has the same header band and a footer with Cancel and its action
+- Save and Override stay off until something in an edit form changes
+
+### Fixed
+
+- Breakers, conductors, panel mains, feeders, service conductors and the service disconnect are sized to PEC 2017
+- Voltage drop is computed on the unrounded run impedance
+- A three-phase sub-panel carries its own phase loads to its feeder instead of an even split
+- A circuit no conductor fits shows a dash for its conductor, conduit and voltage drop instead of an error text
+- The override dialog no longer writes sizes nobody picked
+- Paired fields in the load and panel forms line up
+- The sample projects open without being converted, carry a fault source, and rate every breaker for it
+
 ## [2.9.0-2] - 2026-11-17
 
 ### Fixed
