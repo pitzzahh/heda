@@ -2,7 +2,17 @@ import { describe, expect, it } from 'vitest';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type { RiserTree } from '#lib/types/riser.js';
 import { default_phases } from '#lib/constants.js';
-import { BOX_WIDTH, COLUMN, branchSummary, feederLines, layoutRiser } from './layout.js';
+import {
+	BOX_WIDTH,
+	BREAKER_HEIGHT,
+	COLUMN,
+	boxPath,
+	branchSummary,
+	feederLines,
+	layoutRiser,
+	visibleItems,
+	wirePath
+} from './layout.js';
 
 const row = (fields: Partial<PhaseLoadSchedule>) => ({ id: 'x', ...fields }) as PhaseLoadSchedule;
 
@@ -97,5 +107,62 @@ describe('layoutRiser', () => {
 		expect(layout.ground).toBeDefined();
 		// The service has no feeder of its own; only MDP's is labelled.
 		expect(layout.labels.map((l) => l.id)).toEqual(['MDP']);
+	});
+
+	it('breaks every feeder at its breaker and counts its wires (Appendix A 1.11, 1.37)', () => {
+		const lp = panel('LP-1');
+		lp.row.conductor_qty = 3;
+		const { breakers, ticks, wires } = layoutRiser(panel('MDP', [lp]));
+		// MDP's own feeder and LP-1's.
+		expect(breakers).toHaveLength(2);
+		for (const [x, y] of breakers) {
+			// No wire runs through the breaker: the feeder is drawn up to it and on from below it.
+			const through = wires.some(
+				(wire) =>
+					wire.every(([wx]) => wx === x) &&
+					Math.min(...wire.map(([, wy]) => wy)) < y + 1 &&
+					Math.max(...wire.map(([, wy]) => wy)) > y + BREAKER_HEIGHT - 1
+			);
+			expect(through).toBe(false);
+		}
+		// Only LP-1 records its wire count.
+		expect(ticks).toEqual([expect.objectContaining({ count: 3 })]);
+	});
+
+	it('draws the transformer above the service only when the project has one', () => {
+		const root: RiserTree = { row: row({ id: 'root' }), panels: [panel('MDP')], branch_ats: [] };
+		expect(layoutRiser(root, { transformer_kva: 150 } as never).transformer).toBeDefined();
+		expect(layoutRiser(root, {} as never).transformer).toBeUndefined();
+	});
+
+	it('keeps only what lies in view, and everything without a view', () => {
+		const tree = panel('MDP', [panel('LP-1'), panel('LP-2'), panel('LP-3')]);
+		const layout = layoutRiser(tree);
+		// The first column only (24 + 300 px).
+		const shown = visibleItems(layout, { left: 0, top: 0, right: 300, bottom: 5000 });
+		expect(shown.boxes.map((b) => b.id)).toEqual(['LP-1']);
+		expect(shown.breakers.every(([x]) => x <= 300)).toBe(true);
+		expect(visibleItems(layout)).toMatchObject({ boxes: layout.boxes, labels: layout.labels });
+	});
+});
+
+describe('single-path drawing', () => {
+	it('joins every wire and every box outline into one path each', () => {
+		expect(
+			wirePath([
+				[
+					[0, 0],
+					[0, 10]
+				],
+				[
+					[5, 5],
+					[9, 5],
+					[9, 8]
+				]
+			])
+		).toBe('M0 0L0 10M5 5L9 5L9 8');
+		expect(boxPath([{ id: 'a', x: 1, y: 2, width: 3, height: 4, title: '', lines: [] }])).toBe(
+			'M1 2h3v4h-3Z'
+		);
 	});
 });

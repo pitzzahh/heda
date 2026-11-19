@@ -52,3 +52,6 @@ export { default as TrashIcon } from 'phosphor-svelte/lib/TrashIcon';
 export { default as WarningCircleIcon } from 'phosphor-svelte/lib/WarningCircleIcon';
 export { default as XCircleIcon } from 'phosphor-svelte/lib/XCircleIcon';
 export { default as XIcon } from 'phosphor-svelte/lib/XIcon';
+export { default as CornersOutIcon } from 'phosphor-svelte/lib/CornersOutIcon';
+export { default as MagnifyingGlassMinusIcon } from 'phosphor-svelte/lib/MagnifyingGlassMinusIcon';
+export { default as MagnifyingGlassPlusIcon } from 'phosphor-svelte/lib/MagnifyingGlassPlusIcon';
