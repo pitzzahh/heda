@@ -85,3 +85,9 @@ fn places_symbols_for_svg_1_1_viewers_too() {
         );
     }
 }
+
+#[test]
+fn drops_characters_xml_cannot_hold() {
+    let (_, texts) = parse(&svg("LP\u{b}-1\u{1}"));
+    assert!(texts.iter().any(|t| t == "LP-1"), "{texts:?}");
+}
