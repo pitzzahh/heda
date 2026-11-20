@@ -1,11 +1,13 @@
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import type {
 	RiserBox,
+	RiserItems,
 	RiserLabel,
 	RiserLayout,
 	RiserSource,
 	RiserTree
 } from '#lib/types/riser.js';
+import type { Rect } from './viewport.js';
 import { DEFAULT_PHASES, default_phases } from '#lib/constants.js';
 import { getOptionLabel } from '#lib/utils/format.js';
 
@@ -28,6 +30,15 @@ const BUS = 24;
 const BRANCHES_PER_LINE = 4;
 /** Feeder labels start beside their drop and can run past the last column. */
 const LABEL_OVERHANG = 100;
+/** The circuit breaker symbol (Appendix A 1.11) breaks the feeder this far below the bus. */
+const BREAKER_AT = 8;
+export const BREAKER_HEIGHT = 22;
+/** Where the cross-lines counting the wires (Appendix A 1.37) sit on a feeder. */
+const TICKS_AT = 48;
+/** Room above the service for the transformer (Appendix A 3.1). */
+const TRANSFORMER_SPACE = 64;
+/** Height of the transformer symbol, leads included. */
+export const TRANSFORMER_HEIGHT = 40;
 
 /** Like the Excel export: -1 (none in the table) prints as "-". */
 const size = (value: number | string | undefined) =>
@@ -90,6 +101,8 @@ export function layoutRiser(tree: RiserTree, source?: RiserSource): RiserLayout 
 	const boxes: RiserBox[] = [];
 	const wires: [number, number][][] = [];
 	const labels: RiserLabel[] = [];
+	const breakers: [number, number][] = [];
+	const ticks: RiserLayout['ticks'] = [];
 	const source_lines = source ? sourceLines(source) : [];
 	const linesOf = (node: RiserTree, depth: number) =>
 		source && depth === 0 ? source_lines : panelBox(node).lines;
@@ -102,10 +115,29 @@ export function layoutRiser(tree: RiserTree, source?: RiserSource): RiserLayout 
 		for (const panel of node.panels) measure(panel, depth + 1);
 	})(tree, 0);
 	const level_y: number[] = [];
-	let bottom = MARGIN + (source ? 0 : DROP);
+	const has_transformer = !!source?.transformer_kva;
+	let bottom = MARGIN + (source ? (has_transformer ? TRANSFORMER_SPACE : 0) : DROP);
 	for (const height of level_height) {
 		level_y.push(bottom);
 		bottom += height + BUS + DROP;
+	}
+
+	/** A feeder from `top` down to its panel at `bottom`: breaker, wire count, label. */
+	function feeder(row: RiserTree['row'], x: number, top: number, bottom: number) {
+		const breaker_top = top + BREAKER_AT;
+		wires.push(
+			[
+				[x, top],
+				[x, breaker_top]
+			],
+			[
+				[x, breaker_top + BREAKER_HEIGHT],
+				[x, bottom]
+			]
+		);
+		breakers.push([x, breaker_top]);
+		if (row.conductor_qty) ticks.push({ x, y: top + TICKS_AT, count: row.conductor_qty });
+		labels.push({ id: row.id, x: x + 16, y: top + LINE + 4, lines: feederLines(row) });
 	}
 
 	(function place(node: RiserTree, depth: number, left: number): number {
@@ -118,18 +150,15 @@ export function layoutRiser(tree: RiserTree, source?: RiserSource): RiserLayout 
 		const height = boxHeight(box.lines.length);
 		boxes.push({ ...box, x: cx - BOX_WIDTH / 2, y: top, width: BOX_WIDTH, height });
 
-		if (depth === 0 && !source) {
-			// The start panel's own feeder, from a supply the diagram does not draw.
+		if (depth === 0 && has_transformer) {
 			wires.push([
-				[cx, top - DROP],
+				[cx, MARGIN + TRANSFORMER_HEIGHT],
 				[cx, top]
 			]);
-			labels.push({
-				id: node.row.id,
-				x: cx + 8,
-				y: top - DROP + LINE,
-				lines: feederLines(node.row)
-			});
+		}
+		if (depth === 0 && !source) {
+			// The start panel's own feeder, from a supply the diagram does not draw.
+			feeder(node.row, cx, top - DROP, top);
 		}
 
 		let child_left = left;
@@ -151,17 +180,7 @@ export function layoutRiser(tree: RiserTree, source?: RiserSource): RiserLayout 
 				]
 			);
 			node.panels.forEach((panel, i) => {
-				const x = centres[i]!;
-				wires.push([
-					[x, bus_y],
-					[x, level_y[depth + 1]!]
-				]);
-				labels.push({
-					id: panel.row.id,
-					x: x + 8,
-					y: bus_y + LINE + 4,
-					lines: feederLines(panel.row)
-				});
+				feeder(panel.row, centres[i]!, bus_y, level_y[depth + 1]!);
 			});
 		}
 		return cx;
@@ -174,6 +193,12 @@ export function layoutRiser(tree: RiserTree, source?: RiserSource): RiserLayout 
 		boxes,
 		wires,
 		labels,
+		breakers,
+		ticks,
+		...(service &&
+			has_transformer && {
+				transformer: [service.x + service.width / 2, MARGIN] as [number, number]
+			}),
 		...(service && {
 			ground: [service.x, service.y + service.height] as [number, number],
 			meter: [service.x + service.width / 2, service.y + service.height + BUS / 2] as [
@@ -198,4 +223,34 @@ function sourceLines(source: RiserSource): string[] {
 		source.transformer_kva ? `Transformer: ${source.transformer_kva} kVA` : '',
 		source.utility_sc_kva ? `Utility fault level: ${source.utility_sc_kva} kVA` : ''
 	].filter(Boolean);
+}
+
+/** Widest a feeder label runs from its x (five lines of about 40 characters at 11 px). */
+const LABEL_WIDTH = 240;
+
+/** Everything of the layout that falls in `rect`; all of it when `rect` is omitted. */
+export function visibleItems(layout: RiserLayout, rect?: Rect): RiserItems {
+	if (!rect) return layout;
+	const within = (left: number, top: number, right: number, bottom: number) =>
+		right >= rect.left && left <= rect.right && bottom >= rect.top && top <= rect.bottom;
+	return {
+		boxes: layout.boxes.filter((b) => within(b.x, b.y, b.x + b.width, b.y + b.height)),
+		labels: layout.labels.filter((l) =>
+			within(l.x, l.y - LINE, l.x + LABEL_WIDTH, l.y + LINE * l.lines.length)
+		),
+		breakers: layout.breakers.filter(([x, y]) => within(x - 12, y, x + 12, y + BREAKER_HEIGHT)),
+		ticks: layout.ticks.filter((t) => within(t.x - 6, t.y - 4, t.x + 6, t.y + t.count * 5))
+	};
+}
+
+/** Every wire as one path, so the browser draws them as a single element. */
+export function wirePath(wires: RiserLayout['wires']): string {
+	return wires
+		.map((wire) => wire.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(''))
+		.join('');
+}
+
+/** Every panelboard outline as one path, for the zoomed-out view. */
+export function boxPath(boxes: RiserBox[]): string {
+	return boxes.map((b) => `M${b.x} ${b.y}h${b.width}v${b.height}h${-b.width}Z`).join('');
 }
