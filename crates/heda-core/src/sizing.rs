@@ -120,6 +120,33 @@ pub fn overload_rating(nameplate_current: f64, marked: bool) -> f64 {
     ((nameplate_current * percent / 100.0 * 1e9).round() / 1e9).floor()
 }
 
+/// A transformer's rated secondary current: kVA × 1000 ÷ 230 V on a one-phase supply,
+/// ÷ (line voltage × 1.732) on a three-phase one (400 V wye, 230 V delta).
+pub fn transformer_current(kva: f64, phase: Option<&str>) -> Option<f64> {
+    use crate::model::phases::*;
+    let volts = match phase? {
+        ONE_PHASE => WYE_PHASE_VOLTAGE,
+        THREE_PHASE_WYE => WYE_LINE_VOLTAGE * SQRT_3,
+        THREE_PHASE_DELTA => DELTA_LINE_VOLTAGE * SQRT_3,
+        _ => return None,
+    };
+    Some(kva * 1000.0 / volts)
+}
+
+/// The largest secondary overcurrent protection a transformer of 1000 V or less allows,
+/// PEC 2017 Table 4.50.1.3(B), primary and secondary protection: 125 % of the rated
+/// secondary current from 9 A up, else 167 %, taken down to a standard rating (Note 1's
+/// next higher rating applies to primary-only protection, not here). By Note 2 it caps
+/// the total of up to six service disconnects. None below the smallest standard rating.
+pub fn transformer_secondary_ocpd(current: f64) -> Option<f64> {
+    let percent = if current >= 9.0 { 125.0 } else { 167.0 };
+    let limit = (current * percent / 100.0 * 1e9).round() / 1e9;
+    STANDARD_AMPERE_RATINGS
+        .into_iter()
+        .rev()
+        .find(|rating| *rating <= limit)
+}
+
 /// Breaker multiplier on a branch circuit's load current; None for an unknown load type.
 /// Motors: Table 4.30.4.2, inverse time breaker 250 %. Heating is continuous whatever the
 /// load says (4.24.1.3(B)), and its 125 % stays under the 150 % of 4.22.2.2(E)(3). Any

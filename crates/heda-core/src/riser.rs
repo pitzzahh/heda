@@ -9,7 +9,7 @@ use crate::graph::Graph;
 use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, HighestUnitForm, Node};
-use crate::sizing::{Conduit, Egc};
+use crate::sizing::{self, Conduit, Egc};
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -293,7 +293,7 @@ fn supply_voltage(phase: Option<&str>) -> &'static str {
     }
 }
 
-fn source_lines(source: &HighestUnitForm) -> Vec<String> {
+fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
     let phase = source.phase.as_deref();
     let first = [phase_label(phase), supply_voltage(phase).to_string()]
         .into_iter()
@@ -301,15 +301,39 @@ fn source_lines(source: &HighestUnitForm) -> Vec<String> {
         .collect::<Vec<_>>()
         .join(" · ");
     let truthy = |value: Option<f64>| value.filter(|v| js::truthy(*v));
-    [
-        Some(first),
-        truthy(source.transformer_kva).map(|kva| format!("Transformer: {} kVA", num(kva))),
-        truthy(source.utility_sc_kva).map(|kva| format!("Utility fault level: {} kVA", num(kva))),
-    ]
-    .into_iter()
-    .flatten()
-    .filter(|line| !line.is_empty())
-    .collect()
+    let mut lines = vec![first];
+    if let Some(kva) = truthy(source.transformer_kva) {
+        lines.push(format!("Transformer: {} kVA", num(kva)));
+        lines.extend(transformer_lines(kva, phase, tree));
+    }
+    if let Some(kva) = truthy(source.utility_sc_kva) {
+        lines.push(format!("Utility fault level: {} kVA", num(kva)));
+    }
+    lines.retain(|line| !line.is_empty());
+    lines
+}
+
+/// The service transformer checked against what it feeds: the panels' load (Article 2.20
+/// calculates the load a source must carry) and the total of the service mains, which
+/// PEC 2017 Table 4.50.1.3(B) Note 2 caps at the largest secondary protection allowed.
+fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<String> {
+    let load_kva = tree.panels.iter().map(|p| p.circuit.row.va).sum::<f64>() / 1000.0;
+    let over = |exceeded: bool| if exceeded { ", OVER" } else { "" };
+    let mut lines = vec![format!(
+        "Load: {} kVA{}",
+        num((load_kva * 100.0).round() / 100.0),
+        over(load_kva > kva)
+    )];
+    let ocpd = sizing::transformer_current(kva, phase).and_then(sizing::transformer_secondary_ocpd);
+    if let Some(ocpd) = ocpd {
+        let mains: f64 = tree.panels.iter().map(|p| p.circuit.row.at).sum();
+        lines.push(format!(
+            "Secondary OCPD ≤ {} A{}",
+            num(ocpd),
+            over(mains > ocpd)
+        ));
+    }
+    lines
 }
 
 /// A box's title and lines, for a tree at a depth.
@@ -332,7 +356,7 @@ fn leaves(tree: &RiserTree) -> f64 {
 /// `tree` is a panel and its own feeder is drawn coming in from above.
 pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> RiserLayout {
     let mut layout = RiserLayout::default();
-    let source_lines = source.map(source_lines).unwrap_or_default();
+    let source_lines = source.map(|s| source_lines(s, tree)).unwrap_or_default();
     let box_of = |node: &RiserTree, depth: usize| match source {
         Some(source) if depth == 0 => (
             source
