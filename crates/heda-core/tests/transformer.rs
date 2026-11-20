@@ -21,7 +21,8 @@ fn rated_secondary_current_follows_the_supply() {
 
 #[test]
 fn secondary_protection_is_125_percent_taken_down_to_a_standard_rating() {
-    // 216.5 A × 125 % = 270.6 A: 250 A, not the next higher 300 A (Note 1 is primary only).
+    // 216.5 A × 125 % = 270.6 A: 250 A, not the next higher 300 A (Note 1 is primary
+    // only; the secondary cell cites Note 3, which allows no next-higher rating).
     assert_eq!(transformer_secondary_ocpd(216.51), Some(250.0));
     // 160 A × 125 % = 200 A exactly.
     assert_eq!(transformer_secondary_ocpd(160.0), Some(200.0));

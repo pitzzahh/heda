@@ -141,9 +141,10 @@ pub fn generator_conductor_ampacity(rated_current: f64) -> f64 {
 
 /// The largest secondary overcurrent protection a transformer of 1000 V or less allows,
 /// PEC 2017 Table 4.50.1.3(B), primary and secondary protection: 125 % of the rated
-/// secondary current from 9 A up, else 167 %, taken down to a standard rating (Note 1's
-/// next higher rating applies to primary-only protection, not here). By Note 2 it caps
-/// the total of up to six service disconnects. None below the smallest standard rating.
+/// secondary current from 9 A up, else 167 %, taken down to a standard rating. Note 1's
+/// next higher rating is attached to the primary-only 125 %; the secondary cell cites
+/// Note 3, the thermal-overload note, which allows no next-higher rating. By Note 2 it
+/// caps the total of up to six service disconnects. None below the smallest standard rating.
 pub fn transformer_secondary_ocpd(current: f64) -> Option<f64> {
     let percent = if current >= 9.0 { 125.0 } else { 167.0 };
     let limit = (current * percent / 100.0 * 1e9).round() / 1e9;
