@@ -5,6 +5,7 @@ import {
 	UTILITY_SC_KVA_FIELD
 } from './short-circuit.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
+import { TITLE_BLOCK_SCHEMA } from './title-block.js';
 
 // Canonical data shapes for the stored project and node documents. Types derive from these schemas
 // (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults
@@ -15,7 +16,9 @@ export const PROJECT_DOC_SCHEMA = v.object({
 	// Older files carry is_adjustment_factor_dynamic here; PEC 2017 3.10.2.6(B)(3)(a) is
 	// not optional, so the engine always applies it and the key is dropped.
 	settings: v.object({}),
-	root_node_id: v.string()
+	root_node_id: v.string(),
+	/** The sheet set's title block, remembered per project (PEC 2017 1.3.2.2). */
+	title_block: v.optional(TITLE_BLOCK_SCHEMA)
 });
 
 export const NODE_DOC_SCHEMA = v.object({

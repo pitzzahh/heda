@@ -10,7 +10,7 @@ export {
 	updateNodeParentById,
 	restoreNodeFields
 } from './nodes.js';
-export { createProject, deleteProject, updateProjectTitle } from './projects.js';
+export { createProject, deleteProject, updateProjectTitle, updateTitleBlock } from './projects.js';
 export {
 	changeInsulation,
 	changePhaseAssignment,
