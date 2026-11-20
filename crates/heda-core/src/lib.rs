@@ -20,3 +20,4 @@ pub mod tables;
 pub mod voltage_drop;
 #[cfg(feature = "wasm")]
 mod wasm;
+pub mod workbook;
