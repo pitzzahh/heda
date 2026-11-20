@@ -418,41 +418,68 @@ pub struct BalanceCircuit<'a> {
     pub id: &'a str,
     pub va: f64,
     pub phase: &'a str,
+    /// A three-phase sub-panel's own VA per phase or line pair, which its feeder carries
+    /// as it is (see `CircuitTotal::split`); `None` spreads `va` evenly.
+    pub split: Option<[f64; 3]>,
 }
 
 /// Phases (or line pairs, on delta) for the single-phase circuits of one three-phase
 /// panel, largest load first onto the least loaded phase. Three-phase circuits only
 /// seed the totals. PEC 2017 App. D Ex. D6 6.1 asks for "balanced distribution of
-/// single phase loads" but leaves the method to the designer. Returned in
-/// assignment order.
+/// single phase loads" but leaves the method to the designer. The feeder is sized on
+/// its most loaded phase (2.20.3.22(A); App. D Ex. D6, D8), so when the suggestion
+/// would not lower that phase (nor, at a tie, the unbalance) the circuits keep the
+/// phases they have. Returned in assignment order.
 pub fn balanced_phase_assignments<'a>(
     circuits: &[BalanceCircuit<'a>],
     supply: Supply,
 ) -> Vec<(&'a str, &'static str)> {
     let labels = supply.labels();
-    let mut totals = [0.0_f64; 3];
+    let mut seed = [0.0_f64; 3];
     for circuit in circuits.iter().filter(|c| c.phase == ALL_PHASES) {
-        for total in &mut totals {
-            *total += circuit.va / 3.0;
+        let shares = circuit.split.unwrap_or([circuit.va / 3.0; 3]);
+        for (total, share) in seed.iter_mut().zip(shares) {
+            *total += share;
         }
     }
     let mut single_phase: Vec<&BalanceCircuit> =
         circuits.iter().filter(|c| c.phase != ALL_PHASES).collect();
     // Stable, like Array.prototype.sort; `b.va - a.va` compares NaN as equal.
     single_phase.sort_by(|a, b| b.va.partial_cmp(&a.va).unwrap_or(std::cmp::Ordering::Equal));
-    single_phase
-        .into_iter()
+
+    let mut suggested_totals = seed;
+    let suggested: Vec<(&'a str, &'static str)> = single_phase
+        .iter()
         .map(|circuit| {
             // Ties go to the first label, then the second, so the result is stable.
             let index = (1..3).fold(0, |best, next| {
-                if totals[next] < totals[best] {
+                if suggested_totals[next] < suggested_totals[best] {
                     next
                 } else {
                     best
                 }
             });
-            totals[index] += circuit.va;
+            suggested_totals[index] += circuit.va;
             (circuit.id, labels[index])
         })
-        .collect()
+        .collect();
+
+    let mut current_totals = seed;
+    let current: Option<Vec<(&'a str, &'static str)>> = single_phase
+        .iter()
+        .map(|circuit| {
+            let index = labels.iter().position(|l| *l == circuit.phase)?;
+            current_totals[index] += circuit.va;
+            Some((circuit.id, labels[index]))
+        })
+        .collect();
+    let heaviest = |totals: [f64; 3]| js::max(js::max(totals[0], totals[1]), totals[2]);
+    let worse_or_equal = (
+        heaviest(suggested_totals),
+        unbalance_percent(suggested_totals),
+    ) >= (heaviest(current_totals), unbalance_percent(current_totals));
+    match current {
+        Some(current) if worse_or_equal => current,
+        _ => suggested,
+    }
 }

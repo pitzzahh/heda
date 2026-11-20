@@ -36,6 +36,7 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
                     id: &c.id,
                     va: c.va,
                     phase: &c.phase,
+                    split: c.split,
                 })
                 .collect();
             Ok(Value::Array(
@@ -84,6 +85,9 @@ struct BalanceInput {
     id: String,
     va: f64,
     phase: String,
+    /// A three-phase sub-panel's VA per phase or line pair.
+    #[serde(default)]
+    split: Option<[f64; 3]>,
 }
 
 fn parse<T: for<'de> Deserialize<'de>>(args: Value) -> Result<T, String> {

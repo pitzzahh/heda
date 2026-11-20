@@ -7,6 +7,7 @@ import {
 } from '#lib/constants.js';
 import { horsepowerOfCurrent } from './index.js';
 import {
+	balanceSplit,
 	defaultPhaseAssignment,
 	isThreePhaseLoadType,
 	phaseOf,
@@ -160,5 +161,25 @@ describe('horsepowerOfCurrent', () => {
 		expect(horsepowerOfCurrent(default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER, '9')).toBe(
 			undefined
 		);
+	});
+});
+
+describe('balanceSplit', () => {
+	it("hands over a three-phase sub-panel's own VA per phase or line pair", () => {
+		const phase_va = { A: 3000, B: 0, C: 500 };
+		expect(balanceSplit({ phase: 'ABC', phase_va }, default_phases.THREE_PHASE_WYE)).toEqual([
+			3000, 0, 500
+		]);
+		const pair_va = { AB: 1, BC: 2, CA: 3 };
+		expect(balanceSplit({ phase: 'ABC', pair_va }, default_phases.THREE_PHASE_DELTA)).toEqual([
+			1, 2, 3
+		]);
+	});
+
+	it('leaves single-phase circuits, plain three-phase loads and mismatched supplies alone', () => {
+		expect(balanceSplit({ phase: 'A' }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
+		expect(balanceSplit({ phase: 'ABC' }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
+		const pair_va = { AB: 1, BC: 2, CA: 3 };
+		expect(balanceSplit({ phase: 'ABC', pair_va }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
 	});
 });

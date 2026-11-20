@@ -222,26 +222,31 @@ fn balancing_puts_the_largest_load_on_the_lightest_phase_after_three_phase_share
             id: "m",
             va: 3_000.0,
             phase: ALL_PHASES,
+            split: None,
         }, // 1 000 VA on each phase
         BalanceCircuit {
             id: "a",
             va: 1_000.0,
             phase: "A",
+            split: None,
         },
         BalanceCircuit {
             id: "b",
             va: 4_000.0,
             phase: "A",
+            split: None,
         },
         BalanceCircuit {
             id: "c",
             va: 2_000.0,
             phase: "A",
+            split: None,
         },
         BalanceCircuit {
             id: "d",
             va: 1_500.0,
             phase: "B",
+            split: None,
         },
     ];
     // 4 000 → A (tie, A first); 2 000 → B; 1 500 → C; 1 000 → C (2 500 < 3 000 < 5 000).
@@ -250,4 +255,58 @@ fn balancing_puts_the_largest_load_on_the_lightest_phase_after_three_phase_share
         [("b", "A"), ("c", "B"), ("d", "C"), ("a", "C")]
     );
     assert!(balanced_phase_assignments(&[], Supply::Wye).is_empty());
+}
+
+fn circuit<'a>(id: &'a str, va: f64, phase: &'a str) -> BalanceCircuit<'a> {
+    BalanceCircuit {
+        id,
+        va,
+        phase,
+        split: None,
+    }
+}
+
+#[test]
+fn balancing_seeds_a_three_phase_sub_panel_with_its_own_phases() {
+    // The sub-panel puts all 3 000 VA on A, so its feeder carries it there (PEC 2017
+    // 2.20.3.22(A)); spread evenly, the 1 000 VA load would tie on A and stay there.
+    let circuits = [
+        BalanceCircuit {
+            split: Some([3_000.0, 0.0, 0.0]),
+            ..circuit("sub", 3_000.0, ALL_PHASES)
+        },
+        circuit("x", 1_000.0, "A"),
+    ];
+    // A 4 000 VA now; on B the heaviest phase drops to A's 3 000 VA.
+    assert_eq!(
+        balanced_phase_assignments(&circuits, Supply::Wye),
+        [("x", "B")]
+    );
+}
+
+#[test]
+fn balancing_keeps_phases_the_suggestion_would_make_heavier() {
+    // Already the best split: A 5 + 4, B 5 + 4, C 3 + 3 + 3 = 9 000 VA each.
+    // Largest-first would give A 5 + 3 + 3 = 11 000 VA, a heavier feeder phase.
+    let circuits = [
+        circuit("a5", 5_000.0, "A"),
+        circuit("b5", 5_000.0, "B"),
+        circuit("a4", 4_000.0, "A"),
+        circuit("b4", 4_000.0, "B"),
+        circuit("c1", 3_000.0, "C"),
+        circuit("c2", 3_000.0, "C"),
+        circuit("c3", 3_000.0, "C"),
+    ];
+    assert_eq!(
+        balanced_phase_assignments(&circuits, Supply::Wye),
+        [
+            ("a5", "A"),
+            ("b5", "B"),
+            ("a4", "A"),
+            ("b4", "B"),
+            ("c1", "C"),
+            ("c2", "C"),
+            ("c3", "C")
+        ]
+    );
 }
