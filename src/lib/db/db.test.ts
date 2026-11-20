@@ -41,6 +41,7 @@ import {
 	getNodeById,
 	getParentNodes,
 	getRiserAsync,
+	getCoordinationAsync,
 	getSnapshotRevision
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
@@ -1606,3 +1607,67 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 function countNodes(): number {
 	return getNodes().length;
 }
+
+describe('selective coordination, PEC 2017 7.0.6.3', () => {
+	const panel = (name: string, circuit_number: number, system: GenericPhasePanelSchema['system']) =>
+		({
+			name,
+			circuit_number,
+			ambient_temperature: 30,
+			length: 10,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			phase: default_phases.ONE_PHASE,
+			system
+		}) satisfies GenericPhasePanelSchema;
+	const lighting = (circuit_number: number) =>
+		({
+			load_type: default_load_types.LIGHTING_LOAD,
+			quantity: 1,
+			varies: '2000',
+			load_description: `Light ${circuit_number}`,
+			continuous: false,
+			circuit_number,
+			length: 10,
+			ambient_temperature: 30,
+			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+			config_preference: 'CUSTOM'
+		}) as never;
+
+	// root ─ MDP ─┬─ EP (emergency) ─┬─ Light 1
+	//             │                  └─ Light 2
+	//             └─ LP ─ Light 1
+	it('pairs each emergency device with all supply-side devices, and keeps the documented selection', async () => {
+		resetData();
+		const created = await createProject('Coordination', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const mdp = await add({ parent_id: created!.root_node_id, panel_data: panel('MDP', 1, null) });
+		const ep = await add({ parent_id: mdp.id, panel_data: panel('EP', 1, 'emergency') });
+		const e1 = await add({ parent_id: ep.id, load_data: lighting(1) });
+		await add({ parent_id: ep.id, load_data: lighting(2) });
+		const lp = await add({ parent_id: mdp.id, panel_data: panel('LP', 2, null) });
+		await add({ parent_id: lp.id, load_data: lighting(1) });
+
+		const study = await getCoordinationAsync();
+		expect(study.map((p) => [p.upstream.name, p.downstream.name, p.section])).toEqual([
+			['MDP', 'EP', '7.0.6.3'],
+			['EP', 'Light 1', '7.0.6.3'],
+			['MDP', 'Light 1', '7.0.6.3'],
+			['EP', 'Light 2', '7.0.6.3'],
+			['MDP', 'Light 2', '7.0.6.3']
+		]);
+		expect(study.every((p) => p.status.kind === 'needs_documentation')).toBe(true);
+
+		await patchNode(e1.id, { coordination_reference: 'Selectivity table, p. 12' });
+		const documented = (await getCoordinationAsync()).filter((p) => p.downstream.id === e1.id);
+		expect(documented.map((p) => p.status)).toEqual([
+			{ kind: 'documented', reference: 'Selectivity table, p. 12' },
+			{ kind: 'documented', reference: 'Selectivity table, p. 12' }
+		]);
+
+		// A normal panel again: nothing left to coordinate.
+		await updateNode({ id: ep.id, parent_id: mdp.id, panel_data: panel('EP', 1, null) });
+		expect(await getCoordinationAsync()).toEqual([]);
+	});
+});

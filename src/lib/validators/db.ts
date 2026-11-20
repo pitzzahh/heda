@@ -44,12 +44,15 @@ export const NODE_DOC_SCHEMA = v.object({
 	overrided_length: v.optional(v.number()),
 	overrided_z: v.optional(v.number()),
 	is_at_used_as_currents_value: v.optional(v.boolean()),
+	/** The engineer's documented selective coordination of this device (PEC 2017 7.0.6.3). */
+	coordination_reference: v.optional(v.string()),
 	panel_data: v.optional(
 		v.object({
 			name: v.string(),
 			terminal_temperature: v.string(),
 			ambient_temperature: v.number(),
-			phase: v.string()
+			phase: v.string(),
+			system: v.optional(v.nullable(v.string()))
 		})
 	),
 	load_data: v.optional(

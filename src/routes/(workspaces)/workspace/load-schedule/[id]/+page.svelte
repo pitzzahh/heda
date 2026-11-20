@@ -7,7 +7,8 @@
 		{ value: 'load-sched', label: 'Load Schedule' },
 		{ value: 'voltage-drop', label: 'Voltage Drop' },
 		{ value: 'short-circuit', label: 'Short Circuit' },
-		{ value: 'riser', label: 'Riser' }
+		{ value: 'riser', label: 'Riser' },
+		{ value: 'coordination', label: 'Coordination' }
 	] as const;
 	type TabValue = (typeof TABS)[number]['value'];
 </script>
@@ -35,6 +36,7 @@
 	import { shortCircuitColumns } from '#lib/components/custom/table/short-circuit-cols/index.js';
 	import { ShortCircuitSourceForm } from '#lib/components/custom/short-circuit/index.js';
 	import { RiserDiagram } from '#lib/components/custom/riser/index.js';
+	import { CoordinationStudy } from '#lib/components/custom/coordination/index.js';
 	import { ArrowSquareOutIcon, LightningAIcon } from '#lib/assets/icons.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Poppable } from '#lib/components/custom/popout/index.js';
@@ -54,7 +56,8 @@
 		'load-sched': true,
 		'voltage-drop': false,
 		'short-circuit': false,
-		riser: false
+		riser: false,
+		coordination: false
 	});
 	let voltage_activated = $state(false);
 	// Any tab's content can move into its own window; see Poppable.
@@ -63,13 +66,15 @@
 		'load-sched': false,
 		'voltage-drop': false,
 		'short-circuit': false,
-		riser: false
+		riser: false,
+		coordination: false
 	});
 	const panels = {
 		'load-sched': loadSchedulePanel,
 		'voltage-drop': voltageDropPanel,
 		'short-circuit': shortCircuitPanel,
-		riser: riserPanel
+		riser: riserPanel,
+		coordination: coordinationPanel
 	} satisfies Record<TabValue, unknown>;
 
 	// A fresh page starts on its first tab; tell the workspace header, which outlives the page.
@@ -343,5 +348,11 @@
 {#snippet riserPanel()}
 	{#if visited_tabs['riser'] || popped_tabs['riser']}
 		<RiserDiagram {node_id} />
+	{/if}
+{/snippet}
+
+{#snippet coordinationPanel()}
+	{#if visited_tabs['coordination'] || popped_tabs['coordination']}
+		<CoordinationStudy />
 	{/if}
 {/snippet}

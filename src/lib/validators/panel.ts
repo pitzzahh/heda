@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { DEFAULT_THREE_PHASE_TYPES_ENUMS } from '#lib/constants.js';
+import { COORDINATION_SYSTEMS, DEFAULT_THREE_PHASE_TYPES_ENUMS } from '#lib/constants.js';
 import {
 	AMBIENT_TEMPERATURE_FIELD,
 	CIRCUIT_NUMBER_FIELD,
@@ -25,5 +25,14 @@ export const GENERIC_PHASE_PANEL_SCHEMA = v.object({
 			)
 		)
 	),
-	phase: PHASE_FIELD
+	phase: PHASE_FIELD,
+	// Absent or null for a normal panel; else the system the PEC requires to coordinate selectively.
+	system: v.optional(
+		v.nullable(
+			v.picklist(
+				COORDINATION_SYSTEMS.map((option) => option.value),
+				'Please select a valid system.'
+			)
+		)
+	)
 });
