@@ -367,6 +367,64 @@ pub fn egc_size(at: f64) -> Egc {
     }
 }
 
+/// PEC 2017 Table 2.50.3.17: the copper grounding electrode conductor for the largest
+/// copper ungrounded service-entrance conductor or equivalent area (`area`, mm²).
+/// None without a conductor.
+pub fn gec_size(area: f64) -> Option<f64> {
+    if area.is_nan() || area <= 0.0 {
+        return None;
+    }
+    Some(
+        GEC_COPPER
+            .iter()
+            .find(|(up_to, _)| area <= *up_to)
+            .map_or(GEC_COPPER_OVER_500, |(_, gec)| *gec),
+    )
+}
+
+/// PEC 2017 2.50.2.9(D)(1) and Table 2.50.5.13(C)(1): the copper main or system bonding
+/// jumper for the largest copper ungrounded conductor or equivalent area (`area`, mm²).
+/// Over 500 mm², Note 1: at least 12½ % of `area`, taken up to a standard size of Table
+/// 3.10.2.6(B)(16), and never more than `area`. None without a conductor.
+pub fn bonding_jumper_size(area: f64) -> Option<f64> {
+    if area.is_nan() || area <= 0.0 {
+        return None;
+    }
+    if let Some((_, jumper)) = BONDING_JUMPER_COPPER
+        .iter()
+        .find(|(up_to, _)| area <= *up_to)
+    {
+        return Some(*jumper);
+    }
+    let least = area * 0.125;
+    Some(
+        COPPER_AMPACITIES
+            .iter()
+            .map(|(size, _)| *size)
+            .find(|size| *size >= least - 1e-9)
+            .unwrap_or(area)
+            .min(area),
+    )
+}
+
+/// PEC 2017 2.50.6.13(B): where the ungrounded conductors are increased from the minimum
+/// size that carries the load (`minimum`) to `conductor`, a wire-type EGC grows by the same
+/// ratio of area from its Table 2.50.6.13 size (`table`), to the next standard size of
+/// Table 3.10.2.6(B)(16). 2.50.6.13(A) never requires it larger than the circuit
+/// conductors. Otherwise, the table size.
+pub fn egc_increased(table: f64, conductor: f64, minimum: f64) -> f64 {
+    if !(table > 0.0 && minimum > 0.0 && conductor > minimum) {
+        return table;
+    }
+    let area = table * conductor / minimum;
+    COPPER_AMPACITIES
+        .iter()
+        .map(|(size, _)| *size)
+        .find(|size| *size >= area - 1e-9)
+        .unwrap_or(conductor)
+        .min(conductor)
+}
+
 /// Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds the THHN (or TW, for a
 /// 60 °C-rated conductor) conductors; -1 when none of Table 10.1.1.4's sizes does.
 pub fn conduit_size(conductor_size: f64, total_conductors: f64, rating: Rating) -> Conduit {

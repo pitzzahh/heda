@@ -52,11 +52,12 @@ fn conductors_carry_115_percent_of_the_nameplate_current() {
 #[test]
 fn the_standby_load_counts_each_chosen_panel_once() {
     // LP-1 (4 + 3 kVA, with EP under it) and EP chosen: 7 kVA, not 10.
+    // After the supply and its grounding (tests/grounding.rs).
     let lines = service_lines(json!({ "standby_panels": ["LP-1", "EP"] }));
-    assert_eq!(lines[1..], ["Standby load: 7 kVA"]);
+    assert_eq!(lines[3..], ["Standby load: 7 kVA"]);
     let lines = service_lines(json!({ "standby_panels": ["LP-1", "LP-2"], "generator_kva": 25 }));
     assert_eq!(
-        lines[1..],
+        lines[3..],
         [
             "Generator: 25 kVA",
             "Standby load: 13 kVA",
@@ -68,8 +69,8 @@ fn the_standby_load_counts_each_chosen_panel_once() {
 #[test]
 fn a_generator_too_small_for_its_panels_is_flagged() {
     let lines = service_lines(json!({ "standby_panels": ["MDP"], "generator_kva": 10 }));
-    assert_eq!(lines[2], "Standby load: 13 kVA, OVER");
-    assert!(service_lines(json!({}))[1..].is_empty());
+    assert_eq!(lines[4], "Standby load: 13 kVA, OVER");
+    assert!(service_lines(json!({}))[3..].is_empty());
 }
 
 #[test]

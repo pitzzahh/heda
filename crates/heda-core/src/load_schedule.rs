@@ -149,8 +149,16 @@ fn conduit(node: &Node, conductor_size: f64) -> Conduit {
     }
 }
 
-fn egc(node: &Node, at: f64) -> Egc {
-    sizing::overridden(node.overrided_egc_size).map_or_else(|| sizing::egc_size(at), Egc::Size)
+/// The engineer's EGC, else Table 2.50.6.13's for `at`, grown by 2.50.6.13(B) when the
+/// conductors are upsized from `minimum` (what carries the load) to `conductor_size`.
+fn egc(node: &Node, at: f64, conductor_size: f64, minimum: f64) -> Egc {
+    if let Some(size) = sizing::overridden(node.overrided_egc_size) {
+        return Egc::Size(size);
+    }
+    match sizing::egc_size(at) {
+        Egc::Size(table) => Egc::Size(sizing::egc_increased(table, conductor_size, minimum)),
+        other => other,
+    }
 }
 
 /// One load-schedule row, memoized per node. A panel's row totals its circuits.
@@ -190,10 +198,8 @@ pub fn load_row<'g>(
         sizing::ampere_trip(current, load_type, continuous, dwelling_circuit),
     );
     let own_sizing = input(current, at, Sizing::of(load_type), ambient_temp);
-    let conductor_size = js::or(
-        node.overrided_conductor_size,
-        sizing::conductor_size(own_sizing),
-    );
+    let minimum_size = sizing::conductor_size(own_sizing);
+    let conductor_size = sizing::overridden(node.overrided_conductor_size).unwrap_or(minimum_size);
 
     let mut row = if let Some(panel_data) = &node.panel_data {
         let panel_supply = Supply::of(node.panel_phase());
@@ -232,10 +238,9 @@ pub fn load_row<'g>(
         } else {
             input(main_current, main_at, Sizing::Main, ambient_temp)
         };
-        let main_conductor_size = js::or(
-            node.overrided_conductor_size,
-            sizing::conductor_size(main_sizing),
-        );
+        let main_minimum_size = sizing::conductor_size(main_sizing);
+        let main_conductor_size =
+            sizing::overridden(node.overrided_conductor_size).unwrap_or(main_minimum_size);
         LoadRow {
             load_description: js::or_str(panel_data.name.as_deref(), "").to_owned(),
             voltage,
@@ -245,7 +250,7 @@ pub fn load_row<'g>(
             current: main_current,
             conductor_size: main_conductor_size,
             // PEC 2017 Table 2.50.6.13 sizes the EGC on the overcurrent device ahead of it: the main.
-            egc_size: egc(node, main_at),
+            egc_size: egc(node, main_at, main_conductor_size, main_minimum_size),
             conduit_size: conduit(node, main_conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, main_at),
             phase_va: totals.phase_va,
@@ -273,7 +278,7 @@ pub fn load_row<'g>(
             at,
             current: js::round_js(current, 2),
             conductor_size,
-            egc_size: egc(node, at),
+            egc_size: egc(node, at, conductor_size, minimum_size),
             conduit_size: conduit(node, conductor_size),
             ampere_frames: js::or(node.overrided_ampere_frames, at),
             phase_va: None,

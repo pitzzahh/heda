@@ -459,3 +459,34 @@ mod allowable_ampacity_pec_2017_1_3_2_1_g_3_d {
         assert_eq!(allowable_ampacity(4.0, panel(20.0)), None);
     }
 }
+
+mod egc_increased_pec_2017_2_50_6_13_b {
+    use super::*;
+
+    #[test]
+    fn grows_with_the_area_of_upsized_ungrounded_conductors() {
+        // 60 A: Table 2.50.6.13 gives 5.5 mm². 22 mm² carries it, upsized to 38 mm² for
+        // voltage drop: 5.5 × 38 / 22 = 9.5 mm², so the next standard size, 14 mm².
+        assert_eq!(egc_increased(5.5, 38.0, 22.0), 14.0);
+        // 20 A: 3.5 mm² EGC with 3.5 mm² minimum, upsized to 5.5: 3.5 × 5.5 / 3.5 = 5.5.
+        assert_eq!(egc_increased(3.5, 5.5, 3.5), 5.5);
+    }
+
+    #[test]
+    fn keeps_the_table_size_when_the_conductors_are_not_upsized() {
+        assert_eq!(egc_increased(5.5, 22.0, 22.0), 5.5);
+        // An override below the minimum never shrinks the EGC under the table.
+        assert_eq!(egc_increased(5.5, 14.0, 22.0), 5.5);
+        // No minimum (nothing in Table 3.10.2.6(B)(16) carries the load): the table size.
+        assert_eq!(egc_increased(5.5, 38.0, -1.0), 5.5);
+    }
+
+    #[test]
+    fn need_not_be_larger_than_the_circuit_conductors() {
+        // 14 × 100 / 22 = 63.6 mm², so 80 mm², under the 100 mm² circuit conductors.
+        // 30 × 60 / 22 = 81.8 mm² would be 100 mm², but 2.50.6.13(A) never requires an
+        // EGC larger than the circuit conductors: 60 mm².
+        assert_eq!(egc_increased(14.0, 100.0, 22.0), 80.0);
+        assert_eq!(egc_increased(30.0, 60.0, 22.0), 60.0);
+    }
+}

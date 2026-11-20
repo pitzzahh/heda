@@ -83,6 +83,32 @@ pub const AMPERE_TRIP_TO_COPPER: [(f64, Option<f64>); 19] = [
     (0.0, Some(2.0)),
 ];
 
+/// PEC 2017 Table 2.50.3.17: copper grounding electrode conductor (mm²) by the largest
+/// copper ungrounded service-entrance conductor or equivalent area for parallel
+/// conductors, as `(up_to_mm2, gec_mm2)`; over 500 mm² it is 80 mm².
+pub const GEC_COPPER: [(f64, f64); 6] = [
+    (30.0, 8.0),
+    (50.0, 14.0),
+    (80.0, 22.0),
+    (175.0, 30.0),
+    (325.0, 50.0),
+    (500.0, 60.0),
+];
+pub const GEC_COPPER_OVER_500: f64 = 80.0;
+
+/// PEC 2017 Table 2.50.5.13(C)(1): copper grounded conductor, main, system and
+/// supply-side bonding jumper (mm²) by the largest copper ungrounded conductor or
+/// equivalent area for parallel conductors, as `(up_to_mm2, jumper_mm2)`. Over 500 mm²,
+/// Note 1: 12½ % of that area, never more than the conductors.
+pub const BONDING_JUMPER_COPPER: [(f64, f64); 6] = [
+    (30.0, 8.0),
+    (50.0, 14.0),
+    (80.0, 22.0),
+    (175.0, 30.0),
+    (325.0, 50.0),
+    (500.0, 60.0),
+];
+
 /// PEC 2017 Ch. 10 Table 10.1.1.9: effective Z at 0.85 PF, uncoated copper in PVC
 /// conduit, ohms to neutral per 305 m (Note 2: an approximation of R·cosθ + X·sinθ
 /// for voltage drop), as `(size_mm2, ohms)`.

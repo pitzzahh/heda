@@ -174,7 +174,10 @@ fn draws_the_service_supply_transformer_meter_and_ground() {
             "3P-Y · 400Y/230 V",
             "Transformer: 150 kVA",
             "Load: 0 kVA",
-            "Secondary OCPD ≤ 250 A"
+            "Secondary OCPD ≤ 250 A",
+            // A separately derived system's grounding (tests/grounding.rs).
+            "GEC ≥ 8 mm² Cu",
+            "System bonding jumper ≥ 8 mm² Cu",
         ]
     );
     assert!(layout.transformer.is_some() && layout.meter.is_some() && layout.ground.is_some());

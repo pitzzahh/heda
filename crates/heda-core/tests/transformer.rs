@@ -54,7 +54,7 @@ fn the_riser_flags_a_transformer_too_small_for_its_load() {
     assert!(computed.rows["LP"].at > 125.0);
     let layout = session.riser("root").unwrap();
     assert_eq!(
-        layout.boxes[0].lines[2..],
+        layout.boxes[0].lines[2..4],
         ["Load: 30 kVA, OVER", "Secondary OCPD ≤ 125 A, OVER"]
     );
 }
@@ -86,7 +86,7 @@ fn a_load_wired_on_the_supply_counts_toward_the_transformer() {
     assert!(computed.rows["LP"].at + computed.rows["D"].at > 125.0);
     let layout = session.riser("root").unwrap();
     assert_eq!(
-        layout.boxes[0].lines[2..],
+        layout.boxes[0].lines[2..4],
         ["Load: 30 kVA, OVER", "Secondary OCPD ≤ 125 A, OVER"]
     );
 }

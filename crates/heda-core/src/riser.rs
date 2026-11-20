@@ -112,6 +112,8 @@ pub struct RiserTree<'a> {
     pub branch_ats: Vec<f64>,
     /// Total VA of those branch circuits.
     pub branch_va: f64,
+    /// Equivalent area (mm², sets × size) of one ungrounded conductor of each branch circuit.
+    pub branch_area: f64,
 }
 
 /// The tree under `id` from the computed rows.
@@ -130,6 +132,7 @@ pub fn riser_tree<'a>(
     let mut panels = Vec::new();
     let mut branch_ats = Vec::new();
     let mut branch_va = 0.0;
+    let mut branch_area = 0.0;
     let children: Vec<&Node> = graph.children(id).collect();
     for child in children {
         if child.node_type == "panel" {
@@ -138,6 +141,7 @@ pub fn riser_tree<'a>(
             let row = circuit(child, rows).row;
             branch_ats.push(row.at);
             branch_va += row.va;
+            branch_area += set_area(child, &row);
         }
     }
     Some(RiserTree {
@@ -145,7 +149,18 @@ pub fn riser_tree<'a>(
         panels,
         branch_ats,
         branch_va,
+        branch_area,
     })
+}
+
+/// One ungrounded conductor of every parallel set together, mm²; 0 without a size.
+fn set_area(node: &Node, row: &LoadRow) -> f64 {
+    let area = node.conductor_sets.unwrap_or(1.0) * row.conductor_size;
+    if area > 0.0 {
+        area
+    } else {
+        0.0
+    }
 }
 
 /// A number as JavaScript prints it in a template string (`${value}`).
@@ -308,6 +323,10 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         lines.push(format!("Transformer: {} kVA", num(kva)));
         lines.extend(transformer_lines(kva, phase, tree));
     }
+    lines.extend(grounding_lines(
+        truthy(source.transformer_kva).is_some(),
+        tree,
+    ));
     lines.extend(generator_lines(source, phase, tree));
     if let Some(kva) = truthy(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
@@ -340,6 +359,31 @@ fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<Str
         ));
     }
     lines
+}
+
+/// The grounding at the supply, from the copper conductors it feeds: PEC 2017 Table
+/// 2.50.3.17's grounding electrode conductor and 2.50.2.9(D)(1)'s bonding jumper (Table
+/// 2.50.5.13(C)(1)), both by the equivalent area of those conductors. Parallel sets add,
+/// and so do the sets of each circuit on the supply, by Note 3 of Table 2.50.5.13(C)(1)
+/// (the largest sum of the corresponding conductors of each set). From a transformer these
+/// are a separately derived system's: 2.50.2.11(A)(5) sizes its GEC and (A)(1) its system
+/// bonding jumper the same way; else the service's GEC (2.50.2.5(D)) and main bonding jumper.
+fn grounding_lines(transformer: bool, tree: &RiserTree) -> Vec<String> {
+    let area: f64 = tree
+        .panels
+        .iter()
+        .map(|panel| set_area(panel.circuit.node, &panel.circuit.row))
+        .sum::<f64>()
+        + tree.branch_area;
+    let jumper = if transformer { "System" } else { "Main" };
+    [
+        sizing::gec_size(area).map(|gec| format!("GEC ≥ {} mm² Cu", num(gec))),
+        sizing::bonding_jumper_size(area)
+            .map(|size| format!("{jumper} bonding jumper ≥ {} mm² Cu", num(size))),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 fn standby_panels(source: &HighestUnitForm) -> Vec<&str> {
