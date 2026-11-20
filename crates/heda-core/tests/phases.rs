@@ -320,3 +320,32 @@ fn balancing_keeps_phases_the_suggestion_would_make_heavier() {
         ]
     );
 }
+
+#[test]
+fn delta_balancing_keeps_phases_the_suggestion_would_make_a_heavier_line() {
+    // Now AB 2 300, BC 3 100, CA 2 280 VA: line B carries √(3100² + 2300² + 3100·2300) ÷ 230
+    // = 20.41 A. Largest-first gives AB 2 900, BC 2 580, CA 2 200: its heaviest pair is
+    // lighter, but line B rises to 20.65 A, so the feeder would carry more.
+    let circuits = [
+        circuit("p", 2_000.0, "BC"),
+        circuit("q", 1_100.0, "AB"),
+        circuit("r", 1_100.0, "BC"),
+        circuit("s", 1_200.0, "AB"),
+        circuit("t", 1_000.0, "CA"),
+        circuit("u", 900.0, "CA"),
+        circuit("v", 380.0, "CA"),
+    ];
+    // Kept as they are, in assignment order (largest first, ties stable).
+    assert_eq!(
+        balanced_phase_assignments(&circuits, Supply::Delta),
+        [
+            ("p", "BC"),
+            ("s", "AB"),
+            ("q", "AB"),
+            ("r", "BC"),
+            ("t", "CA"),
+            ("u", "CA"),
+            ("v", "CA")
+        ]
+    );
+}

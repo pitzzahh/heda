@@ -428,9 +428,9 @@ pub struct BalanceCircuit<'a> {
 /// panel, largest load first onto the least loaded phase. Three-phase circuits only
 /// seed the totals. PEC 2017 App. D Ex. D6 6.1 asks for "balanced distribution of
 /// single phase loads" but leaves the method to the designer. The feeder is sized on
-/// its most loaded phase (2.20.3.22(A); App. D Ex. D6, D8), so when the suggestion
-/// would not lower that phase (nor, at a tie, the unbalance) the circuits keep the
-/// phases they have. Returned in assignment order.
+/// its most loaded phase (2.20.3.22(A); App. D Ex. D6, D8), on a delta panel its most
+/// loaded line, so when the suggestion would not lower that (nor, at a tie, the
+/// unbalance) the circuits keep the phases they have. Returned in assignment order.
 pub fn balanced_phase_assignments<'a>(
     circuits: &[BalanceCircuit<'a>],
     supply: Supply,
@@ -474,7 +474,19 @@ pub fn balanced_phase_assignments<'a>(
             Some((circuit.id, labels[index]))
         })
         .collect();
-    let heaviest = |totals: [f64; 3]| js::max(js::max(totals[0], totals[1]), totals[2]);
+    // A delta feeder's heaviest line carries two pairs (phasor sum), so compare lines there.
+    let heaviest = |totals: [f64; 3]| match supply {
+        Supply::Delta => {
+            let [ab, bc, ca] = totals;
+            let lines = delta_line_currents(PairVa {
+                AB: ab,
+                BC: bc,
+                CA: ca,
+            });
+            js::max(js::max(lines.A, lines.B), lines.C)
+        }
+        Supply::OnePhase | Supply::Wye => js::max(js::max(totals[0], totals[1]), totals[2]),
+    };
     let worse_or_equal = (
         heaviest(suggested_totals),
         unbalance_percent(suggested_totals),
