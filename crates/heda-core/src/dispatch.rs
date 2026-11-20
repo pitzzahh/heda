@@ -3,6 +3,7 @@
 //! bytes (`dispatch_file`). The Tauri backend and the WASM build used by tests both go
 //! through here, so they cannot drift apart.
 
+use crate::edit;
 use crate::session::Session;
 use serde::Deserialize;
 use serde_json::Value;
@@ -37,6 +38,46 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let NodeId { node_id } = parse(args)?;
             to_json(session.riser(&node_id))
         }
+        "patch_nodes" => {
+            let PatchNodes { patches } = parse(args)?;
+            let plan = edit::patch_nodes(session.tree(), patches);
+            to_json(session.commit(plan)?)
+        }
+        "add_node" => {
+            let AddNode { parent_id, node } = parse(args)?;
+            let plan = edit::add_node(session.tree(), &parent_id, node, new_id())?;
+            to_json(session.commit(plan)?)
+        }
+        "update_node" => {
+            let UpdateNode {
+                id,
+                parent_id,
+                node,
+            } = parse(args)?;
+            let plan = edit::update_node(session.tree(), &id, &parent_id, node)?;
+            to_json(session.commit(plan)?)
+        }
+        "move_node" => {
+            let MoveNode { id, parent_id } = parse(args)?;
+            let plan = edit::move_node(session.tree(), &id, &parent_id)?;
+            to_json(session.commit(plan)?)
+        }
+        "remove_nodes" => {
+            let Remove { ids } = parse(args)?;
+            let plan = edit::remove_nodes(session.tree(), &ids);
+            to_json(session.commit(plan)?)
+        }
+        "copy_nodes" => {
+            let CopyNodes {
+                id,
+                count,
+                parent_id,
+            } = parse(args)?;
+            let plan = edit::copy_nodes(session.tree(), &id, count, parent_id.as_deref(), new_id)?;
+            to_json(session.commit(plan)?)
+        }
+        "undo" => to_json(session.undo()?),
+        "redo" => to_json(session.redo()?),
         "balance_panel" => {
             let PanelId { panel_id } = parse(args)?;
             to_json(session.balance_panel(&panel_id))
@@ -109,6 +150,44 @@ struct Remove {
 #[derive(Deserialize)]
 struct SetProject {
     project: Value,
+}
+
+#[derive(Deserialize)]
+struct PatchNodes {
+    patches: Vec<edit::Patch>,
+}
+
+#[derive(Deserialize)]
+struct AddNode {
+    parent_id: String,
+    node: edit::CircuitInput,
+}
+
+#[derive(Deserialize)]
+struct UpdateNode {
+    id: String,
+    parent_id: String,
+    node: edit::CircuitInput,
+}
+
+#[derive(Deserialize)]
+struct MoveNode {
+    id: String,
+    parent_id: String,
+}
+
+#[derive(Deserialize)]
+struct CopyNodes {
+    id: String,
+    count: f64,
+    /// Where the copies go; absent copies them next to the original.
+    #[serde(default)]
+    parent_id: Option<String>,
+}
+
+/// A random id for a node an edit creates, like `crypto.randomUUID()`.
+fn new_id() -> String {
+    uuid::Uuid::new_v4().to_string()
 }
 
 #[derive(Deserialize)]

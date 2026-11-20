@@ -28,6 +28,54 @@ pub struct Session {
     docs: HashMap<String, Value>,
     project: Value,
     load_rows: HashMap<String, LoadRow>,
+    history: History,
+}
+
+/// How many edits undo reaches back; each holds whole documents, so older ones go.
+pub const MAX_HISTORY: usize = 100;
+
+/// One committed edit: every node it touched, as it was before and after (`None`
+/// where the node did not exist). Undo stores `before` again, redo `after`.
+#[derive(Debug, Clone)]
+struct Change {
+    before: Vec<(String, Option<Value>)>,
+    after: Vec<(String, Option<Value>)>,
+}
+
+/// The undo and redo stacks of the open project.
+#[derive(Debug, Default)]
+struct History {
+    undo: Vec<Change>,
+    redo: Vec<Change>,
+}
+
+impl Clone for History {
+    /// A copy of the session only builds a file and never undoes, so it takes no
+    /// history (which can hold up to `MAX_HISTORY` whole subtrees).
+    fn clone(&self) -> Self {
+        History::default()
+    }
+}
+
+/// How many edits undo and redo can step through.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize)]
+pub struct HistoryDepth {
+    pub undo: usize,
+    pub redo: usize,
+}
+
+/// What an edit, undo or redo stored: the documents written and the ids removed, the
+/// rows it recomputed, the history depth after it, and what the command adds (a
+/// created id, a new circuit number).
+#[derive(Debug, Default, Serialize)]
+pub struct Edited {
+    pub nodes: Vec<Value>,
+    pub removed: Vec<String>,
+    #[serde(flatten)]
+    pub computed: Computed,
+    pub history: HistoryDepth,
+    #[serde(flatten)]
+    pub result: serde_json::Map<String, Value>,
 }
 
 /// Recomputed load-schedule rows by node id: what a node shows in its parent's
@@ -44,6 +92,7 @@ pub struct Snapshot {
     pub nodes: Vec<Value>,
     #[serde(flatten)]
     pub computed: Computed,
+    pub history: HistoryDepth,
 }
 
 /// A file opened as the session (`open_file`): its documents as migrated, and
@@ -69,6 +118,7 @@ impl Session {
                 project: self.project.clone(),
                 nodes: self.nodes_in_order(),
                 computed,
+                history: HistoryDepth::default(),
             },
             pec_2017_migrated,
         })
@@ -134,6 +184,7 @@ impl Session {
             project: self.project.clone(),
             nodes: self.nodes_in_order(),
             computed: self.compute_all(),
+            history: self.history_depth(),
         }
     }
 
@@ -144,6 +195,132 @@ impl Session {
             .into_iter()
             .filter_map(|id| self.docs.get(id).cloned())
             .collect()
+    }
+
+    /// The stored documents an edit is planned on (`edit.rs`).
+    pub fn tree(&self) -> crate::edit::Tree<'_> {
+        crate::edit::Tree {
+            graph: &self.graph,
+            docs: &self.docs,
+        }
+    }
+
+    /// Stores `plan` as one edit undo can take back. A plan that changes nothing is
+    /// not recorded, and leaves the redo stack as it is.
+    pub fn commit(&mut self, plan: crate::edit::Plan) -> Result<Edited, String> {
+        let crate::edit::Plan {
+            put,
+            remove,
+            result,
+        } = plan;
+        let after: Vec<(String, Option<Value>)> = remove
+            .iter()
+            .map(|id| (id.clone(), None))
+            .chain(put.into_iter().map(|doc| (id_of(&doc), Some(doc))))
+            .filter(|(id, doc)| self.docs.get(id) != doc.as_ref())
+            .collect();
+        if after.is_empty() {
+            return Ok(Edited {
+                history: self.history_depth(),
+                result,
+                ..Edited::default()
+            });
+        }
+        let before = after
+            .iter()
+            .map(|(id, _)| (id.clone(), self.docs.get(id).cloned()))
+            .collect();
+        let mut edited = self.store(after.clone())?;
+        self.history.undo.push(Change { before, after });
+        if self.history.undo.len() > MAX_HISTORY {
+            self.history.undo.remove(0);
+        }
+        self.history.redo.clear();
+        edited.history = self.history_depth();
+        edited.result = result;
+        Ok(edited)
+    }
+
+    /// Takes back the last edit; nothing to undo stores nothing.
+    pub fn undo(&mut self) -> Result<Edited, String> {
+        let Some(change) = self.history.undo.pop() else {
+            return Ok(Edited {
+                history: self.history_depth(),
+                ..Edited::default()
+            });
+        };
+        let edited = self.store(change.before.clone());
+        self.settle(edited, change, true)
+    }
+
+    /// Makes the last undone edit again.
+    pub fn redo(&mut self) -> Result<Edited, String> {
+        let Some(change) = self.history.redo.pop() else {
+            return Ok(Edited {
+                history: self.history_depth(),
+                ..Edited::default()
+            });
+        };
+        let edited = self.store(change.after.clone());
+        self.settle(edited, change, false)
+    }
+
+    /// Moves `change` to the other stack once it is stored; a failed store puts it back.
+    fn settle(
+        &mut self,
+        edited: Result<Edited, String>,
+        change: Change,
+        undone: bool,
+    ) -> Result<Edited, String> {
+        let (from, to) = if undone {
+            (&mut self.history.undo, &mut self.history.redo)
+        } else {
+            (&mut self.history.redo, &mut self.history.undo)
+        };
+        match edited {
+            Ok(mut edited) => {
+                to.push(change);
+                edited.history = self.history_depth();
+                Ok(edited)
+            }
+            Err(error) => {
+                from.push(change);
+                Err(error)
+            }
+        }
+    }
+
+    /// Writes each node as given: a document to store, or `None` to remove it.
+    fn store(&mut self, states: Vec<(String, Option<Value>)>) -> Result<Edited, String> {
+        let mut removed = Vec::new();
+        let mut nodes = Vec::new();
+        for (id, doc) in states {
+            match doc {
+                Some(doc) => nodes.push(doc),
+                None if self.docs.contains_key(&id) => removed.push(id),
+                None => {}
+            }
+        }
+        // Checked before anything is written, so a bad document leaves the session as it was.
+        parse_nodes(&nodes)?;
+        let mut computed = self.remove(&removed);
+        computed.rows.extend(self.put(nodes.clone())?.rows);
+        for id in &removed {
+            computed.rows.remove(id);
+        }
+        Ok(Edited {
+            nodes,
+            removed,
+            computed,
+            ..Edited::default()
+        })
+    }
+
+    pub fn history_depth(&self) -> HistoryDepth {
+        HistoryDepth {
+            undo: self.history.undo.len(),
+            redo: self.history.redo.len(),
+        }
     }
 
     /// The first panel on the supply: as the service disconnect, its minimum rating
