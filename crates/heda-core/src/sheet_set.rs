@@ -1247,10 +1247,11 @@ fn title_block_ops(
             caption,
         );
         let mut line_y = y + pad + label + value * 2.0;
-        for line in wrap(&w.metrics, big, inner, value * 1.2, true)
-            .into_iter()
-            .take(2)
-        {
+        // The name wraps down to the cell's bottom, as the lines under it do: never cut short.
+        for line in wrap(&w.metrics, big, inner, value * 1.2, true) {
+            if line_y > y + TITLE_BLOCK_HEIGHT - pad {
+                break;
+            }
             text(&mut ops, [left + pad, line_y], value * 1.2, true, &line);
             line_y += value * 1.7;
         }
