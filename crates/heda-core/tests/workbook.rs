@@ -61,7 +61,8 @@ fn text(value: &str) -> Cell {
 fn writes_one_sheet_per_depth_from_the_exported_panel_down() {
     let book = layout("one_phase", Kind::LoadSchedule, "root");
     let names: Vec<&str> = book.sheets.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(names, ["1st", "2nd", "3rd"]);
+    // The bill of materials of the same panels follows the schedules (tests/bom.rs).
+    assert_eq!(names, ["1st", "2nd", "3rd", "Bill of Materials"]);
     assert_eq!(book.subject, "1P Load schedule");
     assert_eq!(book.category, "1P,Load schedule,Export");
     // Exported from a sub-panel, that panel's depth names the first sheet.
@@ -70,7 +71,7 @@ fn writes_one_sheet_per_depth_from_the_exported_panel_down() {
         .into_iter()
         .map(|s| s.name)
         .collect();
-    assert_eq!(names, ["3rd"]);
+    assert_eq!(names, ["3rd", "Bill of Materials"]);
 }
 
 #[test]

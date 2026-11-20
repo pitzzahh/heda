@@ -373,6 +373,11 @@ impl Session {
         Some(layout_riser(&tree, source.as_ref()))
     }
 
+    /// The bill of materials of `id` and everything below it (`bom`).
+    pub fn bill_of_materials(&mut self, id: &str) -> Result<crate::bom::Bom, String> {
+        crate::bom::bill_of_materials(&self.graph, &self.docs, &mut self.load_rows, id)
+    }
+
     /// The riser diagram from `id` down as an SVG file (`riser_svg`).
     pub fn riser_svg(&mut self, id: &str) -> Result<Vec<u8>, String> {
         let layout = self.riser(id).ok_or("Node not found")?;
