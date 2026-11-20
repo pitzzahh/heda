@@ -1,13 +1,14 @@
 <script lang="ts" module>
 	import type { FormStore } from '@formisch/svelte';
 	import type { FormLoadTypeOption } from '../generic-phase-main-load-form.svelte';
+	import type { MotorTable } from '#lib/types/catalog.js';
 
 	interface Props {
 		form: FormStore;
 		load_type: FormLoadTypeOption | undefined;
 		varies_label: string;
-		/** Horsepower → full-load current table for the selected motor type. */
-		hp_currents: Readonly<Record<string, string>>;
+		/** Horsepower → full-load current table for the selected motor type, in the table's order. */
+		hp_currents: MotorTable;
 	}
 </script>
 
@@ -28,11 +29,7 @@
 
 	let { form, load_type, varies_label, hp_currents }: Props = $props();
 
-	// Object keys list integers ('1', '10') before fractions ('1/2'); full-load
-	// current rises with horsepower, so sorting by it restores the table order.
-	const hp_options = $derived(
-		Object.keys(hp_currents).sort((a, b) => Number(hp_currents[a]) - Number(hp_currents[b]))
-	);
+	const hp_options = $derived(hp_currents.map(([hp]) => hp));
 
 	let open = $state(false);
 	const trigger_id = useId();
@@ -64,7 +61,7 @@
 						disabled={load_type === 'DEFAULT'}
 						role="combobox"
 					>
-						{@const varies_output = hp_currents[field.input as string]}
+						{@const varies_output = hp_currents.find(([hp]) => hp === field.input)?.[1]}
 						{#if field.input}
 							<p class="min-w-0 flex-1 truncate text-left">
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -- formatFraction escapes input; only matched digits reach the markup -->

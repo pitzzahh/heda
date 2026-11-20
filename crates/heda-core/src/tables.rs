@@ -216,6 +216,87 @@ pub const THHN_CONDUCTOR_AREAS: [(f64, f64); 21] = [
     (500.0, 870.9),
 ];
 
+/// PEC 2017 Table 4.30.14.2: full-load current of single-phase AC motors, 230 V column
+/// (A), as `(horsepower, amperes)`. The table's currents apply to 220–240 V systems.
+pub const ONE_PHASE_MOTOR_FLC_230V: [(&str, f64); 12] = [
+    ("1/6", 2.2),
+    ("1/4", 2.9),
+    ("1/3", 3.6),
+    ("1/2", 4.9),
+    ("3/4", 6.9),
+    ("1", 8.0),
+    ("1 1/2", 10.0),
+    ("2", 12.0),
+    ("3", 17.0),
+    ("5", 28.0),
+    ("7 1/2", 40.0),
+    ("10", 50.0),
+];
+
+/// PEC 2017 Table 4.30.14.4: full-load current of three-phase induction (squirrel cage
+/// and wound rotor) motors, 230 V column (A), for 220–240 V systems: a 230 V delta
+/// supply. 250–500 HP are marked "Based on UL 508".
+pub const THREE_PHASE_MOTOR_FLC_230V: [(&str, f64); 27] = [
+    ("1/2", 2.2),
+    ("3/4", 3.2),
+    ("1", 4.2),
+    ("1 1/2", 6.0),
+    ("2", 6.8),
+    ("3", 9.6),
+    ("5", 15.2),
+    ("7 1/2", 22.0),
+    ("10", 28.0),
+    ("15", 42.0),
+    ("20", 54.0),
+    ("25", 68.0),
+    ("30", 80.0),
+    ("40", 104.0),
+    ("50", 130.0),
+    ("60", 154.0),
+    ("75", 192.0),
+    ("100", 248.0),
+    ("125", 312.0),
+    ("150", 360.0),
+    ("200", 480.0),
+    ("250", 604.0),
+    ("300", 722.0),
+    ("350", 828.0),
+    ("400", 954.0),
+    ("450", 1030.0),
+    ("500", 1180.0),
+];
+
+/// PEC 2017 Table 4.30.14.4, 400 V column (A): the line voltage of a 400Y/230 V system.
+/// The table prints no 400 V value for 450 HP, so it has no row here.
+pub const THREE_PHASE_MOTOR_FLC_400V: [(&str, f64); 26] = [
+    ("1/2", 1.3),
+    ("3/4", 1.8),
+    ("1", 2.3),
+    ("1 1/2", 3.3),
+    ("2", 4.3),
+    ("3", 6.1),
+    ("5", 9.7),
+    ("7 1/2", 14.0),
+    ("10", 18.0),
+    ("15", 27.0),
+    ("20", 34.0),
+    ("25", 44.0),
+    ("30", 51.0),
+    ("40", 66.0),
+    ("50", 83.0),
+    ("60", 103.0),
+    ("75", 128.0),
+    ("100", 165.0),
+    ("125", 208.0),
+    ("150", 240.0),
+    ("200", 320.0),
+    ("250", 403.0),
+    ("300", 482.0),
+    ("350", 560.0),
+    ("400", 636.0),
+    ("500", 786.0),
+];
+
 /// Looks a value up in a `(key, value)` table by exact key, as a JavaScript object
 /// keyed by number does (`TABLE[8]` finds the `8.0` entry).
 pub fn lookup<T>(table: &[(f64, T)], key: f64) -> Option<&T> {

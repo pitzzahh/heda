@@ -10,6 +10,7 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { engine } from '#lib/core/api.js';
+import { loadCatalog } from '#lib/core/catalog.js';
 import type {
 	ComputedRow,
 	EngineComputed,
@@ -79,6 +80,7 @@ function hasKeepalive(): boolean {
  */
 export function initializeDatabase(): Promise<void> {
 	ready ??= (async () => {
+		await loadCatalog();
 		// Tests run without Tauri and start from an empty engine.
 		if (!isTauri()) return;
 		for (const file of LEGACY_FILES) {

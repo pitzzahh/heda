@@ -5,6 +5,7 @@
 //! it, and the `wasm` feature adds the bindings the app's tests and browser
 //! development load (`src/lib/core/`).
 
+pub mod catalog;
 pub mod defaults;
 pub mod dispatch;
 pub mod graph;

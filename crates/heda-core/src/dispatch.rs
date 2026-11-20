@@ -31,6 +31,7 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             to_json(session.set_project(project))
         }
         "snapshot" => to_json(session.snapshot()),
+        "catalog" => to_json(crate::catalog::catalog()),
         "voltage_drops" => to_json(session.voltage_drops()),
         "short_circuits" => to_json(session.short_circuits()),
         "riser" => {

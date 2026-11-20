@@ -1,11 +1,4 @@
 <script lang="ts" module>
-	import {
-		standard_ampere_ratings,
-		AMPACITY_TO_CONDUCTOR_SIZE,
-		AMPERE_TRIP_TO_COPPER,
-		CONDUIT_SIZES
-	} from '#lib/constants.js';
-
 	interface Props {
 		node_id: string;
 		closeDialog: () => void;
@@ -27,20 +20,6 @@
 		};
 		is_in_vd_table?: boolean;
 	}
-
-	const conductor_sizes = Object.values(AMPACITY_TO_CONDUCTOR_SIZE);
-	const conductor_size_last_index = conductor_sizes.length - 1;
-
-	const egc_sizes = Object.values(AMPERE_TRIP_TO_COPPER)
-		.map((el) => el.size)
-		.filter((el) => el !== 'error')
-		.sort((a, b) => a - b);
-	const egc_size_last_index = egc_sizes.length - 1;
-
-	const conduit_sizes = CONDUIT_SIZES;
-	const conduit_size_last_index = conduit_sizes.length - 1;
-
-	const at_last_index = standard_ampere_ratings.length - 1;
 
 	const ampere_frames_ratings = ['50', '100', '125', '250', '400', '600', '800', '1000', '1200'];
 
@@ -75,6 +54,7 @@
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
+	import { getCatalog } from '#lib/core/catalog.js';
 	let {
 		node_id,
 		closeDialog,
@@ -90,6 +70,18 @@
 	}: Props = $props();
 
 	let undo_redo_state = getUndoRedoState();
+
+	// The PEC 2017 steps each override walks (Tables 2.40.1.6(A), 3.10.2.6(B)(16), 2.50.6.13, 10.1.1.4).
+	const {
+		breaker_ratings: standard_ampere_ratings,
+		conductor_sizes,
+		egc_sizes,
+		conduit_sizes
+	} = getCatalog();
+	const at_last_index = standard_ampere_ratings.length - 1;
+	const conductor_size_last_index = conductor_sizes.length - 1;
+	const egc_size_last_index = egc_sizes.length - 1;
+	const conduit_size_last_index = conduit_sizes.length - 1;
 
 	// AT
 	const at_default_index = standard_ampere_ratings.findIndex((rating) => current_at === rating);

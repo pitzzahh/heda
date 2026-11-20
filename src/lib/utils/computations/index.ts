@@ -1,10 +1,6 @@
-import {
-	THREE_PHASE_MOTOR_FLC_230V,
-	THREE_PHASE_MOTOR_FLC_400V,
-	default_hp_current_relationship,
-	default_load_types,
-	default_phases
-} from '#lib/constants.js';
+import { default_load_types, default_phases } from '#lib/constants.js';
+import { getCatalog } from '#lib/core/catalog.js';
+import type { MotorTable } from '#lib/types/catalog.js';
 
 /**
  * Horsepower → full-load current table of a motor type under a supply: PEC 2017
@@ -14,14 +10,27 @@ import {
 export function horsepowerTable(
 	load_type: string | undefined,
 	supply_phase: string | undefined
-): Readonly<Record<string, string>> | undefined {
-	if (load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER) {
-		return default_hp_current_relationship;
-	}
+): MotorTable | undefined {
+	const { motor_flc } = getCatalog();
+	if (load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER)
+		return motor_flc.one_phase_230;
 	if (load_type !== default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER) return undefined;
 	return supply_phase === default_phases.THREE_PHASE_DELTA
-		? THREE_PHASE_MOTOR_FLC_230V
-		: THREE_PHASE_MOTOR_FLC_400V;
+		? motor_flc.three_phase_230
+		: motor_flc.three_phase_400;
+}
+
+/**
+ * The full-load current a motor picked by horsepower is stored as, as the text the
+ * form stores (`'8'`, `'2.2'`). Undefined for a horsepower the table has no row for.
+ */
+export function currentOfHorsepower(
+	load_type: string | undefined,
+	horsepower: string | undefined,
+	supply_phase?: string
+): string | undefined {
+	const row = horsepowerTable(load_type, supply_phase)?.find(([hp]) => hp === horsepower);
+	return row && String(row[1]);
 }
 
 /**
@@ -36,7 +45,7 @@ export function horsepowerOfCurrent(
 ): string | undefined {
 	const table = horsepowerTable(load_type, supply_phase);
 	if (!table || varies === undefined) return varies;
-	return Object.keys(table).find((hp) => Number(table[hp]) === Number(varies));
+	return table.find(([, amps]) => amps === Number(varies))?.[0];
 }
 
 export * from './three-phase.js';
