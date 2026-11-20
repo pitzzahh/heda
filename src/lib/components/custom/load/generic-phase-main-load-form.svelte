@@ -18,6 +18,13 @@
 		default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
 		default_load_types.THREE_P_MOTOR__RATED_CURRENT
 	];
+
+	/** Only a motor keeps its nameplate (PEC 2017 4.30.3.2(A)(1)): another load type would
+	 * carry it along unseen and size a stale overload relay if it became a motor again. */
+	export function withoutStaleNameplate<T extends { load_type: string }>(load_data: T): T {
+		if (MOTOR_LOAD_TYPES.includes(load_data.load_type)) return load_data;
+		return { ...load_data, nameplate_current: undefined, nameplate_marked: undefined };
+	}
 </script>
 
 <script lang="ts">
@@ -149,7 +156,7 @@
 
 			if (load_type) {
 				const load_description = `${data.quantity} - ${data.load_description}`;
-				const load_data = {
+				const load_data = withoutStaleNameplate({
 					...data,
 					load_description,
 					config_preference: load_type,
@@ -159,7 +166,7 @@
 					...(horsepowerTable(data.load_type, supply_phase) && {
 						varies: currentOfHorsepower(data.load_type, data.varies, supply_phase)
 					})
-				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
+				}) as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 				// The engine refuses a load its panel cannot supply (PEC 2017 2.20.1.5(A)).
 				if (action === 'add') {
 					const parent_id = panel_id_from_tree as string;

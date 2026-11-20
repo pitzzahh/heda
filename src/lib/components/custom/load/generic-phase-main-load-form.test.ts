@@ -42,6 +42,7 @@ Object.defineProperty(Element.prototype, 'animate', {
 
 import { DEFAULT_LOADS } from '#lib/constants.js';
 import LoadFormFixture from './generic-phase-main-load-form.fixture.svelte';
+import { withoutStaleNameplate } from './generic-phase-main-load-form.svelte';
 
 afterEach(() => {
 	document.body.innerHTML = '';
@@ -129,5 +130,13 @@ describe('GenericPhaseMainLoadForm', () => {
 		expect(toast_error).toHaveBeenCalledWith('Form is invalid');
 		expect(addNode).not.toHaveBeenCalled();
 		unmount(component);
+	});
+
+	test('a load that stops being a motor drops its nameplate (PEC 2017 4.30.3.2(A)(1))', () => {
+		const nameplate = { nameplate_current: 31.6, nameplate_marked: true };
+		const lighting = withoutStaleNameplate({ load_type: 'lighting_load', ...nameplate });
+		expect(JSON.parse(JSON.stringify(lighting))).toEqual({ load_type: 'lighting_load' });
+		const motor = { load_type: 'one_phase_motor_rated_current', ...nameplate };
+		expect(withoutStaleNameplate(motor)).toBe(motor);
 	});
 });
