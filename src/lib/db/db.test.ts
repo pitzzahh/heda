@@ -1666,6 +1666,10 @@ describe('selective coordination, PEC 2017 7.0.6.3', () => {
 			{ kind: 'documented', reference: 'Selectivity table, p. 12' }
 		]);
 
+		// The form checks the stored value: a circuit removed meanwhile answers nothing.
+		await removeNodesById([e1.id]);
+		expect(await patchNode(e1.id, { coordination_reference: 'Late' })).toBeUndefined();
+
 		// A normal panel again: nothing left to coordinate.
 		await updateNode({ id: ep.id, parent_id: mdp.id, panel_data: panel('EP', 1, null) });
 		expect(await getCoordinationAsync()).toEqual([]);

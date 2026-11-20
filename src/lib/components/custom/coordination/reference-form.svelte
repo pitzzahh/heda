@@ -38,8 +38,14 @@
 		saving = true;
 		try {
 			// Blank clears it: the pairs go back to needing documentation.
-			await patchNode(node_id, { coordination_reference: result.output.reference || undefined });
-			toast.success('Coordination reference saved');
+			const next = result.output.reference || undefined;
+			const stored = await patchNode(node_id, { coordination_reference: next });
+			// A refused edit or a circuit removed meanwhile leaves no node with this value.
+			if (stored && stored.coordination_reference === next) {
+				toast.success('Coordination reference saved');
+			} else {
+				toast.error('Could not save the coordination reference');
+			}
 		} finally {
 			saving = false;
 		}
