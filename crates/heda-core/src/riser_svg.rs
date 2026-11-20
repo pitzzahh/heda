@@ -70,13 +70,20 @@ fn line(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
 }
 
 fn place(symbol: &str, x: f64, y: f64) -> Use {
+    // `xlink:href` too: SVG 1.1 tools (older Inkscape, Illustrator, CAD importers) ignore `href`.
     Use::new()
         .set("href", format!("#{symbol}"))
+        .set("xlink:href", format!("#{symbol}"))
         .set("x", x)
         .set("y", y)
 }
 
 fn text(x: f64, y: f64, content: &str) -> Text {
+    // XML 1.0 has no way to write these, escaped or not; names pasted from spreadsheets carry them.
+    let content: String = content
+        .chars()
+        .filter(|&c| !matches!(c, '\0'..='\x08' | '\x0b' | '\x0c' | '\x0e'..='\x1f' | '\u{fffe}' | '\u{ffff}'))
+        .collect();
     Text::new(content)
         .set("x", x)
         .set("y", y)
@@ -169,6 +176,7 @@ pub fn riser_svg(layout: &RiserLayout) -> String {
             .add(line(x + 10.0, y + 22.0, x + 14.0, y + 22.0));
     }
     Document::new()
+        .set("xmlns:xlink", "http://www.w3.org/1999/xlink")
         .set("role", "img")
         .set("aria-label", "Riser diagram")
         .set("font-size", 12)

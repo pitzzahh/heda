@@ -73,3 +73,21 @@ fn escapes_panel_names() {
         "{texts:?}"
     );
 }
+
+#[test]
+fn places_symbols_for_svg_1_1_viewers_too() {
+    let out = svg("MDP");
+    assert!(out.contains("xmlns:xlink=\"http://www.w3.org/1999/xlink\""));
+    for symbol in ["riser-breaker", "riser-tick", "riser-transformer"] {
+        assert!(
+            out.contains(&format!("xlink:href=\"#{symbol}\"")),
+            "{symbol}"
+        );
+    }
+}
+
+#[test]
+fn drops_characters_xml_cannot_hold() {
+    let (_, texts) = parse(&svg("LP\u{b}-1\u{1}"));
+    assert!(texts.iter().any(|t| t == "LP-1"), "{texts:?}");
+}
