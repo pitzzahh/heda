@@ -132,6 +132,12 @@ pub struct HighestUnitForm {
     /// service disconnecting means (PEC 2017 2.30.6.10). Absent means yes.
     #[serde(default)]
     pub is_service: Option<bool>,
+    /// The optional standby generator's nameplate rating (PEC 2017 Article 7.2).
+    #[serde(default, deserialize_with = "number")]
+    pub generator_kva: Option<f64>,
+    /// The panels the standby generator carries; a panel under one of them comes with it.
+    #[serde(default)]
+    pub standby_panels: Option<Vec<String>>,
 }
 
 impl Node {

@@ -23,6 +23,8 @@ import {
 	updateShortCircuitSource,
 	updateInterruptingRating,
 	setServiceEntrance,
+	setGeneratorKva,
+	setStandbyPanels,
 	changePhaseAssignment,
 	changePhaseAssignments,
 	updateNodeParentById,
@@ -1139,6 +1141,36 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 		// As a feeder: 5.2 A of noncontinuous load (2.15.1.3) takes the smallest rating, 15 A.
 		expect(getComputedLoads(root)[0]?.at).toBe(15);
 		expect(await setServiceEntrance(panel.id, true)).toBeUndefined();
+	});
+
+	it('stores the standby generator and its panels on the supply (PEC 2017 7.2.1.4)', async () => {
+		resetData();
+		const created = await createProject('Standby', {
+			distribution_unit: 'Utility Meter',
+			phase: default_phases.ONE_PHASE,
+			is_service: true
+		});
+		const root = created!.root_node_id;
+		const panel = await add({
+			parent_id: root,
+			panel_data: {
+				name: 'EP',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})!;
+		await setStandbyPanels(root, [panel.id]);
+		const unit = (await setGeneratorKva(root, 25))?.highest_unit_form;
+		expect(unit).toMatchObject({ generator_kva: 25, standby_panels: [panel.id], is_service: true });
+		const lines = (await getRiserAsync(root))?.boxes[0]?.lines;
+		// 25 kVA at 230 V is 108.7 A; its conductors carry 115 % of it (4.45.1.13(A)).
+		expect(lines).toContain('Gen. conductors ≥ 125 A');
+		expect(
+			(await setGeneratorKva(root, undefined))?.highest_unit_form?.generator_kva
+		).toBeUndefined();
 	});
 });
 
