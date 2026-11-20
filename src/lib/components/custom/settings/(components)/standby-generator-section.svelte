@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-	import { createForm, Field, validate } from '@formisch/svelte';
+	import { createForm, Field, reset, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
@@ -40,6 +40,8 @@
 		try {
 			const updated = await setGeneratorKva(root.id, result.output.generator_kva);
 			if (!updated) return toast.warning('Failed to save the generator rating');
+			// The saved rating becomes the new baseline, so clearing it or going back counts as a change.
+			reset(form, { initialInput: { generator_kva: result.output.generator_kva } });
 			toast.success('Generator rating saved');
 		} finally {
 			saving = false;
