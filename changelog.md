@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0-5] - 2026-11-20
+
+### Added
+
+- A Coordination tab: a panel can be marked as an emergency, legally required standby, critical operations power or critical operations data system, and the study lists every device pair PEC 2017 7.0.6.3, 7.1.4.3, 7.8.4.5 or 6.45.1.27 requires to be selectively coordinated, with the available fault current and the engineer's documented selection
+- The riser shows the grounding electrode conductor and the main or system bonding jumper (PEC 2017 Table 2.50.3.17, Table 2.50.5.13(C)(1)), and a circuit with upsized conductors gets a larger EGC (PEC 2017 2.50.6.13(B))
+- The load schedule export ends with a Bill of Materials sheet: conductors, EGCs, conduit, breakers and panelboards
+
+### Fixed
+
+- Conduits for TW wire are sized by the TW conductor areas (PEC 2017 Table 10.1.1.5)
+- Riser box lines wrap to the box width instead of crossing its border
+- A `.heda.txt` or `.heda.bin` file imported on Android keeps its project name
+- Tab labels keep their natural width on phones, and the tab list scrolls
+- Input addons stay inside their field, so drawers no longer show a scrollbar
+- Schedules name a panel's supply by its distribution unit, not always "Transformer"
+
 ## [2.9.0-4] - 2026-11-20
 
 ### Added
