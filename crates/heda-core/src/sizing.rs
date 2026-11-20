@@ -109,6 +109,17 @@ pub fn volt_ampere(load_type: Option<&str>, quantity: f64, varies: f64, line_vol
 /// The dwelling-unit circuits PEC 2017 2.10.1.11(C)(1)–(4) requires at 20 A.
 pub const DWELLING_CIRCUITS: [&str; 4] = ["small_appliance", "laundry", "bathroom", "garage"];
 
+/// The largest overload relay rating for a motor, PEC 2017 4.30.3.2(A)(1) (and (B)(1) for
+/// 1 hp or less, automatically started): 125 % of the nameplate full-load current when the
+/// nameplate marks a service factor of 1.15 or more or a temperature rise of 40 °C or less,
+/// else 115 %. Whole amperes, rounded down, as App. D Ex. D9 9.3 gives "39 Amperes
+/// (Maximum)" for 31.6 A × 1.25.
+pub fn overload_rating(nameplate_current: f64, marked: bool) -> f64 {
+    let percent = if marked { 125.0 } else { 115.0 };
+    // Rounded to 1e-9 first, so 20 A × 115 % is 23 A, not 22.999….
+    ((nameplate_current * percent / 100.0 * 1e9).round() / 1e9).floor()
+}
+
 /// Breaker multiplier on a branch circuit's load current; None for an unknown load type.
 /// Motors: Table 4.30.4.2, inverse time breaker 250 %. Heating is continuous whatever the
 /// load says (4.24.1.3(B)), and its 125 % stays under the 150 % of 4.22.2.2(E)(3). Any

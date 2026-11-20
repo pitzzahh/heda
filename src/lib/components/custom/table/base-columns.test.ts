@@ -35,4 +35,10 @@ describe('schedule base columns', () => {
 		);
 		expect(headers).toEqual(['EGC', 'CONDUIT', 'Actions']);
 	});
+
+	test('a schedule with a nameplate motor adds its overload relay column (PEC 2017 4.30.3.2(A)(1))', () => {
+		const columns = createRightMostBaseColumns(stub, true);
+		expect(columns.map((column) => column.header).slice(-2)).toEqual(['OVERLOAD (A)', 'Actions']);
+		expect(keysOf(columns)).toContain('overload');
+	});
 });

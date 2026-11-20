@@ -432,24 +432,31 @@ impl Schedules<'_> {
             sheet.put(row, 0, Cell::text(label), Style::Label);
             sheet.put(row, 1, Cell::Text(format!(": {value}")), Style::Plain);
         }
-        sheet.headers(start + 4, &schedule_headers(panel_phase));
+        // A last column for the motors' overload relays (PEC 2017 4.30.3.2(A)(1)), only on
+        // a schedule with a motor whose nameplate current is given.
+        let overload = loads.iter().any(|(_, load)| load.overload.is_some());
+        let mut headers = schedule_headers(panel_phase);
+        if overload {
+            headers.push(header(" ", &["OVERLOAD (A)"]));
+        }
+        sheet.headers(start + 4, &headers);
         let mut row = start + 6;
         for (child, load) in &loads {
-            sheet.put_row(
-                row,
-                load_cells(input, child, load, panel_phase),
-                Style::Body,
-            );
+            let mut cells = load_cells(input, child, load, panel_phase);
+            if overload {
+                cells.push(load.overload.map_or(Cell::text(""), Cell::num));
+            }
+            sheet.put_row(row, cells, Style::Body);
             row += 1;
         }
         // The root is the supply, not a panelboard: it has no main of its own to total
         // (the service rating sits on the panel it feeds, PEC 2017 2.30.6.10).
         if node.node_type != "root" {
-            sheet.put_row(
-                row,
-                total_cells(input, node, &total, panel_phase),
-                Style::Total,
-            );
+            let mut cells = total_cells(input, node, &total, panel_phase);
+            if overload {
+                cells.push(Cell::text("N/A"));
+            }
+            sheet.put_row(row, cells, Style::Total);
             row += 1;
         }
         // Two blank rows before the next schedule on this sheet.

@@ -14,10 +14,11 @@ import { PhaseDropdown, ThreePhaseCurrentFooterCell } from './(components)/index
  */
 export function threePhaseCols(
 	current_node: PhaseLoadSchedule,
-	supply_phase: string | undefined
+	supply_phase: string | undefined,
+	overload = false
 ): ColumnDef<PhaseLoadSchedule>[] {
 	const is_delta = supply_phase === default_phases.THREE_PHASE_DELTA;
-	const columns = onePhaseMainOrWyeCols(current_node).map((column) =>
+	const columns = onePhaseMainOrWyeCols(current_node, overload).map((column) =>
 		'accessorKey' in column && column.accessorKey === 'current'
 			? {
 					...column,

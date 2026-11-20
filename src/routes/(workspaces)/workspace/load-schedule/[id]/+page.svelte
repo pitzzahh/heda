@@ -112,11 +112,13 @@
 	// row model, so keep them stable across tab switches.
 	// A three-phase panel (or root) lists each circuit's phase and VA per phase or line pair.
 	const supply_phase = $derived(supplyPhaseOf(current_node ?? undefined));
+	// The motors' overload relay column (PEC 2017 4.30.3.2(A)(1)), only when one has a nameplate current.
+	const has_overload = $derived(loads.some((load) => load.overload !== undefined));
 	const load_columns = $derived(
 		current_node
 			? isThreePhaseSupply(supply_phase)
-				? threePhaseCols(current_node as PhaseLoadSchedule, supply_phase)
-				: onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule)
+				? threePhaseCols(current_node as PhaseLoadSchedule, supply_phase, has_overload)
+				: onePhaseMainOrWyeCols(current_node as PhaseLoadSchedule, has_overload)
 			: []
 	);
 	const voltage_drop_columns = voltageDropColumns();

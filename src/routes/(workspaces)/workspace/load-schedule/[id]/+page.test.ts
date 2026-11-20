@@ -128,7 +128,7 @@ describe('load schedule page', () => {
 		schedule.panel_phase = 'three_phase_delta';
 		const component = mount(LoadSchedulePage, { target: document.body });
 		flushSync();
-		expect(threePhaseCols).toHaveBeenCalledWith(expect.anything(), 'three_phase_delta');
+		expect(threePhaseCols).toHaveBeenCalledWith(expect.anything(), 'three_phase_delta', false);
 		expect(onePhaseMainOrWyeCols).not.toHaveBeenCalled();
 		unmount(component);
 	});

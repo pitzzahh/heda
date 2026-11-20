@@ -34,6 +34,8 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	unbalance: v.optional(v.number()),
 	/** Allowable ampacity of the conductors, all sets: the lower of the termination limit (PEC 2017 1.10.1.14(C)) and the corrected ampacity (3.10.2.6(B)); absent where the code gives none. */
 	ampacity: v.optional(v.number()),
+	/** A motor's largest overload relay rating, from its nameplate current (PEC 2017 4.30.3.2(A)(1)); absent without one. */
+	overload: v.optional(v.number()),
 	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (PEC 2017 2.20.3.22). */
 	phase_loads: v.optional(
 		v.tuple([v.nullable(v.number()), v.nullable(v.number()), v.nullable(v.number())])

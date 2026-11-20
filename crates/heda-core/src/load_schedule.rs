@@ -39,6 +39,10 @@ pub struct LoadRow {
     /// pairs, in the supply's label order (`phase_loads`); `None` where it puts nothing.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase_loads: Option<[Option<f64>; 3]>,
+    /// A motor's largest overload relay rating (`sizing::overload_rating`), when its
+    /// nameplate current is given.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub overload: Option<f64>,
     /// What the circuit adds to its panel's feeder load.
     #[serde(skip)]
     pub feeder: FeederShare,
@@ -250,6 +254,7 @@ pub fn load_row<'g>(
             unbalance: totals.unbalance,
             ampacity: sizing::allowable_ampacity(main_conductor_size, main_sizing),
             phase_loads: None,
+            overload: None,
             feeder: feeder.share.on(label),
         }
     } else {
@@ -277,6 +282,15 @@ pub fn load_row<'g>(
             unbalance: None,
             ampacity: sizing::allowable_ampacity(conductor_size, own_sizing),
             phase_loads: None,
+            overload: load_data
+                .filter(|_| sizing::is_motor(load_type))
+                .and_then(|d| {
+                    Some((
+                        d.nameplate_current.filter(|&c| c > 0.0)?,
+                        d.nameplate_marked,
+                    ))
+                })
+                .map(|(current, marked)| sizing::overload_rating(current, marked.unwrap_or(false))),
             feeder: if sizing::is_motor(load_type) {
                 FeederShare {
                     va,
@@ -516,6 +530,7 @@ mod tests {
             unbalance: None,
             ampacity: None,
             phase_loads: None,
+            overload: None,
             feeder: FeederShare::default(),
         }
     }

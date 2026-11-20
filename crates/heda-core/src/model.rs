@@ -106,6 +106,14 @@ pub struct LoadData {
     /// `laundry`, `bathroom` or `garage`, each a 20 A circuit.
     #[serde(default)]
     pub dwelling_circuit: Option<String>,
+    /// A motor's nameplate full-load current, which sizes its overload relay
+    /// (PEC 2017 4.30.3.2(A)(1)); the PEC tables size everything else (4.30.1.6(A)).
+    #[serde(default, deserialize_with = "number")]
+    pub nameplate_current: Option<f64>,
+    /// Whether that nameplate marks a service factor of 1.15 or more, or a temperature
+    /// rise of 40 °C or less (4.30.3.2(A)(1): 125 % instead of 115 %).
+    #[serde(default, deserialize_with = "boolean")]
+    pub nameplate_marked: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

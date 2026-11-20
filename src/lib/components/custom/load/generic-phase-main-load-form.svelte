@@ -1,4 +1,6 @@
 <script lang="ts" module>
+	import { default_load_types } from '#lib/constants.js';
+
 	interface Props {
 		closeDialog: () => void;
 		selected_parent_id?: string;
@@ -9,6 +11,13 @@
 	}
 
 	export type FormLoadTypeOption = 'DEFAULT' | 'CUSTOM';
+
+	const MOTOR_LOAD_TYPES: readonly string[] = [
+		default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER,
+		default_load_types.ONE_P_MOTOR__RATED_CURRENT,
+		default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+		default_load_types.THREE_P_MOTOR__RATED_CURRENT
+	];
 </script>
 
 <script lang="ts">
@@ -21,6 +30,8 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
+	import { Input } from '#lib/components/ui/input/index.js';
+	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { cn } from '#lib/utils/index.js';
 	import { load_type_to_varies_label, load_type_to_quantity_label } from '#lib/constants.js';
@@ -93,6 +104,8 @@
 			),
 			continuous: node_to_edit.load_data.continuous,
 			dwelling_circuit: node_to_edit.load_data.dwelling_circuit as DwellingCircuit | undefined,
+			nameplate_current: node_to_edit.load_data.nameplate_current,
+			nameplate_marked: node_to_edit.load_data.nameplate_marked,
 			length: node_to_edit.length
 		};
 	}
@@ -181,6 +194,9 @@
 	);
 	// Three-phase loads need a three-phase panel: 400Y/230 V (PEC 2017 App. D Ex. D6) or 230 V delta (D14).
 	const allow_three_phase = $derived(isThreePhaseSupply(supply_phase));
+	const is_motor = $derived(
+		MOTOR_LOAD_TYPES.includes(getInput(form, { path: ['load_type'] }) ?? '')
+	);
 	const hp_currents = $derived(
 		horsepowerTable(getInput(form, { path: ['load_type'] }), supply_phase) ?? []
 	);
@@ -316,5 +332,50 @@
 				{/snippet}
 			</Field>
 		</div>
+		{#if is_motor}
+			<!-- PEC 2017 4.30.3.2(A)(1): the overload relay is sized on the nameplate, not the tables. -->
+			<div class="grid gap-4 *:min-w-0 sm:grid-cols-2">
+				<Field of={form} path={['nameplate_current']}>
+					{#snippet children(field)}
+						<div class="flex min-w-0 flex-col gap-2">
+							<Label class={cn(field.errors && 'text-destructive')}>Nameplate current (A)</Label>
+							<Input
+								{...field.props}
+								type="number"
+								inputmode="decimal"
+								step="any"
+								min={0}
+								value={field.input ?? ''}
+								oninput={(e) => {
+									const value = e.currentTarget.valueAsNumber;
+									field.onInput(Number.isNaN(value) ? undefined : value);
+								}}
+								placeholder="Optional"
+							/>
+							<p class="text-[0.8rem] text-muted-foreground">
+								Sizes the overload relay (PEC 2017 4.30.3.2(A)(1)).
+							</p>
+							<FieldErrors errors={field.errors} />
+						</div>
+					{/snippet}
+				</Field>
+				<Field of={form} path={['nameplate_marked']}>
+					{#snippet children(field)}
+						<div class="flex min-w-0 flex-col gap-2">
+							<Label>Service factor 1.15+ or rise 40 °C or less</Label>
+							<div class="flex h-9 items-center">
+								<Checkbox
+									checked={field.input ?? false}
+									onCheckedChange={(v) => field.onInput(v)}
+								/>
+							</div>
+							<p class="text-[0.8rem] text-muted-foreground">
+								As marked on the nameplate: the relay may take 125%, else 115%.
+							</p>
+						</div>
+					{/snippet}
+				</Field>
+			</div>
+		{/if}
 	</div>
 {/snippet}
