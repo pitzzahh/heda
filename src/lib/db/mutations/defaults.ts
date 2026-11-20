@@ -1,10 +1,11 @@
-import type { Node, Project } from '#lib/types/db.js';
+import type { Node } from '#lib/types/db.js';
 import { NODE_DOC_SCHEMA } from '#lib/validators/db.js';
 import { default_phases } from '#lib/constants.js';
 import { isThreePhaseLoadType } from '#lib/utils/computations/index.js';
 
 // The store applies no defaults itself, so every insertion path merges these
-// to keep stored documents complete.
+// to keep stored documents complete. Opened files and new projects get the same
+// ones from the engine (`node_defaults` in crates/heda-core/src/defaults.rs).
 const NODE_DEFAULTS = {
 	conductor_sets: 1,
 	conductor_qty: 2,
@@ -59,15 +60,6 @@ export function poleAndQtyDefaults(
 		pole: NODE_DEFAULTS.pole,
 		conductor_qty: NODE_DEFAULTS.conductor_qty,
 		...circuitDefaults(node, system_phase)
-	};
-}
-
-export function withProjectDefaults<T extends { id: string; settings: Project['settings'] }>(
-	project: T
-): T {
-	return {
-		...project,
-		settings: { ...project.settings }
 	};
 }
 

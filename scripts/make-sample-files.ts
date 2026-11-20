@@ -24,7 +24,6 @@ import {
 	packFileV3
 } from '#lib/helpers/file/format.js';
 import { dispatch_json, initSync } from '#lib/core/pkg/heda_core.js';
-import { migrateFileExport } from '#lib/helpers/file/migrations.js';
 import { DEFAULT_LOAD_TYPES, DEFAULT_PHASES, METRO_MANILA_UTILITY_SC_KVA } from '#lib/constants.js';
 import type { FileExport } from '#lib/types/main.js';
 import type { LoadSpec, Overrides, PanelSpec, SampleSpec } from './sample-types.js';
@@ -43,6 +42,14 @@ const SAMPLE_PASSWORD = 'heda-sample-2026';
 
 // The engine's WASM build (`bun run core` writes it), the same `dispatch` the app calls.
 initSync({ module: readFileSync(join(SCRIPT_DIR, '..', 'src/lib/core/pkg/heda_core_bg.wasm')) });
+
+/** A file as the app opens it: migrated to the current format by the engine. */
+function migrated(file_export: FileExport): FileExport {
+	const { project, nodes } = JSON.parse(
+		dispatch_json('open_file', JSON.stringify(file_export))
+	) as FileExport;
+	return { project, nodes };
+}
 
 /** The engine's voltage drop of every run of a tree. */
 function voltageDrops(
@@ -728,7 +735,7 @@ function checkStructure(file_export: FileExport, name: string): void {
 	}
 
 	// Written in the shape the app stores today, so opening a sample converts nothing.
-	if (JSON.stringify(migrateFileExport(file_export)) !== JSON.stringify(file_export)) {
+	if (JSON.stringify(migrated(file_export)) !== JSON.stringify(file_export)) {
 		throw new Error(`${name}: opening the file would still migrate it`);
 	}
 }
@@ -769,8 +776,8 @@ async function main() {
 	}
 
 	for (const spec of SAMPLES) {
-		// The builder writes the base shape; the app's own migrations bring it up to date.
-		const file_export = migrateFileExport(buildFile(spec));
+		// The builder writes the base shape; the engine opens it as the app does, migrated.
+		const file_export = migrated(buildFile(spec));
 		// Rated on the migrated tree: the wye defaults decide which circuits fault three-phase.
 		rateBreakers(file_export, spec.file_name);
 		checkStructure(file_export, spec.file_name);

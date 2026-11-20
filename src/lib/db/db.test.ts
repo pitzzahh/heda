@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
-	PEC_2017_REVISION,
+	DEFAULT_LOADS,
 	STANDARD_TERMINAL_TEMPERATURE,
 	default_load_types,
 	default_phases
@@ -49,6 +49,7 @@ import {
 	getSnapshotRevision
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
+import { withNodeDefaults } from './mutations/defaults.js';
 import { loadSnapshot } from './queries/snapshot.js';
 import { engine } from '#lib/core/api.js';
 import type { EngineComputed } from '#lib/types/db.js';
@@ -80,6 +81,76 @@ describe('db', () => {
 		expect(created?.root_node_id).toBeTruthy();
 		expect(getProject()?.id).toBe(created?.project.id);
 		expect(getNodes()).toHaveLength(1);
+	});
+
+	it('starts a new project at the current PEC 2017 revision, with 400Y/230 V defaults on 3P-Y', async () => {
+		resetData();
+		const single = await createProject('Single', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.ONE_PHASE
+		});
+		const root = getNode(single!.root_node_id)!;
+		expect(root.highest_unit_form).toMatchObject({ pec_2017_sizing: true, pec_2017_revision: 2 });
+		expect(root.highest_unit_form?.wye_circuit_defaults).toBeUndefined();
+		// The engine completes a root with the defaults every inserted node gets.
+		expect(root).toMatchObject(withNodeDefaults({ id: root.id }));
+		expect(getProject()?.settings).toEqual({});
+
+		const wye = await createProject('Wye', {
+			distribution_unit: 'Transformer',
+			phase: default_phases.THREE_PHASE_WYE
+		});
+		// The previous project is gone: a new project is a session of its own.
+		expect(getNodes().map((node) => node.id)).toEqual([wye!.root_node_id]);
+		expect(getNode(wye!.root_node_id)?.highest_unit_form?.wye_circuit_defaults).toBe(true);
+	});
+
+	it('migrates an opened file in the engine and tells whether its sizes may change', async () => {
+		resetData();
+		const presets = DEFAULT_LOADS.filter((preset) => preset.dwelling_circuit);
+		const { project, pec_2017_migrated } = await loadCurrentProject({
+			project: { id: 'old', project_name: 'Old', root_node_id: 'root' } as never,
+			nodes: [
+				{
+					id: 'root',
+					node_type: 'root',
+					child_ids: presets.map((_, index) => `load-${index}`),
+					highest_unit_form: { distribution_unit: 'Transformer', phase: '1P' }
+				},
+				...presets.map((preset, index) => ({
+					id: `load-${index}`,
+					node_type: 'load',
+					parent_id: 'root',
+					circuit_number: index + 1,
+					child_ids: [],
+					load_data: {
+						load_description: `1 - ${preset.description}`,
+						ambient_temperature: 30,
+						terminal_temperature: 'Standard Temperature',
+						quantity: 1,
+						varies: '1500',
+						load_type: 'Convenience Outlet',
+						config_preference: 'DEFAULT'
+					}
+				}))
+			]
+		} as never);
+		expect(pec_2017_migrated).toBe(true);
+		expect(project.settings).toEqual({});
+		expect(getNode('root')?.highest_unit_form?.phase).toBe(default_phases.ONE_PHASE);
+		// The engine's dwelling presets are the ones the load form offers (PEC 2017 2.10.1.11(C)).
+		presets.forEach((preset, index) => {
+			expect(getNode(`load-${index}`)?.load_data).toMatchObject({
+				dwelling_circuit: preset.dwelling_circuit,
+				varies: preset.varies,
+				load_type: default_load_types.CONVENIENCE_OUTLET,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE
+			});
+		});
+		// The mirror holds what the engine stored, so a save writes the migrated file.
+		await settled();
+		const snapshot = await engine<{ nodes: unknown[] }>('snapshot');
+		expect(snapshot.nodes).toEqual(getNodes());
 	});
 
 	it('remembers the title block on the project (PEC 2017 1.3.2.2)', async () => {
@@ -195,7 +266,7 @@ describe('db', () => {
 
 	it('loads a project export and sorts children by circuit number', async () => {
 		resetData();
-		const project = await loadCurrentProject({
+		const { project } = await loadCurrentProject({
 			project: {
 				id: 'p1',
 				project_name: 'Imported',
@@ -984,7 +1055,7 @@ describe('incremental writes and reads', () => {
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE,
 			pec_2017_sizing: true,
-			pec_2017_revision: PEC_2017_REVISION,
+			pec_2017_revision: 2,
 			...source
 		});
 		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();

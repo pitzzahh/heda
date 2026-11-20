@@ -14,9 +14,6 @@ export const default_load_types = {
 	THREE_P_EQUIPMENT: 'three_phase_equipment'
 } as const;
 
-/** The PEC 2017 sizing revision new files start at; older files migrate up to it once. */
-export const PEC_2017_REVISION = 2;
-
 // PEC 2017 2.10.1.11(C)(1)–(4): the dwelling-unit receptacle circuits that are rated 20 A.
 export const DWELLING_CIRCUITS = [
 	{ value: 'small_appliance', label: 'Small-appliance, 2.10.1.11(C)(1)' },

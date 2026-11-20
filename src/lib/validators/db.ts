@@ -8,8 +8,9 @@ import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 import { TITLE_BLOCK_SCHEMA } from './title-block.js';
 
 // Canonical data shapes for the stored project and node documents. Types derive from these schemas
-// (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults
-// / withProjectDefaults); the store itself is schemaless.
+// (see lib/types/db). Insert defaults live in lib/db/mutations (withNodeDefaults) and,
+// for opened files, in the engine (crates/heda-core/src/defaults.rs); the store itself
+// is schemaless.
 export const PROJECT_DOC_SCHEMA = v.object({
 	id: v.string(),
 	project_name: v.optional(v.string()),

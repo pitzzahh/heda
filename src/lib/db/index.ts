@@ -10,7 +10,14 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { BaseDirectory, remove } from '@tauri-apps/plugin-fs';
 import { engine } from '#lib/core/api.js';
-import type { ComputedRow, EngineComputed, Node, Project } from '#lib/types/db.js';
+import type {
+	ComputedRow,
+	EngineComputed,
+	EngineSnapshot,
+	Node,
+	OpenedFile,
+	Project
+} from '#lib/types/db.js';
 import { getSessionPassword } from './session.js';
 
 // Session files of earlier versions (node and project stores, vault and its salt),
@@ -86,9 +93,7 @@ export function initializeDatabase(): Promise<void> {
 			openSession(undefined, []);
 			return;
 		}
-		const snapshot = await engine<EngineComputed & { project: Project | null; nodes: Node[] }>(
-			'snapshot'
-		);
+		const snapshot = await engine<EngineSnapshot>('snapshot');
 		project = snapshot.project ?? undefined;
 		for (const node of snapshot.nodes) nodes.set(node.id, node);
 		apply(snapshot);
@@ -140,6 +145,32 @@ export function openSession(next_project: Project | undefined, next_nodes: reado
 	for (const node of next_nodes) nodes.set(node.id, node);
 	notify();
 	send('open', { project: next_project ?? null, nodes: next_nodes });
+}
+
+/**
+ * Opens a file's project and nodes as the session. The engine migrates them to the
+ * current format first, so the mirror takes the documents it answers with. Until then
+ * the mirror is empty. Rejects, leaving the session empty, on a file the engine refuses
+ * (two nodes with one id).
+ */
+export async function openFile(file: {
+	project: Project;
+	nodes: readonly Node[];
+}): Promise<{ project: Project; pec_2017_migrated: boolean }> {
+	project = undefined;
+	nodes.clear();
+	rows.clear();
+	notify();
+	const opened = engine<OpenedFile>('open_file', file);
+	pending = opened.then(
+		() => undefined,
+		() => undefined
+	);
+	const answer = await opened;
+	project = answer.project;
+	for (const node of answer.nodes) nodes.set(node.id, node);
+	apply(answer);
+	return { project: answer.project, pec_2017_migrated: answer.pec_2017_migrated };
 }
 
 /** Inserts nodes. Throws, writing nothing, on a duplicate id. */

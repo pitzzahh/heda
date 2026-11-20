@@ -5,10 +5,12 @@
 //! it, and the `wasm` feature adds the bindings the app's tests and browser
 //! development load (`src/lib/core/`).
 
+pub mod defaults;
 pub mod dispatch;
 pub mod graph;
 pub mod js;
 pub mod load_schedule;
+pub mod migrate;
 pub mod model;
 pub mod phases;
 pub mod riser;

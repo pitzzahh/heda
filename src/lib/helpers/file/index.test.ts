@@ -230,7 +230,10 @@ describe('handleLoadFile', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		invoke_mock.mockResolvedValue('Project');
-		load_current_project_mock.mockResolvedValue({ id: 'p1' });
+		load_current_project_mock.mockResolvedValue({
+			project: { id: 'p1' },
+			pec_2017_migrated: false
+		});
 	});
 
 	it('reads an encrypted file exactly once', async () => {
