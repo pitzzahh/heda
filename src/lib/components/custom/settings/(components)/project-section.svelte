@@ -19,7 +19,6 @@
 	import type { DialogState } from '#lib/state/types.js';
 	import { setServiceEntrance } from '#lib/db/mutations/index.js';
 	import { getRootNode } from '#lib/db/queries/index.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
 	import { isAndroidApp } from '#lib/helpers/platform.js';
@@ -35,16 +34,10 @@
 	// Absent means the utility service supplies the project (PEC 2017 2.30.6.10).
 	const is_service = $derived(root_node?.highest_unit_form?.is_service !== false);
 
-	function saveServiceEntrance(value: boolean) {
-		const previous = root_node;
-		if (!previous) return;
-		const updated = setServiceEntrance(previous.id, value);
+	async function saveServiceEntrance(value: boolean) {
+		if (!root_node) return;
+		const updated = await setServiceEntrance(root_node.id, value);
 		if (!updated) return toast.warning('Failed to save the service entrance');
-		undo_redo_state.setActionToUndo({
-			action: 'update_node',
-			previous_data: previous as unknown as PhaseLoadSchedule,
-			data: updated as unknown as PhaseLoadSchedule
-		});
 		toast.success(value ? 'Service entrance minimums applied' : 'Supplied as a feeder');
 	}
 

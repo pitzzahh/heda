@@ -29,7 +29,6 @@
 		horsepowerOfCurrent,
 		horsepowerTable,
 		isThreePhaseSupply,
-		supplyError,
 		supplyPhaseOf
 	} from '#lib/utils/computations/index.js';
 	import {
@@ -58,8 +57,6 @@
 		TerminalTemperature,
 		VariesLabel
 	} from '#lib/types/load.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
@@ -71,7 +68,6 @@
 		panel_id_from_tree
 	}: Props = $props();
 
-	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 
 	function buildInitialInput() {
@@ -138,16 +134,6 @@
 				return;
 			}
 
-			const supply_error = supplyError({
-				node: { node_type: 'load', load_data: data },
-				parent: getNode(selected_parent_id || panel_id_from_tree || panel_id_from_params)
-			});
-			if (supply_error) {
-				toast.error(supply_error);
-				submitting = false;
-				return;
-			}
-
 			if (load_type) {
 				const load_description = `${data.quantity} - ${data.load_description}`;
 				const load_data = {
@@ -161,40 +147,30 @@
 						varies: currentOfHorsepower(data.load_type, data.varies, supply_phase)
 					})
 				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
-				switch (action) {
-					case 'add': {
-						const parent_id = panel_id_from_tree as string;
-						const added_node = addNode({
-							load_data,
-							parent_id
-						});
-						toast.success(`${load_description} added successfully`);
-						collapsibles.addNodeId(parent_id);
-						undo_redo_state.setActionToUndo({
-							data: added_node as unknown as PhaseLoadSchedule,
-							action: 'create_node'
-						});
-						break;
-					}
-					case 'edit':
-						if (node_to_edit && selected_parent_id) {
-							const updated_node = updateNode({
-								load_data,
-								id: node_to_edit.id,
-								parent_id: selected_parent_id
-							});
-							undo_redo_state.setActionToUndo({
-								action: 'update_node',
-								data: updated_node as unknown as PhaseLoadSchedule,
-								previous_data: node_to_edit as PhaseLoadSchedule
-							});
-							toast.success('Load updated successfully');
-						}
-						break;
+				// The engine refuses a load its panel cannot supply (PEC 2017 2.20.1.5(A)).
+				if (action === 'add') {
+					const parent_id = panel_id_from_tree as string;
+					const { error } = await addNode({ load_data, parent_id });
+					if (error) return refuse(error);
+					toast.success(`${load_description} added successfully`);
+					collapsibles.addNodeId(parent_id);
+				} else if (node_to_edit && selected_parent_id) {
+					const { error } = await updateNode({
+						load_data,
+						id: node_to_edit.id,
+						parent_id: selected_parent_id
+					});
+					if (error) return refuse(error);
+					toast.success('Load updated successfully');
 				}
 			}
 			closeDialog();
 		}
+		submitting = false;
+	}
+
+	function refuse(error: string) {
+		toast.error(error);
 		submitting = false;
 	}
 

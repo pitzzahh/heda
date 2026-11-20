@@ -19,4 +19,6 @@ export type Catalog = {
 		/** Table 4.30.14.4, 400 V (400Y/230 V supplies). */
 		three_phase_400: MotorTable;
 	};
+	/** Most nodes one copy may create; the copy dialog caps its count by it. */
+	max_copy_nodes: number;
 };

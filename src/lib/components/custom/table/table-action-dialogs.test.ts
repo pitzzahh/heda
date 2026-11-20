@@ -58,19 +58,21 @@ async function seed() {
 		distribution_unit: 'DU',
 		phase: default_phases.ONE_PHASE
 	});
-	const panel = addNode({
-		parent_id: created!.root_node_id,
-		panel_data: {
-			name: 'LP-1',
-			circuit_number: 1,
-			ambient_temperature: 30,
-			length: 10,
-			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-			phase: default_phases.ONE_PHASE
-		}
-	})!;
+	const panel = (
+		await addNode({
+			parent_id: created!.root_node_id,
+			panel_data: {
+				name: 'LP-1',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})
+	).node!;
 	for (const circuit_number of [1, 2]) {
-		addNode({
+		await addNode({
 			parent_id: panel.id,
 			load_data: {
 				load_type: default_load_types.GENERAL_LIGHTING,
@@ -138,7 +140,7 @@ test('override dialog shows the clicked row load', async () => {
 	unmount(component);
 });
 
-test('delete removes the row and records undo', async () => {
+test('delete removes the row as one undoable edit', async () => {
 	const component = mount(Fixture, { target: document.body, props: { node_id: await seed() } });
 	flushSync();
 	const api = component as unknown as FixtureApi;
@@ -151,6 +153,7 @@ test('delete removes the row and records undo', async () => {
 	);
 	expect(confirm).not.toBeUndefined();
 	confirm?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+	await settled();
 	await tick();
 	flushSync();
 

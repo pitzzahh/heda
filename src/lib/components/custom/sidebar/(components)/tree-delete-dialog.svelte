@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { Node, Project } from '#lib/types/db.js';
-	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
+	import { deleteTreeNode } from '../tree-delete.js';
 
 	interface Props {
 		node: Node;
@@ -12,18 +12,16 @@
 
 <script lang="ts">
 	import ConfirmationDialog from '#lib/components/custom/confirmation-dialog.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { toast } from 'svelte-sonner';
 
 	let { node, project, open = $bindable(), button_state = $bindable() }: Props = $props();
 
-	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 	let select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
-	function handleConfirm() {
+	async function handleConfirm() {
 		button_state = 'processing';
 		const toast_id = toast.loading(
 			node.node_type === 'root'
@@ -32,8 +30,7 @@
 					? `Removing ${node.panel_data?.name ?? 'Panel'}`
 					: `Removing ${node.load_data?.load_description ?? 'Load'}`
 		);
-		deleteNodeAndRecordUndo(node, project, {
-			undo_redo: undo_redo_state,
+		await deleteTreeNode(node, project, {
 			collapsibles,
 			select_nodes_to_delete: select_nodes_to_delete_state
 		});

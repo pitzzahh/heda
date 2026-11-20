@@ -9,36 +9,26 @@
 
 <script lang="ts">
 	import { updateInterruptingRating } from '#lib/db/mutations/index.js';
-	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { kaic, node }: Props = $props();
 	// Writable derived: the draft follows the stored rating (undo/redo) until the user types.
 	let kaic_value = $derived<number | null>(kaic);
 
-	let undo_redo_state = getUndoRedoState();
-
 	/** Saves on blur; a cleared or non-positive draft falls back to the stored rating. */
-	function commit() {
+	async function commit() {
 		if (kaic_value === kaic) return;
 		if (!kaic_value || kaic_value <= 0) {
 			kaic_value = kaic;
 			return;
 		}
 		const value = kaic_value;
-		const previous_node = getNode(node.id);
-		const updated = updateInterruptingRating({ node_id: node.id, kaic: value });
+		const updated = await updateInterruptingRating({ node_id: node.id, kaic: value });
 		if (!updated) {
 			kaic_value = kaic;
 			toast.warning('Failed to update the interrupting rating');
 			return;
 		}
-		undo_redo_state.setActionToUndo({
-			action: 'update_node',
-			data: updated as unknown as PhaseLoadSchedule,
-			previous_data: previous_node as unknown as PhaseLoadSchedule
-		});
 		toast.success(`Interrupting rating set to ${value} kA`);
 	}
 </script>

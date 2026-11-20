@@ -14,7 +14,9 @@ import { loadCatalog } from '#lib/core/catalog.js';
 import type {
 	ComputedRow,
 	EngineComputed,
+	EngineEdit,
 	EngineSnapshot,
+	HistoryDepth,
 	Node,
 	OpenedFile,
 	Project
@@ -40,7 +42,25 @@ const rows = new Map<string, ComputedRow>();
 let pending: Promise<void> = Promise.resolve();
 let ready: Promise<void> | null = null;
 
+let history: HistoryDepth = { undo: 0, redo: 0 };
+/** Bumped whenever the session is replaced, so an answer for the one before is dropped. */
+let epoch = 0;
+
+/** Thrown for an edit or open answered after the session it was made on was replaced. */
+export class SessionChangedError extends Error {
+	constructor() {
+		super('The project was closed or replaced before the edit finished.');
+	}
+}
+
 const write_listeners = new Set<() => void>();
+const edit_listeners = new Set<() => void>();
+const history_listeners = new Set<() => void>();
+
+function setHistory(next: HistoryDepth): void {
+	history = next;
+	for (const listener of history_listeners) listener();
+}
 
 /** Calls `listener` synchronously after every write and every engine answer; returns the unsubscribe. */
 export function onSessionWrite(listener: () => void): () => void {
@@ -50,6 +70,23 @@ export function onSessionWrite(listener: () => void): () => void {
 
 function notify(): void {
 	for (const listener of write_listeners) listener();
+}
+
+/** Calls `listener` after every edit, undo or redo that changed the project (not on open). */
+export function onEdit(listener: () => void): () => void {
+	edit_listeners.add(listener);
+	return () => edit_listeners.delete(listener);
+}
+
+/** Calls `listener` whenever the undo or redo depth may have changed (edits, opens, resets). */
+export function onHistory(listener: () => void): () => void {
+	history_listeners.add(listener);
+	return () => history_listeners.delete(listener);
+}
+
+/** How many edits undo and redo can step through, as of the last engine answer. */
+export function getHistory(): HistoryDepth {
+	return history;
 }
 
 function apply(computed: EngineComputed): void {
@@ -97,6 +134,7 @@ export function initializeDatabase(): Promise<void> {
 		}
 		const snapshot = await engine<EngineSnapshot>('snapshot');
 		project = snapshot.project ?? undefined;
+		setHistory(snapshot.history);
 		for (const node of snapshot.nodes) nodes.set(node.id, node);
 		apply(snapshot);
 	})();
@@ -141,7 +179,9 @@ function assertNewIds(items: readonly Node[], existing: ReadonlyMap<string, Node
 /** Replaces the whole session (`undefined` and no nodes to close it). Throws, writing nothing, on a duplicate id. */
 export function openSession(next_project: Project | undefined, next_nodes: readonly Node[]): void {
 	assertNewIds(next_nodes, new Map());
+	epoch += 1;
 	project = next_project;
+	setHistory({ undo: 0, redo: 0 });
 	nodes.clear();
 	rows.clear();
 	for (const node of next_nodes) nodes.set(node.id, node);
@@ -155,54 +195,56 @@ export function openSession(next_project: Project | undefined, next_nodes: reado
  * the mirror is empty. Rejects, leaving the session empty, on a file the engine refuses
  * (two nodes with one id).
  */
-export async function openFile(file: {
+export function openFile(file: {
 	project: Project;
 	nodes: readonly Node[];
 }): Promise<{ project: Project; pec_2017_migrated: boolean }> {
+	const started = ++epoch;
 	project = undefined;
+	setHistory({ undo: 0, redo: 0 });
 	nodes.clear();
 	rows.clear();
 	notify();
-	const opened = engine<OpenedFile>('open_file', file);
+	const opened = engine<OpenedFile>('open_file', file).then((answer) => {
+		if (started !== epoch) throw new SessionChangedError();
+		project = answer.project;
+		for (const node of answer.nodes) nodes.set(node.id, node);
+		apply(answer);
+		return { project: answer.project, pec_2017_migrated: answer.pec_2017_migrated };
+	});
 	pending = opened.then(
 		() => undefined,
 		() => undefined
 	);
-	const answer = await opened;
-	project = answer.project;
-	for (const node of answer.nodes) nodes.set(node.id, node);
-	apply(answer);
-	return { project: answer.project, pec_2017_migrated: answer.pec_2017_migrated };
+	return opened;
 }
 
-/** Inserts nodes. Throws, writing nothing, on a duplicate id. */
-export function insertNodes(items: readonly Node[]): void {
-	if (items.length === 0) return;
-	assertNewIds(items, nodes);
-	writeNodes(items);
-}
-
-/** Swaps nodes by id. Returns the ones that were found. */
-export function replaceNodes(items: readonly Node[]): Node[] {
-	const replaced = items.filter((item) => nodes.has(item.id));
-	writeNodes(replaced);
-	return replaced;
-}
-
-function writeNodes(items: readonly Node[]): void {
-	if (items.length === 0) return;
-	for (const item of items) nodes.set(item.id, item);
-	notify();
-	send('put', { nodes: items });
-}
-
-/** Removes the nodes whose id is in `ids`. */
-export function removeNodes(ids: ReadonlySet<string>): void {
-	if (ids.size === 0) return;
-	for (const id of ids) {
-		nodes.delete(id);
-		rows.delete(id);
-	}
-	notify();
-	send('remove', { ids: [...ids] });
+/**
+ * Runs one tree edit in the engine (`add_node`, `patch_nodes`, `undo`, …: `edit.rs`)
+ * and applies what it stored to the mirror once it answers, so the mirror never holds
+ * a write the engine refused. Rejects with the engine's message (a supply rule, say),
+ * changing nothing, or with `SessionChangedError` when the session was replaced while
+ * the edit ran.
+ */
+export function edit(command: string, args: object = {}): Promise<EngineEdit> {
+	const started = epoch;
+	const applied = engine<EngineEdit>(command, args).then((edited) => {
+		if (started !== epoch) throw new SessionChangedError();
+		for (const id of edited.removed) {
+			nodes.delete(id);
+			rows.delete(id);
+		}
+		for (const node of edited.nodes) nodes.set(node.id, node);
+		setHistory(edited.history);
+		apply(edited);
+		if (edited.nodes.length > 0 || edited.removed.length > 0) {
+			for (const listener of edit_listeners) listener();
+		}
+		return edited;
+	});
+	pending = applied.then(
+		() => undefined,
+		() => undefined
+	);
+	return applied;
 }

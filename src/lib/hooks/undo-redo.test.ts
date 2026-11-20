@@ -8,25 +8,39 @@ import {
 	resetData
 } from '#lib/db/mutations/index.js';
 import { getChildNodesByParentId, getNode } from '#lib/db/queries/index.js';
-import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { UndoRedoState } from './undo-redo.svelte.js';
 
 beforeAll(async () => {
 	await initializeDatabase();
 });
 
+const lighting = (circuit_number: number) =>
+	({
+		load_type: 'LIGHTING_LOAD',
+		quantity: 1,
+		varies: '100',
+		load_description: `L${circuit_number}`,
+		continuous: false,
+		circuit_number,
+		length: 10,
+		ambient_temperature: 30,
+		terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+		config_preference: 'CUSTOM'
+	}) as never;
+
+async function project(phase: string) {
+	resetData();
+	const created = await createProject('Undo', { distribution_unit: 'Transformer', phase });
+	return created!.root_node_id;
+}
+
+// The history itself is tested in crates/heda-core/tests/edit.rs; this is the app's view of it.
 describe('UndoRedoState', () => {
-	test('copyNodeById duplicates the node and records an undoable action', async () => {
-		resetData();
+	test('copyNodeById duplicates the node as one undoable edit', async () => {
+		const root = await project(default_phases.ONE_PHASE);
 		const undo_redo_state = new UndoRedoState();
 		expect(undo_redo_state.hasUndoActions()).toBe(false);
-
-		const created = await createProject('Copy', {
-			distribution_unit: 'Transformer',
-			phase: default_phases.ONE_PHASE
-		});
-		const root = created!.root_node_id;
-		const panel = addNode({
+		const { node: panel } = await addNode({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -41,56 +55,39 @@ describe('UndoRedoState', () => {
 		await undo_redo_state.copyNodeById(panel!.id);
 		expect(getChildNodesByParentId(root)).toHaveLength(2);
 		expect(undo_redo_state.hasUndoActions()).toBe(true);
+		expect(undo_redo_state.has_unsaved_actions).toBe(true);
 
-		undo_redo_state.undo();
+		await undo_redo_state.undo();
 		expect(getChildNodesByParentId(root)).toHaveLength(1);
+		expect(undo_redo_state.hasRedoActions()).toBe(true);
 	});
 
 	test('undoes and redoes a rebalance of several circuits as one step', async () => {
-		resetData();
+		const root = await project(default_phases.THREE_PHASE_WYE);
 		const undo_redo_state = new UndoRedoState();
-		const created = await createProject('Wye', {
-			distribution_unit: 'Transformer',
-			phase: default_phases.THREE_PHASE_WYE
-		});
-		const root = created!.root_node_id;
-		const [a, b] = [1, 3].map((circuit_number) =>
-			addNode({
-				parent_id: root,
-				load_data: {
-					load_type: 'LIGHTING_LOAD',
-					quantity: 1,
-					varies: '100',
-					load_description: `L${circuit_number}`,
-					continuous: false,
-					circuit_number,
-					length: 10,
-					ambient_temperature: 30,
-					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-					config_preference: 'CUSTOM'
-				} as never
-			})!
-		);
-		const previous = [getNode(a!.id)!, getNode(b!.id)!];
-		changePhaseAssignments([
+		const [{ node: a }, { node: b }] = [
+			await addNode({ parent_id: root, load_data: lighting(1) }),
+			await addNode({ parent_id: root, load_data: lighting(3) })
+		];
+		await changePhaseAssignments([
 			[a!.id, 'C'],
 			[b!.id, 'C']
 		]);
-		undo_redo_state.setActionToUndo({
-			action: 'batch_update',
-			batch_data: previous.map((node) => ({ data: node as unknown as PhaseLoadSchedule }))
-		});
+		const phases = () => [getNode(a!.id)!.phase_assignment, getNode(b!.id)!.phase_assignment];
 
 		await undo_redo_state.undo();
-		expect([getNode(a!.id)!.phase_assignment, getNode(b!.id)!.phase_assignment]).toEqual([
-			undefined,
-			undefined
-		]);
+		expect(phases()).toEqual([undefined, undefined]);
 		await undo_redo_state.redo();
-		expect([getNode(a!.id)!.phase_assignment, getNode(b!.id)!.phase_assignment]).toEqual([
-			'C',
-			'C'
-		]);
+		expect(phases()).toEqual(['C', 'C']);
+	});
+
+	test('a new project starts without history', async () => {
+		const root = await project(default_phases.ONE_PHASE);
+		const undo_redo_state = new UndoRedoState();
+		await addNode({ parent_id: root, load_data: lighting(1) });
+		expect(undo_redo_state.hasUndoActions()).toBe(true);
+		await project(default_phases.ONE_PHASE);
+		expect(undo_redo_state.hasUndoActions()).toBe(false);
 	});
 
 	test('a save only clears the unsaved flag if no edit landed after its snapshot', () => {
@@ -107,24 +104,11 @@ describe('UndoRedoState', () => {
 	});
 
 	test('undo and redo with empty history leave the project clean', async () => {
+		await project(default_phases.ONE_PHASE);
 		const undo_redo_state = new UndoRedoState();
 		await undo_redo_state.undo();
 		await undo_redo_state.redo();
 		expect(undo_redo_state.has_unsaved_actions).toBe(false);
-	});
-
-	test('history keeps only the most recent actions', async () => {
-		const undo_redo_state = new UndoRedoState();
-		for (let i = 0; i < 150; i++) {
-			undo_redo_state.setActionToUndo({ action: 'update_node' });
-		}
-		let undos = 0;
-		while (undo_redo_state.hasUndoActions()) {
-			await undo_redo_state.undo();
-			undos++;
-		}
-		expect(undos).toBeLessThanOrEqual(101);
-		expect(undos).toBeGreaterThanOrEqual(100);
 	});
 
 	test('resetting without a version always clears the unsaved flag', () => {

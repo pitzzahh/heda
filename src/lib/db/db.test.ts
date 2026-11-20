@@ -5,26 +5,19 @@ import {
 	default_load_types,
 	default_phases
 } from '#lib/constants.js';
-import {
-	getNodes,
-	getProject,
-	initializeDatabase,
-	insertNodes,
-	replaceNodes,
-	settled
-} from './index.js';
+import { getNodes, getProject, initializeDatabase, settled } from './index.js';
 import {
 	addNode,
 	copyAndAddNodeById,
 	copyAndAddNodesById,
-	MAX_COPY_NODES,
 	createProject,
 	loadCurrentProject,
 	overrideField,
 	removeNode,
+	redoEdit,
 	removeNodesById,
 	resetData,
-	restoreNodes,
+	undoEdit,
 	updateLoadDescription,
 	updateNode,
 	updateShortCircuitSource,
@@ -49,16 +42,29 @@ import {
 	getSnapshotRevision
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
-import { withNodeDefaults } from './mutations/defaults.js';
+import { getCatalog } from '#lib/core/catalog.js';
 import { loadSnapshot } from './queries/snapshot.js';
 import { engine } from '#lib/core/api.js';
-import type { EngineComputed } from '#lib/types/db.js';
+import type { EngineComputed, Node } from '#lib/types/db.js';
 import type { GenericPhaseMainLoadSchema } from '#lib/types/load.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
 
 beforeAll(async () => {
 	await initializeDatabase();
 });
+
+/** The node an edit created, as the mirror holds it once the engine answered. */
+async function add(...args: Parameters<typeof addNode>): Promise<Node> {
+	const { node, error } = await addNode(...args);
+	if (!node) throw new Error(error);
+	return node;
+}
+
+async function update(...args: Parameters<typeof updateNode>): Promise<Node> {
+	const { node, error } = await updateNode(...args);
+	if (!node) throw new Error(error);
+	return node;
+}
 
 /** Every row as a cold engine computes it: the same documents opened again from scratch. */
 async function coldRows(): Promise<EngineComputed['rows']> {
@@ -93,7 +99,16 @@ describe('db', () => {
 		expect(root.highest_unit_form).toMatchObject({ pec_2017_sizing: true, pec_2017_revision: 2 });
 		expect(root.highest_unit_form?.wye_circuit_defaults).toBeUndefined();
 		// The engine completes a root with the defaults every inserted node gets.
-		expect(root).toMatchObject(withNodeDefaults({ id: root.id }));
+		expect(root).toMatchObject({
+			conductor_sets: 1,
+			conductor_qty: 2,
+			conductor_insulation: 'THHN-Cu',
+			egc_insulation: 'TW-Cu',
+			conduit_type: 'PVC',
+			pole: '2',
+			kaic: '5',
+			is_at_used_as_currents_value: false
+		});
 		expect(getProject()?.settings).toEqual({});
 
 		const wye = await createProject('Wye', {
@@ -172,7 +187,7 @@ describe('db', () => {
 			distribution_unit: 'Bldg A',
 			phase: default_phases.ONE_PHASE
 		});
-		const panel = addNode({
+		const panel = await add({
 			parent_id: created!.root_node_id,
 			panel_data: {
 				name: 'LP-1',
@@ -196,7 +211,7 @@ describe('db', () => {
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE
 		});
-		const node = addNode({
+		const node = await add({
 			parent_id: created!.root_node_id,
 			panel_data: {
 				name: 'LP-1',
@@ -224,7 +239,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const first = addNode({
+		const first = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-1',
@@ -247,7 +262,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		addNode({
+		await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-1',
@@ -357,8 +372,8 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const outlet = (circuit_number: number, varies: string, extra: object) =>
-			addNode({
+		const outlet = async (circuit_number: number, varies: string, extra: object) =>
+			(await add({
 				parent_id: root,
 				load_data: {
 					load_type: default_load_types.CONVENIENCE_OUTLET,
@@ -373,14 +388,14 @@ describe('db', () => {
 					config_preference: 'CUSTOM',
 					...extra
 				}
-			})!.id;
+			}))!.id;
 		// 3910 VA / 230 V = 17 A: 21.25 A continuous → 25 A; 17 A noncontinuous → 20 A.
-		const continuous = outlet(1, '3910', {});
-		const noncontinuous = outlet(2, '3910', { continuous: false });
+		const continuous = await outlet(1, '3910', {});
+		const noncontinuous = await outlet(2, '3910', { continuous: false });
 		// 180 VA (2.20.2.5(I)) is 0.98 A at 125 %: 15 A, the smallest rating, on 2.0 mm².
-		const plain = outlet(3, '180', {});
+		const plain = await outlet(3, '180', {});
 		// The same outlet on a dwelling's bathroom circuit is 20 A, on 3.5 mm² (2.40.1.4(D)).
-		const bathroom = outlet(4, '0', { dwelling_circuit: 'bathroom' });
+		const bathroom = await outlet(4, '0', { dwelling_circuit: 'bathroom' });
 		await settled();
 		const at = (id: string) => getNodeById(id)?.at;
 		expect([at(continuous), at(noncontinuous), at(plain), at(bathroom)]).toEqual([25, 20, 15, 20]);
@@ -407,7 +422,7 @@ describe('db', () => {
 			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 			config_preference: 'CUSTOM'
 		} as const;
-		const node = addNode({
+		const node = await add({
 			parent_id: root,
 			load_data
 		});
@@ -423,7 +438,7 @@ describe('db', () => {
 		expect(voltage_drops).toHaveLength(1);
 
 		// The revision-keyed memo must not survive a write.
-		updateNode({
+		await update({
 			id: node!.id,
 			parent_id: root,
 			load_data: { ...load_data, length: 20 }
@@ -448,14 +463,14 @@ describe('db', () => {
 			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 			phase: default_phases.ONE_PHASE
 		});
-		const panel_a = addNode({ parent_id: root, panel_data: panel_data('LP-A', 1) });
-		const panel_b = addNode({ parent_id: root, panel_data: panel_data('LP-B', 2) });
+		const panel_a = await add({ parent_id: root, panel_data: panel_data('LP-A', 1) });
+		const panel_b = await add({ parent_id: root, panel_data: panel_data('LP-B', 2) });
 
 		await settled();
 		const first = getNodeById(panel_a!.id);
 		expect(getNodeById(panel_a!.id)).toBe(first);
 
-		updateNode({
+		await update({
 			id: panel_b!.id,
 			parent_id: root,
 			panel_data: panel_data('LP-B2', 2)
@@ -463,7 +478,7 @@ describe('db', () => {
 		await settled();
 		expect(getNodeById(panel_a!.id)).toBe(first);
 
-		updateNode({
+		await update({
 			id: panel_a!.id,
 			parent_id: root,
 			panel_data: panel_data('LP-A2', 1)
@@ -474,31 +489,6 @@ describe('db', () => {
 		expect(edited?.panel_data?.name).toBe('LP-A2');
 	});
 
-	it('does not alias panel data on whole-node updates', async () => {
-		resetData();
-		const created = await createProject('WholeData', {
-			distribution_unit: 'Transformer',
-			phase: default_phases.ONE_PHASE
-		});
-		const root = created!.root_node_id;
-		const panel = addNode({
-			parent_id: root,
-			panel_data: {
-				name: 'LP-A',
-				circuit_number: 1,
-				ambient_temperature: 30,
-				length: 10,
-				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-				phase: default_phases.ONE_PHASE
-			}
-		});
-		const whole_data = getNode(panel!.id)!;
-		updateNode({ id: panel!.id, parent_id: root, whole_data });
-		const stored = getNode(panel!.id)!;
-		expect(stored.panel_data).toEqual(whole_data.panel_data);
-		expect(stored.panel_data).not.toBe(whole_data.panel_data);
-	});
-
 	it('returns fresh data when a node id is reused after removal', async () => {
 		resetData();
 		const created = await createProject('ReusedId', {
@@ -506,7 +496,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -520,18 +510,13 @@ describe('db', () => {
 		await settled();
 		expect(getNodeById(panel!.id)?.panel_data?.name).toBe('LP-A');
 
-		removeNode(panel!.id);
-		addNode({
-			existing_id: panel!.id,
-			parent_id: root,
-			panel_data: {
-				name: 'LP-A-new',
-				circuit_number: 1,
-				ambient_temperature: 30,
-				length: 10,
-				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-				phase: default_phases.ONE_PHASE
-			}
+		// Undo brings the node back under its old id.
+		await removeNode(panel!.id);
+		await undoEdit();
+		await updateLoadDescription({
+			node_id: panel!.id,
+			load_description: 'LP-A-new',
+			node_type: 'panel'
 		});
 		await settled();
 		expect(getNodeById(panel!.id)?.panel_data?.name).toBe('LP-A-new');
@@ -544,7 +529,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -569,8 +554,8 @@ describe('db', () => {
 			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 			config_preference: 'CUSTOM' as const
 		});
-		addNode({ parent_id: panel!.id, load_data: load_data(1) });
-		addNode({ parent_id: panel!.id, load_data: load_data(2) });
+		await add({ parent_id: panel!.id, load_data: load_data(1) });
+		await add({ parent_id: panel!.id, load_data: load_data(2) });
 
 		await settled();
 		const children = getChildNodesByParentId(panel!.id);
@@ -603,7 +588,7 @@ describe('db', () => {
 		const sorted = loadSnapshot();
 		expect(loadSnapshot()).toBe(sorted);
 
-		addNode({
+		await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -624,7 +609,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		addNode({
+		await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -637,7 +622,7 @@ describe('db', () => {
 		});
 		const first = getChildNodesByParentId(root);
 		expect(getChildNodesByParentId(root)).toBe(first);
-		addNode({
+		await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-B',
@@ -659,7 +644,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -683,8 +668,8 @@ describe('db', () => {
 				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 				config_preference: 'CUSTOM'
 			}) as const;
-		addNode({ parent_id: panel!.id, load_data: load_data(1) });
-		addNode({ parent_id: panel!.id, load_data: load_data(2) });
+		await add({ parent_id: panel!.id, load_data: load_data(1) });
+		await add({ parent_id: panel!.id, load_data: load_data(2) });
 
 		const copied = await copyAndAddNodeById(panel!.id);
 		expect(copied?.id).not.toBe(panel!.id);
@@ -709,7 +694,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -721,7 +706,7 @@ describe('db', () => {
 			}
 		})!;
 		for (let circuit_number = 1; circuit_number <= 30; circuit_number += 1) {
-			addNode({
+			await add({
 				parent_id: panel.id,
 				load_data: {
 					load_type: default_load_types.GENERAL_LIGHTING,
@@ -741,13 +726,11 @@ describe('db', () => {
 		await settled();
 		const revision = getSnapshotRevision();
 
-		const copies = await copyAndAddNodesById(panel.id, 100);
-		await settled();
+		const { nodes: copies } = await copyAndAddNodesById(panel.id, 100);
 
 		expect(copies).toHaveLength(100);
-		// One write for the insert and one for the parent update (each answered once
-		// by the engine), instead of one per copied node.
-		expect(getSnapshotRevision() - revision).toBe(4);
+		// One edit, applied to the mirror once, instead of one write per copied node.
+		expect(getSnapshotRevision() - revision).toBe(1);
 		expect(countNodes()).toBe(2 + 30 + 100 * 31);
 		expect(getChildNodesByParentId(root)).toHaveLength(101);
 		expect(new Set(copies.map((copy) => copy.circuit_number)).size).toBe(100);
@@ -764,7 +747,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -775,7 +758,7 @@ describe('db', () => {
 				phase: default_phases.ONE_PHASE
 			}
 		})!;
-		addNode({
+		await add({
 			parent_id: panel.id,
 			load_data: {
 				load_type: default_load_types.GENERAL_LIGHTING,
@@ -790,15 +773,15 @@ describe('db', () => {
 				config_preference: 'CUSTOM'
 			} as never
 		});
-		const copies = await copyAndAddNodesById(panel.id, 10);
+		const { nodes: copies } = await copyAndAddNodesById(panel.id, 10);
 
 		const revision = getSnapshotRevision();
-		const removed = removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
+		const removed = await removeNodesById([panel.id, ...copies.map((copy) => copy.id)]);
 
-		// One bulk delete invalidates the snapshot once, plus once for the parent patch.
-		expect(getSnapshotRevision() - revision).toBe(2);
-		expect(removed).toHaveLength(11);
-		expect(removed.every((entry) => entry.children_nodes.length === 1)).toBe(true);
+		// One edit invalidates the snapshot once.
+		expect(getSnapshotRevision() - revision).toBe(1);
+		// Eleven panels, each with its load.
+		expect(removed).toBe(22);
 		expect(getChildNodesByParentId(root)).toHaveLength(0);
 		expect(getChildNodesByParentId(panel.id)).toHaveLength(0);
 		// The rebuilt indices still resolve the nodes that stayed.
@@ -812,7 +795,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -835,11 +818,9 @@ describe('db', () => {
 			terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
 			config_preference: 'CUSTOM'
 		} as const;
-		addNode({ parent_id: panel!.id, load_data });
+		await add({ parent_id: panel!.id, load_data });
 
-		const removed = removeNode(panel!.id);
-		expect(removed?.removed_node.id).toBe(panel!.id);
-		expect(removed?.children_nodes).toHaveLength(1);
+		expect(await removeNode(panel!.id)).toBe(2);
 		expect(getChildNodesByParentId(root)).toHaveLength(0);
 		expect(getChildNodesByParentId(panel!.id)).toHaveLength(0);
 	});
@@ -851,7 +832,7 @@ describe('db', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		addNode({
+		await add({
 			parent_id: root,
 			panel_data: {
 				name: 'LP-A',
@@ -913,11 +894,11 @@ describe('incremental writes and reads', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const a = addNode({ parent_id: root, panel_data: panelData('A', 1) })!;
-		const a1 = addNode({ parent_id: a.id, panel_data: panelData('A1', 1) })!;
-		const deep = addNode({ parent_id: a1.id, load_data: loadData(1) })!;
-		const b = addNode({ parent_id: root, panel_data: panelData('B', 2) })!;
-		const b_load = addNode({ parent_id: b.id, load_data: loadData(1) })!;
+		const a = await add({ parent_id: root, panel_data: panelData('A', 1) })!;
+		const a1 = await add({ parent_id: a.id, panel_data: panelData('A1', 1) })!;
+		const deep = await add({ parent_id: a1.id, load_data: loadData(1) })!;
+		const b = await add({ parent_id: root, panel_data: panelData('B', 2) })!;
+		const b_load = await add({ parent_id: b.id, load_data: loadData(1) })!;
 		await settled();
 		return { root, a, a1, deep, b, b_load };
 	}
@@ -927,12 +908,12 @@ describe('incremental writes and reads', () => {
 		const [before_a, before_b] = getComputedLoads(root);
 		const before_b_loads = getComputedLoads(b.id);
 
-		updateLoadDescription({
+		await updateLoadDescription({
 			node_id: deep.id,
 			load_description: '1000 - Renamed',
 			node_type: 'load'
 		});
-		overrideField({ node_id: deep.id, field_data: 100, field_type: 'at' });
+		await overrideField({ node_id: deep.id, field_data: 100, field_type: 'at' });
 
 		await settled();
 		const [after_a, after_b] = getComputedLoads(root);
@@ -955,7 +936,7 @@ describe('incremental writes and reads', () => {
 		expect(before[0]!.va).toBe(1000);
 		expect(before[1]!.va).toBe(1000);
 
-		updateNode({ id: a1.id, parent_id: b.id, whole_data: { ...getNode(a1.id)!, parent_id: b.id } });
+		await updateNodeParentById(a1.id, b.id);
 
 		await settled();
 		const [after_a, after_b] = getComputedLoads(root);
@@ -965,61 +946,47 @@ describe('incremental writes and reads', () => {
 		expect(getNode(b.id)?.child_ids).toContain(a1.id);
 	});
 
-	it('keeps the parent child list in sync on remove and restore', async () => {
+	it('brings a removed subtree back exactly on undo', async () => {
 		const { a, a1, deep } = await buildTree();
-		overrideField({ node_id: deep.id, field_data: 50, field_type: 'at' });
+		await overrideField({ node_id: deep.id, field_data: 50, field_type: 'at' });
 		const stored_deep = getNode(deep.id)!;
 
-		const removed = removeNode(a1.id)!;
+		await removeNode(a1.id);
 		expect(getNode(a.id)?.child_ids).toEqual([]);
+		expect(getNode(deep.id)).toBeUndefined();
 
-		// History rows carry computed fields; only stored fields come back.
-		const [restored] = restoreNodes([
-			{
-				data: { ...removed.removed_node, at: 999, va: 1 },
-				children_nodes: removed.children_nodes
-			}
-		]);
-		expect(restored?.id).toBe(a1.id);
+		await undoEdit();
 		expect(getNode(a.id)?.child_ids).toEqual([a1.id]);
 		expect(getNode(a1.id)?.child_ids).toEqual([deep.id]);
-		expect(getNode(a1.id)).not.toHaveProperty('at');
-		expect(getNode(a1.id)).not.toHaveProperty('va');
 		// Overrides survive the round trip instead of being reset to defaults.
 		expect(getNode(deep.id)).toEqual(stored_deep);
-		// A second restore of the same nodes is a no-op.
-		expect(restoreNodes([{ data: removed.removed_node }])).toEqual([]);
 	});
 
-	it('undoes a field edit without dropping children added since', async () => {
+	it('undoes edits newest first and redoes them in order', async () => {
 		const { a, a1 } = await buildTree();
-		const previous = getNode(a.id)!;
-		updateNode({
+		await update({
 			id: a.id,
-			parent_id: previous.parent_id!,
-			panel_data: { ...panelData('A renamed', 1) }
+			parent_id: getNode(a.id)!.parent_id!,
+			panel_data: panelData('A renamed', 1)
 		});
-		const extra = addNode({ parent_id: a.id, panel_data: panelData('A2', 2) })!;
+		const extra = await add({ parent_id: a.id, panel_data: panelData('A2', 2) });
 
-		updateNode({ id: a.id, parent_id: previous.parent_id!, whole_data: previous });
-
+		await undoEdit();
+		expect(getNode(a.id)?.child_ids).toEqual([a1.id]);
+		expect(getNode(a.id)?.panel_data?.name).toBe('A renamed');
+		await undoEdit();
 		expect(getNode(a.id)?.panel_data?.name).toBe('A');
+
+		await redoEdit();
+		await redoEdit();
+		expect(getNode(a.id)?.panel_data?.name).toBe('A renamed');
 		expect(getNode(a.id)?.child_ids).toEqual([a1.id, extra.id]);
 	});
 
-	it('lets other tasks run while a large copy is in progress', async () => {
+	it('copies a subtree a thousand times with distinct circuit numbers', async () => {
 		const { a } = await buildTree();
-		let ran_during_copy = false;
-		let copy_done = false;
-		const copying = copyAndAddNodesById(a.id, 1000).then((roots) => {
-			copy_done = true;
-			return roots;
-		});
-		setTimeout(() => (ran_during_copy = !copy_done), 0);
-
-		const roots = await copying;
+		const { nodes: roots } = await copyAndAddNodesById(a.id, 1000);
 		expect(roots).toHaveLength(1000);
-		expect(ran_during_copy).toBe(true);
 		expect(
 			new Set(getChildNodesByParentId(getNode(a.id)!.parent_id!).map((n) => n.circuit_number)).size
 		).toBe(1002);
@@ -1050,7 +1017,7 @@ describe('incremental writes and reads', () => {
 		expect(await getComputedShortCircuitsAsync()).toBe(before);
 
 		const source = { utility_sc_kva: 1_000_000, transformer_kva: 100, transformer_z_percent: 2.5 };
-		const updated = updateShortCircuitSource(root, source);
+		const updated = await updateShortCircuitSource(root, source);
 		expect(updated?.highest_unit_form).toEqual({
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE,
@@ -1058,7 +1025,7 @@ describe('incremental writes and reads', () => {
 			pec_2017_revision: 2,
 			...source
 		});
-		expect(updateShortCircuitSource(a.id, source)).toBeUndefined();
+		expect(await updateShortCircuitSource(a.id, source)).toBeUndefined();
 		expect(getNode(a.id)?.highest_unit_form).toBeUndefined();
 
 		const after = await getComputedShortCircuitsAsync();
@@ -1070,7 +1037,7 @@ describe('incremental writes and reads', () => {
 
 	it('checks each breaker against the interrupting rating typed for it (PEC 2017 1.10.1.9)', async () => {
 		const { root, a } = await buildTree();
-		updateShortCircuitSource(root, {
+		await updateShortCircuitSource(root, {
 			utility_sc_kva: 1_000_000,
 			transformer_kva: 100,
 			transformer_z_percent: 2.5
@@ -1080,23 +1047,15 @@ describe('incremental writes and reads', () => {
 		expect(unmarked.interrupting_rating_ka).toBe(5);
 		expect(unmarked.status).toBe('under_rated');
 
-		updateInterruptingRating({ node_id: a.id, kaic: 18 });
+		await updateInterruptingRating({ node_id: a.id, kaic: 18 });
 		expect(getNode(a.id)?.kaic).toBe('18');
 		const rated = (await getComputedShortCircuitsAsync()).find((row) => row.id === a.id)!;
 		expect(rated.interrupting_rating_ka).toBe(18);
 		expect(rated.status).toBe('ok');
 
-		updateInterruptingRating({ node_id: a.id, kaic: 17 });
+		await updateInterruptingRating({ node_id: a.id, kaic: 17 });
 		const short = (await getComputedShortCircuitsAsync()).find((row) => row.id === a.id)!;
 		expect(short.status).toBe('under_rated');
-	});
-
-	it('rejects duplicate ids without writing anything', async () => {
-		const { a } = await buildTree();
-		const before = countNodes();
-		const clash = { ...getNode(a.id)! };
-		expect(() => insertNodes([{ ...clash, id: crypto.randomUUID() }, clash])).toThrow('same id');
-		expect(countNodes()).toBe(before);
 	});
 
 	it('rejects a tampered file with duplicate ids and keeps the session empty', async () => {
@@ -1113,15 +1072,17 @@ describe('incremental writes and reads', () => {
 
 	it('terminates on a looping parent chain from a tampered file', async () => {
 		const { a } = await buildTree();
-		replaceNodes([{ ...getNode(a.id)!, parent_id: a.id }]);
+		await patchNode(a.id, { parent_id: a.id });
 		expect(getNodeDepth(a.id)).toBeGreaterThan(0);
 	});
 
 	it('refuses a copy that would exhaust memory', async () => {
 		const { a } = await buildTree();
-		const count = Math.floor(MAX_COPY_NODES / 3) + 1;
+		const count = Math.floor(getCatalog().max_copy_nodes / 3) + 1;
 		const before = countNodes();
-		expect(await copyAndAddNodesById(a.id, count)).toEqual([]);
+		const refused = await copyAndAddNodesById(a.id, count);
+		expect(refused.nodes).toEqual([]);
+		expect(refused.error).toMatch(/more than/);
 		expect(countNodes()).toBe(before);
 	});
 
@@ -1129,7 +1090,7 @@ describe('incremental writes and reads', () => {
 		const { a } = await buildTree();
 		const copying = copyAndAddNodesById(a.id, 50);
 		resetData();
-		expect(await copying).toEqual([]);
+		expect((await copying).nodes).toEqual([]);
 		expect(countNodes()).toBe(0);
 	});
 });
@@ -1157,7 +1118,7 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 			is_service: true
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
+		const panel = await add({
 			parent_id: root,
 			panel_data: {
 				name: 'SP',
@@ -1168,16 +1129,16 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 				phase: default_phases.ONE_PHASE
 			}
 		})!;
-		for (const n of [1, 2, 3]) addNode({ parent_id: panel.id, load_data: lighting(n) });
+		for (const n of [1, 2, 3]) await add({ parent_id: panel.id, load_data: lighting(n) });
 		await settled();
 		// (E): 3 × 400 VA is 5.2 A, but the service disconnect is at least 60 A.
 		expect(getComputedLoads(root)[0]?.at).toBe(60);
 
-		expect(setServiceEntrance(root, false)?.highest_unit_form?.is_service).toBe(false);
+		expect((await setServiceEntrance(root, false))?.highest_unit_form?.is_service).toBe(false);
 		await settled();
 		// As a feeder: 5.2 A of noncontinuous load (2.15.1.3) takes the smallest rating, 15 A.
 		expect(getComputedLoads(root)[0]?.at).toBe(15);
-		expect(setServiceEntrance(panel.id, true)).toBeUndefined();
+		expect(await setServiceEntrance(panel.id, true)).toBeUndefined();
 	});
 });
 
@@ -1215,26 +1176,21 @@ describe('three-phase delta, 230 V (PEC 2017 2.20.1.5(A), App. D Ex. D14/D15)', 
 			phase: default_phases.THREE_PHASE_DELTA
 		});
 		const root = created!.root_node_id;
-		const mdp = addNode({
+		const mdp = await add({
 			parent_id: root,
 			panel_data: panel('MDP', 1, default_phases.THREE_PHASE_DELTA)
 		})!;
-		const [ab, bc, ca] = [
-			[1, '23000'],
-			[3, '20700'],
-			[5, '14400']
-		].map(([n, va]) =>
-			addNode({
-				parent_id: mdp.id,
-				load_data: load(n as number, default_load_types.LIGHTING_LOAD, va as string)
-			})!
-		);
-		const motor = addNode({
+		const lighting = (n: number, va: string) =>
+			add({ parent_id: mdp.id, load_data: load(n, default_load_types.LIGHTING_LOAD, va) });
+		const ab = await lighting(1, '23000');
+		const bc = await lighting(3, '20700');
+		const ca = await lighting(5, '14400');
+		const motor = await add({
 			parent_id: mdp.id,
 			load_data: load(7, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '20')
 		})!;
 		await settled();
-		return { root, mdp, ab: ab!, bc: bc!, ca: ca!, motor };
+		return { root, mdp, ab, bc, ca, motor };
 	}
 
 	it('wires circuits line to line: 3-pole 3-wire three-phase, 2-pole 2-wire single-phase', async () => {
@@ -1266,11 +1222,11 @@ describe('three-phase delta, 230 V (PEC 2017 2.20.1.5(A), App. D Ex. D14/D15)', 
 
 	it('feeds a single-phase sub-panel line to line', async () => {
 		const { mdp, ab } = await buildDeltaTree();
-		const lp = addNode({
+		const lp = await add({
 			parent_id: mdp.id,
 			panel_data: panel('LP', 9, default_phases.ONE_PHASE)
 		})!;
-		addNode({ parent_id: lp.id, load_data: load(1, default_load_types.LIGHTING_LOAD, '100') });
+		await add({ parent_id: lp.id, load_data: load(1, default_load_types.LIGHTING_LOAD, '100') });
 		await settled();
 		// A single-phase panel on delta takes the pair of its circuit number (9–10 → BC).
 		const row = getComputedLoads(mdp.id).find((l) => l.id === lp.id);
@@ -1323,29 +1279,29 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 	//                    └─ 11: LP-1 (1P) ─ 1: 2 300 VA lighting → LP-1 on C
 	async function buildWyeTree() {
 		const root = await wyeProject();
-		const mdp = addNode({ parent_id: root, panel_data: wyePanel('MDP', 1) })!;
-		const a = addNode({
+		const mdp = await add({ parent_id: root, panel_data: wyePanel('MDP', 1) })!;
+		const a = await add({
 			parent_id: mdp.id,
 			load_data: load(1, default_load_types.LIGHTING_LOAD, '1840')
 		})!;
-		const b = addNode({
+		const b = await add({
 			parent_id: mdp.id,
 			load_data: load(3, default_load_types.LIGHTING_LOAD, '1500')
 		})!;
-		const c = addNode({
+		const c = await add({
 			parent_id: mdp.id,
 			load_data: load(5, default_load_types.LIGHTING_LOAD, '1500')
 		})!;
-		const acu = addNode({
+		const acu = await add({
 			parent_id: mdp.id,
 			load_data: load(7, default_load_types.THREE_P_EQUIPMENT, '6000')
 		})!;
-		const motor = addNode({
+		const motor = await add({
 			parent_id: mdp.id,
 			load_data: load(9, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '44')
 		})!;
-		const lp1 = addNode({ parent_id: mdp.id, panel_data: onePhasePanel('LP-1', 11) })!;
-		const lp1_load = addNode({
+		const lp1 = await add({ parent_id: mdp.id, panel_data: onePhasePanel('LP-1', 11) })!;
+		const lp1_load = await add({
 			parent_id: lp1.id,
 			load_data: load(1, default_load_types.LIGHTING_LOAD, '2300')
 		})!;
@@ -1369,7 +1325,10 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			distribution_unit: 'Transformer',
 			phase: default_phases.ONE_PHASE
 		});
-		const node = addNode({ parent_id: created!.root_node_id, panel_data: onePhasePanel('LP', 1) })!;
+		const node = await add({
+			parent_id: created!.root_node_id,
+			panel_data: onePhasePanel('LP', 1)
+		})!;
 		expect([node.pole, node.conductor_qty]).toEqual(['2', 2]);
 	});
 
@@ -1418,42 +1377,39 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 		const { mdp, a } = await buildWyeTree();
 		const before = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
 
-		changePhaseAssignment(a.id, 'C');
+		await changePhaseAssignment(a.id, 'C');
 		await settled();
 		const moved = getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va!;
 		expect(moved.A).toBeCloseTo(before.A - 1_840, 6);
 		expect(moved.C).toBeCloseTo(before.C + 1_840, 6);
 		expect(getComputedLoads(mdp.id).find((l) => l.id === a.id)?.phase).toBe('C');
 
-		changePhaseAssignment(a.id, undefined);
+		await changePhaseAssignment(a.id, undefined);
 		await settled();
 		expect(getComputedLoads(getNode(mdp.id)!.parent_id!)[0]!.phase_va).toEqual(before);
 	});
 
 	it('refuses three-phase circuits under a single-phase panel', async () => {
 		const { mdp, motor, lp1 } = await buildWyeTree();
-		expect(
-			addNode({
-				parent_id: lp1.id,
-				load_data: load(3, default_load_types.THREE_P_EQUIPMENT, '3000')
-			})
-		).toBeUndefined();
-		expect(
-			updateNode({
-				id: motor.id,
-				parent_id: lp1.id,
-				load_data: getNode(motor.id)!.load_data as never
-			})
-		).toBeUndefined();
+		const added = await addNode({
+			parent_id: lp1.id,
+			load_data: load(3, default_load_types.THREE_P_EQUIPMENT, '3000')
+		});
+		expect(added.error).toBe('A three-phase circuit needs a three-phase supply.');
+		const moved = await updateNode({
+			id: motor.id,
+			parent_id: lp1.id,
+			load_data: getNode(motor.id)!.load_data as never
+		});
+		expect(moved.error).toBe('A three-phase circuit needs a three-phase supply.');
 		expect(getNode(motor.id)!.parent_id).toBe(mdp.id);
 		// MDP feeds three-phase circuits, so it cannot turn single-phase.
-		expect(
-			updateNode({
-				id: mdp.id,
-				parent_id: getNode(mdp.id)!.parent_id!,
-				panel_data: onePhasePanel('MDP', 1)
-			})
-		).toBeUndefined();
+		const turned = await updateNode({
+			id: mdp.id,
+			parent_id: getNode(mdp.id)!.parent_id!,
+			panel_data: onePhasePanel('MDP', 1)
+		});
+		expect(turned.error).toMatch(/must stay three-phase/);
 		expect(getParentNodes(motor.id).map((parent) => parent.name)).not.toContain('LP-1');
 		// A panel is never offered its own subtree.
 		expect(getParentNodes(mdp.id).map((parent) => parent.name)).not.toContain('LP-1');
@@ -1462,44 +1418,44 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 	it('gives a load the pole and wire count of its new type, unless the user changed them', async () => {
 		const { mdp, a, b } = await buildWyeTree();
 		const to3p = (id: string, circuit: number) =>
-			updateNode({
+			update({
 				id,
 				parent_id: mdp.id,
 				load_data: load(circuit, default_load_types.THREE_P_EQUIPMENT, '3000')
-			})!;
-		expect([to3p(a.id, 1).pole, getNode(a.id)!.conductor_qty]).toEqual(['3', 3]);
-		const back = updateNode({
+			});
+		expect([(await to3p(a.id, 1)).pole, getNode(a.id)!.conductor_qty]).toEqual(['3', 3]);
+		const back = await update({
 			id: a.id,
 			parent_id: mdp.id,
 			load_data: load(1, default_load_types.LIGHTING_LOAD, '1840')
 		})!;
 		expect([back.pole, back.conductor_qty]).toEqual(['1', 2]);
 
-		patchNode(b.id, { conductor_qty: 3 });
-		const kept = to3p(b.id, 3);
+		await patchNode(b.id, { conductor_qty: 3 });
+		const kept = await to3p(b.id, 3);
 		expect([kept.pole, kept.conductor_qty]).toEqual(['1', 3]);
 	});
 
 	it('drag and drop refuses moves that break the tree or the supply', async () => {
 		const { root, mdp, motor, lp1, lp1_load } = await buildWyeTree();
-		const refused = (id: string, parent: string) => {
+		const refused = async (id: string, parent: string) => {
 			const before = getNode(id)!.parent_id;
-			const result = updateNodeParentById({ id, parent_id: before }, parent);
+			const result = await updateNodeParentById(id, parent);
 			expect(result.error).toBeTruthy();
 			expect(getNode(id)!.parent_id).toBe(before);
 		};
-		refused(motor.id, lp1.id); // a 3P motor on a 1P panel (D6)
-		refused(mdp.id, mdp.id); // onto itself
-		refused(mdp.id, lp1.id); // into its own sub-panel
-		refused(root, mdp.id); // the root never moves
-		refused(lp1.id, lp1_load.id); // loads supply nothing
+		await refused(motor.id, lp1.id); // a 3P motor on a 1P panel (D6)
+		await refused(mdp.id, mdp.id); // onto itself
+		await refused(mdp.id, lp1.id); // into its own sub-panel
+		await refused(root, mdp.id); // the root never moves
+		await refused(lp1.id, lp1_load.id); // loads supply nothing
 	});
 
 	it('drag and drop renumbers a taken circuit and drops the old phase pick', async () => {
 		const { root, mdp, a } = await buildWyeTree();
-		changePhaseAssignment(a.id, 'C');
+		await changePhaseAssignment(a.id, 'C');
 		// MDP is circuit 1 on the root, and so is load A on MDP.
-		const result = updateNodeParentById({ id: a.id, parent_id: mdp.id }, root);
+		const result = await updateNodeParentById(a.id, root);
 		expect(result.error).toBeUndefined();
 		expect(result.renumbered_to).toBe(2);
 		expect(getNode(a.id)).toMatchObject({ parent_id: root, circuit_number: 2 });
@@ -1510,8 +1466,8 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 
 	it('keeps the drop of loads under feeders that drop nothing', async () => {
 		const { mdp, lp1, lp1_load } = await buildWyeTree();
-		patchNode(mdp.id, { length: 0 });
-		patchNode(lp1.id, { length: 0 });
+		await patchNode(mdp.id, { length: 0 });
+		await patchNode(lp1.id, { length: 0 });
 		const rows = new Map((await getComputedVoltageDropsAsync()).map((row) => [row.id, row]));
 		expect(rows.get(lp1.id)!.voltage_at_end_circuit).toBe(0);
 		const load = rows.get(lp1_load.id)!;
@@ -1521,19 +1477,19 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 
 	it('undoing a move puts the phase pick back', async () => {
 		const { root, mdp, a } = await buildWyeTree();
-		changePhaseAssignment(a.id, 'C');
-		const before = getNode(a.id)!;
-		updateNodeParentById({ id: a.id, parent_id: mdp.id }, root);
+		await changePhaseAssignment(a.id, 'C');
+		await updateNodeParentById(a.id, root);
 		expect(getNode(a.id)!.phase_assignment).toBeUndefined();
-		// Undo restores the whole stored snapshot (UndoRedoState's update_node path).
-		updateNode({ id: a.id, whole_data: before, parent_id: mdp.id });
+		await undoEdit();
 		expect(getNode(a.id)).toMatchObject({ parent_id: mdp.id, phase_assignment: 'C' });
 	});
 
 	it('a copy follows its new circuit number, not the original phase pick', async () => {
 		const { mdp, a } = await buildWyeTree();
-		changePhaseAssignment(a.id, 'C');
-		const [copy] = await copyAndAddNodesById(a.id, 1);
+		await changePhaseAssignment(a.id, 'C');
+		const {
+			nodes: [copy]
+		} = await copyAndAddNodesById(a.id, 1);
 		expect(copy!.parent_id).toBe(mdp.id);
 		expect(copy!.phase_assignment).toBeUndefined();
 		expect(getNode(a.id)!.phase_assignment).toBe('C');
@@ -1541,7 +1497,7 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 
 	it('rebalances several circuits in one write', async () => {
 		const { mdp, a, b, c } = await buildWyeTree();
-		changePhaseAssignments([
+		await changePhaseAssignments([
 			[a.id, 'B'],
 			[b.id, 'C'],
 			[c.id, 'A']
@@ -1554,12 +1510,16 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 	describe('voltage drop, PEC 2017 App. D Ex. D15 (k = 1.732 for three-phase)', () => {
 		it('(a) 295 A over 15.2 m of 250 mm² in steel conduit → 1.428 V', async () => {
 			const root = await wyeProject();
-			const feeder = addNode({
+			const feeder = await add({
 				parent_id: root,
 				load_data: load(1, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '295', 15.2)
 			})!;
 			// D15 uses √(R² + X²) of Table 10.1.1.9: 0.029 Ω and 0.048 Ω per 305 m.
-			overrideField({ node_id: feeder.id, field_data: Math.hypot(0.029, 0.048), field_type: 'z' });
+			await overrideField({
+				node_id: feeder.id,
+				field_data: Math.hypot(0.029, 0.048),
+				field_type: 'z'
+			});
 			const [drop] = await getComputedVoltageDropsAsync();
 			expect(drop?.current).toBe(295);
 			// D15 Eq. (1): 1.732 × 295 × √(0.029² + 0.048²) × 15.2 / 305 = 1.42797 V, "1.428 volt".
@@ -1569,11 +1529,15 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 
 		it('(b) 20 A over 30.5 m of 5.5 mm² in steel conduit → 4.163 V', async () => {
 			const root = await wyeProject();
-			const motor = addNode({
+			const motor = await add({
 				parent_id: root,
 				load_data: load(1, default_load_types.THREE_P_MOTOR__RATED_CURRENT, '20', 30.5)
 			})!;
-			overrideField({ node_id: motor.id, field_data: Math.hypot(1.2, 0.063), field_type: 'z' });
+			await overrideField({
+				node_id: motor.id,
+				field_data: Math.hypot(1.2, 0.063),
+				field_type: 'z'
+			});
 			const [drop] = await getComputedVoltageDropsAsync();
 			// D15 Eq. (1): 1.732 × 20 × √(1.2² + 0.063²) × 30.5 / 305 = 4.162525 V, printed "4.163".
 			expect(drop?.voltage_per_segment).toBe(4.1625);

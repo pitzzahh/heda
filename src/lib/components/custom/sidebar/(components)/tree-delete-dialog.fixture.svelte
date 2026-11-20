@@ -1,13 +1,3 @@
-<script lang="ts" module>
-	import type { UndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-
-	let fixture_state: UndoRedoState | undefined;
-
-	export function get_fixture_undo_state() {
-		return fixture_state as UndoRedoState;
-	}
-</script>
-
 <script lang="ts">
 	import { setUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { setCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
@@ -15,7 +5,7 @@
 	import type { Node } from '#lib/types/db.js';
 	import TreeDeleteDialog from './tree-delete-dialog.svelte';
 
-	fixture_state = setUndoRedoState();
+	setUndoRedoState();
 	setCollapsiblesState();
 	setSelectNodesToDeleteState();
 

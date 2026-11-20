@@ -23,32 +23,36 @@ describe('load snapshot reactivity', () => {
 			phase: default_phases.ONE_PHASE
 		});
 		const root = created!.root_node_id;
-		const panel = addNode({
-			parent_id: root,
-			panel_data: {
-				name: 'LP-A',
-				circuit_number: 1,
-				ambient_temperature: 30,
-				length: 10,
-				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-				phase: default_phases.ONE_PHASE
-			}
-		});
-		const load = addNode({
-			parent_id: panel!.id,
-			load_data: {
-				load_type: default_load_types.GENERAL_LIGHTING,
-				quantity: 100,
-				varies: '0',
-				load_description: '100 - Lighting',
-				continuous: false,
-				circuit_number: 1,
-				length: 10,
-				ambient_temperature: 30,
-				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
-				config_preference: 'CUSTOM'
-			} as const
-		});
+		const panel = (
+			await addNode({
+				parent_id: root,
+				panel_data: {
+					name: 'LP-A',
+					circuit_number: 1,
+					ambient_temperature: 30,
+					length: 10,
+					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+					phase: default_phases.ONE_PHASE
+				}
+			})
+		).node;
+		const load = (
+			await addNode({
+				parent_id: panel!.id,
+				load_data: {
+					load_type: default_load_types.GENERAL_LIGHTING,
+					quantity: 100,
+					varies: '0',
+					load_description: '100 - Lighting',
+					continuous: false,
+					circuit_number: 1,
+					length: 10,
+					ambient_temperature: 30,
+					terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+					config_preference: 'CUSTOM'
+				} as const
+			})
+		).node;
 
 		await settled();
 		// A read outside any `$derived` (warmup, handler) primes the cache.
@@ -62,11 +66,8 @@ describe('load snapshot reactivity', () => {
 		flushSync();
 		expect(document.body.textContent).toContain('at:15');
 
-		flushSync(() => {
-			overrideField({ node_id: load!.id, field_data: 50, field_type: 'at' });
-		});
 		// The engine's answer alone must wake the mounted derived.
-		await settled();
+		await overrideField({ node_id: load!.id, field_data: 50, field_type: 'at' });
 		flushSync();
 		expect(document.body.textContent).toContain('at:50');
 		unmount(app);

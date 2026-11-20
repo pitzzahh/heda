@@ -1,6 +1,4 @@
 <script module lang="ts">
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
-
 	type Props = { open_dialog: boolean; node_name: string; node_id: string };
 
 	const MAX_COPY_COUNT = 1000;
@@ -18,8 +16,8 @@
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { MAX_COPY_NODES, copyAndAddNodesById } from '#lib/db/mutations/index.js';
+	import { copyAndAddNodesById } from '#lib/db/mutations/index.js';
+	import { getCatalog } from '#lib/core/catalog.js';
 	import { getNumberOfChildren } from '#lib/db/queries/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -28,7 +26,6 @@
 	let { open_dialog = $bindable(false), node_name, node_id }: Props = $props();
 
 	let copy_value = $state<number | undefined>(1);
-	const undo_redo_state = getUndoRedoState();
 
 	const raw_count = $derived(
 		typeof copy_value === 'number' && Number.isFinite(copy_value) ? Math.floor(copy_value) : 0
@@ -38,7 +35,7 @@
 	const stepper_count = $derived(countFromInput(copy_value));
 	const descendant_count = $derived(open_dialog && node_id ? getNumberOfChildren(node_id) : 0);
 	const max_copies = $derived(
-		Math.min(MAX_COPY_COUNT, Math.floor(MAX_COPY_NODES / (1 + descendant_count)))
+		Math.min(MAX_COPY_COUNT, Math.floor(getCatalog().max_copy_nodes / (1 + descendant_count)))
 	);
 	const is_too_large = $derived(is_count_valid && raw_count > max_copies);
 	const is_valid = $derived(is_count_valid && !is_too_large);
@@ -76,8 +73,7 @@
 
 	/**
 	 * Hands the copy to the background: the dialog closes at once, a loading
-	 * toast tracks the job, and the copy itself yields between slices (see
-	 * `copyAndAddNodesById`), so the app stays usable while it runs.
+	 * toast tracks the job, and the engine builds the copies off the main thread.
 	 */
 	async function handleMultiCopy(target_node_id: string) {
 		if (!is_valid) return;
@@ -88,19 +84,11 @@
 		const toast_id = toast.loading(`Copying ${label}…`);
 		closeDialog();
 
-		const created_nodes = await copyAndAddNodesById(target_node_id, count);
-		if (created_nodes.length !== count) {
-			toast.error(`Could not copy ${name}.`, { id: toast_id });
+		const { nodes, error } = await copyAndAddNodesById(target_node_id, count);
+		if (nodes.length !== count) {
+			toast.error(`Could not copy ${name}.`, { id: toast_id, description: error });
 			return;
 		}
-
-		undo_redo_state.setActionToUndo({
-			action: 'batch_copy_node',
-			batch_data: created_nodes.map((node) => ({
-				data: node as unknown as PhaseLoadSchedule,
-				children_nodes: []
-			}))
-		});
 		toast.success(`${label} added`, { id: toast_id });
 	}
 </script>

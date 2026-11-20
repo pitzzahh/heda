@@ -2,7 +2,6 @@
 	import { TrashIcon, XCircleIcon } from '#lib/assets/icons.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { removeNodesById } from '#lib/db/mutations/index.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import ConfirmationDialog from '../../confirmation-dialog.svelte';
 	import { fly } from 'svelte/transition';
 	import Button from '#lib/components/ui/button/button.svelte';
@@ -10,27 +9,17 @@
 
 	let is_confirmation_dialog_open = $state(false);
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
-	const undo_redo_state = getUndoRedoState();
 
 	const component_state = $state({
 		button_state: 'stale' as 'stale' | 'processing'
 	});
 
-	function handleRemoveSelectedItems() {
+	async function handleRemoveSelectedItems() {
 		component_state.button_state = 'processing';
 		const toast_id = toast.loading(
 			`Removing ${select_nodes_to_delete_state.selected_nodes_id.size} items`
 		);
-		const removed = removeNodesById([...select_nodes_to_delete_state.selected_nodes_id]);
-		const results = removed.map(({ removed_node, children_nodes }) => ({
-			data: removed_node,
-			children_nodes
-		}));
-
-		undo_redo_state.setActionToUndo({
-			action: 'batch_delete',
-			batch_data: results
-		});
+		await removeNodesById([...select_nodes_to_delete_state.selected_nodes_id]);
 
 		is_confirmation_dialog_open = false;
 		component_state.button_state = 'stale';

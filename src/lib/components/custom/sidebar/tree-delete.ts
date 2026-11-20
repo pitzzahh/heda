@@ -1,15 +1,13 @@
 import type { Node, Project } from '#lib/types/db.js';
-import type { UndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 import type { Collapsibles } from '#lib/hooks/node-collapsibles.svelte.js';
 import type { SelectNodesToDelete } from '#lib/hooks/select-nodes-to-delete.svelte.js';
-import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { deleteProject, removeNode } from '#lib/db/mutations/index.js';
 
-export function deleteNodeAndRecordUndo(
+/** Removes a circuit with its subtree, or the whole project for the root. */
+export async function deleteTreeNode(
 	node: Node,
 	project: Project | undefined,
 	stores: {
-		undo_redo: UndoRedoState;
 		collapsibles: Collapsibles;
 		select_nodes_to_delete: SelectNodesToDelete;
 	}
@@ -19,13 +17,7 @@ export function deleteNodeAndRecordUndo(
 		stores.collapsibles.removeAllNodeId();
 		return;
 	}
-	const removed_node = removeNode(node.id);
-	if (!removed_node) return;
-	stores.undo_redo.setActionToUndo({
-		data: node as PhaseLoadSchedule,
-		action: 'delete_node',
-		children_nodes: removed_node.children_nodes
-	});
+	if ((await removeNode(node.id)) === 0) return;
 	stores.collapsibles.removeNodeId(node.id);
 	stores.select_nodes_to_delete.removeNodeId(node.id);
 }

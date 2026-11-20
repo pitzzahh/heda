@@ -2,13 +2,13 @@ export {
 	addNode,
 	copyAndAddNodeById,
 	copyAndAddNodesById,
-	MAX_COPY_NODES,
+	patchNodes,
+	redoEdit,
 	removeNode,
 	removeNodesById,
-	restoreNodes,
+	undoEdit,
 	updateNode,
-	updateNodeParentById,
-	restoreNodeFields
+	updateNodeParentById
 } from './nodes.js';
 export { createProject, deleteProject, updateProjectTitle, updateTitleBlock } from './projects.js';
 export {

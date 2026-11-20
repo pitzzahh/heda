@@ -16,6 +16,8 @@ pub struct Catalog {
     /// Table 10.1.1.4, ascending trade sizes (mm).
     pub conduit_sizes: Vec<f64>,
     pub motor_flc: MotorTables,
+    /// Most nodes one copy may create (`edit::MAX_COPY_NODES`), so the copy dialog caps its count.
+    pub max_copy_nodes: usize,
 }
 
 /// Full-load currents by horsepower, as `[horsepower, amperes]` in the table's order.
@@ -48,5 +50,6 @@ pub fn catalog() -> Catalog {
             three_phase_230: tables::THREE_PHASE_MOTOR_FLC_230V.to_vec(),
             three_phase_400: tables::THREE_PHASE_MOTOR_FLC_400V.to_vec(),
         },
+        max_copy_nodes: crate::edit::MAX_COPY_NODES,
     }
 }

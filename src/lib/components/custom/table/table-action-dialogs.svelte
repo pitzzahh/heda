@@ -18,7 +18,6 @@
 	import ParentPanelPopover from '#lib/components/custom/parent-panel-popover.svelte';
 	import { toast } from 'svelte-sonner';
 	import OverrideSelectors from '#lib/components/custom/override/override-selectors.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { getTableActions } from './table-actions.svelte.js';
 	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
@@ -27,7 +26,6 @@
 	let { highest_unit, is_in_vd_table }: Props = $props();
 
 	const table_actions = getTableActions();
-	const undo_redo_state = getUndoRedoState();
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
 	const phase = $derived(highest_unit?.phase);
@@ -47,17 +45,10 @@
 				: null)
 	);
 
-	function handleRemoveLoad() {
+	async function handleRemoveLoad() {
 		const node = table_actions.node;
 		if (!node) return;
-		const result = removeNode(node.id);
-		if (result) {
-			undo_redo_state.setActionToUndo({
-				action: 'delete_node',
-				data: node,
-				children_nodes: result.children_nodes
-			});
-		}
+		await removeNode(node.id);
 
 		toast.success(`Load ${node.load_data?.load_description ?? 'Unknown'} removed successfully.`);
 		select_nodes_to_delete_state.removeNodeId(node.id); //remove the node id in the list of ever it is selected
