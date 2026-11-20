@@ -442,13 +442,18 @@ impl Schedules<'_> {
             );
             row += 1;
         }
-        sheet.put_row(
-            row,
-            total_cells(input, node, &total, panel_phase),
-            Style::Total,
-        );
+        // The root is the supply, not a panelboard: it has no main of its own to total
+        // (the service rating sits on the panel it feeds, PEC 2017 2.30.6.10).
+        if node.node_type != "root" {
+            sheet.put_row(
+                row,
+                total_cells(input, node, &total, panel_phase),
+                Style::Total,
+            );
+            row += 1;
+        }
         // Two blank rows before the next schedule on this sheet.
-        sheet.rows = sheet.rows.max(row + 3);
+        sheet.rows = sheet.rows.max(row + 2);
 
         for (child, _) in &loads {
             if child.node_type == "root" || child.node_type == "panel" {
