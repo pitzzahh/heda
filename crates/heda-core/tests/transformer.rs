@@ -57,3 +57,35 @@ fn the_riser_flags_a_transformer_too_small_for_its_load() {
         ["Load: 30 kVA, OVER", "Secondary OCPD ≤ 125 A, OVER"]
     );
 }
+
+#[test]
+fn a_load_wired_on_the_supply_counts_toward_the_transformer() {
+    // 25 kVA one-phase, secondary at most 125 A. A 20 kVA panel alone fits; a 10 kVA load
+    // wired straight on the supply makes 30 kVA, and its breaker adds to the mains.
+    let loads = (1..=5).map(|n| {
+        json!({ "id": format!("L{n}"), "node_type": "load", "parent_id": "LP", "circuit_number": n,
+            "conductor_sets": 1, "conductor_qty": 2,
+            "load_data": { "load_type": "lighting_load", "quantity": 1, "varies": 4000 } })
+    });
+    let mut nodes = vec![
+        json!({ "id": "root", "node_type": "root", "highest_unit_form":
+            { "distribution_unit": "Service", "phase": "one_phase", "transformer_kva": 25 } }),
+        json!({ "id": "LP", "node_type": "panel", "parent_id": "root", "circuit_number": 1,
+            "conductor_sets": 1, "conductor_qty": 2,
+            "panel_data": { "name": "LP", "phase": "one_phase", "ambient_temperature": 30 } }),
+        json!({ "id": "D", "node_type": "load", "parent_id": "root", "circuit_number": 2,
+            "conductor_sets": 1, "conductor_qty": 2,
+            "load_data": { "load_type": "lighting_load", "quantity": 1, "varies": 10000 } }),
+    ];
+    nodes.extend(loads);
+    let mut session = Session::default();
+    let computed = session.open(json!({}), nodes).unwrap();
+    assert_eq!(computed.rows["LP"].va, 20000.0);
+    assert_eq!(computed.rows["D"].va, 10000.0);
+    assert!(computed.rows["LP"].at + computed.rows["D"].at > 125.0);
+    let layout = session.riser("root").unwrap();
+    assert_eq!(
+        layout.boxes[0].lines[2..],
+        ["Load: 30 kVA, OVER", "Secondary OCPD ≤ 125 A, OVER"]
+    );
+}
