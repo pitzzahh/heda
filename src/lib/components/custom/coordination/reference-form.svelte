@@ -17,6 +17,8 @@
 	import { cn } from '#lib/utils/index.js';
 
 	let { node_id, reference }: Props = $props();
+	let saving = $state(false);
+	const input_id = $props.id();
 
 	// Mount snapshot; the study remounts this form when the stored reference changes.
 	function buildInitialInput() {
@@ -27,9 +29,6 @@
 		schema: COORDINATION_REFERENCE_SCHEMA,
 		initialInput: buildInitialInput()
 	});
-
-	let saving = $state(false);
-	const input_id = $props.id();
 
 	async function handleSubmit() {
 		if (saving) return;

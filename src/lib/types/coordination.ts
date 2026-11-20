@@ -1,10 +1,10 @@
 import type * as v from 'valibot';
 import type { COORDINATION_REFERENCE_SCHEMA } from '#lib/validators/coordination.js';
-import type { COORDINATION_SYSTEMS } from '#lib/constants.js';
+import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
 
 export type CoordinationReferenceInput = v.InferOutput<typeof COORDINATION_REFERENCE_SCHEMA>;
 
-export type CoordinationSystem = (typeof COORDINATION_SYSTEMS)[number]['value'];
+export type CoordinationSystem = NonNullable<GenericPhasePanelSchema['system']>;
 
 // Engine payload shapes (`crates/heda-core/src/coordination.rs`).
 export type CoordinationDevice = { id: string; name: string; at: number; af: number };
