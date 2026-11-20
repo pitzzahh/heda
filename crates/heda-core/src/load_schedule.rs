@@ -35,6 +35,10 @@ pub struct LoadRow {
     /// Allowable ampacity of the circuit's conductors, all sets (`sizing::allowable_ampacity`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ampacity: Option<f64>,
+    /// On a three-phase supply, what the circuit puts on each of its phases or line
+    /// pairs, in the supply's label order (`phase_loads`); `None` where it puts nothing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase_loads: Option<[Option<f64>; 3]>,
     /// What the circuit adds to its panel's feeder load.
     #[serde(skip)]
     pub feeder: FeederShare,
@@ -186,7 +190,7 @@ pub fn load_row<'g>(
         sizing::conductor_size(own_sizing),
     );
 
-    let row = if let Some(panel_data) = &node.panel_data {
+    let mut row = if let Some(panel_data) = &node.panel_data {
         let panel_supply = Supply::of(node.panel_phase());
         let circuits: Vec<(&Node, LoadRow)> = graph
             .children(&node.id)
@@ -245,6 +249,7 @@ pub fn load_row<'g>(
             balanced_current: totals.balanced_current,
             unbalance: totals.unbalance,
             ampacity: sizing::allowable_ampacity(main_conductor_size, main_sizing),
+            phase_loads: None,
             feeder: feeder.share.on(label),
         }
     } else {
@@ -271,6 +276,7 @@ pub fn load_row<'g>(
             balanced_current: None,
             unbalance: None,
             ampacity: sizing::allowable_ampacity(conductor_size, own_sizing),
+            phase_loads: None,
             feeder: if sizing::is_motor(load_type) {
                 FeederShare {
                     va,
@@ -304,8 +310,56 @@ pub fn load_row<'g>(
             },
         }
     };
+    row.phase_loads = phase_loads(supply, &row);
     memo.insert(node.id.clone(), row.clone());
     row
+}
+
+/// What a circuit puts on each phase (3P-Y) or line pair (delta) of its supply, in the
+/// supply's label order: all its VA on its own one; a three-phase circuit a third on
+/// each, or a three-phase sub-panel its own VA on each (the split its panel's totals
+/// add, PEC 2017 2.20.3.22), to 0.01 VA. `None` on a single-phase supply.
+fn phase_loads(supply: Supply, row: &LoadRow) -> Option<[Option<f64>; 3]> {
+    if supply == Supply::OnePhase {
+        return None;
+    }
+    let va = if js::truthy(row.va) { row.va } else { 0.0 };
+    let labels = supply.labels();
+    Some(if row.phase == phases::ALL_PHASES {
+        let shares = split(supply, row.phase_va, row.pair_va).unwrap_or([va / 3.0; 3]);
+        shares.map(|share| Some(js::round_js(share, 2)))
+    } else {
+        labels.map(|label| (row.phase == label).then_some(va))
+    })
+}
+
+/// The circuits of a three-phase panel (or the root) as the balancer weighs them, by
+/// their computed rows: VA, what they draw from, and a three-phase sub-panel's split.
+pub fn balance_circuits(
+    graph: &Graph,
+    panel_id: &str,
+    memo: &mut HashMap<String, LoadRow>,
+) -> (Supply, Vec<(String, LoadRow)>) {
+    let supply = phases::supply_of(graph.get(panel_id));
+    let rows = graph
+        .children(panel_id)
+        .map(|child| (child.id.clone(), load_row(graph, child, memo)))
+        .collect();
+    (supply, rows)
+}
+
+/// A circuit row's share of the balancer's input (`phases::BalanceCircuit`).
+pub fn balance_circuit<'a>(
+    id: &'a str,
+    row: &'a LoadRow,
+    supply: Supply,
+) -> phases::BalanceCircuit<'a> {
+    phases::BalanceCircuit {
+        id,
+        va: if js::truthy(row.va) { row.va } else { 0.0 },
+        phase: &row.phase,
+        split: split(supply, row.phase_va, row.pair_va),
+    }
 }
 
 /// A panel's feeder: its `load` (2.15.1.2(A)(1), 4.30.2.4), the `ceiling` of a motor
@@ -437,4 +491,93 @@ fn service_rating(
         .into_iter()
         .find(|rating| *rating >= needed)
         .unwrap_or(at)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn row(va: f64, phase: &str) -> LoadRow {
+        LoadRow {
+            load_description: String::new(),
+            voltage: 230.0,
+            phase: phase.to_owned(),
+            va,
+            at: 20.0,
+            current: 0.0,
+            conductor_size: 3.5,
+            egc_size: sizing::Egc::Size(3.5),
+            conduit_size: sizing::Conduit::Size(15.0),
+            ampere_frames: 20.0,
+            phase_va: None,
+            pair_va: None,
+            line_current: None,
+            balanced_current: None,
+            unbalance: None,
+            ampacity: None,
+            phase_loads: None,
+            feeder: FeederShare::default(),
+        }
+    }
+
+    #[test]
+    fn single_phase_va_sits_on_its_own_phase_or_pair_only() {
+        assert_eq!(
+            phase_loads(Supply::Wye, &row(1_840.0, "B")),
+            Some([None, Some(1_840.0), None])
+        );
+        assert_eq!(
+            phase_loads(Supply::Delta, &row(2_300.0, "BC")),
+            Some([None, Some(2_300.0), None])
+        );
+        assert_eq!(phase_loads(Supply::OnePhase, &row(1_840.0, "A")), None);
+    }
+
+    /// PEC 2017 App. D Ex. D6: the 6-kVA package ACU puts 2 000 VA on each phase.
+    #[test]
+    fn three_phase_va_splits_evenly() {
+        assert_eq!(
+            phase_loads(Supply::Wye, &row(6_000.0, "ABC")),
+            Some([Some(2_000.0); 3])
+        );
+    }
+
+    /// PEC 2017 2.20.3.22: a three-phase sub-panel's feeder carries its own phase loads.
+    #[test]
+    fn a_three_phase_sub_panel_shows_its_own_split() {
+        let wye = LoadRow {
+            phase_va: Some(PhaseVa {
+                A: 11_960.0,
+                B: 8_320.0,
+                C: 0.0,
+            }),
+            ..row(20_280.0, "ABC")
+        };
+        assert_eq!(
+            phase_loads(Supply::Wye, &wye),
+            Some([Some(11_960.0), Some(8_320.0), Some(0.0)])
+        );
+        // A wye sub-panel on a delta panel has no line-pair split: a third each.
+        assert_eq!(phase_loads(Supply::Delta, &wye), Some([Some(6_760.0); 3]));
+        let delta = LoadRow {
+            pair_va: Some(PairVa {
+                AB: 100.0,
+                BC: 300.0,
+                CA: 500.0,
+            }),
+            ..row(900.0, "ABC")
+        };
+        assert_eq!(
+            phase_loads(Supply::Delta, &delta),
+            Some([Some(100.0), Some(300.0), Some(500.0)])
+        );
+    }
+
+    #[test]
+    fn shares_round_to_hundredths() {
+        assert_eq!(
+            phase_loads(Supply::Wye, &row(1_000.0, "ABC")),
+            Some([Some(333.33); 3])
+        );
+    }
 }

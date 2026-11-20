@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { default_load_types, default_phases } from '#lib/constants.js';
 import { currentOfHorsepower, horsepowerOfCurrent } from './index.js';
 import {
-	balanceSplit,
 	defaultPhaseAssignment,
 	isThreePhaseLoadType,
-	phaseOf,
 	phaseOverride,
 	supplyError
 } from './three-phase.js';
@@ -42,11 +40,9 @@ describe('phase assignment by circuit number', () => {
 		expect(phaseOverride('C', 3)).toBe('C');
 	});
 
-	it('falls back to A without a circuit number and keeps an override', () => {
+	it('falls back to A without a circuit number', () => {
 		expect(defaultPhaseAssignment(undefined)).toBe('A');
 		expect(defaultPhaseAssignment(0)).toBe('A');
-		expect(phaseOf({ circuit_number: 3 })).toBe('B');
-		expect(phaseOf({ circuit_number: 3, phase_assignment: 'C' })).toBe('C');
 	});
 
 	it('rotates line pairs AB, BC, CA on a delta panel', () => {
@@ -59,9 +55,6 @@ describe('phase assignment by circuit number', () => {
 		]);
 		expect(phaseOverride('BC', 3, delta)).toBeUndefined();
 		expect(phaseOverride('CA', 3, delta)).toBe('CA');
-		// A wye phase left on a circuit moved under delta falls back to its pair, and back.
-		expect(phaseOf({ circuit_number: 3, phase_assignment: 'C' }, delta)).toBe('BC');
-		expect(phaseOf({ circuit_number: 3, phase_assignment: 'CA' })).toBe('B');
 	});
 });
 
@@ -157,25 +150,5 @@ describe('horsepowerOfCurrent', () => {
 		expect(horsepowerOfCurrent(default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER, '9')).toBe(
 			undefined
 		);
-	});
-});
-
-describe('balanceSplit', () => {
-	it("hands over a three-phase sub-panel's own VA per phase or line pair", () => {
-		const phase_va = { A: 3000, B: 0, C: 500 };
-		expect(balanceSplit({ phase: 'ABC', phase_va }, default_phases.THREE_PHASE_WYE)).toEqual([
-			3000, 0, 500
-		]);
-		const pair_va = { AB: 1, BC: 2, CA: 3 };
-		expect(balanceSplit({ phase: 'ABC', pair_va }, default_phases.THREE_PHASE_DELTA)).toEqual([
-			1, 2, 3
-		]);
-	});
-
-	it('leaves single-phase circuits, plain three-phase loads and mismatched supplies alone', () => {
-		expect(balanceSplit({ phase: 'A' }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
-		expect(balanceSplit({ phase: 'ABC' }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
-		const pair_va = { AB: 1, BC: 2, CA: 3 };
-		expect(balanceSplit({ phase: 'ABC', pair_va }, default_phases.THREE_PHASE_WYE)).toBeUndefined();
 	});
 });

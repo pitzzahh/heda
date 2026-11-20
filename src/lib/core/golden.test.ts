@@ -31,7 +31,6 @@ import {
 import { settled } from '#lib/db/index.js';
 import { loadSnapshot } from '#lib/db/queries/snapshot.js';
 import { engine } from '#lib/core/api.js';
-import { balanceSplit, circuitPhase } from '#lib/utils/computations/index.js';
 import type { FileExport } from '#lib/types/main.js';
 import {
 	canonicalJson,
@@ -98,14 +97,7 @@ async function collectOutputs() {
 		if (parent.panel_data?.phase === default_phases.THREE_PHASE_WYE) {
 			// What the "Balance phases" menu would assign on this panel.
 			balanced_phases[parent.id] = Object.fromEntries(
-				await engine<[string, string][]>('balanced_phases', {
-					circuits: rows.map((row) => ({
-						id: row.id,
-						va: row.va,
-						phase: circuitPhase(row),
-						split: balanceSplit(row, default_phases.THREE_PHASE_WYE)
-					}))
-				})
+				await engine<[string, string][]>('balance_panel', { panel_id: parent.id })
 			);
 		}
 	}

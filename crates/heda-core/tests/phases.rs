@@ -80,8 +80,11 @@ fn rotates_rows_of_two_circuits() {
 
 #[test]
 fn stores_an_override_only_when_it_differs() {
-    assert_eq!(phase_override("B", Some(3.0)), None);
-    assert_eq!(phase_override("C", Some(3.0)), Some("C"));
+    assert_eq!(phase_override("B", Some(3.0), Supply::Wye), None);
+    assert_eq!(phase_override("C", Some(3.0), Supply::Wye), Some("C"));
+    // On delta, circuit 3 defaults to the BC pair.
+    assert_eq!(phase_override("BC", Some(3.0), Supply::Delta), None);
+    assert_eq!(phase_override("AB", Some(3.0), Supply::Delta), Some("AB"));
 }
 
 #[test]
@@ -98,6 +101,13 @@ fn falls_back_to_a_and_keeps_an_override() {
         ..circuit
     };
     assert_eq!(phase_of(&overridden, Supply::Wye), "C");
+    // A wye phase left on a circuit moved under delta falls back to its pair, and back.
+    assert_eq!(phase_of(&overridden, Supply::Delta), "BC");
+    let pair = Node {
+        phase_assignment: Some("CA".into()),
+        ..overridden
+    };
+    assert_eq!(phase_of(&pair, Supply::Wye), "B");
 }
 
 #[test]

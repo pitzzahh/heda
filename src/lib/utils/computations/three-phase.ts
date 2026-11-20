@@ -4,7 +4,7 @@ import {
 	THREE_PHASE_LOAD_TYPES,
 	default_phases
 } from '#lib/constants.js';
-import type { CircuitPhase, PairVa, PhaseAssignment, PhaseVa } from '#lib/types/phase.js';
+import type { PhaseAssignment } from '#lib/types/phase.js';
 
 // Three-phase wye (400Y/230 V, 4-wire) per PEC 2017 2.20.1.5(A) and Appendix D
 // Examples D6 and D8; three-phase delta (230 V, 3-wire) per 2.20.1.5(A) and D14/D15.
@@ -39,48 +39,6 @@ export function phaseOverride(
 	return next === defaultPhaseAssignment(circuit_number, supply_phase) ? undefined : next;
 }
 
-/** The stored override when it fits the supply, else the circuit-number default. */
-export function phaseOf(
-	node: { circuit_number?: number; phase_assignment?: PhaseAssignment },
-	supply_phase?: string
-): PhaseAssignment {
-	const override = node.phase_assignment;
-	return override && phaseLabels(supply_phase).includes(override)
-		? override
-		: defaultPhaseAssignment(node.circuit_number, supply_phase);
-}
-
-/**
- * What the engine's balancer needs of a three-phase sub-panel: its own VA per phase
- * (or line pair) in the panel's label order, since its feeder carries them as they are.
- * Undefined for any other circuit, or when its split does not fit the panel's supply.
- */
-export function balanceSplit(
-	row: { phase?: CircuitPhase; phase_va?: PhaseVa; pair_va?: PairVa },
-	supply_phase: string | undefined
-): number[] | undefined {
-	if (row.phase !== 'ABC') return undefined;
-	const shares: Partial<Record<string, number>> | undefined = row.pair_va ?? row.phase_va;
-	const split = phaseLabels(supply_phase).map((label) => shares?.[label]);
-	return split.every((va) => va !== undefined) ? split : undefined;
-}
-
-/**
- * VA a circuit puts on one phase or line pair: all of it on its own, and for a
- * three-phase circuit a third of it, or a three-phase sub-panel's own VA on that phase
- * (the split the panel's totals add, PEC 2017 2.20.3.22).
- */
-export function rowPhaseVa(
-	row: { phase?: CircuitPhase; va?: number; phase_va?: PhaseVa; pair_va?: PairVa },
-	phase: PhaseAssignment
-): number | '' {
-	if (row.phase === 'ABC') {
-		const shares: Partial<Record<string, number>> = { ...row.phase_va, ...row.pair_va };
-		return Number((shares[phase] ?? (row.va || 0) / 3).toFixed(2));
-	}
-	return row.phase === phase ? row.va || 0 : '';
-}
-
 /** Line-to-line three-phase loads: 400 V on wye (PEC 2017 App. D Ex. D6), 230 V on delta (D14); motors per Table 4.30.14.4 at that voltage. */
 export function isThreePhaseLoadType(load_type: string | undefined): boolean {
 	return THREE_PHASE_LOAD_TYPES.includes(load_type ?? '');
@@ -109,19 +67,6 @@ export function isThreePhaseCircuit(node: {
 		node.panel_data?.phase === default_phases.THREE_PHASE_DELTA ||
 		isThreePhaseLoadType(node.load_data?.load_type)
 	);
-}
-
-/** What a circuit draws from on a panel of `supply_phase`: all three lines, or its phase or pair. */
-export function circuitPhase(
-	node: {
-		circuit_number?: number;
-		phase_assignment?: PhaseAssignment;
-		panel_data?: { phase?: string };
-		load_data?: { load_type?: string };
-	},
-	supply_phase?: string
-): CircuitPhase {
-	return isThreePhaseCircuit(node) ? 'ABC' : phaseOf(node, supply_phase);
 }
 
 /** Whether a supply of this phase has three lines to give (3P-Y or delta). */
