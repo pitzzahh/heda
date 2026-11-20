@@ -258,7 +258,7 @@
 		<div class="flex items-center justify-end gap-2">
 			<Tabs.List>
 				{#each TABS as tab (tab.value)}
-					<!-- Tighter on phones, so all four labels fit without scrolling. -->
+					<!-- Tighter on phones, so less of the list scrolls. -->
 					<Tabs.Trigger value={tab.value} class="px-2 sm:px-3">{tab.label}</Tabs.Trigger>
 				{/each}
 			</Tabs.List>

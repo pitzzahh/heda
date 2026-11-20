@@ -1,11 +1,13 @@
 import { tv, type VariantProps } from 'tailwind-variants';
 
 // The list is the control height in every variant; triggers fill it, inside any rim padding.
+// Triggers share a wide list equally but never shrink below their label: a list wider than
+// its frame scrolls sideways instead (tabs-list.svelte).
 export const tabsFrame = tv({
 	slots: {
-		list: 'relative flex w-full items-stretch',
+		list: 'relative flex w-max min-w-full items-stretch',
 		trigger:
-			'relative z-10 inline-flex min-w-0 flex-1 items-center justify-center font-medium whitespace-nowrap text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
+			'relative z-10 inline-flex min-w-max flex-1 items-center justify-center font-medium whitespace-nowrap text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0',
 		// The sliding marker, measured from the active trigger.
 		indicator:
 			'pointer-events-none absolute left-0 transition-[transform,scale,translate,width,height] duration-(--duration-slow) ease-[var(--ease-drawer)] motion-reduce:transition-none'
