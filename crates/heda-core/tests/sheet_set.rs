@@ -159,3 +159,42 @@ fn writes_a_pdf_on_the_chosen_1_3_1_1_sheet() {
         assert!(text.contains(media_box), "{size}: no {media_box}");
     }
 }
+
+#[test]
+fn prints_a_dash_for_a_conductor_beyond_the_table_on_the_short_circuit_sheet() {
+    let mut nodes = nodes(true);
+    // No insulation takes a 100 °C ambient (Table 3.10.2.6(B)(2)(a) has no factor): no
+    // conductor size (-1) for LP-1's circuits.
+    nodes[2]["panel_data"]["ambient_temperature"] = json!(100);
+    let mut session = Session::default();
+    session.open(project("760x1000"), nodes).unwrap();
+    let sheets = session
+        .sheet_set_texts("Sunrise Apartment".into(), "2026-11-19".into())
+        .unwrap();
+    let (_, texts) = sheets
+        .iter()
+        .find(|(title, _)| title == "SHORT CIRCUIT CALCULATION")
+        .expect("a short circuit sheet");
+    assert!(!texts.iter().any(|t| t == "-1"), "{texts:?}");
+}
+
+#[test]
+fn repeats_the_panel_name_when_a_schedule_runs_onto_the_next_sheet() {
+    let mut nodes = nodes(false);
+    for circuit in 3..=80 {
+        nodes.push(json!({
+            "id": format!("L{circuit}"), "node_type": "load", "parent_id": "LP-1",
+            "circuit_number": circuit, "conductor_sets": 1, "conductor_qty": 2, "pole": "1",
+            "length": 15,
+            "load_data": { "load_description": format!("L{circuit}"), "load_type": "lighting_load", "quantity": 1, "varies": 10 }
+        }));
+    }
+    let mut session = Session::default();
+    session.open(project("500x760"), nodes).unwrap();
+    let sheets = session
+        .sheet_set_texts("Sunrise Apartment".into(), "2026-11-19".into())
+        .unwrap();
+    assert!(sheets.iter().any(|(_, texts)| texts
+        .iter()
+        .any(|t| t == "PANELBOARD SCHEDULE: LP-1 (cont.)")));
+}

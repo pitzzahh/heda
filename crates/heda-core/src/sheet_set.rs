@@ -119,8 +119,8 @@ impl Metrics {
         let charmap = font.charmap();
         let em: f32 = text
             .chars()
-            .filter_map(|c| charmap.map(c))
-            .filter_map(|glyph| metrics.advance_width(glyph))
+            // Same glyphs as `glyphs`: an unmapped character is .notdef (glyph 0).
+            .filter_map(|c| metrics.advance_width(charmap.map(c).unwrap_or_default()))
             .sum();
         f64::from(em) * size
     }
@@ -149,11 +149,7 @@ impl Metrics {
 
 /// A number as JavaScript prints it (`String(value)`).
 fn num(value: f64) -> String {
-    if value == 0.0 {
-        "0".into()
-    } else {
-        format!("{value}")
-    }
+    js::number_to_string(value)
 }
 
 /// -1 is the engine's "none in the PEC table": a dash, as the schedule shows it.
@@ -398,8 +394,8 @@ impl Row {
 }
 
 /// A table at the cursor, columns sized to their text and shrunk to the sheet's width;
-/// it continues on the next sheet with its header repeated.
-fn table(w: &mut Writer, headers: &[Header], rows: &[Row]) {
+/// it continues on the next sheet under "`caption` (cont.)" with its header repeated.
+fn table(w: &mut Writer, caption: &str, headers: &[Header], rows: &[Row]) {
     let base = w.font;
     let subs: Vec<&str> = headers
         .iter()
@@ -443,8 +439,15 @@ fn table(w: &mut Writer, headers: &[Header], rows: &[Row]) {
     }
     let total = edges.last().unwrap() - w.left();
 
+    let next_sheet = |w: &mut Writer| {
+        let title = w.sheets.last().map(|s| s.title.clone()).unwrap_or_default();
+        w.start(&title);
+        w.heading(&format!("{caption} (cont.)"), true);
+    };
     let draw_header = |w: &mut Writer| {
-        w.fit(row_height * 3.0);
+        if w.y + row_height * 3.0 > w.bottom() {
+            next_sheet(w);
+        }
         let top = w.y + row_height * 0.5;
         let left = w.left();
         let mut lines = vec![];
@@ -497,8 +500,7 @@ fn table(w: &mut Writer, headers: &[Header], rows: &[Row]) {
     draw_header(w);
     for row in rows {
         if w.y + row_height > w.bottom() {
-            let title = w.sheets.last().map(|s| s.title.clone()).unwrap_or_default();
-            w.start(&title);
+            next_sheet(w);
             draw_header(w);
         }
         let top = w.y;
@@ -762,7 +764,8 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
                 .and_then(|parent| parent.panel_data.as_ref()?.name.clone())
                 .unwrap_or_else(|| "Transformer".into())
         };
-        w.heading(&format!("PANELBOARD SCHEDULE: {name}"), true);
+        let caption = format!("PANELBOARD SCHEDULE: {name}");
+        w.heading(&caption, true);
         w.heading(
             &format!("SUPPLY: {}", supply_description(panel_phase)),
             false,
@@ -780,7 +783,7 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
         if node.node_type != "root" {
             rows.push(schedule_row(node, &total, input.docs, panel_phase, true));
         }
-        table(w, &schedule_headers(panel_phase), &rows);
+        table(w, &caption, &schedule_headers(panel_phase), &rows);
     }
 }
 
@@ -851,7 +854,7 @@ fn draw_voltage_drops(w: &mut Writer, input: &mut SheetSetInputs) {
     }
     w.start("VOLTAGE DROP CALCULATION");
     w.heading("VOLTAGE DROP CALCULATION", true);
-    table(w, &headers, &rows);
+    table(w, "VOLTAGE DROP CALCULATION", &headers, &rows);
 }
 
 /// The short circuit table as the app shows it (PEC 2017 App. D Ex. D14, 1.10.1.9).
@@ -872,7 +875,7 @@ fn draw_short_circuits(w: &mut Writer, input: &mut SheetSetInputs) {
                 fault.from_node_name.clone(),
                 fault.to_node_name.clone(),
                 node.conductor_sets.map(num).unwrap_or_default(),
-                num(conductor),
+                size(conductor),
                 node.conduit_type.clone().unwrap_or_default(),
                 num(fault.length),
                 impedance(Some(fault.conductor_z_ohm)),
@@ -902,6 +905,7 @@ fn draw_short_circuits(w: &mut Writer, input: &mut SheetSetInputs) {
     w.heading("SHORT CIRCUIT CALCULATION", true);
     table(
         w,
+        "SHORT CIRCUIT CALCULATION",
         &[
             header("From NODE", &[]),
             header("To NODE", &[]),
