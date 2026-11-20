@@ -49,6 +49,17 @@ pub fn stored(value: Option<&Value>) -> Option<f64> {
     }
 }
 
+/// Whether a stored flag is set: true, a nonzero number, non-empty text, a list or object.
+pub fn is_set(value: &Value) -> bool {
+    match value {
+        Value::Bool(flag) => *flag,
+        Value::Null => false,
+        Value::Number(number) => number.as_f64().is_some_and(|n| n != 0.0),
+        Value::String(text) => !text.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -78,6 +89,19 @@ mod tests {
         assert_eq!(positive(Some(-1.0)), None);
         assert_eq!(positive(Some(f64::NAN)), None);
         assert_eq!(positive(None), None);
+    }
+
+    #[test]
+    fn a_stored_flag_is_set_when_truthy() {
+        assert!(
+            is_set(&json!(true)) && is_set(&json!(1)) && is_set(&json!("y")) && is_set(&json!({}))
+        );
+        assert!(
+            !is_set(&json!(false))
+                && !is_set(&json!(0))
+                && !is_set(&json!(""))
+                && !is_set(&json!(null))
+        );
     }
 
     #[test]

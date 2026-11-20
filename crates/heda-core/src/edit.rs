@@ -9,6 +9,7 @@
 use crate::defaults;
 use crate::graph::Graph;
 use crate::model::Node;
+use crate::num;
 use crate::phases;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -70,7 +71,7 @@ impl CircuitInput {
     /// The load's field when it is set, else the panel's, as the forms always stored it.
     fn either(&self, name: &str) -> Option<Value> {
         match self.field(name) {
-            (Some(load), _) if is_set(load) => Some(load.clone()),
+            (Some(load), _) if num::is_set(load) => Some(load.clone()),
             (_, panel) => panel.filter(|value| !value.is_null()).cloned(),
         }
     }
@@ -588,15 +589,4 @@ pub fn copy_nodes(
     }
     plan.result.insert("ids".into(), Value::Array(root_ids));
     Ok(plan)
-}
-
-/// Whether a stored value is set: true, a nonzero number, non-empty text, a list or object.
-fn is_set(value: &Value) -> bool {
-    match value {
-        Value::Bool(flag) => *flag,
-        Value::Null => false,
-        Value::Number(number) => number.as_f64().is_some_and(|n| n != 0.0),
-        Value::String(text) => !text.is_empty(),
-        Value::Array(_) | Value::Object(_) => true,
-    }
 }
