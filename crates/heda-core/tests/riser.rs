@@ -134,7 +134,12 @@ fn draws_the_service_supply_transformer_meter_and_ground() {
     assert_eq!(layout.boxes[0].title, "Bldg A");
     assert_eq!(
         layout.boxes[0].lines,
-        ["3P-Y · 400Y/230 V", "Transformer: 150 kVA"]
+        [
+            "3P-Y · 400Y/230 V",
+            "Transformer: 150 kVA",
+            "Load: 0 kVA",
+            "Secondary OCPD ≤ 250 A"
+        ]
     );
     assert!(layout.transformer.is_some() && layout.meter.is_some() && layout.ground.is_some());
     // The service has no feeder of its own; only MDP's is labelled.
