@@ -29,18 +29,20 @@ fn heda(
 }
 
 /// The permit sheet set PDF of the open project (`heda_core::sheet_set`), as raw bytes
-/// rather than JSON. Async, so a large project builds off the main thread.
+/// rather than JSON, so it is its own command beside `heda`. Async, so it builds off the
+/// main thread; it builds on a copy of the session, so the lock (which the sync `heda`
+/// command waits on, on the main thread) is held only for the copy.
 #[tauri::command]
 async fn sheet_set(
     session: tauri::State<'_, Mutex<heda_core::session::Session>>,
     project_name: String,
     date: String,
 ) -> Result<tauri::ipc::Response, String> {
-    let mut session = session
+    let mut copy = session
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    session
-        .sheet_set(project_name, date)
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    copy.sheet_set(project_name, date)
         .map(tauri::ipc::Response::new)
 }
 

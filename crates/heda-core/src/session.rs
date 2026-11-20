@@ -19,7 +19,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Default)]
+/// `Clone` so a long build (the sheet set) can run on a copy without holding the app's lock.
+#[derive(Debug, Default, Clone)]
 pub struct Session {
     graph: Graph,
     /// Every node exactly as stored, fields the engine does not read included.
