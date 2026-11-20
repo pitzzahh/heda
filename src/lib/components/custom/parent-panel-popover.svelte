@@ -1,9 +1,11 @@
 <script lang="ts" module>
+	type ParentChoice = { name: string; id: string };
+
 	interface Props {
 		current_parent_id: string;
-		selected_parent: { name: string; id: string } | null;
+		selected_parent: ParentChoice | null;
 		excluded_node_id: string;
-		onselect?: (parent: { name: string; id: string }) => void;
+		onselect?: (parent: ParentChoice) => void;
 	}
 </script>
 
@@ -19,10 +21,15 @@
 		$props();
 
 	let is_popover_open = $state(false);
-	const parent_nodes = $derived(getParentNodes(excluded_node_id));
+	let parent_nodes = $state<ParentChoice[]>([]);
+
+	// Asked on every open, so the list follows edits made since the last one.
+	async function loadParents(open: boolean) {
+		if (open) parent_nodes = await getParentNodes(excluded_node_id);
+	}
 </script>
 
-<Popover.Root bind:open={is_popover_open}>
+<Popover.Root bind:open={is_popover_open} onOpenChange={loadParents}>
 	<Popover.Trigger
 		class={cn(buttonVariants({ variant: 'outline' }), 'min-w-37.5  justify-between')}
 		role="combobox"

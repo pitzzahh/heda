@@ -83,6 +83,10 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let PanelId { panel_id } = parse(args)?;
             to_json(session.balance_panel(&panel_id))
         }
+        "parent_choices" => {
+            let ParentChoices { excluded_id } = parse(args)?;
+            to_json(edit::parent_choices(session.tree(), excluded_id.as_deref()))
+        }
         "is_legacy_v1" => {
             let Raw { raw } = parse(args)?;
             to_json(legacy_v1::is_envelope(&raw))
@@ -127,6 +131,11 @@ pub fn dispatch_file(session: &mut Session, command: &str, args: Value) -> Resul
         }
         _ => Err(format!("unknown file command: {command}")),
     }
+}
+
+#[derive(Deserialize)]
+struct ParentChoices {
+    excluded_id: Option<String>,
 }
 
 #[derive(Deserialize)]

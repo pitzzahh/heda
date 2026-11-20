@@ -273,10 +273,10 @@ describe('db', () => {
 				phase: default_phases.ONE_PHASE
 			}
 		});
-		const parents = getParentNodes();
+		const parents = await getParentNodes();
 		expect(parents.map((p) => p.name).sort()).toEqual(['LP-1', 'Transformer'].sort());
 		// LP-1 sits under the root, so it is never offered as the root's own parent.
-		expect(getParentNodes(root)).toEqual([]);
+		expect(await getParentNodes(root)).toEqual([]);
 	});
 
 	it('loads a project export and sorts children by circuit number', async () => {
@@ -1410,9 +1410,9 @@ describe('three-phase wye, 400Y/230 V (PEC 2017 App. D Ex. D6/D8)', () => {
 			panel_data: onePhasePanel('MDP', 1)
 		});
 		expect(turned.error).toMatch(/must stay three-phase/);
-		expect(getParentNodes(motor.id).map((parent) => parent.name)).not.toContain('LP-1');
+		expect((await getParentNodes(motor.id)).map((parent) => parent.name)).not.toContain('LP-1');
 		// A panel is never offered its own subtree.
-		expect(getParentNodes(mdp.id).map((parent) => parent.name)).not.toContain('LP-1');
+		expect((await getParentNodes(mdp.id)).map((parent) => parent.name)).not.toContain('LP-1');
 	});
 
 	it('gives a load the pole and wire count of its new type, unless the user changed them', async () => {
