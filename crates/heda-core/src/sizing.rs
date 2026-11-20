@@ -1,8 +1,8 @@
 //! Breaker, conductor, conduit and EGC sizing of one circuit, ported from
 //! `src/lib/utils/computations/index.ts`.
 
-use crate::js;
 use crate::model::load_types::*;
+use crate::num;
 use crate::tables::*;
 use serde::Serialize;
 
@@ -280,8 +280,7 @@ pub fn allowable_ampacity(size: f64, input: ConductorInput) -> Option<f64> {
     let termination = termination_ampacity(size, input.rating, input.at);
     let corrected = corrected_ampacity(size, input.rating, input.ambient_temp, adjustment);
     let total = termination.min(corrected) * input.sets;
-    (termination.is_finite() && corrected.is_finite() && total > 0.0)
-        .then(|| js::round_js(total, 2))
+    (termination.is_finite() && corrected.is_finite() && total > 0.0).then(|| num::round(total, 2))
 }
 
 /// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), a
@@ -460,7 +459,7 @@ pub fn max_conductors_in_area(fill_area: f64, conductor_area: f64) -> f64 {
     (fill_area / conductor_area + 0.2 + 1e-9).floor()
 }
 
-/// `x || computed` for the stored overrides, which keep a computed value when 0 or absent.
+/// A stored override, which leaves the computed value in place when 0 or absent.
 pub fn overridden(value: Option<f64>) -> Option<f64> {
-    value.filter(|value| js::truthy(*value))
+    num::positive(value)
 }

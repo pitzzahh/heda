@@ -462,7 +462,7 @@ impl Session {
             if total_va > sheet_set::A3_SHEET_MAX_VA {
                 return Err(format!(
                     "A3 sheets are only for a dwelling unit of at most 3680 VA (PEC 2017 1.3.1.1(C)); this project is {} VA. Pick a larger sheet.",
-                    crate::js::number_to_string(total_va)
+                    crate::num::display(total_va)
                 ));
             }
         }

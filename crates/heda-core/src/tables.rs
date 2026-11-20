@@ -350,8 +350,7 @@ pub const THREE_PHASE_MOTOR_FLC_400V: [(&str, f64); 26] = [
     ("500", 786.0),
 ];
 
-/// Looks a value up in a `(key, value)` table by exact key, as a JavaScript object
-/// keyed by number does (`TABLE[8]` finds the `8.0` entry).
+/// Looks a value up in a `(key, value)` table by exact key (`8.0` finds the `8.0` entry).
 pub fn lookup<T>(table: &[(f64, T)], key: f64) -> Option<&T> {
     table
         .iter()

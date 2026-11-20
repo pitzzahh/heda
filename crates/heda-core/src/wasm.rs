@@ -26,27 +26,3 @@ pub fn dispatch_file(command: &str, args: &str) -> Result<Vec<u8>, String> {
     let mut copy = SESSION.with(|session| session.borrow().clone());
     crate::dispatch::dispatch_file(&mut copy, command, args)
 }
-
-/// `Number(value.toFixed(digits))`, rounded exactly like JavaScript.
-#[wasm_bindgen(js_name = roundJs)]
-pub fn round_js(value: f64, digits: u32) -> f64 {
-    crate::js::round_js(value, digits)
-}
-
-/// `value.toFixed(digits)`, rounded exactly like JavaScript.
-#[wasm_bindgen(js_name = toFixedJs)]
-pub fn to_fixed_js(value: f64, digits: u32) -> String {
-    crate::js::to_fixed_js(value, digits)
-}
-
-/// `Number(text)`, parsed exactly like JavaScript.
-#[wasm_bindgen(js_name = numberFromStr)]
-pub fn number_from_str(text: &str) -> f64 {
-    crate::js::number_from_str(text)
-}
-
-/// `Math.hypot(a, b)`, computed exactly like V8.
-#[wasm_bindgen]
-pub fn hypot(a: f64, b: f64) -> f64 {
-    crate::js::hypot(a, b)
-}

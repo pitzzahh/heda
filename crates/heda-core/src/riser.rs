@@ -6,9 +6,9 @@
 //! prints it, so both show the same diagram.
 
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, HighestUnitForm, Node};
+use crate::num;
 use crate::sizing::{self, Conduit, Egc};
 use crate::text::Metrics;
 use serde::Serialize;
@@ -163,13 +163,8 @@ fn set_area(node: &Node, row: &LoadRow) -> f64 {
     }
 }
 
-/// A number as JavaScript prints it in a template string (`${value}`).
 fn num(value: f64) -> String {
-    if value == 0.0 {
-        "0".into()
-    } else {
-        format!("{value}")
-    }
+    num::display(value)
 }
 
 /// Like the Excel export: -1 (none in the table) prints as "-".
@@ -231,10 +226,10 @@ pub fn feeder_lines(circuit: &Circuit) -> Vec<String> {
     let sets = node.conductor_sets.unwrap_or(1.0);
     let ratio = match row.ampacity {
         Some(ampacity) if row.current > 0.0 => format!(
-            "{} A / {} A = {}",
+            "{} A / {} A = {:.2}",
             num(ampacity),
             num(row.current),
-            js::to_fixed_js(ampacity / row.current, 2)
+            ampacity / row.current
         ),
         _ => "-".into(),
     };
@@ -281,7 +276,7 @@ fn panel_box(tree: &RiserTree) -> (String, Vec<String>) {
     let Circuit { node, row, .. } = &tree.circuit;
     let panel = node.panel_data.as_ref();
     let phase = phase_label(panel.and_then(|p| p.phase.as_deref()));
-    let voltage = if js::truthy(row.voltage) {
+    let voltage = if row.voltage > 0.0 {
         format!("{} V", num(row.voltage))
     } else {
         String::new()
@@ -317,18 +312,17 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         .filter(|part| !part.is_empty())
         .collect::<Vec<_>>()
         .join(" · ");
-    let truthy = |value: Option<f64>| value.filter(|v| js::truthy(*v));
     let mut lines = vec![first];
-    if let Some(kva) = truthy(source.transformer_kva) {
+    if let Some(kva) = num::positive(source.transformer_kva) {
         lines.push(format!("Transformer: {} kVA", num(kva)));
         lines.extend(transformer_lines(kva, phase, tree));
     }
     lines.extend(grounding_lines(
-        truthy(source.transformer_kva).is_some(),
+        num::positive(source.transformer_kva).is_some(),
         tree,
     ));
     lines.extend(generator_lines(source, phase, tree));
-    if let Some(kva) = truthy(source.utility_sc_kva) {
+    if let Some(kva) = num::positive(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
     }
     lines.retain(|line| !line.is_empty());
@@ -413,7 +407,7 @@ fn generator_lines(source: &HighestUnitForm, phase: Option<&str>, tree: &RiserTr
             .sum()
     }
     let standby = standby_panels(source);
-    let kva = source.generator_kva.filter(|kva| js::truthy(*kva));
+    let kva = num::positive(source.generator_kva);
     if standby.is_empty() && kva.is_none() {
         return Vec::new();
     }
@@ -501,7 +495,7 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
         }
     }
     measure(tree, 0, &mut level_height, &box_of);
-    let has_transformer = source.is_some_and(|s| s.transformer_kva.is_some_and(js::truthy));
+    let has_transformer = source.is_some_and(|s| num::positive(s.transformer_kva).is_some());
     let mut bottom = MARGIN
         + match (source, has_transformer) {
             (Some(_), true) => TRANSFORMER_SPACE,
@@ -531,7 +525,7 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 .wires
                 .push(vec![[x, breaker_top + BREAKER_HEIGHT], [x, bottom]]);
             self.layout.breakers.push([x, breaker_top]);
-            if let Some(count) = circuit.node.conductor_qty.filter(|q| js::truthy(*q)) {
+            if let Some(count) = circuit.node.conductor_qty.filter(|q| *q > 0.0) {
                 self.layout.ticks.push(Tick {
                     x,
                     y: top + TICKS_AT,

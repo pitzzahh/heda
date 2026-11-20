@@ -7,7 +7,6 @@
 //! `pec_2017_revision`), so what the user changes afterwards survives reopening.
 
 use crate::defaults::{self, PEC_2017_REVISION};
-use crate::js;
 use crate::model::{load_types, phases};
 use serde_json::{json, Value};
 use std::collections::HashSet;
@@ -112,7 +111,7 @@ fn set(node: &mut Value, group: &str, field: &str, value: Value) {
 /// after it, 2-pole on two wires in a 3P-Y file is the user's own choice.
 fn wye_defaults(nodes: &mut [Value], root: usize) {
     let form = &nodes[root]["highest_unit_form"];
-    if form["phase"] != phases::THREE_PHASE_WYE || truthy(&form["wye_circuit_defaults"]) {
+    if form["phase"] != phases::THREE_PHASE_WYE || is_set(&form["wye_circuit_defaults"]) {
         return;
     }
     set(
@@ -141,7 +140,7 @@ fn revision_of(root: &Value) -> u32 {
     match form["pec_2017_revision"].as_f64() {
         // A hand-edited fraction or negative reads as the revision below it.
         Some(revision) => revision.max(0.0) as u32,
-        None => u32::from(truthy(&form["pec_2017_sizing"])),
+        None => u32::from(is_set(&form["pec_2017_sizing"])),
     }
 }
 
@@ -180,7 +179,7 @@ const DWELLING_PRESETS: [(&str, &str, &str); 4] = [
 /// default loads cannot edit theirs; a custom load keeps the VA the user typed.
 fn dwelling_circuit(node: &mut Value) {
     let load = &node["load_data"];
-    if !load.is_object() || truthy(&load["dwelling_circuit"]) {
+    if !load.is_object() || is_set(&load["dwelling_circuit"]) {
         return;
     }
     // Stored as "<quantity> - <description>"; only the segment after the first
@@ -236,12 +235,12 @@ fn pec_2017_sizing(nodes: &mut [Value], root: usize) {
     }
 }
 
-/// JavaScript truthiness of a stored flag.
-fn truthy(value: &Value) -> bool {
+/// Whether a stored flag is set: true, a nonzero number, non-empty text, a list or object.
+fn is_set(value: &Value) -> bool {
     match value {
         Value::Bool(flag) => *flag,
         Value::Null => false,
-        Value::Number(number) => number.as_f64().is_some_and(js::truthy),
+        Value::Number(number) => number.as_f64().is_some_and(|n| n != 0.0),
         Value::String(text) => !text.is_empty(),
         Value::Array(_) | Value::Object(_) => true,
     }

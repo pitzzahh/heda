@@ -8,9 +8,9 @@
 
 use crate::bom::{self, Bom, WireUse};
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, Node};
+use crate::num;
 use crate::phases::{supply_phase_of, ALL_PHASES, PAIRS, PHASES};
 use crate::riser::phase_label;
 use crate::sizing::{Conduit, Egc};
@@ -74,12 +74,12 @@ impl Cell {
         }
     }
 
-    /// `String(value).length`, what the column widths are fitted to (UTF-16 units).
+    /// The printed length the column widths are fitted to, in characters.
     fn width(&self) -> usize {
         match self {
             Cell::Empty => 0,
-            Cell::Number(v) => js::number_to_string(*v).len(),
-            Cell::Text(text) => text.encode_utf16().count(),
+            Cell::Number(v) => num::display(*v).len(),
+            Cell::Text(text) => text.chars().count(),
             Cell::Bool(b) => b.to_string().len(),
         }
     }
@@ -576,9 +576,9 @@ fn share(row: &LoadRow, label: &str) -> Option<f64> {
 /// VA a circuit puts on one phase or line pair: a three-phase circuit's share (a third
 /// when unsplit), a single-phase circuit's VA on its own phase, empty on the others.
 fn phase_va(row: &LoadRow, label: &str) -> Cell {
-    let va = if js::truthy(row.va) { row.va } else { 0.0 };
+    let va = num::finite_or_zero(row.va);
     if row.phase == ALL_PHASES {
-        Cell::Number(js::round_js(share(row, label).unwrap_or(va / 3.0), 2))
+        Cell::Number(num::round(share(row, label).unwrap_or(va / 3.0), 2))
     } else if row.phase == label {
         Cell::Number(va)
     } else {
@@ -635,7 +635,7 @@ fn total_cells(input: &Inputs, node: &Node, row: &LoadRow, phase: Option<&str>) 
         cells.extend(
             phase_labels(phase)
                 .iter()
-                .map(|l| Cell::Number(js::round_js(share(row, l).unwrap_or(0.0), 2))),
+                .map(|l| Cell::Number(num::round(share(row, l).unwrap_or(0.0), 2))),
         );
     }
     cells.extend([

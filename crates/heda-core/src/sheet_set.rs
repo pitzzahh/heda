@@ -8,9 +8,9 @@
 //! Sans (SIL Open Font License, `fonts/`).
 
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, Node};
+use crate::num;
 use crate::phases::{supply_phase_of, ALL_PHASES, PAIRS, PHASES};
 use crate::riser::{phase_label, RiserLayout, BREAKER_HEIGHT, LINE, TRANSFORMER_HEIGHT};
 use crate::short_circuit::{InterruptingRatingStatus, ShortCircuitRow};
@@ -116,9 +116,8 @@ impl Metrics {
     }
 }
 
-/// A number as JavaScript prints it (`String(value)`).
 fn num(value: f64) -> String {
-    js::number_to_string(value)
+    num::display(value)
 }
 
 /// -1 is the engine's "none in the PEC table": a dash, as the schedule shows it.
@@ -173,13 +172,13 @@ fn amperes(value: Option<f64>) -> String {
 
 /// Per-unit and ohm values to four decimals; a dash when absent.
 fn impedance(value: Option<f64>) -> String {
-    value.map_or("—".into(), |v| js::to_fixed_js(v, 4))
+    value.map_or("—".into(), |v| format!("{:.4}", v))
 }
 
 /// The least interrupting rating a breaker needs (PEC 2017 1.10.1.9), kA rounded up to 0.1.
 fn required_ka(fault_current: Option<f64>) -> String {
     fault_current.map_or("—".into(), |fc| {
-        js::to_fixed_js((fc / 100.0).ceil() / 10.0, 1)
+        format!("{:.1}", (fc / 100.0).ceil() / 10.0)
     })
 }
 
@@ -191,7 +190,7 @@ fn status_label(status: InterruptingRatingStatus) -> &'static str {
     }
 }
 
-/// A stored value as the app prints it: text as typed, numbers as JavaScript does.
+/// A stored value as the app prints it: text as typed, numbers in their shortest form.
 fn doc_value(docs: &HashMap<String, Value>, id: &str, key: &str) -> Option<String> {
     match docs.get(id)?.get(key)? {
         Value::String(text) => Some(text.clone()),
@@ -538,7 +537,7 @@ fn phase_va(row: &LoadRow, label: &str) -> String {
                     _ => None,
                 })
             });
-        return num(js::round_js(share.unwrap_or(row.va / 3.0), 2));
+        return num(num::round(share.unwrap_or(row.va / 3.0), 2));
     }
     if row.phase == label {
         num(row.va)
@@ -591,7 +590,7 @@ fn schedule_row(
     panel_phase: Option<&str>,
     total: bool,
 ) -> Row {
-    let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+    let overridden = |value: Option<f64>| num::positive(value).is_some();
     let or_na = |value: Option<String>| {
         if total {
             value.unwrap_or_else(|| "N/A".into())
@@ -617,7 +616,7 @@ fn schedule_row(
     // The schedule's footer shows the panel current to 0.01 A.
     push(
         if total {
-            js::to_fixed_js(row.current, 2)
+            format!("{:.2}", row.current)
         } else {
             num(row.current)
         },
@@ -642,7 +641,7 @@ fn schedule_row(
                     "BC" => row.pair_va.map(|p| p.BC),
                     _ => row.pair_va.map(|p| p.CA),
                 };
-                num(js::round_js(value.unwrap_or(0.0), 2))
+                num(num::round(value.unwrap_or(0.0), 2))
             } else {
                 phase_va(row, label)
             };
@@ -802,7 +801,7 @@ fn draw_voltage_drops(w: &mut Writer, input: &mut SheetSetInputs) {
                 cells.extend([row.phase.clone(), num(row.voltage)]);
                 marks.extend([false, false]);
             }
-            let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+            let overridden = |value: Option<f64>| num::positive(value).is_some();
             for (cell, mark) in [
                 (node.conductor_sets.map(num).unwrap_or_default(), false),
                 (node.conductor_qty.map(num).unwrap_or_default(), false),
@@ -846,10 +845,10 @@ fn draw_short_circuits(w: &mut Writer, input: &mut SheetSetInputs) {
         .filter_map(|fault| {
             let node = graph.get(&fault.id)?;
             let row = load_row(graph, node, input.rows);
-            let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+            let overridden = |value: Option<f64>| num::positive(value).is_some();
             let conductor = node
                 .overrided_conductor_size
-                .filter(|v| js::truthy(*v))
+                .filter(|v| *v > 0.0)
                 .unwrap_or(row.conductor_size);
             let cells = vec![
                 fault.from_node_name.clone(),

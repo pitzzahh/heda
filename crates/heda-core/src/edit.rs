@@ -8,7 +8,6 @@
 
 use crate::defaults;
 use crate::graph::Graph;
-use crate::js;
 use crate::model::Node;
 use crate::phases;
 use serde::{Deserialize, Serialize};
@@ -68,10 +67,10 @@ impl CircuitInput {
         )
     }
 
-    /// `load_data?.[name] || panel_data?.[name]`, as the forms always stored it.
+    /// The load's field when it is set, else the panel's, as the forms always stored it.
     fn either(&self, name: &str) -> Option<Value> {
         match self.field(name) {
-            (Some(load), _) if truthy(load) => Some(load.clone()),
+            (Some(load), _) if is_set(load) => Some(load.clone()),
             (_, panel) => panel.filter(|value| !value.is_null()).cloned(),
         }
     }
@@ -400,7 +399,7 @@ pub fn move_node(tree: Tree, id: &str, parent_id: &str) -> Result<Plan, String> 
     set_or_remove(&mut moved, "phase_assignment", None);
     let mut plan = Plan::default();
     if used.contains(&node.circuit_number.unwrap_or(0.0)) {
-        let next = used.iter().fold(0.0, |max, number| js::max(max, *number)) + 1.0;
+        let next = used.iter().fold(0.0_f64, |max, number| max.max(*number)) + 1.0;
         moved["circuit_number"] = json!(next);
         plan.result.insert("renumbered_to".into(), json!(next));
     }
@@ -577,12 +576,12 @@ pub fn copy_nodes(
     Ok(plan)
 }
 
-/// JavaScript truthiness of a stored value.
-fn truthy(value: &Value) -> bool {
+/// Whether a stored value is set: true, a nonzero number, non-empty text, a list or object.
+fn is_set(value: &Value) -> bool {
     match value {
         Value::Bool(flag) => *flag,
         Value::Null => false,
-        Value::Number(number) => number.as_f64().is_some_and(js::truthy),
+        Value::Number(number) => number.as_f64().is_some_and(|n| n != 0.0),
         Value::String(text) => !text.is_empty(),
         Value::Array(_) | Value::Object(_) => true,
     }

@@ -2,8 +2,8 @@
 //! three-phase 4-wire (Appendix D Examples D6 and D8), and 230 V delta, three-phase
 //! 3-wire (the system of Examples D14 and D15).
 
-use crate::js;
 use crate::model::{phases, Node};
+use crate::num;
 use crate::sizing::{
     DELTA_LINE_VOLTAGE, SQRT_3, THREE_PHASE_LOAD_TYPES, WYE_LINE_VOLTAGE, WYE_PHASE_VOLTAGE,
 };
@@ -181,8 +181,8 @@ impl PhaseVa {
 /// Conductors and the breaker are sized on the larger of the two (`design`).
 pub fn wye_feeder_current(phase_va: PhaseVa) -> (f64, f64, f64) {
     let balanced = three_phase_current(phase_va.A + phase_va.B + phase_va.C);
-    let highest_phase = single_phase_current(js::max(js::max(phase_va.A, phase_va.B), phase_va.C));
-    (balanced, highest_phase, js::max(balanced, highest_phase))
+    let highest_phase = single_phase_current(phase_va.A.max(phase_va.B).max(phase_va.C));
+    (balanced, highest_phase, balanced.max(highest_phase))
 }
 
 /// VA on each line pair of a delta panel.
@@ -257,8 +257,8 @@ pub fn delta_line_currents(pair_va: PairVa) -> LineCurrent {
 pub fn delta_feeder_current(pair_va: PairVa) -> (f64, LineCurrent, f64) {
     let balanced = three_phase_current_at(pair_va.AB + pair_va.BC + pair_va.CA, DELTA_LINE_VOLTAGE);
     let lines = delta_line_currents(pair_va);
-    let highest_line = js::max(js::max(lines.A, lines.B), lines.C);
-    (balanced, lines, js::max(balanced, highest_line))
+    let highest_line = lines.A.max(lines.B).max(lines.C);
+    (balanced, lines, balanced.max(highest_line))
 }
 
 /// Percent unbalance of three phase (or line pair) loads: the largest deviation from
@@ -274,7 +274,7 @@ pub fn unbalance_percent(loads: [f64; 3]) -> f64 {
     let deviation = loads
         .iter()
         .fold(0.0_f64, |worst, load| worst.max((load - average).abs()));
-    js::round_js(deviation / average * 100.0, 2)
+    num::round(deviation / average * 100.0, 2)
 }
 
 /// A computed circuit as a panel total sees it.
@@ -322,13 +322,13 @@ pub struct PanelTotals {
 pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
     let va = circuits
         .iter()
-        .fold(0.0, |total, c| total + js_or_zero(c.va));
+        .fold(0.0, |total, c| total + num::finite_or_zero(c.va));
     match Supply::of(panel.panel_phase()) {
         Supply::OnePhase => PanelTotals {
             va,
             current: circuits
                 .iter()
-                .fold(0.0, |total, c| total + js_or_zero(c.current)),
+                .fold(0.0, |total, c| total + num::finite_or_zero(c.current)),
             ..PanelTotals::default()
         },
         Supply::Wye => {
@@ -340,14 +340,14 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
                         B: total.B + b,
                         C: total.C + c,
                     },
-                    None => total.add(js_or_zero(c.va), c.phase),
+                    None => total.add(num::finite_or_zero(c.va), c.phase),
                 });
             let (balanced, _, design) = wye_feeder_current(phase_va);
             PanelTotals {
                 va,
                 current: design,
                 phase_va: Some(phase_va),
-                balanced_current: Some(js::round_js(balanced, 2)),
+                balanced_current: Some(num::round(balanced, 2)),
                 unbalance: Some(unbalance_percent([phase_va.A, phase_va.B, phase_va.C])),
                 ..PanelTotals::default()
             }
@@ -361,7 +361,7 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
                         BC: total.BC + bc,
                         CA: total.CA + ca,
                     },
-                    None => total.add(js_or_zero(c.va), c.phase),
+                    None => total.add(num::finite_or_zero(c.va), c.phase),
                 });
             let (balanced, lines, design) = delta_feeder_current(pair_va);
             PanelTotals {
@@ -369,23 +369,15 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
                 current: design,
                 pair_va: Some(pair_va),
                 line_current: Some(LineCurrent {
-                    A: js::round_js(lines.A, 2),
-                    B: js::round_js(lines.B, 2),
-                    C: js::round_js(lines.C, 2),
+                    A: num::round(lines.A, 2),
+                    B: num::round(lines.B, 2),
+                    C: num::round(lines.C, 2),
                 }),
-                balanced_current: Some(js::round_js(balanced, 2)),
+                balanced_current: Some(num::round(balanced, 2)),
                 unbalance: Some(unbalance_percent([pair_va.AB, pair_va.BC, pair_va.CA])),
                 ..PanelTotals::default()
             }
         }
-    }
-}
-
-fn js_or_zero(value: f64) -> f64 {
-    if js::truthy(value) {
-        value
-    } else {
-        0.0
     }
 }
 
@@ -483,9 +475,9 @@ pub fn balanced_phase_assignments<'a>(
                 BC: bc,
                 CA: ca,
             });
-            js::max(js::max(lines.A, lines.B), lines.C)
+            lines.A.max(lines.B).max(lines.C)
         }
-        Supply::OnePhase | Supply::Wye => js::max(js::max(totals[0], totals[1]), totals[2]),
+        Supply::OnePhase | Supply::Wye => totals[0].max(totals[1]).max(totals[2]),
     };
     let worse_or_equal = (
         heaviest(suggested_totals),
