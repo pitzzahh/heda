@@ -212,7 +212,7 @@ export async function handleLoadFile(
 		}
 		const version = detectFileVersion(raw);
 		if (version === 1) {
-			if (!isLegacyV1Envelope(raw)) {
+			if (!(await isLegacyV1Envelope(raw))) {
 				_idle?.();
 				return toast.warning('Failed to load file', {
 					description: 'The file is not a valid HEDA file.'
