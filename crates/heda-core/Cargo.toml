@@ -23,6 +23,8 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 skrifa = "0.42"
 svg = "0.18"
+# Ids of the nodes an edit creates (`edit.rs`), as `crypto.randomUUID()` gave them.
+uuid = { version = "1.29.3", features = ["v4"] }
 # Exact pin: the generated bindings must come from wasm-bindgen-cli of the same version
 # (scripts/build-core.ts checks it).
 wasm-bindgen = { version = "=0.2.130", optional = true }
@@ -39,3 +41,5 @@ krilla = { version = "0.8", default-features = false, features = ["comemo", "ray
 # Its creation timestamp reads the clock through js-sys there (SystemTime panics on wasm32).
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 rust_xlsxwriter = { version = "0.103.0", default-features = false, features = ["wasm"] }
+# Random ids come from the JS crypto API there (getrandom's `js` backend).
+uuid = { version = "1.29.3", features = ["v4", "js"] }

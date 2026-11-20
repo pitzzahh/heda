@@ -8,6 +8,7 @@
 pub mod catalog;
 pub mod defaults;
 pub mod dispatch;
+pub mod edit;
 pub mod graph;
 pub mod js;
 pub mod load_schedule;
