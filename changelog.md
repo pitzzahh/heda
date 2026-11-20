@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0-4] - 2026-11-20
+
+### Added
+
+- A Riser tab draws the single-line diagram from the project tree, with PEC symbols, pan and zoom, and saves it as an SVG
+- The permit sheet set exports as one PDF: riser diagram, load schedules, voltage drop and short circuit, each sheet with the PEC 2017 1.3.2.2 title block, which is remembered per project
+- Each three-phase panel shows its unbalance, and each circuit its conductors' allowable ampacity
+- A motor with a nameplate current gets its overload relay sized (PEC 2017 4.30.3.2(A)(1))
+- The riser checks the service transformer against its load and mains (PEC 2017 Table 4.50.1.3(B))
+- An optional standby generator: its rating and the panels it carries are set in Settings, and the riser checks its size and its conductors (PEC 2017 7.2.1.4(B), 4.45.1.13)
+
+### Changed
+
+- Every edit and undo runs in the engine, off the window's main thread, so large projects stay responsive
+- The Excel workbooks are built by the engine
+
+### Fixed
+
+- Phase suggestions never load a feeder's heaviest phase more
+- A three-phase sub-panel shows its own VA per phase
+- The Excel export writes panel totals as numbers and leaves out the supply's TOTAL row
+
 ## [2.9.0-3] - 2026-11-19
 
 ### Added
