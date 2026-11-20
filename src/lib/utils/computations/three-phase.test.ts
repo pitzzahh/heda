@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { default_load_types, default_phases } from '#lib/constants.js';
 import { currentOfHorsepower, horsepowerOfCurrent } from './index.js';
-import {
-	defaultPhaseAssignment,
-	isThreePhaseLoadType,
-	phaseOverride,
-	supplyError
-} from './three-phase.js';
+import { defaultPhaseAssignment, isThreePhaseLoadType, phaseOverride } from './three-phase.js';
 
 // The calculations and PEC tables are tested in crates/heda-core; these are the UI's helpers.
 describe('isThreePhaseLoadType', () => {
@@ -55,46 +50,6 @@ describe('phase assignment by circuit number', () => {
 		]);
 		expect(phaseOverride('BC', 3, delta)).toBeUndefined();
 		expect(phaseOverride('CA', 3, delta)).toBe('CA');
-	});
-});
-
-describe('supplyError', () => {
-	const wye = { node_type: 'panel', panel_data: { phase: default_phases.THREE_PHASE_WYE } };
-	const one = { node_type: 'panel', panel_data: { phase: default_phases.ONE_PHASE } };
-	const motor = { load_data: { load_type: default_load_types.THREE_P_MOTOR__RATED_CURRENT } };
-	const lights = { load_data: { load_type: default_load_types.LIGHTING_LOAD } };
-
-	const delta = { node_type: 'panel', panel_data: { phase: default_phases.THREE_PHASE_DELTA } };
-
-	it('needs a three-phase supply for a three-phase circuit (D6, D14)', () => {
-		expect(supplyError({ node: motor, parent: wye })).toBeNull();
-		expect(supplyError({ node: motor, parent: delta })).toBeNull();
-		expect(supplyError({ node: motor, parent: one })).toMatch(/three-phase supply/);
-		expect(supplyError({ node: wye, parent: one })).toMatch(/3P-Y/);
-		expect(
-			supplyError({
-				node: motor,
-				parent: { node_type: 'root', highest_unit_form: { phase: default_phases.THREE_PHASE_WYE } }
-			})
-		).toBeNull();
-	});
-
-	it('keeps wye and delta panels on their own system', () => {
-		expect(supplyError({ node: delta, parent: delta })).toBeNull();
-		expect(supplyError({ node: delta, parent: wye })).toMatch(/3P-Δ/);
-		expect(supplyError({ node: wye, parent: delta })).toMatch(/3P-Y/);
-		expect(supplyError({ node: one, parent: delta })).toBeNull();
-	});
-
-	it('takes single-phase circuits anywhere', () => {
-		expect(supplyError({ node: lights, parent: one })).toBeNull();
-		expect(supplyError({ node: one, parent: wye })).toBeNull();
-	});
-
-	it('keeps a panel three-phase while it feeds three-phase circuits', () => {
-		expect(supplyError({ node: one, parent: wye, children: [motor] })).toMatch(/stay three-phase/);
-		expect(supplyError({ node: delta, parent: delta, children: [motor] })).toBeNull();
-		expect(supplyError({ node: one, parent: wye, children: [lights] })).toBeNull();
 	});
 });
 

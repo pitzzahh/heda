@@ -1,7 +1,7 @@
 import { computed_load_arrays, merged_rows, reuseArrayIfEqual } from './cache.js';
 import { getChildren, loadSnapshot } from './snapshot.js';
 import { getRow } from '../index.js';
-import { supplyError } from '#lib/utils/computations/index.js';
+import { engine } from '#lib/core/api.js';
 import type { Node } from '#lib/types/db.js';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
@@ -11,42 +11,12 @@ export function getChildNodesByParentId(parent_id: string): Node[] {
 	return getChildren(loadSnapshot(), parent_id);
 }
 
-export function getParentNodes(excluded_id?: string): { name: string; id: string }[] {
-	const snapshot = loadSnapshot();
-	const excluded = snapshot.node_by_id.get(excluded_id ?? '');
-	return snapshot.nodes.flatMap((node) => {
-		if (node.id === excluded_id || (node.node_type !== 'panel' && node.node_type !== 'root')) {
-			return [];
-		}
-		// Only panels that can supply it (a three-phase circuit needs 3P-Y).
-		if (excluded && supplyError({ node: excluded, parent: node })) return [];
-		// Never under its own subtree: that would cut the branch off the root.
-		if (excluded_id && isWithinSubtree((id) => snapshot.node_by_id.get(id), node, excluded_id)) {
-			return [];
-		}
-		if (node.panel_data) {
-			return [{ name: node.panel_data.name || '', id: node.id }];
-		}
-		if (node.highest_unit_form) {
-			return [{ name: node.highest_unit_form.distribution_unit || '', id: node.id }];
-		}
-		return [];
-	});
-}
-
-/** Whether `node` sits somewhere below `ancestor_id`. */
-export function isWithinSubtree(
-	lookup: (id: string) => Node | undefined,
-	node: Node,
-	ancestor_id: string
-): boolean {
-	let current: Node | undefined = node;
-	// Bounded: a looping parent chain in a tampered file must not spin forever.
-	for (let depth = 0; current && depth < 10_000; depth += 1) {
-		if (current.parent_id === ancestor_id) return true;
-		current = lookup(current.parent_id ?? '');
-	}
-	return false;
+/**
+ * The panels (and the root) `excluded_id` could move under, from the engine's own
+ * move rules (supply, never its own subtree); with no id, every panel.
+ */
+export function getParentNodes(excluded_id?: string): Promise<{ name: string; id: string }[]> {
+	return engine('parent_choices', { excluded_id: excluded_id ?? null });
 }
 
 /** The engine's row for `node`, merged onto the stored node; undefined until computed. */

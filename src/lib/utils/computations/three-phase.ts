@@ -57,55 +57,7 @@ export function supplyPhaseOf(
 	return node?.node_type === 'root' ? node.highest_unit_form?.phase : node?.panel_data?.phase;
 }
 
-/** A three-phase panel (3P-Y or delta), or a three-phase load, draws from all three lines. */
-export function isThreePhaseCircuit(node: {
-	panel_data?: { phase?: string };
-	load_data?: { load_type?: string };
-}): boolean {
-	return (
-		node.panel_data?.phase === default_phases.THREE_PHASE_WYE ||
-		node.panel_data?.phase === default_phases.THREE_PHASE_DELTA ||
-		isThreePhaseLoadType(node.load_data?.load_type)
-	);
-}
-
 /** Whether a supply of this phase has three lines to give (3P-Y or delta). */
 export function isThreePhaseSupply(phase: string | undefined): boolean {
 	return phase === default_phases.THREE_PHASE_WYE || phase === default_phases.THREE_PHASE_DELTA;
-}
-
-/**
- * Why `node` cannot sit under `parent` with `children` below it, else null
- * (PEC 2017 2.20.1.5(A)). A three-phase circuit needs a three-phase supply; a 3P-Y
- * panel needs a 400Y/230 V one and a delta panel a 230 V delta one, since heda
- * models no transformer between them; a single-phase panel has only one phase
- * to give its circuits. Same rules and messages as `supply_error` in the engine.
- */
-export function supplyError({
-	node,
-	parent,
-	children = []
-}: {
-	node: Parameters<typeof isThreePhaseCircuit>[0] & Parameters<typeof supplyPhaseOf>[0];
-	parent: Parameters<typeof supplyPhaseOf>[0];
-	children?: Parameters<typeof isThreePhaseCircuit>[0][];
-}): string | null {
-	const supply = supplyPhaseOf(parent);
-	const panel_phase = node.panel_data?.phase;
-	if (panel_phase === default_phases.THREE_PHASE_WYE && supply !== panel_phase) {
-		return 'A 3P-Y panel needs a 3P-Y (400Y/230 V) supply.';
-	}
-	if (panel_phase === default_phases.THREE_PHASE_DELTA && supply !== panel_phase) {
-		return 'A 3P-Δ panel needs a 3P-Δ (230 V) supply.';
-	}
-	if (isThreePhaseCircuit(node) && !isThreePhaseSupply(supply)) {
-		return 'A three-phase circuit needs a three-phase supply.';
-	}
-	if (
-		!isThreePhaseSupply(supplyPhaseOf(node)) &&
-		children.some((child) => isThreePhaseCircuit(child))
-	) {
-		return 'This panel feeds three-phase circuits, so it must stay three-phase.';
-	}
-	return null;
 }

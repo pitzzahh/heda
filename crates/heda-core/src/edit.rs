@@ -11,7 +11,7 @@ use crate::graph::Graph;
 use crate::js;
 use crate::model::Node;
 use crate::phases;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -135,6 +135,39 @@ impl<'a> Tree<'a> {
             .cloned()
             .unwrap_or_default()
     }
+}
+
+/// A panel a circuit can be given to, as the parent pickers list it.
+#[derive(Serialize)]
+pub struct ParentChoice {
+    pub id: String,
+    pub name: String,
+}
+
+/// The panels (and the root) `excluded_id` could move under, in tree order: the ones
+/// `move_error` would accept. With no such node, every panel.
+pub fn parent_choices(tree: Tree, excluded_id: Option<&str>) -> Vec<ParentChoice> {
+    let excluded = excluded_id.and_then(|id| tree.node(id));
+    tree.graph
+        .ids_in_order()
+        .into_iter()
+        .filter_map(|id| tree.node(id))
+        .filter(|node| node.node_type == "panel" || node.node_type == "root")
+        .filter(|node| {
+            excluded.is_none_or(|excluded| move_error(tree, excluded, &node.id).is_none())
+        })
+        .filter_map(|node| {
+            let name = match (&node.panel_data, &node.highest_unit_form) {
+                (Some(panel), _) => panel.name.clone(),
+                (None, Some(form)) => form.distribution_unit.clone(),
+                (None, None) => return None,
+            };
+            Some(ParentChoice {
+                id: node.id.clone(),
+                name: name.unwrap_or_default(),
+            })
+        })
+        .collect()
 }
 
 /// Why `node` cannot move under `parent_id`, else `None`.
