@@ -23,6 +23,7 @@ pub mod sheet_set;
 pub mod short_circuit;
 pub mod sizing;
 pub mod tables;
+pub mod text;
 pub mod voltage_drop;
 #[cfg(feature = "wasm")]
 mod wasm;

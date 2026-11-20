@@ -15,6 +15,7 @@ use crate::phases::{supply_phase_of, ALL_PHASES, PAIRS, PHASES};
 use crate::riser::{phase_label, RiserLayout, BREAKER_HEIGHT, LINE, TRANSFORMER_HEIGHT};
 use crate::short_circuit::{InterruptingRatingStatus, ShortCircuitRow};
 use crate::sizing::{Conduit, Egc};
+use crate::text::{Metrics, BOLD, REGULAR};
 use crate::voltage_drop::VoltageDropRow;
 use krilla::geom::{PathBuilder, Point, Transform};
 use krilla::metadata::Metadata;
@@ -24,13 +25,8 @@ use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::Document;
 use serde::Deserialize;
 use serde_json::Value;
-use skrifa::instance::{LocationRef, Size};
-use skrifa::metrics::GlyphMetrics;
-use skrifa::{FontRef, MetadataProvider};
+use skrifa::MetadataProvider;
 use std::collections::HashMap;
-
-const REGULAR: &[u8] = include_bytes!("../fonts/LiberationSans-Regular.ttf");
-const BOLD: &[u8] = include_bytes!("../fonts/LiberationSans-Bold.ttf");
 
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// Border around the sheet, mm.
@@ -97,37 +93,7 @@ pub struct SheetSetInputs<'a> {
 // ---------------------------------------------------------------------------------------
 // Text
 
-/// Advance widths of the embedded fonts, to centre and fit text.
-struct Metrics {
-    regular: (FontRef<'static>, GlyphMetrics<'static>),
-    bold: (FontRef<'static>, GlyphMetrics<'static>),
-}
-
 impl Metrics {
-    fn new() -> Self {
-        let load = |data: &'static [u8]| {
-            let font = FontRef::new(data).expect("bundled font");
-            let metrics = font.glyph_metrics(Size::new(1.0), LocationRef::default());
-            (font, metrics)
-        };
-        Metrics {
-            regular: load(REGULAR),
-            bold: load(BOLD),
-        }
-    }
-
-    /// Width of `text` at `size`, in the size's unit.
-    fn width(&self, text: &str, size: f64, bold: bool) -> f64 {
-        let (font, metrics) = if bold { &self.bold } else { &self.regular };
-        let charmap = font.charmap();
-        let em: f32 = text
-            .chars()
-            // Same glyphs as `glyphs`: an unmapped character is .notdef (glyph 0).
-            .filter_map(|c| metrics.advance_width(charmap.map(c).unwrap_or_default()))
-            .sum();
-        f64::from(em) * size
-    }
-
     /// `text` as glyphs one per character, advanced by the font's own widths. These are
     /// short Latin labels, so a full shaper (krilla's `draw_text`) adds nothing but time.
     fn glyphs(&self, text: &str, bold: bool) -> Vec<KrillaGlyph> {
@@ -1248,7 +1214,7 @@ fn title_block_ops(
         );
         let mut line_y = y + pad + label + value * 2.0;
         // The name wraps down to the cell's bottom, as the lines under it do: never cut short.
-        for line in wrap(&w.metrics, big, inner, value * 1.2, true) {
+        for line in w.metrics.wrap(big, inner, value * 1.2, true) {
             if line_y > y + TITLE_BLOCK_HEIGHT - pad {
                 break;
             }
@@ -1257,7 +1223,7 @@ fn title_block_ops(
         }
         for line in rest
             .iter()
-            .flat_map(|line| wrap(&w.metrics, line, inner, value, false))
+            .flat_map(|line| w.metrics.wrap(line, inner, value, false))
         {
             if line_y > y + TITLE_BLOCK_HEIGHT - pad {
                 break;
@@ -1269,28 +1235,6 @@ fn title_block_ops(
     }
     ops.push(Op::Lines(0.35, lines));
     ops
-}
-
-/// Splits `text` into lines that fit `width` at `size`.
-fn wrap(metrics: &Metrics, text: &str, width: f64, size: f64, bold: bool) -> Vec<String> {
-    let mut lines = vec![];
-    let mut line = String::new();
-    for word in text.split(' ') {
-        let next = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{line} {word}")
-        };
-        if !line.is_empty() && metrics.width(&next, size, bold) > width {
-            lines.push(std::mem::replace(&mut line, word.to_string()));
-        } else {
-            line = next;
-        }
-    }
-    if !line.is_empty() {
-        lines.push(line);
-    }
-    lines
 }
 
 // ---------------------------------------------------------------------------------------

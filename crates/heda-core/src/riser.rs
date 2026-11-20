@@ -10,6 +10,7 @@ use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, HighestUnitForm, Node};
 use crate::sizing::{self, Conduit, Egc};
+use crate::text::Metrics;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -22,7 +23,8 @@ const MARGIN: f64 = 24.0;
 /// Feeder labels have five lines; the drop to each panel leaves room for them.
 const DROP: f64 = 5.0 * LINE + 40.0;
 const BUS: f64 = 24.0;
-const BRANCHES_PER_LINE: usize = 4;
+/// Size of a box's text; the SVG and the screen draw it at 12 too.
+const FONT_SIZE: f64 = 12.0;
 /// Feeder labels start beside their drop and can run past the last column.
 const LABEL_OVERHANG: f64 = 100.0;
 /// The circuit breaker symbol (Appendix A 1.11) breaks the feeder this far below the bus.
@@ -188,7 +190,7 @@ pub fn phase_label(phase: Option<&str>) -> String {
     }
 }
 
-/// Branch breakers by rating, largest first: "6 × 20 AT".
+/// Branch breakers by rating, largest first: "6 × 20 AT", as one list the box wraps.
 pub fn branch_summary(ats: &[f64]) -> Vec<String> {
     let mut counts: Vec<(f64, usize)> = Vec::new();
     for &at in ats {
@@ -205,13 +207,7 @@ pub fn branch_summary(ats: &[f64]) -> Vec<String> {
     if groups.is_empty() {
         return vec!["No branch circuits".into()];
     }
-    std::iter::once("Branch CBs:".to_string())
-        .chain(
-            groups
-                .chunks(BRANCHES_PER_LINE)
-                .map(|chunk| chunk.join(", ")),
-        )
-        .collect()
+    vec!["Branch CBs:".into(), groups.join(", ")]
 }
 
 /// The five lines beside a feeder, PEC 2017 1.3.2.1(G)(3).
@@ -419,21 +415,33 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
     let mut layout = RiserLayout::default();
     let source_lines = source.map(|s| source_lines(s, tree)).unwrap_or_default();
     let standby = source.map(standby_panels).unwrap_or_default();
-    let box_of = |node: &RiserTree, depth: usize| match source {
-        Some(source) if depth == 0 => (
-            source
-                .distribution_unit
-                .clone()
-                .unwrap_or_else(|| "Service".into()),
-            source_lines.clone(),
-        ),
-        _ => {
-            let (title, mut lines) = panel_box(node);
-            if standby.contains(&node.circuit.node.id.as_str()) {
-                lines.push("On standby generator".into());
+    let metrics = Metrics::new();
+    // Each line wraps to the box, so a long list (Branch CBs) never crosses its border.
+    let fit = |(title, lines): (String, Vec<String>)| {
+        let inner = BOX_WIDTH - PADDING * 2.0;
+        let lines = lines
+            .iter()
+            .flat_map(|line| metrics.wrap_list(line, inner, FONT_SIZE, false))
+            .collect();
+        (title, lines)
+    };
+    let box_of = |node: &RiserTree, depth: usize| {
+        fit(match source {
+            Some(source) if depth == 0 => (
+                source
+                    .distribution_unit
+                    .clone()
+                    .unwrap_or_else(|| "Service".into()),
+                source_lines.clone(),
+            ),
+            _ => {
+                let (title, mut lines) = panel_box(node);
+                if standby.contains(&node.circuit.node.id.as_str()) {
+                    lines.push("On standby generator".into());
+                }
+                (title, lines)
             }
-            (title, lines)
-        }
+        })
     };
 
     // A level starts below the tallest box of the one above it.

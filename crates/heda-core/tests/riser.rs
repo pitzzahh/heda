@@ -2,6 +2,7 @@
 
 use heda_core::riser::{branch_summary, BOX_WIDTH, BREAKER_HEIGHT, COLUMN};
 use heda_core::session::Session;
+use heda_core::text::Metrics;
 use serde_json::{json, Value};
 
 fn root(form: Value) -> Value {
@@ -53,8 +54,43 @@ fn counts_branch_breakers_by_rating_largest_first() {
         ["Branch CBs:", "1 × 30 AT, 3 × 20 AT, 1 × 15 AT"]
     );
     assert_eq!(branch_summary(&[]), ["No branch circuits"]);
-    let many: Vec<f64> = (1..=5).map(|i| f64::from(i) * 10.0).collect();
-    assert_eq!(branch_summary(&many).len(), 3, "four ratings per line");
+}
+
+#[test]
+fn every_box_line_fits_inside_the_box() {
+    // Issue #367: "1 × 150 AT, 2 × 125 AT, 1 × 90 AT, 1 × 50 AT" crossed the border.
+    let mut nodes = vec![
+        root(json!({ "phase": "one_phase" })),
+        panel("Compressor Room MCC", "root", 1.0),
+    ];
+    let loads: Vec<Value> = [400.0, 3000.0, 5000.0, 7000.0, 9000.0, 12000.0, 15000.0]
+        .iter()
+        .enumerate()
+        .map(|(i, va)| {
+            let mut l = load(&format!("l{i}"), "Compressor Room MCC", i as f64 + 1.0);
+            l["load_data"]["varies"] = json!(va);
+            l
+        })
+        .collect();
+    nodes.extend(loads);
+    let layout = session(nodes).riser("Compressor Room MCC").unwrap();
+    let mcc = layout
+        .boxes
+        .iter()
+        .find(|b| b.title == "Compressor Room MCC")
+        .unwrap();
+    assert!(
+        mcc.lines.len() > 3,
+        "the long list wrapped: {:?}",
+        mcc.lines
+    );
+    let metrics = Metrics::new();
+    for b in &layout.boxes {
+        for line in &b.lines {
+            let width = metrics.width(line, 12.0, false);
+            assert!(width <= BOX_WIDTH - 24.0, "{line:?} is {width} wide");
+        }
+    }
 }
 
 #[test]
