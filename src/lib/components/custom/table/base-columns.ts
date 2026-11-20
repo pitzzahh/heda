@@ -139,8 +139,10 @@ export const createLeftMostBaseColumns = <T extends PhaseLoadSchedule>(
 	}
 ];
 
+/** `overload`: add the motors' overload relay column (PEC 2017 4.30.3.2(A)(1)). */
 export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
-	current_node: PhaseLoadSchedule
+	current_node: PhaseLoadSchedule,
+	overload = false
 ): ColumnDef<T>[] => [
 	{
 		header: 'EGC',
@@ -241,6 +243,16 @@ export const createRightMostBaseColumns = <T extends PhaseLoadSchedule>(
 			}
 		]
 	},
+	...(overload
+		? [
+				{
+					accessorKey: 'overload',
+					header: 'OVERLOAD (A)',
+					cell: (info) => info.getValue() ?? '',
+					footer: () => 'N/A'
+				} satisfies ColumnDef<T>
+			]
+		: []),
 	{
 		header: 'Actions',
 		cell: ({ row }) => {

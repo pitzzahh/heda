@@ -36,10 +36,17 @@ import {
 import { VOLTAGE_DROP_RESULT_SCHEMA } from './voltage-drop.js';
 import { FILE_EXPORT_SCHEMA, FILE_PROTECTION_FIELD, RECENT_PROJECT_SCHEMA } from './file.js';
 import { OVERRIDE_FIELD_TYPE_FIELD } from './misc.js';
-import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD } from './load.js';
+import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD, NAMEPLATE_CURRENT_FIELD } from './load.js';
 import { DEFAULT_LOADS } from '#lib/constants.js';
 
 describe('validators', () => {
+	it('takes an optional, positive nameplate current (PEC 2017 4.30.3.2(A)(1))', () => {
+		expect(v.safeParse(NAMEPLATE_CURRENT_FIELD, 31.6).success).toBe(true);
+		expect(v.safeParse(NAMEPLATE_CURRENT_FIELD, undefined).success).toBe(true);
+		expect(v.safeParse(NAMEPLATE_CURRENT_FIELD, 0).success).toBe(false);
+		expect(v.safeParse(NAMEPLATE_CURRENT_FIELD, Number.NaN).success).toBe(false);
+	});
+
 	it('accepts valid inputs', () => {
 		expect(
 			v.safeParse(HIGHEST_UNIT_SCHEMA, {

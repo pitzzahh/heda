@@ -62,7 +62,10 @@ export const NODE_DOC_SCHEMA = v.object({
 			load_type: v.string(),
 			config_preference: v.string(),
 			/** The PEC 2017 2.10.1.11(C) dwelling circuit this is (20 A), if any. */
-			dwelling_circuit: v.optional(v.string())
+			dwelling_circuit: v.optional(v.string()),
+			/** A motor's nameplate current and marking, for its overload relay (PEC 2017 4.30.3.2(A)(1)). */
+			nameplate_current: v.optional(v.number()),
+			nameplate_marked: v.optional(v.boolean())
 		})
 	),
 	highest_unit_form: v.optional(

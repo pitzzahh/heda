@@ -36,6 +36,11 @@ export const DWELLING_CIRCUIT_FIELD = v.picklist(
 	'Please select a valid dwelling circuit.'
 );
 
+/** A motor's nameplate full-load current, which sizes its overload relay (PEC 2017 4.30.3.2(A)(1)). */
+export const NAMEPLATE_CURRENT_FIELD = v.optional(
+	v.pipe(v.number('Please enter a valid current.'), v.gtValue(0, 'Must be more than 0 A.'))
+);
+
 /** A preset in the load description picker. */
 export const DEFAULT_LOAD_SCHEMA = v.object({
 	description: v.string(),
@@ -56,7 +61,10 @@ export const GENERIC_PHASE_MAIN_LOAD_SCHEMA = v.pipe(
 		varies: v.string('This field is required'),
 		continuous: CONTINUOUS_FIELD,
 		load_type: LOAD_TYPE_FIELD,
-		dwelling_circuit: v.optional(DWELLING_CIRCUIT_FIELD)
+		dwelling_circuit: v.optional(DWELLING_CIRCUIT_FIELD),
+		nameplate_current: NAMEPLATE_CURRENT_FIELD,
+		/** The nameplate marks a service factor of 1.15 or more, or a rise of 40 °C or less. */
+		nameplate_marked: v.optional(v.boolean())
 	}),
 	v.rawCheck(({ dataset, addIssue }) => {
 		if (!dataset.typed) return;

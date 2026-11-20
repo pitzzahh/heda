@@ -225,3 +225,30 @@ fn dispatch_file_writes_the_sheet_set() {
     assert!(pdf.starts_with(b"%PDF-"));
     assert!(heda_core::dispatch::dispatch_file(&mut session, "nope", json!({})).is_err());
 }
+
+#[test]
+fn prints_the_overload_column_only_with_a_nameplate_motor() {
+    assert!(!sheets("760x1000", true)[1]
+        .1
+        .iter()
+        .any(|t| t == "OVERLOAD (A)"));
+    let mut nodes = nodes(true);
+    nodes.push(json!({
+        "id": "Pump", "node_type": "load", "parent_id": "LP-1", "circuit_number": 3,
+        "conductor_sets": 1, "conductor_qty": 2, "pole": "1",
+        "load_data": { "load_description": "Pump", "load_type": "one_phase_motor_horse_power",
+            "quantity": 1, "varies": 8, "nameplate_current": 7.2, "nameplate_marked": true }
+    }));
+    let mut session = Session::default();
+    session.open(project("760x1000"), nodes).unwrap();
+    let sheets = session
+        .sheet_set_texts("Sunrise Apartment".into(), "2026-11-19".into())
+        .unwrap();
+    // PEC 2017 4.30.3.2(A)(1): 7.2 A × 1.25 = 9 A.
+    let schedule = &sheets[1].1;
+    let at = schedule
+        .iter()
+        .position(|t| t == "OVERLOAD (A)")
+        .expect("header");
+    assert!(schedule[at..].iter().any(|t| t == "9"));
+}

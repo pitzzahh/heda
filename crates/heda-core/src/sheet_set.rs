@@ -777,16 +777,34 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
         if let (true, Some(unbalance)) = (is_three_phase(panel_phase), total.unbalance) {
             w.heading(&format!("UNBALANCE: {} %", num(unbalance)), false);
         }
+        // A last column for the motors' overload relays (PEC 2017 4.30.3.2(A)(1)), only on
+        // a schedule with a motor whose nameplate current is given.
+        let overload = loads.iter().any(|(_, row)| row.overload.is_some());
+        let with_overload = |mut row: Row, value: String| {
+            if overload {
+                row.cells.push(value);
+                row.marks.push(false);
+            }
+            row
+        };
         let mut rows: Vec<Row> = loads
             .iter()
-            .map(|(child, row)| schedule_row(child, row, input.docs, panel_phase, false))
+            .map(|(child, row)| {
+                let cells = schedule_row(child, row, input.docs, panel_phase, false);
+                with_overload(cells, row.overload.map(num).unwrap_or_default())
+            })
             .collect();
         // The root is the supply, not a panelboard: it has no main of its own to total
         // (the service rating sits on the panel it feeds, PEC 2017 2.30.6.10).
         if node.node_type != "root" {
-            rows.push(schedule_row(node, &total, input.docs, panel_phase, true));
+            let cells = schedule_row(node, &total, input.docs, panel_phase, true);
+            rows.push(with_overload(cells, "N/A".into()));
         }
-        table(w, &caption, &schedule_headers(panel_phase), &rows);
+        let mut headers = schedule_headers(panel_phase);
+        if overload {
+            headers.push(header("OVERLOAD (A)", &[]));
+        }
+        table(w, &caption, &headers, &rows);
     }
 }
 

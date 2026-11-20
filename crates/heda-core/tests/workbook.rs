@@ -195,3 +195,37 @@ fn stops_at_a_looping_parent_chain() {
         .workbook(Kind::LoadSchedule, "A", "Test".into())
         .is_ok());
 }
+
+#[test]
+fn adds_an_overload_column_only_where_a_motor_has_its_nameplate_current() {
+    // PEC 2017 4.30.3.2(A)(1): nameplate 7.2 A, service factor 1.15: 7.2 × 1.25 = 9 A.
+    let mut nodes = nodes("one_phase");
+    nodes.push(json!({
+        "id": "Pump", "node_type": "load", "parent_id": "LP-1", "circuit_number": 3,
+        "conductor_sets": 1, "conductor_qty": 2, "pole": "1",
+        "load_data": { "load_description": "Pump", "load_type": "one_phase_motor_horse_power",
+            "quantity": 1, "varies": 8, "nameplate_current": 7.2, "nameplate_marked": true }
+    }));
+    let mut session = Session::default();
+    session.open(project(), nodes).unwrap();
+    let book = session
+        .workbook_layout(
+            Kind::LoadSchedule,
+            "root",
+            "Exported Test Load schedule".into(),
+        )
+        .unwrap();
+    let header = |sheet: &Sheet| {
+        sheet
+            .cells
+            .iter()
+            .find(|c| c.2 == text("OVERLOAD (A)"))
+            .map(|c| c.1)
+    };
+    assert_eq!(header(&book.sheets[1]), None, "MDP has no motor");
+    let lp1 = &book.sheets[2];
+    let col = header(lp1).expect("LP-1 lists its motor's overload");
+    assert_eq!(cell(lp1, 6, col).0, &text(""));
+    assert_eq!(cell(lp1, 8, col).0, &Cell::Number(9.0));
+    assert_eq!(cell(lp1, 9, col), (&text("N/A"), Style::Total));
+}

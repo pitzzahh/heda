@@ -5,7 +5,8 @@ import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import { ConductorSetsCell, InsulationsDropdown, ErrorCell } from '../(components)/index.js';
 
 export function onePhaseMainOrWyeCols(
-	current_node: PhaseLoadSchedule
+	current_node: PhaseLoadSchedule,
+	overload = false
 ): ColumnDef<PhaseLoadSchedule>[] {
 	return [
 		...createLeftMostBaseColumns<PhaseLoadSchedule>(current_node),
@@ -82,6 +83,6 @@ export function onePhaseMainOrWyeCols(
 				}
 			]
 		},
-		...createRightMostBaseColumns<PhaseLoadSchedule>(current_node)
+		...createRightMostBaseColumns<PhaseLoadSchedule>(current_node, overload)
 	];
 }
