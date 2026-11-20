@@ -23,13 +23,9 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { cn } from '#lib/utils/index.js';
+	import { load_type_to_varies_label, load_type_to_quantity_label } from '#lib/constants.js';
 	import {
-		default_load_types,
-		load_type_to_varies_label,
-		default_hp_current_relationship,
-		load_type_to_quantity_label
-	} from '#lib/constants.js';
-	import {
+		currentOfHorsepower,
 		horsepowerOfCurrent,
 		horsepowerTable,
 		isThreePhaseSupply,
@@ -159,15 +155,10 @@
 					load_description,
 					config_preference: load_type,
 
-					...(data.load_type === default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER && {
-						varies:
-							default_hp_current_relationship[
-								data.varies as keyof typeof default_hp_current_relationship
-							]
-					}),
-					// PEC 2017 Table 4.30.14.4 at the supply's line voltage: stored as full-load current, like 1P motors.
-					...(data.load_type === default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER && {
-						varies: horsepowerTable(data.load_type, supply_phase)?.[data.varies]
+					// Motors picked by horsepower are stored as their full-load current: PEC 2017
+					// Table 4.30.14.2 (1P, 230 V), Table 4.30.14.4 at the supply's line voltage (3P).
+					...(horsepowerTable(data.load_type, supply_phase) && {
+						varies: currentOfHorsepower(data.load_type, data.varies, supply_phase)
 					})
 				} as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
 				switch (action) {
@@ -215,8 +206,7 @@
 	// Three-phase loads need a three-phase panel: 400Y/230 V (PEC 2017 App. D Ex. D6) or 230 V delta (D14).
 	const allow_three_phase = $derived(isThreePhaseSupply(supply_phase));
 	const hp_currents = $derived(
-		horsepowerTable(getInput(form, { path: ['load_type'] }), supply_phase) ??
-			default_hp_current_relationship
+		horsepowerTable(getInput(form, { path: ['load_type'] }), supply_phase) ?? []
 	);
 
 	const variesLabel: VariesLabel | 'Varies' = $derived(

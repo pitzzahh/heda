@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-	THREE_PHASE_MOTOR_FLC_230V,
-	THREE_PHASE_MOTOR_FLC_400V,
-	default_load_types,
-	default_phases
-} from '#lib/constants.js';
-import { horsepowerOfCurrent } from './index.js';
+import { default_load_types, default_phases } from '#lib/constants.js';
+import { currentOfHorsepower, horsepowerOfCurrent } from './index.js';
 import {
 	balanceSplit,
 	defaultPhaseAssignment,
@@ -15,34 +10,7 @@ import {
 	supplyError
 } from './three-phase.js';
 
-// The calculations themselves are tested in crates/heda-core; these are the UI's helpers.
-describe('PEC 2017 Table 4.30.14.4: three-phase motor full-load current, 400 V column (picker)', () => {
-	it.each([
-		['1/2', '1.3'],
-		['1', '2.3'],
-		['10', '18'],
-		['25', '44'],
-		['100', '165'],
-		['500', '786']
-	])('%s HP → %s A', (hp, amps) => {
-		expect(THREE_PHASE_MOTOR_FLC_400V[hp as keyof typeof THREE_PHASE_MOTOR_FLC_400V]).toBe(amps);
-	});
-});
-
-describe('PEC 2017 Table 4.30.14.4: three-phase motor full-load current, 230 V column (delta picker)', () => {
-	it.each([
-		['1/2', '2.2'],
-		['1', '4.2'],
-		['10', '28'],
-		['25', '68'],
-		['100', '248'],
-		['450', '1030'],
-		['500', '1180']
-	])('%s HP → %s A', (hp, amps) => {
-		expect(THREE_PHASE_MOTOR_FLC_230V[hp as keyof typeof THREE_PHASE_MOTOR_FLC_230V]).toBe(amps);
-	});
-});
-
+// The calculations and PEC tables are tested in crates/heda-core; these are the UI's helpers.
 describe('isThreePhaseLoadType', () => {
 	it('recognises only the three-phase load types', () => {
 		expect(isThreePhaseLoadType(default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER)).toBe(true);
@@ -134,6 +102,34 @@ describe('supplyError', () => {
 		expect(supplyError({ node: one, parent: wye, children: [motor] })).toMatch(/stay three-phase/);
 		expect(supplyError({ node: delta, parent: delta, children: [motor] })).toBeNull();
 		expect(supplyError({ node: one, parent: wye, children: [lights] })).toBeNull();
+	});
+});
+
+describe('currentOfHorsepower', () => {
+	it('stores a motor picked by horsepower as its full-load current (PEC 2017 Tables 4.30.14.2, 4.30.14.4)', () => {
+		expect(currentOfHorsepower(default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER, '1')).toBe('8');
+		expect(currentOfHorsepower(default_load_types.ONE_P_MOTOR__RATED_HORSE_POWER, '1/6')).toBe(
+			'2.2'
+		);
+		// 400 V on 400Y/230 V, 230 V on delta.
+		expect(currentOfHorsepower(default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER, '25')).toBe(
+			'44'
+		);
+		expect(
+			currentOfHorsepower(
+				default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER,
+				'25',
+				default_phases.THREE_PHASE_DELTA
+			)
+		).toBe('68');
+	});
+
+	it('has no current for a horsepower the column leaves out, or for other load types', () => {
+		// Table 4.30.14.4 prints no 400 V current for 450 HP.
+		expect(
+			currentOfHorsepower(default_load_types.THREE_P_MOTOR__RATED_HORSE_POWER, '450')
+		).toBeUndefined();
+		expect(currentOfHorsepower(default_load_types.LIGHTING_LOAD, '1')).toBeUndefined();
 	});
 });
 
