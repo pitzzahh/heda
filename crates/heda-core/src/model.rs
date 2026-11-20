@@ -73,6 +73,11 @@ pub struct Node {
     pub highest_unit_form: Option<HighestUnitForm>,
     #[serde(default)]
     pub parent_id: Option<String>,
+    /// The documented selective coordination of this circuit's overcurrent device with
+    /// its supply-side devices (PEC 2017 7.0.6.3 and the like): what the engineer based it
+    /// on, e.g. a manufacturer's selectivity table.
+    #[serde(default)]
+    pub coordination_reference: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -83,6 +88,10 @@ pub struct PanelData {
     pub ambient_temperature: Option<f64>,
     #[serde(default)]
     pub phase: Option<String>,
+    /// The system the panel and everything below it belongs to (`coordination::System`),
+    /// where the PEC requires selective coordination; none for a normal panel.
+    #[serde(default)]
+    pub system: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

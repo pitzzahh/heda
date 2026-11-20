@@ -373,6 +373,13 @@ impl Session {
         Some(layout_riser(&tree, source.as_ref()))
     }
 
+    /// The overcurrent device pairs the PEC requires to be selectively coordinated
+    /// (`coordination`).
+    pub fn coordination(&mut self) -> Vec<crate::coordination::Pair> {
+        let faults = self.short_circuits();
+        crate::coordination::coordination(&self.graph, &mut self.load_rows, &faults)
+    }
+
     /// The bill of materials of `id` and everything below it (`bom`).
     pub fn bill_of_materials(&mut self, id: &str) -> Result<crate::bom::Bom, String> {
         crate::bom::bill_of_materials(&self.graph, &self.docs, &mut self.load_rows, id)

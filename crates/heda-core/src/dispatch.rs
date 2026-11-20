@@ -39,6 +39,7 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let NodeId { node_id } = parse(args)?;
             to_json(session.riser(&node_id))
         }
+        "coordination" => to_json(session.coordination()),
         "bill_of_materials" => {
             let NodeId { node_id } = parse(args)?;
             to_json(session.bill_of_materials(&node_id)?)

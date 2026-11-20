@@ -7,6 +7,7 @@
 
 pub mod bom;
 pub mod catalog;
+pub mod coordination;
 pub mod defaults;
 pub mod dispatch;
 pub mod edit;
