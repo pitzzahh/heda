@@ -65,12 +65,19 @@ export function balanceSplit(
 	return split.every((va) => va !== undefined) ? split : undefined;
 }
 
-/** VA a circuit puts on one phase: all of it on its own phase, a third of it for three-phase circuits. */
+/**
+ * VA a circuit puts on one phase or line pair: all of it on its own, and for a
+ * three-phase circuit a third of it, or a three-phase sub-panel's own VA on that phase
+ * (the split the panel's totals add, PEC 2017 2.20.3.22).
+ */
 export function rowPhaseVa(
-	row: { phase?: CircuitPhase; va?: number },
+	row: { phase?: CircuitPhase; va?: number; phase_va?: PhaseVa; pair_va?: PairVa },
 	phase: PhaseAssignment
 ): number | '' {
-	if (row.phase === 'ABC') return Number(((row.va || 0) / 3).toFixed(2));
+	if (row.phase === 'ABC') {
+		const shares: Partial<Record<string, number>> = { ...row.phase_va, ...row.pair_va };
+		return Number((shares[phase] ?? (row.va || 0) / 3).toFixed(2));
+	}
 	return row.phase === phase ? row.va || 0 : '';
 }
 
