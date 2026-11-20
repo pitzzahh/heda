@@ -58,7 +58,7 @@ describe('calculation goldens', () => {
 		for (const variant of [false, true]) {
 			const name = variant ? `${sample}.variant` : sample;
 			it(name, { timeout: 120_000 }, async () => {
-				const raw = readFileSync(new URL(`${sample}.heda`, SAMPLES_DIR), 'utf8');
+				const raw = readFileSync(`${SAMPLES_DIR}${sample}.heda`, 'utf8');
 				const file_export = await decryptFilePayload<FileExport>(raw, SAMPLE_PASSWORD);
 				await loadCurrentProject(variant ? withEverythingOn(file_export) : file_export);
 				await settled();
