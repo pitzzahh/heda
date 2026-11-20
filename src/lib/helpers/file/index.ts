@@ -26,7 +26,6 @@ import { getDeviceKey } from '#lib/helpers/security/device-key.js';
 import { toast } from 'svelte-sonner';
 import type { FileExport, RecentProject } from '#lib/types/main.js';
 import { loadCurrentProject } from '#lib/db/mutations/index.js';
-import { needsPec2017Notice } from './migrations.js';
 import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getLegacyV1Config } from './legacy/credentials.js';
@@ -262,10 +261,9 @@ export async function handleLoadFile(
 			setSession(password!, 'password');
 		}
 
-		const pec_2017_migrated = needsPec2017Notice(file_data);
-		let loaded_project;
+		let loaded;
 		try {
-			loaded_project = await loadCurrentProject(file_data);
+			loaded = await loadCurrentProject(file_data);
 		} catch (err) {
 			// A rejected file (corrupt or tampered contents) opens nothing, so its
 			// secret must not stay cached in memory or the tab's session mirror.
@@ -274,12 +272,12 @@ export async function handleLoadFile(
 		}
 
 		return {
-			id: loaded_project.id,
+			id: loaded.project.id,
 			project_name: instance_name,
 			project_path: complete_file_path,
 			exists: true,
 			protection,
-			pec_2017_migrated
+			pec_2017_migrated: loaded.pec_2017_migrated
 		};
 	} catch (err) {
 		_idle?.();

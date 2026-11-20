@@ -46,7 +46,34 @@ pub struct Snapshot {
     pub computed: Computed,
 }
 
+/// A file opened as the session (`open_file`): its documents as migrated, and
+/// whether they predate the current PEC 2017 revision.
+#[derive(Debug, Serialize)]
+pub struct OpenedFile {
+    #[serde(flatten)]
+    pub snapshot: Snapshot,
+    pub pec_2017_migrated: bool,
+}
+
 impl Session {
+    /// Opens a file's project and nodes as the session, migrated to the current
+    /// format first (`migrate::migrate_file`). A rejected file leaves the session empty.
+    pub fn open_file(&mut self, project: Value, nodes: Vec<Value>) -> Result<OpenedFile, String> {
+        let opened = crate::migrate::migrate_file(project, nodes).and_then(|migrated| {
+            let computed = self.open(migrated.project, migrated.nodes)?;
+            Ok((computed, migrated.pec_2017_migrated))
+        });
+        let (computed, pec_2017_migrated) = opened.inspect_err(|_| *self = Session::default())?;
+        Ok(OpenedFile {
+            snapshot: Snapshot {
+                project: self.project.clone(),
+                nodes: self.nodes_in_order(),
+                computed,
+            },
+            pec_2017_migrated,
+        })
+    }
+
     /// Replaces the open project (`project` is null and `nodes` empty to close it).
     pub fn open(&mut self, project: Value, nodes: Vec<Value>) -> Result<Computed, String> {
         let parsed = parse_nodes(&nodes)?;
@@ -105,14 +132,18 @@ impl Session {
     pub fn snapshot(&mut self) -> Snapshot {
         Snapshot {
             project: self.project.clone(),
-            nodes: self
-                .graph
-                .ids_in_order()
-                .into_iter()
-                .filter_map(|id| self.docs.get(id).cloned())
-                .collect(),
+            nodes: self.nodes_in_order(),
             computed: self.compute_all(),
         }
+    }
+
+    /// Every stored node, in the graph's order.
+    fn nodes_in_order(&self) -> Vec<Value> {
+        self.graph
+            .ids_in_order()
+            .into_iter()
+            .filter_map(|id| self.docs.get(id).cloned())
+            .collect()
     }
 
     /// The first panel on the supply: as the service disconnect, its minimum rating

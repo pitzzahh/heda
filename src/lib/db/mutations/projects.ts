@@ -1,15 +1,12 @@
-import {
-	getProject,
-	initializeDatabase,
-	insertNodes,
-	openSession,
-	setProject,
-	settled
-} from '../index.js';
+import { getProject, initializeDatabase, openFile, openSession, setProject } from '../index.js';
 import type { Node, Project } from '#lib/types/db.js';
-import { withNodeDefaults, withProjectDefaults } from './defaults.js';
-import { default_phases, PEC_2017_REVISION } from '#lib/constants.js';
 
+/**
+ * Starts a new project as the session: a file holding only its root, opened like any
+ * other. The engine completes it to the current format (PEC 2017 revision, 400Y/230 V
+ * circuit defaults on 3P-Y, node and project defaults), so a new project needs no
+ * migration later.
+ */
 export async function createProject(
 	project_name: string,
 	highest_unit_form: Node['highest_unit_form']
@@ -17,38 +14,12 @@ export async function createProject(
 	await initializeDatabase();
 
 	try {
-		// creation of root node first to be referenced in project data
 		const root_node_id = crypto.randomUUID();
-		const root_node = withNodeDefaults({
-			id: root_node_id,
-			node_type: 'root',
-			// New projects are sized by the PEC 2017 tables, and new 3P-Y ones already insert
-			// 400Y/230 V defaults: nothing to migrate.
-			highest_unit_form: highest_unit_form && {
-				...highest_unit_form,
-				pec_2017_sizing: true,
-				pec_2017_revision: PEC_2017_REVISION,
-				...(highest_unit_form.phase === default_phases.THREE_PHASE_WYE && {
-					wye_circuit_defaults: true
-				})
-			},
-			child_ids: []
+		const { project } = await openFile({
+			project: { id: crypto.randomUUID(), root_node_id, project_name, settings: {} },
+			nodes: [{ id: root_node_id, node_type: 'root', highest_unit_form, child_ids: [] }]
 		});
-		insertNodes([root_node]);
-
-		const project = withProjectDefaults({
-			id: crypto.randomUUID(),
-			root_node_id,
-			project_name,
-			settings: {}
-		});
-		setProject(project as Project);
-		await settled();
-
-		return {
-			project: project as Project,
-			root_node_id: root_node_id as string
-		};
+		return { project, root_node_id };
 	} catch (err) {
 		console.error(`Error in creating project: ${JSON.stringify(err)}`);
 	}

@@ -14,6 +14,10 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let Open { project, nodes } = parse(args)?;
             to_json(session.open(project, nodes)?)
         }
+        "open_file" => {
+            let Open { project, nodes } = parse(args)?;
+            to_json(session.open_file(project, nodes)?)
+        }
         "put" => {
             let Nodes { nodes } = parse(args)?;
             to_json(session.put(nodes)?)
