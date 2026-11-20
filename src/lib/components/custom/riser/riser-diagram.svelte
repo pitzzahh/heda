@@ -46,13 +46,19 @@
 
 	// Laid out by the engine once per data change; panning and zooming only move one transform.
 	let drawn = $state<RiserLayout | null>();
+	// The node `drawn` is for, and the last one fitted: each new diagram is fitted once.
+	let drawn_id: string | undefined;
+	let fitted_id: string | undefined;
 	// The engine answers asynchronously; stale answers are dropped (external async, so an effect).
 	$effect(() => {
 		const revision = getSnapshotRevision();
 		const id = node_id;
 		void getRiserAsync(id)
 			.then((layout) => {
-				if (getSnapshotRevision() === revision && id === node_id) drawn = layout;
+				if (getSnapshotRevision() !== revision || id !== node_id) return;
+				drawn = layout;
+				drawn_id = id;
+				autoFit();
 			})
 			.catch((error: unknown) => {
 				console.error('Riser layout failed:', error);
@@ -90,6 +96,13 @@
 		setView(fitView(drawn, { width: frame.clientWidth, height: frame.clientHeight }));
 	}
 
+	// Fits a newly drawn node once the frame has a size; later data changes keep the view.
+	function autoFit() {
+		if (!frame?.clientWidth || !drawn || drawn_id === fitted_id) return;
+		fitted_id = drawn_id;
+		fit();
+	}
+
 	function zoomCentre(factor: number) {
 		if (!frame) return;
 		setView(zoomAt(current(), factor, frame.clientWidth / 2, frame.clientHeight / 2));
@@ -107,7 +120,7 @@
 	function attachFrame(element: HTMLDivElement) {
 		frame = element;
 		element.tabIndex = 0;
-		untrack(fit);
+		untrack(autoFit);
 		const onWheel = (event: WheelEvent) => {
 			event.preventDefault();
 			const { x, y } = local(event);
@@ -118,6 +131,7 @@
 		element.addEventListener('keydown', onKeyDown);
 		const resize = new ResizeObserver(() => {
 			frame_size = { width: element.clientWidth, height: element.clientHeight };
+			autoFit();
 		});
 		resize.observe(element);
 		return () => {
