@@ -715,14 +715,7 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
         }
         first = false;
         let name = node
-            .panel_data
-            .as_ref()
-            .and_then(|p| p.name.clone())
-            .or_else(|| {
-                node.highest_unit_form
-                    .as_ref()
-                    .and_then(|f| f.distribution_unit.clone())
-            })
+            .schedule_name()
             .unwrap_or_else(|| "Unknown Panel".into());
         let from = if node.node_type == "root" {
             "--".to_string()
@@ -730,8 +723,8 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
             node.parent_id
                 .as_deref()
                 .and_then(|id| graph.get(id))
-                .and_then(|parent| parent.panel_data.as_ref()?.name.clone())
-                .unwrap_or_else(|| "Transformer".into())
+                .and_then(Node::schedule_name)
+                .unwrap_or_else(|| "--".into())
         };
         let caption = format!("PANELBOARD SCHEDULE: {name}");
         w.heading(&caption, true);

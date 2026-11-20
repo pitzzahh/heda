@@ -394,23 +394,17 @@ impl Schedules<'_> {
         // What this panel distributes: the project's supply at the root, else its own phase.
         let panel_phase = supply_phase_of(Some(node)).or(self.root_phase);
         let name = node
-            .panel_data
-            .as_ref()
-            .and_then(|p| p.name.clone())
-            .or_else(|| {
-                node.highest_unit_form
-                    .as_ref()
-                    .and_then(|f| f.distribution_unit.clone())
-            })
+            .schedule_name()
             .unwrap_or_else(|| "Unknown Panel".into());
+        // The panel or the supply this one is fed from, by the name its own schedule shows.
         let from = if node.node_type == "root" {
             "--".to_string()
         } else {
             node.parent_id
                 .as_deref()
                 .and_then(|id| graph.get(id))
-                .and_then(|parent| parent.panel_data.as_ref()?.name.clone())
-                .unwrap_or_else(|| "Transformer".into())
+                .and_then(Node::schedule_name)
+                .unwrap_or_else(|| "--".into())
         };
 
         let sheet_name = ordinal(depth);

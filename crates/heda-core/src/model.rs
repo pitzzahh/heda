@@ -141,6 +141,16 @@ pub struct HighestUnitForm {
 }
 
 impl Node {
+    /// The name a schedule heads this node with, and the FROM of the panels it feeds: a
+    /// panelboard's name, or at the root the supply's distribution unit (Transformer,
+    /// Generator, Utility, …) as the user named it.
+    pub fn schedule_name(&self) -> Option<String> {
+        self.panel_data
+            .as_ref()
+            .and_then(|p| p.name.clone())
+            .or_else(|| self.highest_unit_form.as_ref()?.distribution_unit.clone())
+    }
+
     pub fn load_type(&self) -> Option<&str> {
         self.load_data.as_ref()?.load_type.as_deref()
     }

@@ -87,6 +87,9 @@ fn heads_each_schedule_with_its_panel_and_supply() {
     assert_eq!(cell(lp1, 2, 1).0, &text(": MDP"));
     assert_eq!(cell(lp1, 3, 1).0, &text(": LP-1"));
     assert_eq!(cell(&book.sheets[0], 2, 1).0, &text(": --"));
+    // A panel on the supply is fed from the distribution unit the user named, not
+    // always a transformer.
+    assert_eq!(cell(&book.sheets[1], 2, 1).0, &text(": Utility Service"));
     // Header groups over their columns' headers: CIRCUIT BREAKER spans AT, AF, Pole, KAIC.
     assert_eq!(cell(lp1, 4, 5), (&text("CIRCUIT BREAKER"), Style::Group));
     assert_eq!(cell(lp1, 5, 5), (&text("AT"), Style::Sub));

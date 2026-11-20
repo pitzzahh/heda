@@ -107,6 +107,8 @@ fn prints_each_schedule_and_marks_overrides() {
         "PANELBOARD SCHEDULE: LP-1",
         "SUPPLY: 1P + E, 230V, 60Hz",
         "FROM: MDP",
+        // MDP is fed from the supply the user named, not always a transformer.
+        "FROM: Utility Service",
     ] {
         assert!(has(heading), "missing {heading:?}");
     }
