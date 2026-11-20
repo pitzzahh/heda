@@ -347,7 +347,19 @@ pub fn update_node(
     let mut plan = Plan::default();
     if moved {
         set_or_remove(&mut next, "phase_assignment", None);
+        set_or_remove(&mut next, "coordination_reference", None);
         plan.put = reparent(tree, id, existing_node.parent_id.as_deref(), parent_id);
+        // Every circuit below now has other supply-side devices: its documented selection no longer holds.
+        plan.put.extend(
+            tree.subtree(id, &mut HashSet::new())
+                .into_iter()
+                .filter(|node| node.id != id && node.coordination_reference.is_some())
+                .filter_map(|node| tree.doc(&node.id).cloned())
+                .map(|mut doc| {
+                    set_or_remove(&mut doc, "coordination_reference", None);
+                    doc
+                }),
+        );
     }
     plan.put.insert(0, next);
     Ok(plan)
@@ -542,6 +554,8 @@ pub fn copy_nodes(
             let mut clone = tree.doc(&node.id).cloned().unwrap_or_default();
             let is_root = node.id == id;
             clone["id"] = json!(ids[node.id.as_str()]);
+            // A documented selection was read for the original's supply-side devices only.
+            set_or_remove(&mut clone, "coordination_reference", None);
             clone["child_ids"] = Value::Array(
                 tree.graph
                     .children(&node.id)

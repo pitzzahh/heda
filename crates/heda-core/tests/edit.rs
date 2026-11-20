@@ -501,3 +501,82 @@ fn removing_a_standby_panel_drops_it_from_the_supply_in_one_step() {
         json!(["P", "Q"])
     );
 }
+
+/// A sub-panel `S` with one load under `P`, each with a documented selection (PEC 2017 7.0.6.3).
+fn documented_subpanel(session: &mut Session) -> (String, String) {
+    let sub = run(
+        session,
+        "add_node",
+        json!({ "parent_id": "P", "node": { "panel_data": {
+            "name": "S", "ambient_temperature": 30, "terminal_temperature": "standard",
+            "phase": "one_phase", "circuit_number": 1, "length": 4
+        } } }),
+    )
+    .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let inner = add_load(session, &sub, "lighting_load", 1.0);
+    run(
+        session,
+        "patch_nodes",
+        json!({ "patches": [
+            { "id": sub, "set": { "coordination_reference": "Table A" } },
+            { "id": inner, "set": { "coordination_reference": "Table B" } }
+        ] }),
+    )
+    .unwrap();
+    (sub, inner)
+}
+
+#[test]
+fn copies_drop_the_documented_selection_7_0_6_3() {
+    let mut session = session("one_phase");
+    let (sub, _) = documented_subpanel(&mut session);
+    let copied = run(&mut session, "copy_nodes", json!({ "id": sub, "count": 1 })).unwrap();
+    let copy = doc(&mut session, copied["ids"][0].as_str().unwrap());
+    assert!(copy.get("coordination_reference").is_none());
+    let child = doc(&mut session, copy["child_ids"][0].as_str().unwrap());
+    assert!(child.get("coordination_reference").is_none());
+    assert_eq!(doc(&mut session, &sub)["coordination_reference"], "Table A");
+}
+
+#[test]
+fn a_move_drops_the_documented_selection_below_it_7_0_6_3() {
+    let mut session = session("one_phase");
+    session
+        .put(vec![panel("Q", "root", 2.0, "one_phase")])
+        .unwrap();
+    let (sub, inner) = documented_subpanel(&mut session);
+    let node = doc(&mut session, &sub);
+    run(
+        &mut session,
+        "update_node",
+        json!({ "id": sub, "parent_id": "Q", "node": { "panel_data": node["panel_data"] } }),
+    )
+    .unwrap();
+    assert!(doc(&mut session, &sub)
+        .get("coordination_reference")
+        .is_none());
+    assert!(doc(&mut session, &inner)
+        .get("coordination_reference")
+        .is_none());
+}
+
+#[test]
+fn an_edit_in_place_keeps_the_documented_selection() {
+    let mut session = session("one_phase");
+    let (sub, inner) = documented_subpanel(&mut session);
+    let node = doc(&mut session, &sub);
+    run(
+        &mut session,
+        "update_node",
+        json!({ "id": sub, "parent_id": "P", "node": { "panel_data": node["panel_data"] } }),
+    )
+    .unwrap();
+    assert_eq!(doc(&mut session, &sub)["coordination_reference"], "Table A");
+    assert_eq!(
+        doc(&mut session, &inner)["coordination_reference"],
+        "Table B"
+    );
+}
