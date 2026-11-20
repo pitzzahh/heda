@@ -4,6 +4,7 @@ import {
 	TRANSFORMER_Z_PERCENT_FIELD,
 	UTILITY_SC_KVA_FIELD
 } from './short-circuit.js';
+import { GENERATOR_KVA_FIELD } from './generator.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
 import { TITLE_BLOCK_SCHEMA } from './title-block.js';
 
@@ -77,6 +78,9 @@ export const NODE_DOC_SCHEMA = v.object({
 			transformer_z_percent: v.optional(TRANSFORMER_Z_PERCENT_FIELD),
 			/** false when the supply is a feeder, not the utility service; absent means service (PEC 2017 2.30.6.10). */
 			is_service: v.optional(v.boolean()),
+			/** The standby generator's nameplate kVA and the panels it carries (PEC 2017 7.2.1.4). */
+			generator_kva: v.optional(GENERATOR_KVA_FIELD),
+			standby_panels: v.optional(v.array(v.string())),
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
 			wye_circuit_defaults: v.optional(v.boolean()),
 			/** Set once a file is opened under the PEC 2017 sizing tables, so its notice and migration run once. */

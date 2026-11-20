@@ -22,6 +22,7 @@
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
 	import { isAndroidApp } from '#lib/helpers/platform.js';
+	import StandbyGeneratorSection from './standby-generator-section.svelte';
 
 	let { close_settings }: Props = $props();
 
@@ -94,6 +95,11 @@
 			onCheckedChange={saveServiceEntrance}
 		/>
 	</div>
+
+	{#if root_node}
+		<Separator class="my-1 w-full" />
+		<StandbyGeneratorSection root={root_node} />
+	{/if}
 
 	<Separator class="my-1 w-full" />
 	<div class="flex flex-row items-center justify-between gap-3">

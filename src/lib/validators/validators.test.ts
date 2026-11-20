@@ -21,6 +21,7 @@ import {
 	SHORT_CIRCUIT_RESULT_SCHEMA,
 	SHORT_CIRCUIT_SOURCE_SCHEMA
 } from './short-circuit.js';
+import { STANDBY_GENERATOR_SCHEMA } from './generator.js';
 import {
 	CIRCUIT_PHASE_FIELD,
 	LINE_CURRENT_SCHEMA,
@@ -250,6 +251,14 @@ describe('validators', () => {
 			{ utility_sc_kva: 1_000_000, transformer_kva: 300 }
 		]) {
 			expect(v.safeParse(SHORT_CIRCUIT_SOURCE_SCHEMA, invalid).success).toBe(false);
+		}
+	});
+
+	it('takes an optional, positive standby generator rating', () => {
+		expect(v.safeParse(STANDBY_GENERATOR_SCHEMA, {}).success).toBe(true);
+		expect(v.safeParse(STANDBY_GENERATOR_SCHEMA, { generator_kva: 25 }).success).toBe(true);
+		for (const generator_kva of [0, -5, '25']) {
+			expect(v.safeParse(STANDBY_GENERATOR_SCHEMA, { generator_kva }).success).toBe(false);
 		}
 	});
 

@@ -103,6 +103,16 @@ export function setServiceEntrance(root_id: string, is_service: boolean) {
 	return mergeUnitForm(root_id, { is_service });
 }
 
+/** Sets the standby generator's nameplate kVA (PEC 2017 Article 7.2); undefined removes it. */
+export function setGeneratorKva(root_id: string, generator_kva: number | undefined) {
+	return mergeUnitForm(root_id, { generator_kva: generator_kva ?? null });
+}
+
+/** Chooses the panels the standby generator carries (PEC 2017 7.2.1.4(B)). */
+export function setStandbyPanels(root_id: string, standby_panels: string[]) {
+	return mergeUnitForm(root_id, { standby_panels });
+}
+
 /** Overrides the circuit-number phase (or delta line pair) of a circuit; undefined restores the default. */
 export function changePhaseAssignment(node_id: string, phase: PhaseAssignment | undefined) {
 	return patchNode(node_id, { phase_assignment: phase });

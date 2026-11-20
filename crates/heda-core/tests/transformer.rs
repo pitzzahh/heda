@@ -4,19 +4,19 @@
 
 use heda_core::model::phases::*;
 use heda_core::session::Session;
-use heda_core::sizing::{transformer_current, transformer_secondary_ocpd};
+use heda_core::sizing::{rated_current, transformer_secondary_ocpd};
 use serde_json::json;
 
 #[test]
 fn rated_secondary_current_follows_the_supply() {
     // 150 kVA ÷ (400 V × 1.732) = 216.5 A; 50 kVA ÷ 230 V = 217.4 A.
-    let wye = transformer_current(150.0, Some(THREE_PHASE_WYE)).unwrap();
+    let wye = rated_current(150.0, Some(THREE_PHASE_WYE)).unwrap();
     assert!((wye - 216.51).abs() < 0.01);
-    let one = transformer_current(50.0, Some(ONE_PHASE)).unwrap();
+    let one = rated_current(50.0, Some(ONE_PHASE)).unwrap();
     assert!((one - 217.39).abs() < 0.01);
-    let delta = transformer_current(75.0, Some(THREE_PHASE_DELTA)).unwrap();
+    let delta = rated_current(75.0, Some(THREE_PHASE_DELTA)).unwrap();
     assert!((delta - 188.27).abs() < 0.01);
-    assert_eq!(transformer_current(75.0, None), None);
+    assert_eq!(rated_current(75.0, None), None);
 }
 
 #[test]

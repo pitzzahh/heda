@@ -306,6 +306,7 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         lines.push(format!("Transformer: {} kVA", num(kva)));
         lines.extend(transformer_lines(kva, phase, tree));
     }
+    lines.extend(generator_lines(source, phase, tree));
     if let Some(kva) = truthy(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
     }
@@ -324,13 +325,64 @@ fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<Str
         num((load_kva * 100.0).round() / 100.0),
         over(load_kva > kva)
     )];
-    let ocpd = sizing::transformer_current(kva, phase).and_then(sizing::transformer_secondary_ocpd);
+    let ocpd = sizing::rated_current(kva, phase).and_then(sizing::transformer_secondary_ocpd);
     if let Some(ocpd) = ocpd {
         let mains: f64 = tree.panels.iter().map(|p| p.circuit.row.at).sum();
         lines.push(format!(
             "Secondary OCPD ≤ {} A{}",
             num(ocpd),
             over(mains > ocpd)
+        ));
+    }
+    lines
+}
+
+fn standby_panels(source: &HighestUnitForm) -> Vec<&str> {
+    source
+        .standby_panels
+        .iter()
+        .flatten()
+        .map(String::as_str)
+        .collect()
+}
+
+/// The standby generator checked against the panels it carries: PEC 2017 7.2.1.4(B)
+/// calculates its load by Article 2.20, here each chosen panel's computed load (one under
+/// another chosen panel counts once, with it), and (B)(2)(a) has an automatically
+/// transferred source carry all of it. 4.45.1.13(A) gives its conductors' least ampacity.
+fn generator_lines(source: &HighestUnitForm, phase: Option<&str>, tree: &RiserTree) -> Vec<String> {
+    fn standby_va(tree: &RiserTree, standby: &[&str]) -> f64 {
+        tree.panels
+            .iter()
+            .map(|panel| {
+                if standby.contains(&panel.circuit.node.id.as_str()) {
+                    panel.circuit.row.va
+                } else {
+                    standby_va(panel, standby)
+                }
+            })
+            .sum()
+    }
+    let standby = standby_panels(source);
+    let kva = source.generator_kva.filter(|kva| js::truthy(*kva));
+    if standby.is_empty() && kva.is_none() {
+        return Vec::new();
+    }
+    let load_kva = standby_va(tree, &standby) / 1000.0;
+    let load = num((load_kva * 100.0).round() / 100.0);
+    let Some(kva) = kva else {
+        return vec![format!("Standby load: {load} kVA")];
+    };
+    let over = if load_kva > kva { ", OVER" } else { "" };
+    let mut lines = vec![
+        format!("Generator: {} kVA", num(kva)),
+        format!("Standby load: {load} kVA{over}"),
+    ];
+    if let Some(current) = sizing::rated_current(kva, phase) {
+        let ampacity = sizing::generator_conductor_ampacity(current);
+        lines.push(format!(
+            "Gen. conductors ≥ {} A",
+            num(((ampacity * 1e7).round() / 1e6).ceil() / 10.0)
         ));
     }
     lines
@@ -357,6 +409,7 @@ fn leaves(tree: &RiserTree) -> f64 {
 pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> RiserLayout {
     let mut layout = RiserLayout::default();
     let source_lines = source.map(|s| source_lines(s, tree)).unwrap_or_default();
+    let standby = source.map(standby_panels).unwrap_or_default();
     let box_of = |node: &RiserTree, depth: usize| match source {
         Some(source) if depth == 0 => (
             source
@@ -365,7 +418,13 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 .unwrap_or_else(|| "Service".into()),
             source_lines.clone(),
         ),
-        _ => panel_box(node),
+        _ => {
+            let (title, mut lines) = panel_box(node);
+            if standby.contains(&node.circuit.node.id.as_str()) {
+                lines.push("On standby generator".into());
+            }
+            (title, lines)
+        }
     };
 
     // A level starts below the tallest box of the one above it.

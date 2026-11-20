@@ -120,9 +120,9 @@ pub fn overload_rating(nameplate_current: f64, marked: bool) -> f64 {
     ((nameplate_current * percent / 100.0 * 1e9).round() / 1e9).floor()
 }
 
-/// A transformer's rated secondary current: kVA × 1000 ÷ 230 V on a one-phase supply,
+/// A source's rated output current (a transformer's secondary, a generator's nameplate): kVA × 1000 ÷ 230 V on a one-phase supply,
 /// ÷ (line voltage × 1.732) on a three-phase one (400 V wye, 230 V delta).
-pub fn transformer_current(kva: f64, phase: Option<&str>) -> Option<f64> {
+pub fn rated_current(kva: f64, phase: Option<&str>) -> Option<f64> {
     use crate::model::phases::*;
     let volts = match phase? {
         ONE_PHASE => WYE_PHASE_VOLTAGE,
@@ -131,6 +131,12 @@ pub fn transformer_current(kva: f64, phase: Option<&str>) -> Option<f64> {
         _ => return None,
     };
     Some(kva * 1000.0 / volts)
+}
+
+/// The least ampacity of a generator's conductors to its first overcurrent device, PEC
+/// 2017 4.45.1.13(A): 115 % of its nameplate current (generators of 600 V or less).
+pub fn generator_conductor_ampacity(rated_current: f64) -> f64 {
+    (rated_current * 1.15 * 1e9).round() / 1e9
 }
 
 /// The largest secondary overcurrent protection a transformer of 1000 V or less allows,
