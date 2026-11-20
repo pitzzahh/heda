@@ -2,7 +2,6 @@
 //! ported from `src/lib/db/queries/short-circuit-core.test.ts` and the `parallelImpedance`
 //! case of `src/lib/utils/computations/short-circuit.test.ts`.
 
-use heda_core::js;
 use heda_core::model::{load_types, phases};
 use heda_core::session::{Computed, Session};
 use heda_core::short_circuit::*;
@@ -161,7 +160,7 @@ fn flags_every_row_when_the_source_data_is_missing_but_still_sizes_the_runs() {
     assert_eq!(row.node_fault_current, None);
     close_to(
         row.conductor_z_ohm,
-        2.0 * js::hypot(0.49, 0.051) * 20.0 / 305.0,
+        2.0 * f64::hypot(0.49, 0.051) * 20.0 / 305.0,
         12,
     );
 }

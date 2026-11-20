@@ -311,7 +311,7 @@ fn delta_rows_show_the_va_on_each_line_pair() {
     // Circuit 3 defaults to BC; a three-phase load puts a third on each pair.
     let a = computed.rows["a"].va;
     assert_eq!(computed.rows["a"].phase_loads, Some([None, Some(a), None]));
-    let third = heda_core::js::round_js(computed.rows["m"].va / 3.0, 2);
+    let third = heda_core::num::round(computed.rows["m"].va / 3.0, 2);
     assert_eq!(computed.rows["m"].phase_loads, Some([Some(third); 3]));
 }
 

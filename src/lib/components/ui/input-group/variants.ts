@@ -34,15 +34,19 @@ export const inputGroup = tv({
 
 export const inputGroupAddon = tv({
 	base: [
-		'flex h-auto cursor-text items-center justify-center gap-2 py-1.5 font-medium text-muted-foreground select-none',
+		'flex h-auto cursor-text items-center justify-center gap-2 font-medium text-muted-foreground select-none',
 		"group-data-[disabled=true]/input-group:opacity-50 [&>svg:not([class*='size-'])]:size-4"
 	],
 	variants: {
+		// Inline addons stay inside the group: they take its inner height (vertical padding made
+		// them 2px taller than an h-9 group), and a button sits nearer the edge by less padding,
+		// not a negative margin that pushed the addon 3px past the border. Either overflow
+		// gave the drawers a scrollbar (#368).
 		align: {
-			'inline-start': 'order-first pl-3 has-[>button]:-ml-1 has-[>kbd]:-ml-1',
-			'inline-end': 'order-last pr-3 has-[>button]:-mr-1 has-[>kbd]:-mr-1',
-			'block-start': 'order-first w-full justify-start px-3 pt-3',
-			'block-end': 'order-last w-full justify-start px-3 pb-3'
+			'inline-start': 'order-first self-stretch pl-3 has-[>button]:pl-2 has-[>kbd]:pl-2',
+			'inline-end': 'order-last self-stretch pr-3 has-[>button]:pr-2 has-[>kbd]:pr-2',
+			'block-start': 'order-first w-full justify-start px-3 pt-3 pb-1.5',
+			'block-end': 'order-last w-full justify-start px-3 pt-1.5 pb-3'
 		}
 	},
 	defaultVariants: { align: 'inline-start' }

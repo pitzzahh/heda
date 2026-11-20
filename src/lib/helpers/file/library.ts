@@ -30,6 +30,8 @@ export const IMPORTED_PROJECT_NAME = 'Imported project';
 const MAX_NAME_LENGTH = 100;
 const READ_CHUNK = 1024 * 1024;
 const PROJECT_FILE = new RegExp(`\\.${EXTENSION}$`, 'i');
+// Android saves a file of an unknown type with a type it knows added: `Plan.heda.txt`, `.bin`.
+const PICKED_PROJECT_FILE = new RegExp(`\\.${EXTENSION}(?:\\.(?:txt|bin))?$`, 'i');
 // Unsafe in a file name on at least one platform a copy may travel to.
 const UNSAFE_CHARACTERS = /[\\/:*?"<>|\p{Cc}]/gu;
 
@@ -105,14 +107,16 @@ function documentFileName(uri: string): string | null {
 /**
  * Name for an imported document: the provider's display name, else the URI
  * when it names a `.heda` file (opaque ids like `msf:1234` do not), else a
- * generic name.
+ * generic name. A `.txt`/`.bin` added after `.heda` goes with it.
  */
 export function importedProjectName(display_name: string | null | undefined, uri: string): string {
-	const from_provider = sanitizeProjectName((display_name ?? '').replace(PROJECT_FILE, ''));
+	const from_provider = sanitizeProjectName((display_name ?? '').replace(PICKED_PROJECT_FILE, ''));
 	if (from_provider) return from_provider;
 	const file = documentFileName(uri);
 	const from_uri =
-		file && PROJECT_FILE.test(file) ? sanitizeProjectName(file.replace(PROJECT_FILE, '')) : '';
+		file && PICKED_PROJECT_FILE.test(file)
+			? sanitizeProjectName(file.replace(PICKED_PROJECT_FILE, ''))
+			: '';
 	return from_uri || IMPORTED_PROJECT_NAME;
 }
 

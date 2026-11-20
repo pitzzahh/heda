@@ -1,4 +1,6 @@
 <script lang="ts" module>
+	import type { CoordinationSystem } from '#lib/types/coordination.js';
+
 	interface Props {
 		main_phase: Phase;
 		parent_id?: string;
@@ -27,7 +29,7 @@
 		NumberField,
 		TerminalTempField
 	} from '#lib/components/custom/fields/index.js';
-	import { PanelPhaseField } from './(components)/index.js';
+	import { PanelPhaseField, PanelSystemField } from './(components)/index.js';
 	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
@@ -69,7 +71,8 @@
 			terminal_temperature: node_to_edit.panel_data.terminal_temperature as TerminalTemperature,
 			phase: node_to_edit.panel_data.phase as Phase,
 			ambient_temperature: node_to_edit.panel_data.ambient_temperature,
-			length: node_to_edit.length
+			length: node_to_edit.length,
+			system: (node_to_edit.panel_data.system ?? null) as CoordinationSystem | null
 		};
 	}
 
@@ -187,6 +190,7 @@
 			hint="Standard (PEC 2017 1.10.1.14(C)(1)): the conductor terminates at its 60 °C ampacity on circuits of 100 A or less, and at its 75 °C ampacity above."
 		/>
 		<AmbientTempField {form} />
+		<PanelSystemField {form} />
 	</div>
 </form>
 

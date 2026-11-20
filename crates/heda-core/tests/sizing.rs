@@ -357,49 +357,68 @@ mod conduit_size_pec_2017_ch_10_tables_10_1_1_1_10_1_1_4_and_10_1_1_5 {
     #[test]
     fn three_2_0_mm2_fit_15_mm() {
         // 3 × 6.2 = 18.6 mm² ≤ 56 mm² (40 % of 15 mm)
-        assert_eq!(conduit_size(2.0, 3.0), Conduit::Size(15.0));
+        assert_eq!(conduit_size(2.0, 3.0, Rating::C90), Conduit::Size(15.0));
     }
 
     #[test]
     fn two_3_5_mm2_use_the_31_percent_column() {
-        assert_eq!(conduit_size(3.5, 2.0), Conduit::Size(15.0));
+        assert_eq!(conduit_size(3.5, 2.0, Rating::C90), Conduit::Size(15.0));
     }
 
     #[test]
     fn one_conductor_uses_the_53_percent_column() {
         // 236 / 254.5 = 0.93 ≥ 0.8 → 125 mm² in 25 mm; 236 / 298.6 = 0.79 → 150 mm² needs 32 mm
-        assert_eq!(conduit_size(125.0, 1.0), Conduit::Size(25.0));
-        assert_eq!(conduit_size(150.0, 1.0), Conduit::Size(32.0));
+        assert_eq!(conduit_size(125.0, 1.0, Rating::C90), Conduit::Size(25.0));
+        assert_eq!(conduit_size(150.0, 1.0, Rating::C90), Conduit::Size(32.0));
     }
 
     #[test]
     fn five_and_six_14_mm2() {
-        assert_eq!(conduit_size(14.0, 5.0), Conduit::Size(25.0));
-        assert_eq!(conduit_size(14.0, 6.0), Conduit::Size(32.0));
+        assert_eq!(conduit_size(14.0, 5.0, Rating::C90), Conduit::Size(25.0));
+        assert_eq!(conduit_size(14.0, 6.0, Rating::C90), Conduit::Size(32.0));
     }
 
     #[test]
     fn four_100_mm2_need_65_mm() {
         // 742 / 208.7 = 3.56 → 3 (50 mm too small); 1064 / 208.7 = 5.1 → 65 mm
-        assert_eq!(conduit_size(100.0, 4.0), Conduit::Size(65.0));
+        assert_eq!(conduit_size(100.0, 4.0, Rating::C90), Conduit::Size(65.0));
     }
 
     #[test]
     fn sizes_missing_from_table_10_1_1_5_take_the_next_larger_area() {
-        assert_eq!(conduit_size(175.0, 4.0), conduit_size(200.0, 4.0));
-        assert_eq!(conduit_size(400.0, 4.0), conduit_size(500.0, 4.0));
+        assert_eq!(
+            conduit_size(175.0, 4.0, Rating::C90),
+            conduit_size(200.0, 4.0, Rating::C90)
+        );
+        assert_eq!(
+            conduit_size(400.0, 4.0, Rating::C90),
+            conduit_size(500.0, 4.0, Rating::C90)
+        );
+    }
+
+    #[test]
+    fn tw_insulated_conductors_use_the_tw_areas() {
+        // TW 5.5 mm² is 15.9 mm²; 4 conductors = 63.6 mm² > the 56 mm² a 15 mm PVC 80
+        // carries for over two, so 20 mm; THHN, 13.9 mm² each, needs only 15 mm.
+        assert_eq!(conduit_size(5.5, 4.0, Rating::C60), Conduit::Size(20.0));
+        assert_eq!(conduit_size(5.5, 4.0, Rating::C90), Conduit::Size(15.0));
+        assert_eq!(conduit_size(2.0, 1.0, Rating::C60), Conduit::Size(15.0));
+        assert_eq!(conduit_size(500.0, 8.0, Rating::C60), Conduit::Size(-1.0));
     }
 
     #[test]
     fn too_many_and_unknown_sizes() {
         // 6605 / 870.9 = 7.58 → 7 conductors of 500 mm² at most
-        assert_eq!(conduit_size(500.0, 7.0), Conduit::Size(150.0));
-        assert_eq!(conduit_size(500.0, 8.0), Conduit::Size(-1.0));
+        assert_eq!(conduit_size(500.0, 7.0, Rating::C90), Conduit::Size(150.0));
+        assert_eq!(conduit_size(500.0, 8.0, Rating::C90), Conduit::Size(-1.0));
         assert_eq!(
-            conduit_size(300.0, 4.0),
+            conduit_size(300.0, 4.0, Rating::C90),
             Conduit::Text("Invalid conductor size")
         );
-        assert_eq!(conduit_size(600.0, 4.0), Conduit::Text("Error"));
+        assert_eq!(
+            conduit_size(600.0, 4.0, Rating::C90),
+            Conduit::Text("Error")
+        );
     }
 }
 
@@ -438,5 +457,36 @@ mod allowable_ampacity_pec_2017_1_3_2_1_g_3_d {
         // No conductor fits (-1) or an unlisted size.
         assert_eq!(allowable_ampacity(-1.0, panel(20.0)), None);
         assert_eq!(allowable_ampacity(4.0, panel(20.0)), None);
+    }
+}
+
+mod egc_increased_pec_2017_2_50_6_13_b {
+    use super::*;
+
+    #[test]
+    fn grows_with_the_area_of_upsized_ungrounded_conductors() {
+        // 60 A: Table 2.50.6.13 gives 5.5 mm². 22 mm² carries it, upsized to 38 mm² for
+        // voltage drop: 5.5 × 38 / 22 = 9.5 mm², so the next standard size, 14 mm².
+        assert_eq!(egc_increased(5.5, 38.0, 22.0), 14.0);
+        // 20 A: 3.5 mm² EGC with 3.5 mm² minimum, upsized to 5.5: 3.5 × 5.5 / 3.5 = 5.5.
+        assert_eq!(egc_increased(3.5, 5.5, 3.5), 5.5);
+    }
+
+    #[test]
+    fn keeps_the_table_size_when_the_conductors_are_not_upsized() {
+        assert_eq!(egc_increased(5.5, 22.0, 22.0), 5.5);
+        // An override below the minimum never shrinks the EGC under the table.
+        assert_eq!(egc_increased(5.5, 14.0, 22.0), 5.5);
+        // No minimum (nothing in Table 3.10.2.6(B)(16) carries the load): the table size.
+        assert_eq!(egc_increased(5.5, 38.0, -1.0), 5.5);
+    }
+
+    #[test]
+    fn need_not_be_larger_than_the_circuit_conductors() {
+        // 14 × 100 / 22 = 63.6 mm², so 80 mm², under the 100 mm² circuit conductors.
+        // 30 × 60 / 22 = 81.8 mm² would be 100 mm², but 2.50.6.13(A) never requires an
+        // EGC larger than the circuit conductors: 60 mm².
+        assert_eq!(egc_increased(14.0, 100.0, 22.0), 80.0);
+        assert_eq!(egc_increased(30.0, 60.0, 22.0), 60.0);
     }
 }

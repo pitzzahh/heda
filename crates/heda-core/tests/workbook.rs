@@ -61,7 +61,8 @@ fn text(value: &str) -> Cell {
 fn writes_one_sheet_per_depth_from_the_exported_panel_down() {
     let book = layout("one_phase", Kind::LoadSchedule, "root");
     let names: Vec<&str> = book.sheets.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(names, ["1st", "2nd", "3rd"]);
+    // The bill of materials of the same panels follows the schedules (tests/bom.rs).
+    assert_eq!(names, ["1st", "2nd", "3rd", "Bill of Materials"]);
     assert_eq!(book.subject, "1P Load schedule");
     assert_eq!(book.category, "1P,Load schedule,Export");
     // Exported from a sub-panel, that panel's depth names the first sheet.
@@ -70,7 +71,7 @@ fn writes_one_sheet_per_depth_from_the_exported_panel_down() {
         .into_iter()
         .map(|s| s.name)
         .collect();
-    assert_eq!(names, ["3rd"]);
+    assert_eq!(names, ["3rd", "Bill of Materials"]);
 }
 
 #[test]
@@ -86,6 +87,9 @@ fn heads_each_schedule_with_its_panel_and_supply() {
     assert_eq!(cell(lp1, 2, 1).0, &text(": MDP"));
     assert_eq!(cell(lp1, 3, 1).0, &text(": LP-1"));
     assert_eq!(cell(&book.sheets[0], 2, 1).0, &text(": --"));
+    // A panel on the supply is fed from the distribution unit the user named, not
+    // always a transformer.
+    assert_eq!(cell(&book.sheets[1], 2, 1).0, &text(": Utility Service"));
     // Header groups over their columns' headers: CIRCUIT BREAKER spans AT, AF, Pole, KAIC.
     assert_eq!(cell(lp1, 4, 5), (&text("CIRCUIT BREAKER"), Style::Group));
     assert_eq!(cell(lp1, 5, 5), (&text("AT"), Style::Sub));

@@ -2,8 +2,8 @@
 //! schedule and, the same values, in the node's own sidebar entry and page header.
 
 use crate::graph::Graph;
-use crate::js;
 use crate::model::Node;
+use crate::num;
 use crate::phases::{self, CircuitTotal, LineCurrent, PairVa, PhaseVa, Supply};
 use crate::sizing::{self, ConductorInput, Conduit, Egc, Rating, Sizing};
 use serde::Serialize;
@@ -110,25 +110,16 @@ fn own_load(node: &Node, supply: Supply) -> (f64, f64) {
     let va = sizing::volt_ampere(
         node.load_type(),
         load_data.and_then(|d| d.quantity).unwrap_or(0.0),
-        or_zero(js::number(load_data.and_then(|d| d.varies.as_ref()))),
+        num::stored(load_data.and_then(|d| d.varies.as_ref())).unwrap_or(0.0),
         supply.line_voltage(),
     );
-    let va = or_zero(va);
+    let va = num::finite_or_zero(va);
     let current = if phases::is_three_phase_circuit(node) {
         phases::three_phase_current_at(va, supply.line_voltage())
     } else {
         va / 230.0
     };
     (va, current)
-}
-
-/// `x || 0`.
-fn or_zero(value: f64) -> f64 {
-    if js::truthy(value) {
-        value
-    } else {
-        0.0
-    }
 }
 
 /// `conductor_sets` / `conductor_qty` read `as number`: absent is NaN in the arithmetic.
@@ -144,12 +135,21 @@ fn conduit(node: &Node, conductor_size: f64) -> Conduit {
         None => sizing::conduit_size(
             conductor_size,
             count(node.conductor_sets) * count(node.conductor_qty) + 1.0,
+            Rating::of(node.conductor_insulation.as_deref()),
         ),
     }
 }
 
-fn egc(node: &Node, at: f64) -> Egc {
-    sizing::overridden(node.overrided_egc_size).map_or_else(|| sizing::egc_size(at), Egc::Size)
+/// The engineer's EGC, else Table 2.50.6.13's for `at`, grown by 2.50.6.13(B) when the
+/// conductors are upsized from `minimum` (what carries the load) to `conductor_size`.
+fn egc(node: &Node, at: f64, conductor_size: f64, minimum: f64) -> Egc {
+    if let Some(size) = sizing::overridden(node.overrided_egc_size) {
+        return Egc::Size(size);
+    }
+    match sizing::egc_size(at) {
+        Egc::Size(table) => Egc::Size(sizing::egc_increased(table, conductor_size, minimum)),
+        other => other,
+    }
 }
 
 /// One load-schedule row, memoized per node. A panel's row totals its circuits.
@@ -165,10 +165,8 @@ pub fn load_row<'g>(
     let (voltage, phase) = voltage_and_phase(node, supply);
     let label = phases::label(&phase);
     let load_type = node.load_type();
-    let ambient_temp = js::or(
-        node.load_data.as_ref().and_then(|d| d.ambient_temperature),
-        30.0,
-    );
+    let ambient_temp =
+        num::positive(node.load_data.as_ref().and_then(|d| d.ambient_temperature)).unwrap_or(30.0);
     let (va, current) = own_load(node, supply);
     let input = |current: f64, at: f64, sizing: Sizing<'g>, ambient_temp: f64| ConductorInput {
         sets: count(node.conductor_sets),
@@ -184,15 +182,11 @@ pub fn load_row<'g>(
     let dwelling_circuit = load_data
         .and_then(|d| d.dwelling_circuit.as_deref())
         .is_some_and(|c| sizing::DWELLING_CIRCUITS.contains(&c));
-    let at = js::or(
-        node.overrided_at,
-        sizing::ampere_trip(current, load_type, continuous, dwelling_circuit),
-    );
+    let at = num::positive(node.overrided_at)
+        .unwrap_or_else(|| sizing::ampere_trip(current, load_type, continuous, dwelling_circuit));
     let own_sizing = input(current, at, Sizing::of(load_type), ambient_temp);
-    let conductor_size = js::or(
-        node.overrided_conductor_size,
-        sizing::conductor_size(own_sizing),
-    );
+    let minimum_size = sizing::conductor_size(own_sizing);
+    let conductor_size = sizing::overridden(node.overrided_conductor_size).unwrap_or(minimum_size);
 
     let mut row = if let Some(panel_data) = &node.panel_data {
         let panel_supply = Supply::of(node.panel_phase());
@@ -215,9 +209,9 @@ pub fn load_row<'g>(
         let feeder = feeder_load(node, &circuits);
         let trip = sizing::feeder_trip(feeder.load, feeder.ceiling);
         let service_at = service_rating(graph, node, trip, memo);
-        let main_at = js::or(node.overrided_at, service_at);
-        let main_current = js::round_js(totals.current, 2);
-        let ambient_temp = js::or(panel_data.ambient_temperature, 30.0);
+        let main_at = num::positive(node.overrided_at).unwrap_or(service_at);
+        let main_current = num::round(totals.current, 2);
+        let ambient_temp = num::positive(panel_data.ambient_temperature).unwrap_or(30.0);
         let main_sizing = if feeder.share.largest_motor.is_some() {
             // 2.30.7.1(A): a service main raised to its 2.30.6.10 minimum is no motor
             // breaker, so the service conductors carry at least that rating.
@@ -231,12 +225,13 @@ pub fn load_row<'g>(
         } else {
             input(main_current, main_at, Sizing::Main, ambient_temp)
         };
-        let main_conductor_size = js::or(
-            node.overrided_conductor_size,
-            sizing::conductor_size(main_sizing),
-        );
+        let main_minimum_size = sizing::conductor_size(main_sizing);
+        let main_conductor_size =
+            sizing::overridden(node.overrided_conductor_size).unwrap_or(main_minimum_size);
         LoadRow {
-            load_description: js::or_str(panel_data.name.as_deref(), "").to_owned(),
+            load_description: num::text(panel_data.name.as_deref())
+                .unwrap_or("")
+                .to_owned(),
             voltage,
             phase,
             va: totals.va,
@@ -244,9 +239,9 @@ pub fn load_row<'g>(
             current: main_current,
             conductor_size: main_conductor_size,
             // PEC 2017 Table 2.50.6.13 sizes the EGC on the overcurrent device ahead of it: the main.
-            egc_size: egc(node, main_at),
+            egc_size: egc(node, main_at, main_conductor_size, main_minimum_size),
             conduit_size: conduit(node, main_conductor_size),
-            ampere_frames: js::or(node.overrided_ampere_frames, main_at),
+            ampere_frames: num::positive(node.overrided_ampere_frames).unwrap_or(main_at),
             phase_va: totals.phase_va,
             pair_va: totals.pair_va,
             line_current: totals.line_current,
@@ -259,22 +254,22 @@ pub fn load_row<'g>(
         }
     } else {
         LoadRow {
-            load_description: js::or_str(
+            load_description: num::text(
                 node.load_data
                     .as_ref()
                     .and_then(|d| d.load_description.as_deref()),
-                "",
             )
+            .unwrap_or("")
             .to_owned(),
             voltage,
             phase,
             va,
             at,
-            current: js::round_js(current, 2),
+            current: num::round(current, 2),
             conductor_size,
-            egc_size: egc(node, at),
+            egc_size: egc(node, at, conductor_size, minimum_size),
             conduit_size: conduit(node, conductor_size),
-            ampere_frames: js::or(node.overrided_ampere_frames, at),
+            ampere_frames: num::positive(node.overrided_ampere_frames).unwrap_or(at),
             phase_va: None,
             pair_va: None,
             line_current: None,
@@ -337,11 +332,11 @@ fn phase_loads(supply: Supply, row: &LoadRow) -> Option<[Option<f64>; 3]> {
     if supply == Supply::OnePhase {
         return None;
     }
-    let va = if js::truthy(row.va) { row.va } else { 0.0 };
+    let va = num::finite_or_zero(row.va);
     let labels = supply.labels();
     Some(if row.phase == phases::ALL_PHASES {
         let shares = split(supply, row.phase_va, row.pair_va).unwrap_or([va / 3.0; 3]);
-        shares.map(|share| Some(js::round_js(share, 2)))
+        shares.map(|share| Some(num::round(share, 2)))
     } else {
         labels.map(|label| (row.phase == label).then_some(va))
     })
@@ -370,7 +365,7 @@ pub fn balance_circuit<'a>(
 ) -> phases::BalanceCircuit<'a> {
     phases::BalanceCircuit {
         id,
-        va: if js::truthy(row.va) { row.va } else { 0.0 },
+        va: num::finite_or_zero(row.va),
         phase: &row.phase,
         split: split(supply, row.phase_va, row.pair_va),
     }

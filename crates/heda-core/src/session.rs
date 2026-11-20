@@ -373,6 +373,18 @@ impl Session {
         Some(layout_riser(&tree, source.as_ref()))
     }
 
+    /// The overcurrent device pairs the PEC requires to be selectively coordinated
+    /// (`coordination`).
+    pub fn coordination(&mut self) -> Vec<crate::coordination::Pair> {
+        let faults = self.short_circuits();
+        crate::coordination::coordination(&self.graph, &mut self.load_rows, &faults)
+    }
+
+    /// The bill of materials of `id` and everything below it (`bom`).
+    pub fn bill_of_materials(&mut self, id: &str) -> Result<crate::bom::Bom, String> {
+        crate::bom::bill_of_materials(&self.graph, &self.docs, &mut self.load_rows, id)
+    }
+
     /// The riser diagram from `id` down as an SVG file (`riser_svg`).
     pub fn riser_svg(&mut self, id: &str) -> Result<Vec<u8>, String> {
         let layout = self.riser(id).ok_or("Node not found")?;
@@ -457,7 +469,7 @@ impl Session {
             if total_va > sheet_set::A3_SHEET_MAX_VA {
                 return Err(format!(
                     "A3 sheets are only for a dwelling unit of at most 3680 VA (PEC 2017 1.3.1.1(C)); this project is {} VA. Pick a larger sheet.",
-                    crate::js::number_to_string(total_va)
+                    crate::num::display(total_va)
                 ));
             }
         }

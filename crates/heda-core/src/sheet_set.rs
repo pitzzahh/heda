@@ -8,13 +8,14 @@
 //! Sans (SIL Open Font License, `fonts/`).
 
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, Node};
+use crate::num;
 use crate::phases::{supply_phase_of, ALL_PHASES, PAIRS, PHASES};
 use crate::riser::{phase_label, RiserLayout, BREAKER_HEIGHT, LINE, TRANSFORMER_HEIGHT};
 use crate::short_circuit::{InterruptingRatingStatus, ShortCircuitRow};
 use crate::sizing::{Conduit, Egc};
+use crate::text::{Metrics, BOLD, REGULAR};
 use crate::voltage_drop::VoltageDropRow;
 use krilla::geom::{PathBuilder, Point, Transform};
 use krilla::metadata::Metadata;
@@ -24,13 +25,8 @@ use krilla::text::{Font, GlyphId, KrillaGlyph};
 use krilla::Document;
 use serde::Deserialize;
 use serde_json::Value;
-use skrifa::instance::{LocationRef, Size};
-use skrifa::metrics::GlyphMetrics;
-use skrifa::{FontRef, MetadataProvider};
+use skrifa::MetadataProvider;
 use std::collections::HashMap;
-
-const REGULAR: &[u8] = include_bytes!("../fonts/LiberationSans-Regular.ttf");
-const BOLD: &[u8] = include_bytes!("../fonts/LiberationSans-Bold.ttf");
 
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// Border around the sheet, mm.
@@ -97,37 +93,7 @@ pub struct SheetSetInputs<'a> {
 // ---------------------------------------------------------------------------------------
 // Text
 
-/// Advance widths of the embedded fonts, to centre and fit text.
-struct Metrics {
-    regular: (FontRef<'static>, GlyphMetrics<'static>),
-    bold: (FontRef<'static>, GlyphMetrics<'static>),
-}
-
 impl Metrics {
-    fn new() -> Self {
-        let load = |data: &'static [u8]| {
-            let font = FontRef::new(data).expect("bundled font");
-            let metrics = font.glyph_metrics(Size::new(1.0), LocationRef::default());
-            (font, metrics)
-        };
-        Metrics {
-            regular: load(REGULAR),
-            bold: load(BOLD),
-        }
-    }
-
-    /// Width of `text` at `size`, in the size's unit.
-    fn width(&self, text: &str, size: f64, bold: bool) -> f64 {
-        let (font, metrics) = if bold { &self.bold } else { &self.regular };
-        let charmap = font.charmap();
-        let em: f32 = text
-            .chars()
-            // Same glyphs as `glyphs`: an unmapped character is .notdef (glyph 0).
-            .filter_map(|c| metrics.advance_width(charmap.map(c).unwrap_or_default()))
-            .sum();
-        f64::from(em) * size
-    }
-
     /// `text` as glyphs one per character, advanced by the font's own widths. These are
     /// short Latin labels, so a full shaper (krilla's `draw_text`) adds nothing but time.
     fn glyphs(&self, text: &str, bold: bool) -> Vec<KrillaGlyph> {
@@ -150,9 +116,8 @@ impl Metrics {
     }
 }
 
-/// A number as JavaScript prints it (`String(value)`).
 fn num(value: f64) -> String {
-    js::number_to_string(value)
+    num::display(value)
 }
 
 /// -1 is the engine's "none in the PEC table": a dash, as the schedule shows it.
@@ -207,13 +172,13 @@ fn amperes(value: Option<f64>) -> String {
 
 /// Per-unit and ohm values to four decimals; a dash when absent.
 fn impedance(value: Option<f64>) -> String {
-    value.map_or("—".into(), |v| js::to_fixed_js(v, 4))
+    value.map_or("—".into(), |v| format!("{:.4}", v))
 }
 
 /// The least interrupting rating a breaker needs (PEC 2017 1.10.1.9), kA rounded up to 0.1.
 fn required_ka(fault_current: Option<f64>) -> String {
     fault_current.map_or("—".into(), |fc| {
-        js::to_fixed_js((fc / 100.0).ceil() / 10.0, 1)
+        format!("{:.1}", (fc / 100.0).ceil() / 10.0)
     })
 }
 
@@ -225,7 +190,7 @@ fn status_label(status: InterruptingRatingStatus) -> &'static str {
     }
 }
 
-/// A stored value as the app prints it: text as typed, numbers as JavaScript does.
+/// A stored value as the app prints it: text as typed, numbers in their shortest form.
 fn doc_value(docs: &HashMap<String, Value>, id: &str, key: &str) -> Option<String> {
     match docs.get(id)?.get(key)? {
         Value::String(text) => Some(text.clone()),
@@ -572,7 +537,7 @@ fn phase_va(row: &LoadRow, label: &str) -> String {
                     _ => None,
                 })
             });
-        return num(js::round_js(share.unwrap_or(row.va / 3.0), 2));
+        return num(num::round(share.unwrap_or(row.va / 3.0), 2));
     }
     if row.phase == label {
         num(row.va)
@@ -625,7 +590,7 @@ fn schedule_row(
     panel_phase: Option<&str>,
     total: bool,
 ) -> Row {
-    let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+    let overridden = |value: Option<f64>| num::positive(value).is_some();
     let or_na = |value: Option<String>| {
         if total {
             value.unwrap_or_else(|| "N/A".into())
@@ -651,7 +616,7 @@ fn schedule_row(
     // The schedule's footer shows the panel current to 0.01 A.
     push(
         if total {
-            js::to_fixed_js(row.current, 2)
+            format!("{:.2}", row.current)
         } else {
             num(row.current)
         },
@@ -676,7 +641,7 @@ fn schedule_row(
                     "BC" => row.pair_va.map(|p| p.BC),
                     _ => row.pair_va.map(|p| p.CA),
                 };
-                num(js::round_js(value.unwrap_or(0.0), 2))
+                num(num::round(value.unwrap_or(0.0), 2))
             } else {
                 phase_va(row, label)
             };
@@ -749,14 +714,7 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
         }
         first = false;
         let name = node
-            .panel_data
-            .as_ref()
-            .and_then(|p| p.name.clone())
-            .or_else(|| {
-                node.highest_unit_form
-                    .as_ref()
-                    .and_then(|f| f.distribution_unit.clone())
-            })
+            .schedule_name()
             .unwrap_or_else(|| "Unknown Panel".into());
         let from = if node.node_type == "root" {
             "--".to_string()
@@ -764,8 +722,8 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
             node.parent_id
                 .as_deref()
                 .and_then(|id| graph.get(id))
-                .and_then(|parent| parent.panel_data.as_ref()?.name.clone())
-                .unwrap_or_else(|| "Transformer".into())
+                .and_then(Node::schedule_name)
+                .unwrap_or_else(|| "--".into())
         };
         let caption = format!("PANELBOARD SCHEDULE: {name}");
         w.heading(&caption, true);
@@ -843,7 +801,7 @@ fn draw_voltage_drops(w: &mut Writer, input: &mut SheetSetInputs) {
                 cells.extend([row.phase.clone(), num(row.voltage)]);
                 marks.extend([false, false]);
             }
-            let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+            let overridden = |value: Option<f64>| num::positive(value).is_some();
             for (cell, mark) in [
                 (node.conductor_sets.map(num).unwrap_or_default(), false),
                 (node.conductor_qty.map(num).unwrap_or_default(), false),
@@ -887,10 +845,10 @@ fn draw_short_circuits(w: &mut Writer, input: &mut SheetSetInputs) {
         .filter_map(|fault| {
             let node = graph.get(&fault.id)?;
             let row = load_row(graph, node, input.rows);
-            let overridden = |value: Option<f64>| value.is_some_and(js::truthy);
+            let overridden = |value: Option<f64>| num::positive(value).is_some();
             let conductor = node
                 .overrided_conductor_size
-                .filter(|v| js::truthy(*v))
+                .filter(|v| *v > 0.0)
                 .unwrap_or(row.conductor_size);
             let cells = vec![
                 fault.from_node_name.clone(),
@@ -1248,7 +1206,7 @@ fn title_block_ops(
         );
         let mut line_y = y + pad + label + value * 2.0;
         // The name wraps down to the cell's bottom, as the lines under it do: never cut short.
-        for line in wrap(&w.metrics, big, inner, value * 1.2, true) {
+        for line in w.metrics.wrap(big, inner, value * 1.2, true) {
             if line_y > y + TITLE_BLOCK_HEIGHT - pad {
                 break;
             }
@@ -1257,7 +1215,7 @@ fn title_block_ops(
         }
         for line in rest
             .iter()
-            .flat_map(|line| wrap(&w.metrics, line, inner, value, false))
+            .flat_map(|line| w.metrics.wrap(line, inner, value, false))
         {
             if line_y > y + TITLE_BLOCK_HEIGHT - pad {
                 break;
@@ -1269,28 +1227,6 @@ fn title_block_ops(
     }
     ops.push(Op::Lines(0.35, lines));
     ops
-}
-
-/// Splits `text` into lines that fit `width` at `size`.
-fn wrap(metrics: &Metrics, text: &str, width: f64, size: f64, bold: bool) -> Vec<String> {
-    let mut lines = vec![];
-    let mut line = String::new();
-    for word in text.split(' ') {
-        let next = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{line} {word}")
-        };
-        if !line.is_empty() && metrics.width(&next, size, bold) > width {
-            lines.push(std::mem::replace(&mut line, word.to_string()));
-        } else {
-            line = next;
-        }
-    }
-    if !line.is_empty() {
-        lines.push(line);
-    }
-    lines
 }
 
 // ---------------------------------------------------------------------------------------

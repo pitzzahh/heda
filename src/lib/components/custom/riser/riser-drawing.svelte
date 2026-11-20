@@ -25,7 +25,14 @@
 	const stroke_effect = $derived(detail ? undefined : 'non-scaling-stroke');
 </script>
 
-<svg class={className} role="img" aria-label="Riser diagram" font-size="12">
+<!-- The engine wraps box lines by Arial's widths (Liberation Sans), as the saved SVG names. -->
+<svg
+	class={className}
+	role="img"
+	aria-label="Riser diagram"
+	font-size="12"
+	font-family="Arial, Helvetica, sans-serif"
+>
 	<defs>
 		<!-- PEC 2017 Appendix A 1.11: circuit breaker, terminals and the arc between. -->
 		<symbol id="riser-breaker" overflow="visible">

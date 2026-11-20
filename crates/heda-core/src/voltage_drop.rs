@@ -2,8 +2,8 @@
 //! `src/lib/db/queries/voltage-drop-core.ts`.
 
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
+use crate::num;
 use crate::sizing::SQRT_3;
 use crate::tables::{lookup, ALTERNATING_CURRENT_REACTANCE};
 use serde::Serialize;
@@ -51,22 +51,23 @@ pub fn voltage_drops(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<
         let is_three_phase = computed.phase == crate::phases::ALL_PHASES;
         let nominal_voltage = computed.voltage;
         let k = if is_three_phase { SQRT_3 } else { 2.0 };
-        let conductor_size = js::or(node.overrided_conductor_size, computed.conductor_size);
+        let conductor_size =
+            num::positive(node.overrided_conductor_size).unwrap_or(computed.conductor_size);
         let length = crate::sizing::overridden(node.overrided_length).or(node.length);
         let z = crate::sizing::overridden(node.overrided_z)
             .or_else(|| lookup(&ALTERNATING_CURRENT_REACTANCE, conductor_size).copied());
         // Ohms of this run: Table 10.1.1.9 gives Ω per 305 m. D15 carries it unrounded
         // into VD (1.732 × 295 A × 0.0561 Ω × 15.2 / 305 = 1.428 V); 0.0001 Ω is display only.
         let run_z = (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0;
-        let actual_z = js::round_js(run_z, 4);
-        let voltage_per_segment = js::round_js(k * computed.current * run_z, 4);
+        let actual_z = num::round(run_z, 4);
+        let voltage_per_segment = num::round(k * computed.current * run_z, 4);
         // Parents come first in preorder; the root (and a feeder with no drop) adds nothing.
-        let voltage_at_end_circuit = js::round_js(
+        let voltage_at_end_circuit = num::round(
             parent_end_fraction.unwrap_or(0.0) * nominal_voltage + voltage_per_segment,
             4,
         );
         let voltage_at_receiving_end = nominal_voltage - voltage_at_end_circuit;
-        let percent_voltage_drop = js::round_js(
+        let percent_voltage_drop = num::round(
             (1.0 - voltage_at_receiving_end / nominal_voltage) * 100.0,
             4,
         );
@@ -100,7 +101,10 @@ pub fn from_node_name(parent: Option<&crate::model::Node>) -> String {
     let panel = parent
         .and_then(|p| p.panel_data.as_ref())
         .and_then(|d| d.name.as_deref());
-    js::or_str(unit, js::or_str(panel, "")).to_owned()
+    num::text(unit)
+        .or(num::text(panel))
+        .unwrap_or("")
+        .to_owned()
 }
 
 /// The node's own name: a panel's name, else the load's description.
@@ -110,5 +114,8 @@ pub fn to_node_name(node: &crate::model::Node) -> String {
         .load_data
         .as_ref()
         .and_then(|d| d.load_description.as_deref());
-    js::or_str(panel, js::or_str(load, "")).to_owned()
+    num::text(panel)
+        .or(num::text(load))
+        .unwrap_or("")
+        .to_owned()
 }

@@ -241,3 +241,14 @@ export const SHEET_SIZES = [
 
 /** PEC 2017 1.3.1.1(C): the largest total load an A3 sheet set may show, VA. */
 export const A3_SHEET_MAX_VA = 3680;
+
+/**
+ * The systems whose overcurrent devices PEC 2017 requires to be selectively coordinated
+ * with all supply-side devices; a panel marked with one carries it to everything below.
+ */
+export const COORDINATION_SYSTEMS = [
+	{ value: 'emergency', label: 'Emergency (PEC 7.0.6.3)' },
+	{ value: 'legally_required_standby', label: 'Legally required standby (PEC 7.1.4.3)' },
+	{ value: 'critical_operations_power', label: 'Critical operations power (PEC 7.8.4.5)' },
+	{ value: 'critical_operations_data', label: 'Critical operations data (PEC 6.45.1.27)' }
+] as const;

@@ -3,9 +3,9 @@
 //! `src/lib/utils/computations/short-circuit.ts`.
 
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases as phase_names, Node};
+use crate::num;
 use crate::phases::is_three_phase_circuit;
 use crate::sizing::{MOTOR_LOAD_TYPES, WYE_LINE_VOLTAGE, WYE_PHASE_VOLTAGE};
 use crate::tables::{
@@ -75,11 +75,8 @@ pub fn conductor_impedance_ohm(
         row.r_pvc
     };
     let x = if is_steel { row.xl_steel } else { row.xl };
-    let per_305_m = js::hypot(r, x);
-    Some(
-        ((per_305_m * length) / 305.0 / js::max(sets, 1.0))
-            * if is_single_phase { 2.0 } else { 1.0 },
-    )
+    let per_305_m = r.hypot(x);
+    Some(((per_305_m * length) / 305.0 / sets.max(1.0)) * if is_single_phase { 2.0 } else { 1.0 })
 }
 
 /// PEC 2017 App. D Ex. D14 step 7b: pu Zw = (ohm / kV²) × (kVA base / 1000).
@@ -131,7 +128,7 @@ struct Source {
 
 fn read_source(root: &Node) -> Option<Source> {
     let form = root.highest_unit_form.as_ref()?;
-    let positive = |value: Option<f64>| value.filter(|value| js::truthy(*value));
+    let positive = num::positive;
     Some(Source {
         utility_sc_kva: positive(form.utility_sc_kva)?,
         transformer_kva: positive(form.transformer_kva)?,
@@ -184,10 +181,12 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
         let computed = load_row(graph, node, memo);
         // Unlisted sizes count as zero impedance: that overstates fault current, the safe side.
         let ohms = conductor_impedance_ohm(
-            js::or(node.overrided_conductor_size, computed.conductor_size),
+            num::positive(node.overrided_conductor_size).unwrap_or(computed.conductor_size),
             node.conduit_type.as_deref(),
-            js::or(node.overrided_length, js::or(node.length, 0.0)),
-            js::or(node.conductor_sets, 1.0),
+            num::positive(node.overrided_length)
+                .or(num::positive(node.length))
+                .unwrap_or(0.0),
+            num::positive(node.conductor_sets).unwrap_or(1.0),
             single_phase_system || !is_three_phase_circuit(node),
         )
         .unwrap_or(0.0);
@@ -218,16 +217,16 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
     }
 
     let row = |node: &Node, result: Option<FaultResult>| {
-        let interrupting_rating_ka = js::or(
-            Some(js::number(node.kaic.as_ref())),
-            UNMARKED_BREAKER_INTERRUPTING_RATING_KA,
-        );
+        let interrupting_rating_ka = num::positive(num::stored(node.kaic.as_ref()))
+            .unwrap_or(UNMARKED_BREAKER_INTERRUPTING_RATING_KA);
         let supply_fault_current = result.as_ref().map(|r| r.supply_fault_current);
         ShortCircuitRow {
             id: node.id.clone(),
             from_node_name: from_node_name(node.parent_id.as_deref().and_then(|id| graph.get(id))),
             to_node_name: to_node_name(node),
-            length: js::or(node.overrided_length, js::or(node.length, 0.0)),
+            length: num::positive(node.overrided_length)
+                .or(num::positive(node.length))
+                .unwrap_or(0.0),
             conductor_z_ohm: conductor_ohm.get(node.id.as_str()).copied().unwrap_or(0.0),
             conductor_z_pu: result.as_ref().map_or(0.0, |r| r.conductor_z_pu),
             motor_z_pu: result.as_ref().and_then(|r| r.motor_z_pu),

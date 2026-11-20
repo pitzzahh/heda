@@ -39,6 +39,7 @@ import { FILE_EXPORT_SCHEMA, FILE_PROTECTION_FIELD, RECENT_PROJECT_SCHEMA } from
 import { OVERRIDE_FIELD_TYPE_FIELD } from './misc.js';
 import { DEFAULT_LOAD_SCHEMA, DWELLING_CIRCUIT_FIELD, NAMEPLATE_CURRENT_FIELD } from './load.js';
 import { DEFAULT_LOADS } from '#lib/constants.js';
+import { COORDINATION_REFERENCE_SCHEMA } from './coordination.js';
 
 describe('validators', () => {
 	it('takes an optional, positive nameplate current (PEC 2017 4.30.3.2(A)(1))', () => {
@@ -465,5 +466,38 @@ describe('validators', () => {
 			expect(v.safeParse(TITLE_BLOCK_SCHEMA, { sheet_size: 'A4' }).success).toBe(false);
 			expect(v.safeParse(TITLE_BLOCK_SCHEMA, { tin: 'x'.repeat(121) }).success).toBe(false);
 		});
+	});
+});
+
+describe('selective coordination (PEC 2017 7.0.6.3)', () => {
+	const panel = {
+		name: 'EP',
+		circuit_number: 1,
+		ambient_temperature: 30,
+		length: 10,
+		terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+		phase: default_phases.ONE_PHASE
+	};
+
+	it('marks a panel as a listed system, or none for a normal panel', () => {
+		const parse = (system: unknown) =>
+			v.safeParse(GENERIC_PHASE_PANEL_SCHEMA, { ...panel, system });
+		expect(parse('emergency').output).toMatchObject({ system: 'emergency' });
+		expect(parse('critical_operations_data').success).toBe(true);
+		expect(parse(null).output).toMatchObject({ system: null });
+		expect(v.safeParse(GENERIC_PHASE_PANEL_SCHEMA, panel).output).not.toHaveProperty('system');
+		expect(parse('optional_standby').success).toBe(false);
+	});
+
+	it('trims the documented reference and bounds its length', () => {
+		expect(v.safeParse(COORDINATION_REFERENCE_SCHEMA, { reference: '  Table 4  ' }).output).toEqual(
+			{
+				reference: 'Table 4'
+			}
+		);
+		expect(v.safeParse(COORDINATION_REFERENCE_SCHEMA, {}).output).toEqual({ reference: '' });
+		expect(v.safeParse(COORDINATION_REFERENCE_SCHEMA, { reference: 'x'.repeat(201) }).success).toBe(
+			false
+		);
 	});
 });

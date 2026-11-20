@@ -83,6 +83,32 @@ pub const AMPERE_TRIP_TO_COPPER: [(f64, Option<f64>); 19] = [
     (0.0, Some(2.0)),
 ];
 
+/// PEC 2017 Table 2.50.3.17: copper grounding electrode conductor (mm²) by the largest
+/// copper ungrounded service-entrance conductor or equivalent area for parallel
+/// conductors, as `(up_to_mm2, gec_mm2)`; over 500 mm² it is 80 mm².
+pub const GEC_COPPER: [(f64, f64); 6] = [
+    (30.0, 8.0),
+    (50.0, 14.0),
+    (80.0, 22.0),
+    (175.0, 30.0),
+    (325.0, 50.0),
+    (500.0, 60.0),
+];
+pub const GEC_COPPER_OVER_500: f64 = 80.0;
+
+/// PEC 2017 Table 2.50.5.13(C)(1): copper grounded conductor, main, system and
+/// supply-side bonding jumper (mm²) by the largest copper ungrounded conductor or
+/// equivalent area for parallel conductors, as `(up_to_mm2, jumper_mm2)`. Over 500 mm²,
+/// Note 1: 12½ % of that area, never more than the conductors.
+pub const BONDING_JUMPER_COPPER: [(f64, f64); 6] = [
+    (30.0, 8.0),
+    (50.0, 14.0),
+    (80.0, 22.0),
+    (175.0, 30.0),
+    (325.0, 50.0),
+    (500.0, 60.0),
+];
+
 /// PEC 2017 Ch. 10 Table 10.1.1.9: effective Z at 0.85 PF, uncoated copper in PVC
 /// conduit, ohms to neutral per 305 m (Note 2: an approximation of R·cosθ + X·sinθ
 /// for voltage drop), as `(size_mm2, ohms)`.
@@ -216,6 +242,33 @@ pub const THHN_CONDUCTOR_AREAS: [(f64, f64); 21] = [
     (500.0, 870.9),
 ];
 
+/// PEC 2017 Ch. 10 Table 10.1.1.5: approximate area (mm²) of TW/TRW/THW/THHW conductors.
+// shortcut: the table lists no 175 or 375 mm², so those take the next larger listed
+// size (200, 400).
+pub const TW_CONDUCTOR_AREAS: [(f64, f64); 21] = [
+    (2.0, 9.1),
+    (3.5, 11.9),
+    (5.5, 15.9),
+    (8.0, 28.3),
+    (14.0, 46.6),
+    (22.0, 62.2),
+    (30.0, 86.6),
+    (38.0, 122.7),
+    (50.0, 143.1),
+    (60.0, 169.7),
+    (80.0, 201.1),
+    (100.0, 240.5),
+    (125.0, 295.6),
+    (150.0, 339.8),
+    (175.0, 426.4),
+    (200.0, 426.4),
+    (250.0, 510.7),
+    (325.0, 629.0),
+    (375.0, 749.9),
+    (400.0, 749.9),
+    (500.0, 951.2),
+];
+
 /// PEC 2017 Table 4.30.14.2: full-load current of single-phase AC motors, 230 V column
 /// (A), as `(horsepower, amperes)`. The table's currents apply to 220–240 V systems.
 pub const ONE_PHASE_MOTOR_FLC_230V: [(&str, f64); 12] = [
@@ -297,8 +350,7 @@ pub const THREE_PHASE_MOTOR_FLC_400V: [(&str, f64); 26] = [
     ("500", 786.0),
 ];
 
-/// Looks a value up in a `(key, value)` table by exact key, as a JavaScript object
-/// keyed by number does (`TABLE[8]` finds the `8.0` entry).
+/// Looks a value up in a `(key, value)` table by exact key (`8.0` finds the `8.0` entry).
 pub fn lookup<T>(table: &[(f64, T)], key: f64) -> Option<&T> {
     table
         .iter()

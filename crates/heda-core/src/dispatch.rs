@@ -39,6 +39,11 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let NodeId { node_id } = parse(args)?;
             to_json(session.riser(&node_id))
         }
+        "coordination" => to_json(session.coordination()),
+        "bill_of_materials" => {
+            let NodeId { node_id } = parse(args)?;
+            to_json(session.bill_of_materials(&node_id)?)
+        }
         "patch_nodes" => {
             let PatchNodes { patches } = parse(args)?;
             let plan = edit::patch_nodes(session.tree(), patches);

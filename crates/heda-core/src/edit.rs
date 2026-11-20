@@ -8,8 +8,8 @@
 
 use crate::defaults;
 use crate::graph::Graph;
-use crate::js;
 use crate::model::Node;
+use crate::num;
 use crate::phases;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -68,10 +68,10 @@ impl CircuitInput {
         )
     }
 
-    /// `load_data?.[name] || panel_data?.[name]`, as the forms always stored it.
+    /// The load's field when it is set, else the panel's, as the forms always stored it.
     fn either(&self, name: &str) -> Option<Value> {
         match self.field(name) {
-            (Some(load), _) if truthy(load) => Some(load.clone()),
+            (Some(load), _) if num::is_set(load) => Some(load.clone()),
             (_, panel) => panel.filter(|value| !value.is_null()).cloned(),
         }
     }
@@ -348,7 +348,19 @@ pub fn update_node(
     let mut plan = Plan::default();
     if moved {
         set_or_remove(&mut next, "phase_assignment", None);
+        set_or_remove(&mut next, "coordination_reference", None);
         plan.put = reparent(tree, id, existing_node.parent_id.as_deref(), parent_id);
+        // Every circuit below now has other supply-side devices: its documented selection no longer holds.
+        plan.put.extend(
+            tree.subtree(id, &mut HashSet::new())
+                .into_iter()
+                .filter(|node| node.id != id && node.coordination_reference.is_some())
+                .filter_map(|node| tree.doc(&node.id).cloned())
+                .map(|mut doc| {
+                    set_or_remove(&mut doc, "coordination_reference", None);
+                    doc
+                }),
+        );
     }
     plan.put.insert(0, next);
     Ok(plan)
@@ -400,7 +412,7 @@ pub fn move_node(tree: Tree, id: &str, parent_id: &str) -> Result<Plan, String> 
     set_or_remove(&mut moved, "phase_assignment", None);
     let mut plan = Plan::default();
     if used.contains(&node.circuit_number.unwrap_or(0.0)) {
-        let next = used.iter().fold(0.0, |max, number| js::max(max, *number)) + 1.0;
+        let next = used.iter().fold(0.0_f64, |max, number| max.max(*number)) + 1.0;
         moved["circuit_number"] = json!(next);
         plan.result.insert("renumbered_to".into(), json!(next));
     }
@@ -543,6 +555,8 @@ pub fn copy_nodes(
             let mut clone = tree.doc(&node.id).cloned().unwrap_or_default();
             let is_root = node.id == id;
             clone["id"] = json!(ids[node.id.as_str()]);
+            // A documented selection was read for the original's supply-side devices only.
+            set_or_remove(&mut clone, "coordination_reference", None);
             clone["child_ids"] = Value::Array(
                 tree.graph
                     .children(&node.id)
@@ -575,15 +589,4 @@ pub fn copy_nodes(
     }
     plan.result.insert("ids".into(), Value::Array(root_ids));
     Ok(plan)
-}
-
-/// JavaScript truthiness of a stored value.
-fn truthy(value: &Value) -> bool {
-    match value {
-        Value::Bool(flag) => *flag,
-        Value::Null => false,
-        Value::Number(number) => number.as_f64().is_some_and(js::truthy),
-        Value::String(text) => !text.is_empty(),
-        Value::Array(_) | Value::Object(_) => true,
-    }
 }

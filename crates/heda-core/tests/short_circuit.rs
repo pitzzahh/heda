@@ -1,7 +1,6 @@
 //! PEC 2017 Appendix D Examples D13 and D14, ported from
 //! `src/lib/utils/computations/short-circuit.test.ts`.
 
-use heda_core::js;
 use heda_core::short_circuit::*;
 
 fn close(actual: f64, expected: f64, tolerance: f64) {
@@ -97,13 +96,13 @@ mod conductor_impedance_pec_2017_table_10_1_1_9 {
     fn uses_r_plus_jxl_for_250_mm2_in_steel_conduit() {
         // R 0.029, XL 0.048 Ω/305 m; × 30.4 m / 305 m
         let ohms = conductor_impedance_ohm(250.0, Some("Steel"), 30.4, 1.0, false).unwrap();
-        close(ohms, (js::hypot(0.029, 0.048) * 30.4) / 305.0, 1e-12);
+        close(ohms, (f64::hypot(0.029, 0.048) * 30.4) / 305.0, 1e-12);
         close(ohms, 0.00559, 5e-6);
     }
 
     #[test]
     fn uses_pvc_by_default_and_the_aluminum_conduit_resistance() {
-        let pvc = js::hypot(0.077, 0.042);
+        let pvc = f64::hypot(0.077, 0.042);
         close(
             conductor_impedance_ohm(80.0, Some("PVC"), 305.0, 1.0, false).unwrap(),
             pvc,
@@ -116,7 +115,7 @@ mod conductor_impedance_pec_2017_table_10_1_1_9 {
         );
         close(
             conductor_impedance_ohm(80.0, Some("Aluminum"), 305.0, 1.0, false).unwrap(),
-            js::hypot(0.082, 0.042),
+            f64::hypot(0.082, 0.042),
             1e-12,
         );
     }

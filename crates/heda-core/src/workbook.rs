@@ -1,15 +1,16 @@
 //! The Excel exports: a panel's schedule of loads with every panel below it (one sheet
-//! per depth: "1st", "2nd", …), and the voltage drop table. The sheets, cells and styles
+//! per depth: "1st", "2nd", …) and their bill of materials, and the voltage drop table. The sheets, cells and styles
 //! are the ones the app's ExcelJS export wrote; they are built here from the session in
 //! one pass, then written with rust_xlsxwriter.
 //!
 //! A cell keeps the type the app gave it: engine values are numbers, and a node's stored
 //! fields are written as stored (a text "2" stays text).
 
+use crate::bom::{self, Bom, WireUse};
 use crate::graph::Graph;
-use crate::js;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::{phases, Node};
+use crate::num;
 use crate::phases::{supply_phase_of, ALL_PHASES, PAIRS, PHASES};
 use crate::riser::phase_label;
 use crate::sizing::{Conduit, Egc};
@@ -73,12 +74,12 @@ impl Cell {
         }
     }
 
-    /// `String(value).length`, what the column widths are fitted to (UTF-16 units).
+    /// The printed length the column widths are fitted to, in characters.
     fn width(&self) -> usize {
         match self {
             Cell::Empty => 0,
-            Cell::Number(v) => js::number_to_string(*v).len(),
-            Cell::Text(text) => text.encode_utf16().count(),
+            Cell::Number(v) => num::display(*v).len(),
+            Cell::Text(text) => text.chars().count(),
             Cell::Bool(b) => b.to_string().len(),
         }
     }
@@ -269,7 +270,10 @@ pub fn layout(
                 root_phase: phase,
             };
             writer.panel(&mut input, node_id, depth)?;
-            writer.sheets
+            let bom = bom::bill_of_materials(input.graph, input.docs, input.rows, node_id)?;
+            let mut sheets = writer.sheets;
+            sheets.push(bom_sheet(&bom));
+            sheets
         }
         Kind::VoltageDrop => vec![voltage_drop_sheet(&mut input, phase, voltage_drops)],
     };
@@ -390,23 +394,17 @@ impl Schedules<'_> {
         // What this panel distributes: the project's supply at the root, else its own phase.
         let panel_phase = supply_phase_of(Some(node)).or(self.root_phase);
         let name = node
-            .panel_data
-            .as_ref()
-            .and_then(|p| p.name.clone())
-            .or_else(|| {
-                node.highest_unit_form
-                    .as_ref()
-                    .and_then(|f| f.distribution_unit.clone())
-            })
+            .schedule_name()
             .unwrap_or_else(|| "Unknown Panel".into());
+        // The panel or the supply this one is fed from, by the name its own schedule shows.
         let from = if node.node_type == "root" {
             "--".to_string()
         } else {
             node.parent_id
                 .as_deref()
                 .and_then(|id| graph.get(id))
-                .and_then(|parent| parent.panel_data.as_ref()?.name.clone())
-                .unwrap_or_else(|| "Transformer".into())
+                .and_then(Node::schedule_name)
+                .unwrap_or_else(|| "--".into())
         };
 
         let sheet_name = ordinal(depth);
@@ -578,9 +576,9 @@ fn share(row: &LoadRow, label: &str) -> Option<f64> {
 /// VA a circuit puts on one phase or line pair: a three-phase circuit's share (a third
 /// when unsplit), a single-phase circuit's VA on its own phase, empty on the others.
 fn phase_va(row: &LoadRow, label: &str) -> Cell {
-    let va = if js::truthy(row.va) { row.va } else { 0.0 };
+    let va = num::finite_or_zero(row.va);
     if row.phase == ALL_PHASES {
-        Cell::Number(js::round_js(share(row, label).unwrap_or(va / 3.0), 2))
+        Cell::Number(num::round(share(row, label).unwrap_or(va / 3.0), 2))
     } else if row.phase == label {
         Cell::Number(va)
     } else {
@@ -637,7 +635,7 @@ fn total_cells(input: &Inputs, node: &Node, row: &LoadRow, phase: Option<&str>) 
         cells.extend(
             phase_labels(phase)
                 .iter()
-                .map(|l| Cell::Number(js::round_js(share(row, l).unwrap_or(0.0), 2))),
+                .map(|l| Cell::Number(num::round(share(row, l).unwrap_or(0.0), 2))),
         );
     }
     cells.extend([
@@ -666,6 +664,137 @@ fn dash(value: Option<f64>) -> Cell {
         Some(v) if v != -1.0 && v.is_finite() => Cell::Number(v),
         _ => Cell::text("-"),
     }
+}
+
+/// The bill of materials (`bom`), one table per kind of item, each under its title.
+fn bom_sheet(bom: &Bom) -> Sheet {
+    let mut sheet = Sheet::new("Bill of Materials");
+    let mut row = 0;
+    let mut table = |sheet: &mut Sheet, title: &str, headers: &[Header], rows: Vec<Vec<Cell>>| {
+        sheet.put(row, 0, Cell::text(title), Style::Label);
+        sheet.headers(row + 1, headers);
+        row += 3;
+        if rows.is_empty() {
+            sheet.put(row, 0, Cell::text("None"), Style::Body);
+            row += 1;
+        }
+        for cells in rows {
+            sheet.put_row(row, cells, Style::Body);
+            row += 1;
+        }
+        row += 1;
+    };
+    let wires = |use_: WireUse| {
+        bom.wires
+            .iter()
+            .filter(|w| w.use_ == use_)
+            .map(|w| {
+                vec![
+                    Cell::num(w.size),
+                    Cell::text(w.insulation.as_str()),
+                    Cell::num(w.length),
+                ]
+            })
+            .collect()
+    };
+    let wire_headers = [
+        header("SIZE", &["(mm2)"]),
+        header("TYPE", &[]),
+        header("LENGTH", &["(m)"]),
+    ];
+    table(
+        &mut sheet,
+        "CONDUCTORS",
+        &wire_headers,
+        wires(WireUse::Conductor),
+    );
+    table(
+        &mut sheet,
+        "EQUIPMENT GROUNDING CONDUCTORS",
+        &wire_headers,
+        wires(WireUse::Egc),
+    );
+    table(
+        &mut sheet,
+        "CIRCUIT BREAKERS",
+        &[
+            header("RATING", &["(AT)"]),
+            header("FRAME", &["(AF)"]),
+            header("POLES", &[]),
+            header("QTY", &[]),
+        ],
+        bom.breakers
+            .iter()
+            .map(|b| {
+                vec![
+                    Cell::num(b.at),
+                    Cell::num(b.af),
+                    Cell::text(b.poles.as_str()),
+                    Cell::num(b.count as f64),
+                ]
+            })
+            .collect(),
+    );
+    table(
+        &mut sheet,
+        "CONDUITS",
+        &[
+            header("SIZE", &["(mm ø)"]),
+            header("TYPE", &[]),
+            header("LENGTH", &["(m)"]),
+        ],
+        bom.conduits
+            .iter()
+            .map(|c| {
+                vec![
+                    Cell::num(c.size),
+                    Cell::text(c.conduit_type.as_str()),
+                    Cell::num(c.length),
+                ]
+            })
+            .collect(),
+    );
+    table(
+        &mut sheet,
+        "PANELBOARDS",
+        &[
+            header("NAME", &[]),
+            header("PHASE", &[]),
+            header("MAIN", &["(AT)", "(AF)"]),
+            header("CIRCUITS", &[]),
+        ],
+        bom.panelboards
+            .iter()
+            .map(|p| {
+                vec![
+                    Cell::text(p.name.as_str()),
+                    Cell::text(p.phase.as_str()),
+                    Cell::num(p.main_at),
+                    Cell::num(p.main_af),
+                    Cell::num(p.circuits as f64),
+                ]
+            })
+            .collect(),
+    );
+    let notes = [
+        (
+            "No length, so no wire or conduit counted: ",
+            &bom.unmeasured,
+        ),
+        ("No size, so that item is left out: ", &bom.no_size),
+    ];
+    for (label, circuits) in notes {
+        if !circuits.is_empty() {
+            sheet.put(
+                row,
+                0,
+                Cell::text(format!("{label}{}", circuits.join(", "))),
+                Style::Plain,
+            );
+            row += 1;
+        }
+    }
+    sheet
 }
 
 fn voltage_drop_sheet(

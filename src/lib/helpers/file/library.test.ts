@@ -177,6 +177,21 @@ describe('importedProjectName', () => {
 		expect(importedProjectName('Mall Expansion.HEDA', PICKED)).toBe('Mall Expansion');
 	});
 
+	it('drops the .txt or .bin Android adds after .heda (#371)', () => {
+		expect(importedProjectName('northpoint-cold-storage.heda.txt', PICKED)).toBe(
+			'northpoint-cold-storage'
+		);
+		expect(importedProjectName('Plan.HEDA.TXT', PICKED)).toBe('Plan');
+		expect(importedProjectName('Plan.heda.bin', PICKED)).toBe('Plan');
+		const external =
+			'content://com.android.externalstorage.documents/document/primary%3ADownload%2FPanel%20C.heda.txt';
+		expect(importedProjectName(null, external)).toBe('Panel C');
+	});
+
+	it('keeps a .txt that does not follow .heda', () => {
+		expect(importedProjectName('notes.txt', PICKED)).toBe('notes.txt');
+	});
+
 	it('keeps a display name that has no extension', () => {
 		expect(importedProjectName('Mall Expansion', PICKED)).toBe('Mall Expansion');
 	});

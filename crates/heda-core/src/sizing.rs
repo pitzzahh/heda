@@ -1,8 +1,8 @@
 //! Breaker, conductor, conduit and EGC sizing of one circuit, ported from
 //! `src/lib/utils/computations/index.ts`.
 
-use crate::js;
 use crate::model::load_types::*;
+use crate::num;
 use crate::tables::*;
 use serde::Serialize;
 
@@ -141,9 +141,10 @@ pub fn generator_conductor_ampacity(rated_current: f64) -> f64 {
 
 /// The largest secondary overcurrent protection a transformer of 1000 V or less allows,
 /// PEC 2017 Table 4.50.1.3(B), primary and secondary protection: 125 % of the rated
-/// secondary current from 9 A up, else 167 %, taken down to a standard rating (Note 1's
-/// next higher rating applies to primary-only protection, not here). By Note 2 it caps
-/// the total of up to six service disconnects. None below the smallest standard rating.
+/// secondary current from 9 A up, else 167 %, taken down to a standard rating. Note 1's
+/// next higher rating is attached to the primary-only 125 %; the secondary cell cites
+/// Note 3, the thermal-overload note, which allows no next-higher rating. By Note 2 it
+/// caps the total of up to six service disconnects. None below the smallest standard rating.
 pub fn transformer_secondary_ocpd(current: f64) -> Option<f64> {
     let percent = if current >= 9.0 { 125.0 } else { 167.0 };
     let limit = (current * percent / 100.0 * 1e9).round() / 1e9;
@@ -279,8 +280,7 @@ pub fn allowable_ampacity(size: f64, input: ConductorInput) -> Option<f64> {
     let termination = termination_ampacity(size, input.rating, input.at);
     let corrected = corrected_ampacity(size, input.rating, input.ambient_temp, adjustment);
     let total = termination.min(corrected) * input.sets;
-    (termination.is_finite() && corrected.is_finite() && total > 0.0)
-        .then(|| js::round_js(total, 2))
+    (termination.is_finite() && corrected.is_finite() && total > 0.0).then(|| num::round(total, 2))
 }
 
 /// The ampacity the conductor needs: 125 % of a motor's full-load current (4.30.2.2), a
@@ -366,13 +366,76 @@ pub fn egc_size(at: f64) -> Egc {
     }
 }
 
-/// Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds the THHN
-/// conductors; -1 when none of Table 10.1.1.4's sizes does.
-pub fn conduit_size(conductor_size: f64, total_conductors: f64) -> Conduit {
+/// PEC 2017 Table 2.50.3.17: the copper grounding electrode conductor for the largest
+/// copper ungrounded service-entrance conductor or equivalent area (`area`, mm²).
+/// None without a conductor.
+pub fn gec_size(area: f64) -> Option<f64> {
+    if area.is_nan() || area <= 0.0 {
+        return None;
+    }
+    Some(
+        GEC_COPPER
+            .iter()
+            .find(|(up_to, _)| area <= *up_to)
+            .map_or(GEC_COPPER_OVER_500, |(_, gec)| *gec),
+    )
+}
+
+/// PEC 2017 2.50.2.9(D)(1) and Table 2.50.5.13(C)(1): the copper main or system bonding
+/// jumper for the largest copper ungrounded conductor or equivalent area (`area`, mm²).
+/// Over 500 mm², Note 1: at least 12½ % of `area`, taken up to a standard size of Table
+/// 3.10.2.6(B)(16), and never more than `area`. None without a conductor.
+pub fn bonding_jumper_size(area: f64) -> Option<f64> {
+    if area.is_nan() || area <= 0.0 {
+        return None;
+    }
+    if let Some((_, jumper)) = BONDING_JUMPER_COPPER
+        .iter()
+        .find(|(up_to, _)| area <= *up_to)
+    {
+        return Some(*jumper);
+    }
+    let least = area * 0.125;
+    Some(
+        COPPER_AMPACITIES
+            .iter()
+            .map(|(size, _)| *size)
+            .find(|size| *size >= least - 1e-9)
+            .unwrap_or(area)
+            .min(area),
+    )
+}
+
+/// PEC 2017 2.50.6.13(B): where the ungrounded conductors are increased from the minimum
+/// size that carries the load (`minimum`) to `conductor`, a wire-type EGC grows by the same
+/// ratio of area from its Table 2.50.6.13 size (`table`), to the next standard size of
+/// Table 3.10.2.6(B)(16). 2.50.6.13(A) never requires it larger than the circuit
+/// conductors. Otherwise, the table size.
+pub fn egc_increased(table: f64, conductor: f64, minimum: f64) -> f64 {
+    if !(table > 0.0 && minimum > 0.0 && conductor > minimum) {
+        return table;
+    }
+    let area = table * conductor / minimum;
+    COPPER_AMPACITIES
+        .iter()
+        .map(|(size, _)| *size)
+        .find(|size| *size >= area - 1e-9)
+        .unwrap_or(conductor)
+        .min(conductor)
+}
+
+/// Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds the THHN (or TW, for a
+/// 60 °C-rated conductor) conductors; -1 when none of Table 10.1.1.4's sizes does.
+pub fn conduit_size(conductor_size: f64, total_conductors: f64, rating: Rating) -> Conduit {
     if conductor_size > 530.0 {
         return Conduit::Text("Error");
     }
-    let Some(area) = lookup(&THHN_CONDUCTOR_AREAS, conductor_size) else {
+    let areas: &[(f64, f64)] = if rating == Rating::C60 {
+        &TW_CONDUCTOR_AREAS
+    } else {
+        &THHN_CONDUCTOR_AREAS
+    };
+    let Some(area) = lookup(areas, conductor_size) else {
         return Conduit::Text("Invalid conductor size");
     };
     CONDUIT_FILL_AREAS
@@ -396,7 +459,7 @@ pub fn max_conductors_in_area(fill_area: f64, conductor_area: f64) -> f64 {
     (fill_area / conductor_area + 0.2 + 1e-9).floor()
 }
 
-/// `x || computed` for the stored overrides, which keep a computed value when 0 or absent.
+/// A stored override, which leaves the computed value in place when 0 or absent.
 pub fn overridden(value: Option<f64>) -> Option<f64> {
-    value.filter(|value| js::truthy(*value))
+    num::positive(value)
 }
