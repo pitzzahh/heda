@@ -1,8 +1,7 @@
-import { invoke } from '@tauri-apps/api/core';
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { toast } from 'svelte-sonner';
-import { settled } from '#lib/db/index.js';
+import { engineFile } from '#lib/core/api.js';
 import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 import { isAndroidApp } from '#lib/helpers/platform.js';
 import type { TitleBlock } from '#lib/types/title-block.js';
@@ -18,11 +17,8 @@ export async function exportSheetSet(project_name: string): Promise<void> {
 		filters: [{ name: 'PDF document', extensions: ['pdf'] }]
 	});
 	if (!path) return;
-	// The engine reads the project and nodes as written; let pending writes land first.
-	await settled();
-	const date = localDate(new Date());
-	const bytes = await invoke<ArrayBuffer>('sheet_set', { projectName: project_name, date });
-	await writeFile(path, new Uint8Array(bytes));
+	const bytes = await engineFile('sheet_set', { project_name, date: localDate(new Date()) });
+	await writeFile(path, bytes);
 	toast.success('Sheet set saved.', {
 		// On Android the path is an opaque content:// document link.
 		description: isAndroidApp() ? 'Saved where you picked in the file picker.' : path,

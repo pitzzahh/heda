@@ -211,3 +211,17 @@ fn refuses_a3_above_3680_va_1_3_1_1_c() {
         .unwrap_err();
     assert!(error.contains("1.3.1.1(C)"), "{error}");
 }
+
+#[test]
+fn dispatch_file_writes_the_sheet_set() {
+    let mut session = Session::default();
+    session.open(project("760x1000"), nodes(true)).unwrap();
+    let pdf = heda_core::dispatch::dispatch_file(
+        &mut session,
+        "sheet_set",
+        json!({ "project_name": "Sunrise Apartment", "date": "2026-11-19" }),
+    )
+    .unwrap();
+    assert!(pdf.starts_with(b"%PDF-"));
+    assert!(heda_core::dispatch::dispatch_file(&mut session, "nope", json!({})).is_err());
+}
