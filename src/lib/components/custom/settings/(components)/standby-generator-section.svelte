@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-	import { createForm, Field, validate } from '@formisch/svelte';
+	import { createForm, Field, reset, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
@@ -31,6 +31,7 @@
 	const panels = $derived(getAllChildNodes(root.id).filter((node) => node.node_type === 'panel'));
 	const standby = $derived(root.highest_unit_form?.standby_panels ?? []);
 	let saving = $state(false);
+	let toggling = $state(false);
 
 	async function saveRating() {
 		if (saving) return;
@@ -40,15 +41,25 @@
 		try {
 			const updated = await setGeneratorKva(root.id, result.output.generator_kva);
 			if (!updated) return toast.warning('Failed to save the generator rating');
+			// The saved rating becomes the new baseline, so clearing it or going back counts as a change.
+			reset(form, { initialInput: { generator_kva: result.output.generator_kva } });
 			toast.success('Generator rating saved');
 		} finally {
 			saving = false;
 		}
 	}
 
+	// One toggle at a time: each write replaces the whole list, so it must start from the last one.
 	async function toggle(panel_id: string, on: boolean) {
-		const ids = on ? [...standby, panel_id] : standby.filter((id) => id !== panel_id);
-		if (!(await setStandbyPanels(root.id, ids))) toast.warning('Failed to save the standby panels');
+		if (toggling) return;
+		toggling = true;
+		try {
+			const ids = on ? [...standby, panel_id] : standby.filter((id) => id !== panel_id);
+			if (!(await setStandbyPanels(root.id, ids)))
+				toast.warning('Failed to save the standby panels');
+		} finally {
+			toggling = false;
+		}
 	}
 </script>
 
@@ -101,8 +112,8 @@
 			{#each panels as panel (panel.id)}
 				<Label class="flex items-center gap-2 font-normal">
 					<Checkbox
-						checked={standby.includes(panel.id)}
-						onCheckedChange={(on) => toggle(panel.id, on)}
+						bind:checked={() => standby.includes(panel.id), (on) => toggle(panel.id, on)}
+						disabled={toggling}
 					/>
 					{panelName(panel)}
 				</Label>
