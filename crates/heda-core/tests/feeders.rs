@@ -156,3 +156,25 @@ fn a_motor_in_a_sub_panel_loads_its_own_phase_of_the_main() {
         (50.0, 5.5)
     );
 }
+
+#[test]
+fn balancing_weighs_a_sub_panels_own_phases() {
+    // S puts its 4600 VA all on phase A of P, so P's two 1000 VA lighting circuits
+    // (on A by circuit number) belong on B and C, not spread as if S were balanced.
+    let mut nodes = wye_main_and_sub(load("l", 1.0, "lighting_load", 4600.0, false));
+    for (id, circuit) in [("x", 3.0), ("y", 4.0)] {
+        let mut lighting = load(id, circuit, "lighting_load", 1000.0, false);
+        lighting["phase_assignment"] = json!("A");
+        nodes.push(lighting);
+    }
+    let mut session = Session::default();
+    let opened = session.open(json!({}), nodes).unwrap();
+    assert_eq!(
+        opened.rows["S"].phase_loads,
+        Some([Some(4600.0), Some(0.0), Some(0.0)])
+    );
+    let answer =
+        heda_core::dispatch::dispatch(&mut session, "balance_panel", json!({ "panel_id": "P" }))
+            .unwrap();
+    assert_eq!(answer, json!([["x", "B"], ["y", "C"]]));
+}

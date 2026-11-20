@@ -98,6 +98,13 @@ fn falls_back_to_a_and_keeps_an_override() {
         ..circuit
     };
     assert_eq!(phase_of(&overridden, Supply::Wye), "C");
+    // A wye phase left on a circuit moved under delta falls back to its pair, and back.
+    assert_eq!(phase_of(&overridden, Supply::Delta), "BC");
+    let pair = Node {
+        phase_assignment: Some("CA".into()),
+        ..overridden
+    };
+    assert_eq!(phase_of(&pair, Supply::Wye), "B");
 }
 
 #[test]

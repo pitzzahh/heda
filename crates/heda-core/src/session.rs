@@ -172,6 +172,21 @@ impl Session {
         short_circuits(&self.graph, &mut self.load_rows)
     }
 
+    /// Phases (or line pairs) for the single-phase circuits of the three-phase panel
+    /// `panel_id` (or the root), from their computed rows (`phases::balanced_phase_assignments`).
+    pub fn balance_panel(&mut self, panel_id: &str) -> Vec<(String, &'static str)> {
+        let (supply, rows) =
+            crate::load_schedule::balance_circuits(&self.graph, panel_id, &mut self.load_rows);
+        let circuits: Vec<_> = rows
+            .iter()
+            .map(|(id, row)| crate::load_schedule::balance_circuit(id, row, supply))
+            .collect();
+        crate::phases::balanced_phase_assignments(&circuits, supply)
+            .into_iter()
+            .map(|(id, phase)| (id.to_owned(), phase))
+            .collect()
+    }
+
     /// The riser diagram from `id` down; from the project root it starts at the service.
     pub fn riser(&mut self, id: &str) -> Option<RiserLayout> {
         let tree = riser_tree(&self.graph, &self.docs, &mut self.load_rows, id)?;

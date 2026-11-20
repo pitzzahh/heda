@@ -60,6 +60,7 @@
 		const node = node_id ? (getNodeById(node_id) ?? undefined) : undefined;
 		const supply_phase = supplyPhaseOf(node);
 		return {
+			node_id,
 			supply_phase,
 			unbalance: node?.unbalance,
 			loads: node_id && isThreePhaseSupply(supply_phase) ? getComputedLoads(node_id) : []
@@ -114,8 +115,9 @@
 				</div>
 
 				<div class="flex shrink-0 items-center gap-2">
-					{#if three_phase_schedule.loads.length > 0}
+					{#if three_phase_schedule.node_id && three_phase_schedule.loads.length > 0}
 						<BalancePhasesMenu
+							panel_id={three_phase_schedule.node_id}
 							loads={three_phase_schedule.loads}
 							supply_phase={three_phase_schedule.supply_phase}
 							unbalance={three_phase_schedule.unbalance}

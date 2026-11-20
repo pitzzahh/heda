@@ -3,6 +3,8 @@
 	import type { PhaseAssignment } from '#lib/types/phase.js';
 
 	interface Props {
+		/** The three-phase panel (or root) whose circuits are balanced. */
+		panel_id: string;
 		/** The circuits of one three-phase panel (or root), as the schedule computes them. */
 		loads: PhaseLoadSchedule[];
 		/** That panel's phase: delta balances line pairs, 3P-Y phases. */
@@ -21,11 +23,11 @@
 	import { changePhaseAssignments } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { balanceSplit, phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
+	import { phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
 	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
 
-	let { loads, supply_phase, unbalance }: Props = $props();
+	let { panel_id, loads, supply_phase, unbalance }: Props = $props();
 	const labels = $derived(phaseLabels(supply_phase));
 
 	const undo_redo_state = getUndoRedoState();
@@ -48,15 +50,8 @@
 	async function autoBalance() {
 		let assignments: [string, PhaseAssignment][];
 		try {
-			assignments = await engine('balanced_phases', {
-				supply: supply_phase,
-				circuits: loads.map((load) => ({
-					id: load.id,
-					va: load.va || 0,
-					phase: load.phase ?? 'ABC',
-					split: balanceSplit(load, supply_phase)
-				}))
-			});
+			// The engine weighs the panel's circuits from its own rows, current with every write.
+			assignments = await engine('balance_panel', { panel_id });
 		} catch (error) {
 			console.error('Auto-balance failed:', error);
 			toast.error('Could not balance the phases');

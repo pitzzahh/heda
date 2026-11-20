@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 import { default_phases } from '#lib/constants.js';
-import { phaseLabels, rowPhaseVa } from '#lib/utils/computations/index.js';
+import { phaseLabels } from '#lib/utils/computations/index.js';
 import { renderComponent } from '#lib/components/ui/data-table/index.js';
 import { onePhaseMainOrWyeCols } from './one-phase-load-cols/index.js';
 import { PhaseDropdown, ThreePhaseCurrentFooterCell } from './(components)/index.js';
@@ -51,9 +51,10 @@ export function threePhaseCols(
 		},
 		{
 			header: is_delta ? 'VA PER LINE PAIR' : 'VA PER PHASE',
-			columns: phaseLabels(supply_phase).map((phase): ColumnDef<PhaseLoadSchedule> => ({
+			columns: phaseLabels(supply_phase).map((phase, index): ColumnDef<PhaseLoadSchedule> => ({
 				id: `phase_va_${phase}`,
-				accessorFn: (row) => rowPhaseVa(row, phase),
+				// The engine's share of the row on this phase or pair; blank where it puts none.
+				accessorFn: (row) => row.phase_loads?.[index] ?? '',
 				header: () => phase,
 				cell: (info) => info.getValue(),
 				footer: () => Number((totals?.[phase] ?? 0).toFixed(2))

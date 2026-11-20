@@ -268,24 +268,51 @@ fn turning_a_panel_into_delta_recomputes_its_circuits() {
 
 #[test]
 fn balancing_a_delta_panel_assigns_line_pairs() {
-    let mut session = Session::default();
-    let answer = dispatch(
-        &mut session,
-        "balanced_phases",
-        json!({
-            "supply": phases::THREE_PHASE_DELTA,
-            "circuits": [
-                { "id": "big", "va": 3_000, "phase": "AB" },
-                { "id": "mid", "va": 2_000, "phase": "AB" },
-                { "id": "small", "va": 1_000, "phase": "AB" }
-            ]
-        }),
-    )
-    .unwrap();
+    // All three on AB; the balancer spreads them largest first over AB, BC and CA.
+    let on_ab = |id: &str, circuit: f64, va: f64| {
+        load(
+            id,
+            "P",
+            circuit,
+            load_types::LIGHTING_LOAD,
+            va,
+            json!({ "phase_assignment": "AB" }),
+        )
+    };
+    let (mut session, _) = open(vec![
+        root(json!({})),
+        delta_panel(),
+        on_ab("small", 1.0, 1_000.0),
+        on_ab("big", 2.0, 3_000.0),
+        on_ab("mid", 3.0, 2_000.0),
+    ]);
+    let answer = dispatch(&mut session, "balance_panel", json!({ "panel_id": "P" })).unwrap();
     assert_eq!(
         answer,
         json!([["big", "AB"], ["mid", "BC"], ["small", "CA"]])
     );
+}
+
+#[test]
+fn delta_rows_show_the_va_on_each_line_pair() {
+    let (_, computed) = open(vec![
+        root(json!({})),
+        delta_panel(),
+        lighting("a", 3.0, 1_000.0),
+        load(
+            "m",
+            "P",
+            4.0,
+            load_types::THREE_P_EQUIPMENT,
+            1_000.0,
+            json!({}),
+        ),
+    ]);
+    // Circuit 3 defaults to BC; a three-phase load puts a third on each pair.
+    let a = computed.rows["a"].va;
+    assert_eq!(computed.rows["a"].phase_loads, Some([None, Some(a), None]));
+    let third = heda_core::js::round_js(computed.rows["m"].va / 3.0, 2);
+    assert_eq!(computed.rows["m"].phase_loads, Some([Some(third); 3]));
 }
 
 #[test]

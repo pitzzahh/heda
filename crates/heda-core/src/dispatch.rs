@@ -3,10 +3,9 @@
 //! bytes (`dispatch_file`). The Tauri backend and the WASM build used by tests both go
 //! through here, so they cannot drift apart.
 
-use crate::phases::{self, BalanceCircuit, Supply};
 use crate::session::Session;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Value, String> {
     match command {
@@ -38,23 +37,9 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let NodeId { node_id } = parse(args)?;
             to_json(session.riser(&node_id))
         }
-        "balanced_phases" => {
-            let BalancedPhases { circuits, supply } = parse(args)?;
-            let circuits: Vec<BalanceCircuit> = circuits
-                .iter()
-                .map(|c| BalanceCircuit {
-                    id: &c.id,
-                    va: c.va,
-                    phase: &c.phase,
-                    split: c.split,
-                })
-                .collect();
-            Ok(Value::Array(
-                phases::balanced_phase_assignments(&circuits, Supply::of(supply.as_deref()))
-                    .into_iter()
-                    .map(|(id, phase)| json!([id, phase]))
-                    .collect(),
-            ))
+        "balance_panel" => {
+            let PanelId { panel_id } = parse(args)?;
+            to_json(session.balance_panel(&panel_id))
         }
         _ => Err(format!("unknown command: {command}")),
     }
@@ -127,21 +112,8 @@ struct SetProject {
 }
 
 #[derive(Deserialize)]
-struct BalancedPhases {
-    circuits: Vec<BalanceInput>,
-    /// The panel's phase (`three_phase_delta` balances line pairs); absent is 3P-Y.
-    #[serde(default)]
-    supply: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct BalanceInput {
-    id: String,
-    va: f64,
-    phase: String,
-    /// A three-phase sub-panel's VA per phase or line pair.
-    #[serde(default)]
-    split: Option<[f64; 3]>,
+struct PanelId {
+    panel_id: String,
 }
 
 fn parse<T: for<'de> Deserialize<'de>>(args: Value) -> Result<T, String> {

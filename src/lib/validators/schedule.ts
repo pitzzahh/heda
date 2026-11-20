@@ -33,7 +33,11 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	/** Three-phase panels: largest deviation of the phase (or line pair) VA from their average, in % (NEMA MG-1 14.35; PEC 2017 sets none). */
 	unbalance: v.optional(v.number()),
 	/** Allowable ampacity of the conductors, all sets: the lower of the termination limit (PEC 2017 1.10.1.14(C)) and the corrected ampacity (3.10.2.6(B)); absent where the code gives none. */
-	ampacity: v.optional(v.number())
+	ampacity: v.optional(v.number()),
+	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (PEC 2017 2.20.3.22). */
+	phase_loads: v.optional(
+		v.tuple([v.nullable(v.number()), v.nullable(v.number()), v.nullable(v.number())])
+	)
 };
 
 /** One row of the load schedule table (computeNodeLoad). */
