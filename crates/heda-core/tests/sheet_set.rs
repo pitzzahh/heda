@@ -198,3 +198,16 @@ fn repeats_the_panel_name_when_a_schedule_runs_onto_the_next_sheet() {
         .iter()
         .any(|t| t == "PANELBOARD SCHEDULE: LP-1 (cont.)")));
 }
+
+#[test]
+fn refuses_a3_above_3680_va_1_3_1_1_c() {
+    let mut nodes = nodes(false);
+    // A 4000 VA load takes the unit past 3680 VA.
+    nodes[3]["load_data"]["varies"] = json!(4000);
+    let mut session = Session::default();
+    session.open(project("A3"), nodes).unwrap();
+    let error = session
+        .sheet_set("Sunrise Apartment".into(), "2026-11-19".into())
+        .unwrap_err();
+    assert!(error.contains("1.3.1.1(C)"), "{error}");
+}
