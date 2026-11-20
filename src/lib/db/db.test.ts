@@ -964,6 +964,15 @@ describe('incremental writes and reads', () => {
 		expect(getNode(deep.id)).toEqual(stored_deep);
 	});
 
+	it('answers false, not a rejection, when the session is replaced mid-undo', async () => {
+		await buildTree();
+		const undone = undoEdit();
+		const redone = redoEdit();
+		resetData();
+		await expect(undone).resolves.toBe(false);
+		await expect(redone).resolves.toBe(false);
+	});
+
 	it('undoes edits newest first and redoes them in order', async () => {
 		const { a, a1 } = await buildTree();
 		await update({

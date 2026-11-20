@@ -146,13 +146,23 @@ export async function copyAndAddNodeById(node_id: string, sub_parent_id?: string
 }
 
 /** Takes back the last edit; answers whether anything changed. */
-export async function undoEdit(): Promise<boolean> {
-	const { nodes, removed } = await edit('undo');
-	return nodes.length > 0 || removed.length > 0;
+export function undoEdit(): Promise<boolean> {
+	return historyStep('undo');
 }
 
 /** Makes the last undone edit again; answers whether anything changed. */
-export async function redoEdit(): Promise<boolean> {
-	const { nodes, removed } = await edit('redo');
-	return nodes.length > 0 || removed.length > 0;
+export function redoEdit(): Promise<boolean> {
+	return historyStep('redo');
+}
+
+// Keyboard shortcuts fire these without awaiting: a refusal or a session swap mid-step is
+// logged here, never left as an unhandled rejection.
+async function historyStep(command: 'undo' | 'redo'): Promise<boolean> {
+	try {
+		const { nodes, removed } = await edit(command);
+		return nodes.length > 0 || removed.length > 0;
+	} catch (error) {
+		console.error(`Failed to ${command}:`, error);
+		return false;
+	}
 }
