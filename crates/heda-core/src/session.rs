@@ -12,7 +12,8 @@ use crate::graph::Graph;
 use crate::load_schedule::{load_row, LoadRow};
 use crate::model::Node;
 use crate::riser::{layout_riser, riser_tree, RiserLayout};
-use crate::short_circuit::{short_circuits, ShortCircuitRow};
+use crate::sheet_set::{self, SheetSetInputs};
+use crate::short_circuit::{short_circuits, InterruptingRatingStatus, ShortCircuitRow};
 use crate::voltage_drop::{voltage_drops, VoltageDropRow};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -145,6 +146,57 @@ impl Session {
         let source =
             (node.node_type == "root").then(|| node.highest_unit_form.clone().unwrap_or_default());
         Some(layout_riser(&tree, source.as_ref()))
+    }
+
+    /// The permit sheet set PDF of the whole project (`sheet_set::build`), with the title
+    /// block stored on the project.
+    pub fn sheet_set(&mut self, project_name: String, date: String) -> Result<Vec<u8>, String> {
+        sheet_set::build(self.sheet_set_inputs(project_name, date)?)
+    }
+
+    /// Each sheet's title and texts (`sheet_set::sheet_texts`).
+    pub fn sheet_set_texts(
+        &mut self,
+        project_name: String,
+        date: String,
+    ) -> Result<Vec<(String, Vec<String>)>, String> {
+        Ok(sheet_set::sheet_texts(
+            self.sheet_set_inputs(project_name, date)?,
+        ))
+    }
+
+    fn sheet_set_inputs(
+        &mut self,
+        project_name: String,
+        date: String,
+    ) -> Result<SheetSetInputs<'_>, String> {
+        let root_id = self.graph.root().ok_or("no project is open")?.id.clone();
+        let riser = self.riser(&root_id).unwrap_or_default();
+        let voltage_drops = self.voltage_drops();
+        let mut short_circuits = self.short_circuits();
+        // Without a utility and transformer there is nothing to compute; no sheet of dashes.
+        if short_circuits
+            .iter()
+            .all(|row| row.status == InterruptingRatingStatus::NoSource)
+        {
+            short_circuits.clear();
+        }
+        let title_block = self
+            .project
+            .get("title_block")
+            .and_then(|block| serde_json::from_value(block.clone()).ok())
+            .unwrap_or_default();
+        Ok(SheetSetInputs {
+            graph: &self.graph,
+            docs: &self.docs,
+            rows: &mut self.load_rows,
+            voltage_drops,
+            short_circuits,
+            riser,
+            title_block,
+            project_name,
+            date,
+        })
     }
 
     fn compute_all(&mut self) -> Computed {

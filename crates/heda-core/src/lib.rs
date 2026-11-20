@@ -13,6 +13,7 @@ pub mod model;
 pub mod phases;
 pub mod riser;
 pub mod session;
+pub mod sheet_set;
 pub mod short_circuit;
 pub mod sizing;
 pub mod tables;
