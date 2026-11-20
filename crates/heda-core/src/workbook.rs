@@ -3,8 +3,8 @@
 //! are the ones the app's ExcelJS export wrote; they are built here from the session in
 //! one pass, then written with rust_xlsxwriter.
 //!
-//! A cell keeps the type the app gave it: engine values are numbers, a node's stored
-//! fields are written as stored (a text "2" stays text), and the panel totals are text.
+//! A cell keeps the type the app gave it: engine values are numbers, and a node's stored
+//! fields are written as stored (a text "2" stays text).
 
 use crate::graph::Graph;
 use crate::js;
@@ -606,43 +606,40 @@ fn load_cells(input: &Inputs, node: &Node, row: &LoadRow, phase: Option<&str>) -
     cells
 }
 
-/// The panel's own row, as text: TOTAL / MAIN, its totals, "N/A" for what it lacks.
+/// The panel's own row: TOTAL / MAIN, then its totals typed like the circuits above them
+/// (numbers as numbers, so Excel can sum and format them), "N/A" for what it lacks.
 fn total_cells(input: &Inputs, node: &Node, row: &LoadRow, phase: Option<&str>) -> Vec<Cell> {
-    let as_text = |cell: Cell| match cell {
+    let doc = |key: &str| match Cell::doc(input.doc(&node.id, key)) {
         Cell::Empty => Cell::text("N/A"),
-        Cell::Number(v) => Cell::Text(js::number_to_string(v)),
-        Cell::Bool(b) => Cell::Text(b.to_string()),
-        text => text,
+        cell => cell,
     };
-    let number = |v: f64| Cell::Text(js::number_to_string(v));
-    let doc = |key: &str| as_text(Cell::doc(input.doc(&node.id, key)));
     let mut cells = vec![
         Cell::text("TOTAL"),
         Cell::text("MAIN"),
-        number(row.voltage),
-        number(row.va),
-        number(row.current),
+        Cell::num(row.voltage),
+        Cell::num(row.va),
+        Cell::num(row.current),
     ];
     if is_three_phase(phase) {
         cells.push(Cell::text(ALL_PHASES));
         cells.extend(
             phase_labels(phase)
                 .iter()
-                .map(|l| number(js::round_js(share(row, l).unwrap_or(0.0), 2))),
+                .map(|l| Cell::Number(js::round_js(share(row, l).unwrap_or(0.0), 2))),
         );
     }
     cells.extend([
-        number(row.at),
-        number(row.ampere_frames),
+        Cell::num(row.at),
+        Cell::num(row.ampere_frames),
         doc("pole"),
         doc("kaic"),
         doc("conductor_sets"),
         doc("conductor_qty"),
-        as_text(size(row.conductor_size)),
+        size(row.conductor_size),
         doc("conductor_insulation"),
-        as_text(egc(row.egc_size)),
+        egc(row.egc_size),
         doc("egc_insulation"),
-        as_text(conduit(row.conduit_size)),
+        conduit(row.conduit_size),
         doc("conduit_type"),
     ]);
     cells
