@@ -40,7 +40,7 @@
 	import { getComputedLoads, getRootNode } from '#lib/db/queries/index.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { exportSheetSet } from '#lib/helpers/export/sheet-set.js';
+	import { exportSheetSet, titleBlockChanged } from '#lib/helpers/export/sheet-set.js';
 	import { UNTITLED_PROJECT_NAME } from '#lib/helpers/file/library.js';
 
 	let { open = $bindable(false) }: Props = $props();
@@ -66,7 +66,7 @@
 		if (!result.success || !project) return;
 		exporting = true;
 		try {
-			if (JSON.stringify(project.title_block ?? {}) !== JSON.stringify(result.output)) {
+			if (titleBlockChanged(project.title_block, result.output)) {
 				updateTitleBlock(project.id, result.output);
 				undo_redo_state.setHasUnsavedActions();
 			}

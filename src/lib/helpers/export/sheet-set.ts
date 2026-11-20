@@ -5,6 +5,7 @@ import { toast } from 'svelte-sonner';
 import { settled } from '#lib/db/index.js';
 import { showInFolderAction } from '#lib/helpers/file/reveal.js';
 import { isAndroidApp } from '#lib/helpers/platform.js';
+import type { TitleBlock } from '#lib/types/title-block.js';
 
 /**
  * Builds the permit sheet set in the engine (`crates/heda-core/src/sheet_set.rs`) and
@@ -37,4 +38,12 @@ export async function exportSheetSet(project_name: string): Promise<void> {
 export function localDate(now: Date): string {
 	const pad = (value: number) => String(value).padStart(2, '0');
 	return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** Whether `next` differs from the stored title block, field by field (key order aside). */
+export function titleBlockChanged(stored: TitleBlock | undefined, next: TitleBlock): boolean {
+	const keys = new Set([...Object.keys(stored ?? {}), ...Object.keys(next)]) as Set<
+		keyof TitleBlock
+	>;
+	return [...keys].some((key) => stored?.[key] !== next[key]);
 }
