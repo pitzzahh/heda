@@ -448,7 +448,7 @@ pub fn remove_nodes(tree: Tree, ids: &[String]) -> Plan {
                 .collect(),
         );
     }
-    let put = parents
+    let mut put: Vec<Value> = parents
         .into_iter()
         .filter_map(|parent| {
             let mut doc = tree.doc(&parent)?.clone();
@@ -456,10 +456,34 @@ pub fn remove_nodes(tree: Tree, ids: &[String]) -> Plan {
             Some(doc)
         })
         .collect();
+    drop_standby_panels(tree, &seen, &mut put);
     Plan {
         put,
         remove,
         result: Map::new(),
+    }
+}
+
+/// A removed panel leaves the supply's standby panels in the same step, so the riser no
+/// longer counts it and the settings never keep an id they cannot show.
+fn drop_standby_panels(tree: Tree, removed: &HashSet<String>, put: &mut Vec<Value>) {
+    for (id, doc) in tree.docs {
+        let Some(list) = doc["highest_unit_form"]["standby_panels"].as_array() else {
+            continue;
+        };
+        let gone = |panel: &Value| panel.as_str().is_some_and(|panel| removed.contains(panel));
+        if !list.iter().any(gone) {
+            continue;
+        }
+        let kept: Vec<Value> = list.iter().filter(|panel| !gone(panel)).cloned().collect();
+        let index = match put.iter().position(|doc| doc["id"] == id.as_str()) {
+            Some(index) => index,
+            None => {
+                put.push(doc.clone());
+                put.len() - 1
+            }
+        };
+        put[index]["highest_unit_form"]["standby_panels"] = Value::Array(kept);
     }
 }
 

@@ -473,3 +473,31 @@ fn a_copy_of_the_session_carries_no_history() {
     assert_eq!(session.clone().history_depth().undo, 0);
     assert_eq!(session.history_depth().undo, 1);
 }
+
+#[test]
+fn removing_a_standby_panel_drops_it_from_the_supply_in_one_step() {
+    let mut session = Session::default();
+    let mut supply = root("one_phase");
+    supply["child_ids"] = json!(["P", "Q"]);
+    supply["highest_unit_form"]["standby_panels"] = json!(["P", "Q"]);
+    session
+        .open(
+            json!({ "id": "p" }),
+            vec![
+                supply,
+                panel("P", "root", 1.0, "one_phase"),
+                panel("Q", "root", 2.0, "one_phase"),
+            ],
+        )
+        .unwrap();
+    run(&mut session, "remove_nodes", json!({ "ids": ["P"] })).unwrap();
+    let root = doc(&mut session, "root");
+    assert_eq!(root["highest_unit_form"]["standby_panels"], json!(["Q"]));
+    assert_eq!(root["child_ids"], json!(["Q"]));
+    run(&mut session, "undo", json!({})).unwrap();
+    let root = doc(&mut session, "root");
+    assert_eq!(
+        root["highest_unit_form"]["standby_panels"],
+        json!(["P", "Q"])
+    );
+}
