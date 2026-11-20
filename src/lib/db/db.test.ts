@@ -45,6 +45,7 @@ import {
 	getNodeDepth,
 	getNodeById,
 	getParentNodes,
+	getRiserAsync,
 	getSnapshotRevision
 } from './queries/index.js';
 import { patchNode } from './mutations/nodes.js';
@@ -92,6 +93,30 @@ describe('db', () => {
 		expect(getProject()?.title_block).toEqual(title_block);
 		expect(getProject()?.project_name).toBe('Titled');
 		expect(updateTitleBlock('other', {})).toBeUndefined();
+	});
+
+	it('lays out the riser diagram in the engine, from the service down', async () => {
+		resetData();
+		const created = await createProject('Riser', {
+			distribution_unit: 'Bldg A',
+			phase: default_phases.ONE_PHASE
+		});
+		const panel = addNode({
+			parent_id: created!.root_node_id,
+			panel_data: {
+				name: 'LP-1',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		});
+		const layout = await getRiserAsync(created!.root_node_id);
+		expect(layout?.boxes.map((box) => box.title)).toEqual(['Bldg A', 'LP-1']);
+		expect(layout?.labels.map((label) => label.id)).toEqual([panel!.id]);
+		expect(layout?.meter).toBeDefined();
+		expect(await getRiserAsync('missing')).toBeNull();
 	});
 
 	it('applies insert defaults to nodes', async () => {

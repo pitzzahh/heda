@@ -28,6 +28,10 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
         "snapshot" => to_json(session.snapshot()),
         "voltage_drops" => to_json(session.voltage_drops()),
         "short_circuits" => to_json(session.short_circuits()),
+        "riser" => {
+            let NodeId { node_id } = parse(args)?;
+            to_json(session.riser(&node_id))
+        }
         "balanced_phases" => {
             let BalancedPhases { circuits, supply } = parse(args)?;
             let circuits: Vec<BalanceCircuit> = circuits
@@ -60,6 +64,11 @@ struct Open {
 #[derive(Deserialize)]
 struct Nodes {
     nodes: Vec<Value>,
+}
+
+#[derive(Deserialize)]
+struct NodeId {
+    node_id: String,
 }
 
 #[derive(Deserialize)]

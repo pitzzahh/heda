@@ -1,18 +1,4 @@
-import type { Node } from '#lib/types/db.js';
-import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
-
-/** A panelboard in the riser diagram: its computed row, the panels it feeds, its branch breakers. */
-export type RiserTree = {
-	row: PhaseLoadSchedule;
-	panels: RiserTree[];
-	/** Breaker ratings (AT) of the branch circuits on this panelboard. */
-	branch_ats: number[];
-};
-
-/** The service supply drawn above the main panels (the project root's highest unit form). */
-export type RiserSource = NonNullable<Node['highest_unit_form']>;
-
-// Diagram geometry (UI shapes, no validation site).
+// The engine's riser layout (`crates/heda-core/src/riser.rs`): an engine payload shape.
 export type RiserBox = {
 	id: string;
 	x: number;
