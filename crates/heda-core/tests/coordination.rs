@@ -127,6 +127,51 @@ fn critical_operations_data_systems_have_no_series_exception_6_45_1_27() {
 }
 
 #[test]
+fn a_panel_marked_below_critical_operations_data_stays_under_6_45_1_27() {
+    // MDP → DP (critical operations data) → EP (emergency) → e1, all in series: 7.0.6.3's
+    // Exception would exempt them, but e1 is still part of DP's system, which has none.
+    let mut session = Session::default();
+    let nodes = vec![
+        root(json!({ "phase": "one_phase" })),
+        panel("MDP", "root", 200.0, None),
+        panel("DP", "MDP", 150.0, Some("critical_operations_data")),
+        panel("EP", "DP", 100.0, Some("emergency")),
+        load("e1", "EP", 20.0),
+    ];
+    session.open(json!({}), nodes).unwrap();
+    let pairs = session.coordination();
+    assert_eq!(pairs.len(), 6);
+    for p in &pairs {
+        assert_eq!(
+            (p.system, p.section),
+            (System::CriticalOperationsData, "6.45.1.27")
+        );
+        assert_eq!(p.status, Status::NeedsDocumentation);
+    }
+}
+
+#[test]
+fn the_nearest_marked_panel_names_the_system_otherwise() {
+    // An emergency panel below a legally required standby one: both have the Exception,
+    // and the circuit is cited under the panel that supplies it.
+    let mut session = Session::default();
+    let nodes = vec![
+        root(json!({ "phase": "one_phase" })),
+        panel("MDP", "root", 200.0, None),
+        panel("SP", "MDP", 150.0, Some("legally_required_standby")),
+        panel("EP", "SP", 100.0, Some("emergency")),
+        load("e1", "EP", 20.0),
+    ];
+    session.open(json!({}), nodes).unwrap();
+    let e1 = session
+        .coordination()
+        .into_iter()
+        .find(|p| p.downstream.id == "e1")
+        .unwrap();
+    assert_eq!(e1.section, "7.0.6.3");
+}
+
+#[test]
 fn names_the_requiring_section_and_carries_the_available_fault_current() {
     let mut session = Session::default();
     let mut nodes = emergency_project(vec![]);

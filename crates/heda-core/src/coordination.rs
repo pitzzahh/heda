@@ -157,16 +157,21 @@ fn parent<'g>(graph: &'g Graph, node: &Node) -> Option<&'g Node> {
     graph.get(node.parent_id.as_deref()?)
 }
 
-/// The listed system a circuit belongs to: its own (a panel's) or the nearest panel's above.
+/// The listed system a circuit belongs to: its own (a panel's) or the nearest panel's above,
+/// except that anything below a critical operations data panel stays under 6.45.1.27, which
+/// has no series Exception, whatever a panel between them is marked.
 fn system_of(graph: &Graph, node: &Node) -> Option<System> {
+    let mut nearest = None;
     let mut current = Some(node);
     while let Some(n) = current {
-        if let Some(system) = System::of(n.panel_data.as_ref().and_then(|p| p.system.as_deref())) {
-            return Some(system);
+        let system = System::of(n.panel_data.as_ref().and_then(|p| p.system.as_deref()));
+        if system == Some(System::CriticalOperationsData) {
+            return system;
         }
+        nearest = nearest.or(system);
         current = parent(graph, n);
     }
-    None
+    nearest
 }
 
 /// Whether `node` is the only load on `panel`'s device: every panel from `panel` down to
