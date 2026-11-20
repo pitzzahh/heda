@@ -82,9 +82,10 @@ pub fn phase_of(node: &Node, supply: Supply) -> &str {
         .unwrap_or_else(|| default_assignment(node.circuit_number, supply))
 }
 
-/// What to store when a user picks `next`: nothing when it matches the default.
-pub fn phase_override(next: &str, circuit_number: Option<f64>) -> Option<&str> {
-    (next != default_phase_assignment(circuit_number)).then_some(next)
+/// What to store when a user picks `next` on a panel of `supply`: nothing when it
+/// matches the circuit-number default (on delta, its line pair).
+pub fn phase_override(next: &str, circuit_number: Option<f64>, supply: Supply) -> Option<&str> {
+    (next != default_assignment(circuit_number, supply)).then_some(next)
 }
 
 pub fn is_three_phase_load_type(load_type: Option<&str>) -> bool {

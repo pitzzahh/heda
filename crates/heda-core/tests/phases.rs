@@ -80,8 +80,11 @@ fn rotates_rows_of_two_circuits() {
 
 #[test]
 fn stores_an_override_only_when_it_differs() {
-    assert_eq!(phase_override("B", Some(3.0)), None);
-    assert_eq!(phase_override("C", Some(3.0)), Some("C"));
+    assert_eq!(phase_override("B", Some(3.0), Supply::Wye), None);
+    assert_eq!(phase_override("C", Some(3.0), Supply::Wye), Some("C"));
+    // On delta, circuit 3 defaults to the BC pair.
+    assert_eq!(phase_override("BC", Some(3.0), Supply::Delta), None);
+    assert_eq!(phase_override("AB", Some(3.0), Supply::Delta), Some("AB"));
 }
 
 #[test]
