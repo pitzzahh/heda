@@ -63,6 +63,10 @@ pub fn dispatch_file(session: &mut Session, command: &str, args: Value) -> Resul
             let SheetSet { project_name, date } = parse(args)?;
             session.sheet_set(project_name, date)
         }
+        "riser_svg" => {
+            let NodeId { node_id } = parse(args)?;
+            session.riser_svg(&node_id)
+        }
         "workbook" => {
             let Workbook {
                 kind,

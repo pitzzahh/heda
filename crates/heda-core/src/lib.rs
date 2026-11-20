@@ -12,6 +12,7 @@ pub mod load_schedule;
 pub mod model;
 pub mod phases;
 pub mod riser;
+pub mod riser_svg;
 pub mod session;
 pub mod sheet_set;
 pub mod short_circuit;

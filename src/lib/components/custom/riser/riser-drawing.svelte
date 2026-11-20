@@ -3,7 +3,7 @@
 
 	interface Props {
 		layout: RiserLayout;
-		/** What to draw one element each (culled on screen, everything for the export). */
+		/** What to draw one element each, culled to the view (the engine writes the export, `riser_svg.rs`). */
 		items: RiserItems;
 		/** Text, breakers and wire counts; off when zoomed out too far to read them. */
 		detail: boolean;
