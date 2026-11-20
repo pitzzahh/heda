@@ -367,13 +367,18 @@ pub fn egc_size(at: f64) -> Egc {
     }
 }
 
-/// Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds the THHN
-/// conductors; -1 when none of Table 10.1.1.4's sizes does.
-pub fn conduit_size(conductor_size: f64, total_conductors: f64) -> Conduit {
+/// Smallest conduit whose PEC 2017 Table 10.1.1.1 fill area holds the THHN (or TW, for a
+/// 60 °C-rated conductor) conductors; -1 when none of Table 10.1.1.4's sizes does.
+pub fn conduit_size(conductor_size: f64, total_conductors: f64, rating: Rating) -> Conduit {
     if conductor_size > 530.0 {
         return Conduit::Text("Error");
     }
-    let Some(area) = lookup(&THHN_CONDUCTOR_AREAS, conductor_size) else {
+    let areas: &[(f64, f64)] = if rating == Rating::C60 {
+        &TW_CONDUCTOR_AREAS
+    } else {
+        &THHN_CONDUCTOR_AREAS
+    };
+    let Some(area) = lookup(areas, conductor_size) else {
         return Conduit::Text("Invalid conductor size");
     };
     CONDUIT_FILL_AREAS

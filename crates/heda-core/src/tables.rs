@@ -216,6 +216,33 @@ pub const THHN_CONDUCTOR_AREAS: [(f64, f64); 21] = [
     (500.0, 870.9),
 ];
 
+/// PEC 2017 Ch. 10 Table 10.1.1.5: approximate area (mm²) of TW/TRW/THW/THHW conductors.
+// shortcut: the table lists no 175 or 375 mm², so those take the next larger listed
+// size (200, 400).
+pub const TW_CONDUCTOR_AREAS: [(f64, f64); 21] = [
+    (2.0, 9.1),
+    (3.5, 11.9),
+    (5.5, 15.9),
+    (8.0, 28.3),
+    (14.0, 46.6),
+    (22.0, 62.2),
+    (30.0, 86.6),
+    (38.0, 122.7),
+    (50.0, 143.1),
+    (60.0, 169.7),
+    (80.0, 201.1),
+    (100.0, 240.5),
+    (125.0, 295.6),
+    (150.0, 339.8),
+    (175.0, 426.4),
+    (200.0, 426.4),
+    (250.0, 510.7),
+    (325.0, 629.0),
+    (375.0, 749.9),
+    (400.0, 749.9),
+    (500.0, 951.2),
+];
+
 /// PEC 2017 Table 4.30.14.2: full-load current of single-phase AC motors, 230 V column
 /// (A), as `(horsepower, amperes)`. The table's currents apply to 220–240 V systems.
 pub const ONE_PHASE_MOTOR_FLC_230V: [(&str, f64); 12] = [

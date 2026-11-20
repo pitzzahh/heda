@@ -144,6 +144,7 @@ fn conduit(node: &Node, conductor_size: f64) -> Conduit {
         None => sizing::conduit_size(
             conductor_size,
             count(node.conductor_sets) * count(node.conductor_qty) + 1.0,
+            Rating::of(node.conductor_insulation.as_deref()),
         ),
     }
 }
