@@ -22,7 +22,6 @@
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import { changePhaseAssignments } from '#lib/db/mutations/index.js';
 	import { getNode } from '#lib/db/queries/index.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { phaseLabels, phaseOverride } from '#lib/utils/computations/index.js';
 	import { engine } from '#lib/core/api.js';
 	import { toast } from 'svelte-sonner';
@@ -30,20 +29,13 @@
 	let { panel_id, loads, supply_phase, unbalance }: Props = $props();
 	const labels = $derived(phaseLabels(supply_phase));
 
-	const undo_redo_state = getUndoRedoState();
-
-	function applyChanges(changes: PhaseChange[], message: string) {
+	async function applyChanges(changes: PhaseChange[], message: string) {
 		const changed = changes.filter(([id, phase]) => getNode(id)?.phase_assignment !== phase);
 		if (changed.length === 0) {
 			toast.info('Phases are already set that way');
 			return;
 		}
-		const previous = changed.flatMap(([id]) => getNode(id) ?? []);
-		changePhaseAssignments(changed);
-		undo_redo_state.setActionToUndo({
-			action: 'batch_update',
-			batch_data: previous.map((node) => ({ data: node as unknown as PhaseLoadSchedule }))
-		});
+		await changePhaseAssignments(changed);
 		toast.success(message);
 	}
 

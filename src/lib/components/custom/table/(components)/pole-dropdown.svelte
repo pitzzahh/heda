@@ -10,24 +10,14 @@
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
 	import { changePole } from '#lib/db/mutations/index.js';
-	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { node, current_pole }: Props = $props();
 	// User picks override until undo/redo recomputes it.
 	let selected_pole = $derived(current_pole);
 
-	let undo_redo_state = getUndoRedoState();
-
-	function handleChangePole(pole: '1' | '2' | '3') {
-		const previous_node = getNode(node.id);
-		const updated_node = changePole(node.id, pole);
-		undo_redo_state.setActionToUndo({
-			action: 'update_node',
-			data: updated_node as unknown as PhaseLoadSchedule,
-			previous_data: previous_node as unknown as PhaseLoadSchedule
-		});
+	async function handleChangePole(pole: '1' | '2' | '3') {
+		await changePole(node.id, pole);
 	}
 </script>
 

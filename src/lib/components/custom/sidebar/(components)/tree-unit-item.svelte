@@ -1,6 +1,5 @@
 <script lang="ts" module>
 	import type { Node, Project } from '#lib/types/db.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import type { DragDropState } from '@thisux/sveltednd';
 
 	interface Props {
@@ -34,11 +33,10 @@
 	import UpdatePanelDialog from '../update-panel-dialog.svelte';
 	import AddLoadDialog from '#lib/components/custom/load/add-load-dialog.svelte';
 	import TreeActionsMenu from './tree-actions-menu.svelte';
-	import { getChildNodesByParentId, getNode } from '#lib/db/queries/index.js';
-	import { deleteNodeAndRecordUndo } from '../tree-delete.js';
+	import { getChildNodesByParentId } from '#lib/db/queries/index.js';
+	import { deleteTreeNode } from '../tree-delete.js';
 	import { updateNodeParentById } from '#lib/db/mutations/index.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 	import { getSelectNodesToDeleteState } from '#lib/hooks/select-nodes-to-delete.svelte.js';
 	import { goto } from '$app/navigation';
@@ -53,7 +51,6 @@
 	let { node, highest_unit, project, is_alt_pressed, on_copy, on_delete }: Props = $props();
 
 	const settings_state = getSettingsState();
-	const undo_redo_state = getUndoRedoState();
 	const collapsibles = getCollapsiblesState();
 	const select_nodes_to_delete_state = getSelectNodesToDeleteState();
 
@@ -155,7 +152,7 @@
 		}
 	]);
 
-	function handleDrop(state: DragDropState<Node>, _node: Node) {
+	async function handleDrop(state: DragDropState<Node>, _node: Node) {
 		const { draggedItem, targetContainer } = state;
 		// A press without a move drops a row on itself: nothing to do.
 		if (_node.id !== targetContainer || _node.id === draggedItem.id) return;
@@ -163,23 +160,17 @@
 			toast.info(`${getNodeName(draggedItem)} is already on ${getNodeName(_node)}`);
 			return;
 		}
-		const previous_node = getNode(draggedItem.id);
 		const {
 			node: moved_node,
 			error,
 			renumbered_to
-		} = updateNodeParentById({ id: draggedItem.id, parent_id: draggedItem.parent_id }, _node.id);
+		} = await updateNodeParentById(draggedItem.id, _node.id);
 		if (error || !moved_node) {
 			toast.error(`Cannot move ${getNodeName(draggedItem)} to ${getNodeName(_node)}`, {
 				description: error
 			});
 			return;
 		}
-		undo_redo_state.setActionToUndo({
-			action: 'update_node',
-			data: moved_node as unknown as PhaseLoadSchedule,
-			previous_data: (previous_node ?? draggedItem) as unknown as PhaseLoadSchedule
-		});
 		collapsibles.addNodeId(_node.id);
 		toast.success(`${getNodeName(draggedItem)} moved to ${getNodeName(_node)}`, {
 			description:
@@ -311,9 +302,8 @@
 							trigger_variant="destructive"
 							bind:button_state
 							bind:some_open_state={menu_open}
-							onConfirm={() => {
-								deleteNodeAndRecordUndo(node, project, {
-									undo_redo: undo_redo_state,
+							onConfirm={async () => {
+								await deleteTreeNode(node, project, {
 									collapsibles,
 									select_nodes_to_delete: select_nodes_to_delete_state
 								});

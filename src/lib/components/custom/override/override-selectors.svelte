@@ -52,8 +52,6 @@
 	import { toast } from 'svelte-sonner';
 	import * as Select from '#lib/components/ui/select/index.js';
 	import Input from '#lib/components/ui/input/input.svelte';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCatalog } from '#lib/core/catalog.js';
 	let {
 		node_id,
@@ -68,8 +66,6 @@
 		current_ampere_frames,
 		is_in_vd_table
 	}: Props = $props();
-
-	let undo_redo_state = getUndoRedoState();
 
 	// The PEC 2017 steps each override walks (Tables 2.40.1.6(A), 3.10.2.6(B)(16), 2.50.6.13, 10.1.1.4).
 	const {
@@ -129,98 +125,70 @@
 			(!!current_z && z !== current_z)
 	);
 
-	function handleOverride() {
+	async function handleOverride() {
 		const overridden_fields: string[] = [];
 
 		if (isPicked(selected_ampere_rating, current_at)) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: selected_ampere_rating,
 				field_type: 'at'
 			});
 			overridden_fields.push('AT');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_at'
-			});
 		}
 
 		if (isPicked(selected_conductor_size, current_conductor_size)) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: selected_conductor_size,
 				field_type: 'conductor_size'
 			});
 			overridden_fields.push('Conductor Size');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_conductor_size'
-			});
 		}
 
 		if (isPicked(selected_egc_size, current_egc_size)) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: selected_egc_size,
 				field_type: 'egc_size'
 			});
 			overridden_fields.push('EGC Size');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_egc_size'
-			});
 		}
 
 		if (isPicked(selected_conduit_size, current_conduit_size)) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: selected_conduit_size,
 				field_type: 'conduit_size'
 			});
 			overridden_fields.push('Conduit Size');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_conduit_size'
-			});
 		}
 
 		if (ampere_frames !== current_ampere_frames.toString()) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: Number(ampere_frames),
 				field_type: 'ampere_frames'
 			});
 			overridden_fields.push('Ampere Frames (AT)');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_af'
-			});
 		}
 
 		if (current_length && length !== current_length) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: length,
 				field_type: 'length'
 			});
 			overridden_fields.push('Length');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_length'
-			});
 		}
 
 		if (current_z && z !== current_z) {
-			const updated_node = overrideField({
+			await overrideField({
 				node_id,
 				field_data: z,
 				field_type: 'z'
 			});
 			overridden_fields.push('Z');
-			undo_redo_state.setActionToUndo({
-				data: updated_node as unknown as PhaseLoadSchedule,
-				action: 'override_z'
-			});
 		}
 
 		if (overridden_fields.length > 0) {
@@ -229,13 +197,13 @@
 
 		closeDialog();
 	}
-	function removeOverride(field_type: FieldType) {
+	async function removeOverride(field_type: FieldType) {
 		const formatted_field = field_type
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 
-		overrideField({ node_id, field_type, unoverride: true });
+		await overrideField({ node_id, field_type, unoverride: true });
 		closeDialog();
 		toast.success(`Removed override for ${formatted_field}`);
 	}

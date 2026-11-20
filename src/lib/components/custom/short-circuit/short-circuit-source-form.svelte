@@ -1,6 +1,5 @@
 <script lang="ts" module>
 	import type { Node } from '#lib/types/db.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 
 	interface Props {
 		root: Node;
@@ -51,13 +50,10 @@
 	import FieldErrors from '#lib/components/custom/field-errors.svelte';
 	import { SHORT_CIRCUIT_SOURCE_SCHEMA } from '#lib/validators/short-circuit.js';
 	import { updateShortCircuitSource } from '#lib/db/mutations/index.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 	import { cn } from '#lib/utils/index.js';
 	import { METRO_MANILA_UTILITY_SC_KVA } from '#lib/constants.js';
 
 	let { root }: Props = $props();
-
-	const undo_redo_state = getUndoRedoState();
 
 	// Mount snapshot of the stored source (the page remounts the form when it changes);
 	// the grid level defaults to Ex. D14 step 3.
@@ -86,16 +82,11 @@
 		if (!result.success) return;
 		saving = true;
 		try {
-			const updated = updateShortCircuitSource(root.id, result.output);
+			const updated = await updateShortCircuitSource(root.id, result.output);
 			if (!updated) {
 				toast.warning('Failed to save the source data');
 				return;
 			}
-			undo_redo_state.setActionToUndo({
-				action: 'update_node',
-				previous_data: root as unknown as PhaseLoadSchedule,
-				data: updated as unknown as PhaseLoadSchedule
-			});
 			toast.success('Short-circuit source saved');
 			expanded = false;
 		} finally {

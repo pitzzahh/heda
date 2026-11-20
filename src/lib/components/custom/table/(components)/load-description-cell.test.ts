@@ -10,9 +10,7 @@ const { updateLoadDescription, getNode } = vi.hoisted(() => ({
 vi.mock('#lib/db/mutations/index.js', () => ({ updateLoadDescription }));
 vi.mock('#lib/db/queries/index.js', () => ({ getNode }));
 
-import LoadDescriptionCellFixture, {
-	get_fixture_state
-} from './load-description-cell.fixture.svelte';
+import LoadDescriptionCellFixture from './load-description-cell.fixture.svelte';
 
 afterEach(() => {
 	document.body.innerHTML = '';
@@ -50,7 +48,6 @@ describe('LoadDescriptionCell', () => {
 			load_description: '100 - Kitchen lights',
 			node_type: 'load'
 		});
-		expect(get_fixture_state().hasUndoActions()).toBe(true);
 		unmount(component);
 	});
 

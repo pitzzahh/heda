@@ -31,12 +31,9 @@
 	import { GENERIC_PHASE_PANEL_SCHEMA } from '#lib/validators/panel.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { addNode, updateNode } from '#lib/db/mutations/index.js';
-	import { checkNodeExists, getNode } from '#lib/db/queries/index.js';
-	import { supplyError } from '#lib/utils/computations/index.js';
+	import { checkNodeExists } from '#lib/db/queries/index.js';
 	import type { Node } from '#lib/types/db.js';
 	import type { TerminalTemperature } from '#lib/types/load.js';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import type { PhaseLoadSchedule } from '#lib/types/schedule.js';
 	import { getCollapsiblesState } from '#lib/hooks/node-collapsibles.svelte.js';
 
 	let {
@@ -49,7 +46,6 @@
 		selected_parent_id
 	}: Props = $props();
 
-	let undo_redo_state = getUndoRedoState();
 	let collapsibles = getCollapsiblesState();
 
 	// Snapshot of props at mount: initial form values never track later prop changes.
@@ -116,47 +112,29 @@
 				return;
 			}
 
-			const supply_error = supplyError({
-				node: { node_type: 'panel', panel_data: data },
-				parent: getNode(selected_parent_id || parent_id),
-				children: node_to_edit?.child_ids.flatMap((child_id) => getNode(child_id) ?? [])
-			});
-			if (supply_error) {
-				toast.error(supply_error);
-				submitting = false;
-				return;
-			}
-
-			switch (action) {
-				case 'add': {
-					const added_node = addNode({ parent_id, panel_data: data });
-					toast.success(`${data.name} added successfully`);
-					collapsibles.addNodeId(parent_id);
-					undo_redo_state.setActionToUndo({
-						data: added_node as unknown as PhaseLoadSchedule,
-						action: 'create_node'
-					});
-					break;
-				}
-				case 'edit':
-					if (node_to_edit && selected_parent_id) {
-						const updated_node = updateNode({
-							panel_data: data,
-							id: node_to_edit.id,
-							parent_id: selected_parent_id
-						});
-						toast.success('Panel updated successfully');
-						undo_redo_state.setActionToUndo({
-							data: updated_node as unknown as PhaseLoadSchedule,
-							previous_data: node_to_edit as PhaseLoadSchedule,
-							action: 'update_node'
-						});
-					}
-					break;
+			// The engine refuses a panel its supply cannot feed (PEC 2017 2.20.1.5(A)).
+			if (action === 'add') {
+				const { error } = await addNode({ parent_id, panel_data: data });
+				if (error) return refuse(error);
+				toast.success(`${data.name} added successfully`);
+				collapsibles.addNodeId(parent_id);
+			} else if (node_to_edit && selected_parent_id) {
+				const { error } = await updateNode({
+					panel_data: data,
+					id: node_to_edit.id,
+					parent_id: selected_parent_id
+				});
+				if (error) return refuse(error);
+				toast.success('Panel updated successfully');
 			}
 
 			closeDialog();
 		}
+		submitting = false;
+	}
+
+	function refuse(error: string) {
+		toast.error(error);
 		submitting = false;
 	}
 </script>

@@ -15,6 +15,7 @@ const FIELD_TYPE_MAPPING: Record<FieldType, string> = {
 	z: 'overrided_z'
 };
 
+/** Sets or (with `unoverride` and no value) clears the user's override of a sized field. */
 export function overrideField({
 	node_id,
 	field_data,
@@ -26,22 +27,12 @@ export function overrideField({
 	unoverride?: boolean;
 	field_type: FieldType;
 }) {
-	try {
-		const data = unoverride && !field_data ? undefined : field_data;
-		const field_to_update = FIELD_TYPE_MAPPING[field_type];
-
-		return patchNode(node_id, { [field_to_update]: data });
-	} catch (err) {
-		console.error(`Error overriding data: ${JSON.stringify(err)}`);
-	}
+	const data = unoverride && !field_data ? undefined : field_data;
+	return patchNode(node_id, { [FIELD_TYPE_MAPPING[field_type]]: data });
 }
 
 export function updateConductorSets({ node_id, sets }: { node_id: string; sets: number }) {
-	try {
-		return patchNode(node_id, { conductor_sets: sets });
-	} catch (err) {
-		console.error(`Error updating conductor sets: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { conductor_sets: sets });
 }
 
 /**
@@ -49,14 +40,11 @@ export function updateConductorSets({ node_id, sets }: { node_id: string; sets: 
  * the string the field has always held; unmarked breakers stay at the 5 kA default.
  */
 export function updateInterruptingRating({ node_id, kaic }: { node_id: string; kaic: number }) {
-	try {
-		return patchNode(node_id, { kaic: String(kaic) });
-	} catch (err) {
-		console.error(`Error updating the interrupting rating: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { kaic: String(kaic) });
 }
 
-export function updateLoadDescription({
+/** Renames a panel, or sets a load's description; a node without that data stays as it is. */
+export async function updateLoadDescription({
 	node_id,
 	load_description,
 	node_type
@@ -65,22 +53,13 @@ export function updateLoadDescription({
 	load_description: string;
 	node_type: 'panel' | 'load';
 }) {
-	try {
-		const node_data = findNode(node_id);
-
-		return patchNode(node_id, {
-			...(node_type === 'panel' &&
-				node_data?.panel_data && {
-					panel_data: { ...node_data.panel_data, name: load_description }
-				}),
-			...(node_type === 'load' &&
-				node_data?.load_data && {
-					load_data: { ...node_data.load_data, load_description }
-				})
-		});
-	} catch (err) {
-		console.error(`Error updating conductor load_description: ${JSON.stringify(err)}`);
-	}
+	const node = findNode(node_id);
+	const merge =
+		node_type === 'panel'
+			? node?.panel_data && { panel_data: { name: load_description } }
+			: node?.load_data && { load_data: { load_description } };
+	if (merge) await patchNodes([{ id: node_id, merge }]);
+	return findNode(node_id);
 }
 
 export function changeInsulation({
@@ -92,41 +71,27 @@ export function changeInsulation({
 	insulation: string;
 	type: 'egc' | 'conductor';
 }) {
-	try {
-		return patchNode(node_id, {
-			...(type === 'egc' && { egc_insulation: insulation }),
-			...(type === 'conductor' && { conductor_insulation: insulation })
-		});
-	} catch (err) {
-		console.error(`Error changing insulation: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { [`${type}_insulation`]: insulation });
 }
 
 export function changePole(node_id: string, pole: string) {
-	try {
-		return patchNode(node_id, { pole });
-	} catch (err) {
-		console.error(`Error changing pole: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { pole });
 }
 
 export function useAtAsCurrentsValue(node_id: string, is_use: boolean) {
-	try {
-		return patchNode(node_id, { is_at_used_as_currents_value: is_use });
-	} catch (err) {
-		console.error(`Error changing data: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { is_at_used_as_currents_value: is_use });
+}
+
+/** Sets fields of the root's unit form, keeping its other fields. */
+async function mergeUnitForm(root_id: string, fields: object) {
+	if (findNode(root_id)?.node_type !== 'root') return undefined;
+	await patchNodes([{ id: root_id, merge: { highest_unit_form: fields } }]);
+	return findNode(root_id);
 }
 
 /** Stores the PEC 2017 App. D Ex. D14 source data on the root node, keeping its other unit fields. */
 export function updateShortCircuitSource(root_id: string, source: ShortCircuitSource) {
-	try {
-		const root = findNode(root_id);
-		if (root?.node_type !== 'root') return undefined;
-		return patchNode(root_id, { highest_unit_form: { ...root.highest_unit_form, ...source } });
-	} catch (err) {
-		console.error(`Error updating short-circuit source: ${JSON.stringify(err)}`);
-	}
+	return mergeUnitForm(root_id, source);
 }
 
 /**
@@ -135,30 +100,15 @@ export function updateShortCircuitSource(root_id: string, source: ShortCircuitSo
  * rating of PEC 2017 2.30.6.10; a supply that is itself a feeder skips it.
  */
 export function setServiceEntrance(root_id: string, is_service: boolean) {
-	try {
-		const root = findNode(root_id);
-		if (root?.node_type !== 'root') return undefined;
-		return patchNode(root_id, { highest_unit_form: { ...root.highest_unit_form, is_service } });
-	} catch (err) {
-		console.error(`Error updating the service entrance: ${JSON.stringify(err)}`);
-	}
+	return mergeUnitForm(root_id, { is_service });
 }
 
 /** Overrides the circuit-number phase (or delta line pair) of a circuit; undefined restores the default. */
 export function changePhaseAssignment(node_id: string, phase: PhaseAssignment | undefined) {
-	try {
-		return patchNode(node_id, { phase_assignment: phase });
-	} catch (err) {
-		console.error(`Error changing phase assignment: ${JSON.stringify(err)}`);
-	}
+	return patchNode(node_id, { phase_assignment: phase });
 }
 
-/** Sets the phase of several circuits in one write; `undefined` clears an override. */
+/** Sets the phase of several circuits in one undoable step; `undefined` clears an override. */
 export function changePhaseAssignments(changes: [node_id: string, PhaseAssignment | undefined][]) {
-	try {
-		return patchNodes(changes.map(([node_id, phase]) => [node_id, { phase_assignment: phase }]));
-	} catch (err) {
-		console.error(`Error changing phase assignments: ${JSON.stringify(err)}`);
-		return [];
-	}
+	return patchNodes(changes.map(([id, phase]) => ({ id, set: { phase_assignment: phase } })));
 }

@@ -26,27 +26,18 @@
 <script lang="ts">
 	import * as Select from '#lib/components/ui/select/index.js';
 	import { changeInsulation } from '#lib/db/mutations/index.js';
-	import { getNode } from '#lib/db/queries/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
 
 	let { at, type, current_insulation, node }: Props = $props();
 	// User picks override until undo/redo recomputes it.
 	let selected_insulation = $derived(current_insulation as Insulations);
-	let undo_redo_state = getUndoRedoState();
 
 	const insulations_to_map = $derived(
 		isTwBarred(type, at) ? insulations.filter((i) => i !== 'TW-Cu') : insulations
 	);
 
-	function handleChangeInsulation(insulation: Insulations) {
-		const previous_node = getNode(node.id);
-		const updated_node = changeInsulation({ node_id: node.id, insulation, type });
-		undo_redo_state.setActionToUndo({
-			action: 'update_node',
-			data: updated_node as unknown as PhaseLoadSchedule,
-			previous_data: previous_node as unknown as PhaseLoadSchedule
-		});
+	async function handleChangeInsulation(insulation: Insulations) {
+		await changeInsulation({ node_id: node.id, insulation, type });
 	}
 </script>
 
