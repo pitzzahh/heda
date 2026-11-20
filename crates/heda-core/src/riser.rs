@@ -108,6 +108,8 @@ pub struct RiserTree<'a> {
     pub panels: Vec<RiserTree<'a>>,
     /// Breaker ratings (AT) of the branch circuits on this panelboard.
     pub branch_ats: Vec<f64>,
+    /// Total VA of those branch circuits.
+    pub branch_va: f64,
 }
 
 /// The tree under `id` from the computed rows.
@@ -125,18 +127,22 @@ pub fn riser_tree<'a>(
     };
     let mut panels = Vec::new();
     let mut branch_ats = Vec::new();
+    let mut branch_va = 0.0;
     let children: Vec<&Node> = graph.children(id).collect();
     for child in children {
         if child.node_type == "panel" {
             panels.extend(riser_tree(graph, docs, rows, &child.id));
         } else {
-            branch_ats.push(circuit(child, rows).row.at);
+            let row = circuit(child, rows).row;
+            branch_ats.push(row.at);
+            branch_va += row.va;
         }
     }
     Some(RiserTree {
         circuit: circuit(node, rows),
         panels,
         branch_ats,
+        branch_va,
     })
 }
 
@@ -314,11 +320,13 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
     lines
 }
 
-/// The service transformer checked against what it feeds: the panels' load (Article 2.20
-/// calculates the load a source must carry) and the total of the service mains, which
+/// The service transformer checked against what it feeds: the load of the panels and of the
+/// circuits wired straight on the supply (Article 2.20 calculates the load a source must
+/// carry) and the total of the service mains, which
 /// PEC 2017 Table 4.50.1.3(B) Note 2 caps at the largest secondary protection allowed.
 fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<String> {
-    let load_kva = tree.panels.iter().map(|p| p.circuit.row.va).sum::<f64>() / 1000.0;
+    let panels_va: f64 = tree.panels.iter().map(|p| p.circuit.row.va).sum();
+    let load_kva = (panels_va + tree.branch_va) / 1000.0;
     let over = |exceeded: bool| if exceeded { ", OVER" } else { "" };
     let mut lines = vec![format!(
         "Load: {} kVA{}",
@@ -327,7 +335,8 @@ fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<Str
     )];
     let ocpd = sizing::rated_current(kva, phase).and_then(sizing::transformer_secondary_ocpd);
     if let Some(ocpd) = ocpd {
-        let mains: f64 = tree.panels.iter().map(|p| p.circuit.row.at).sum();
+        let panels_at: f64 = tree.panels.iter().map(|p| p.circuit.row.at).sum();
+        let mains = panels_at + tree.branch_ats.iter().sum::<f64>();
         lines.push(format!(
             "Secondary OCPD ≤ {} A{}",
             num(ocpd),
