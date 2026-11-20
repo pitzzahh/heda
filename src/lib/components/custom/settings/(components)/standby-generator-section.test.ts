@@ -35,7 +35,35 @@ const settle = async () => {
 	flushSync();
 };
 
+function box(name: string) {
+	const label = [...document.querySelectorAll('label')].find((l) => l.textContent?.includes(name));
+	return label!.querySelector<HTMLElement>('[role="checkbox"]')!;
+}
+
 describe('StandbyGeneratorSection', () => {
+	test('a second toggle waits for the first, so neither panel is lost', async () => {
+		setStandbyPanels.mockReturnValue(new Promise(() => {}));
+		const component = mount(StandbyGeneratorSection, { target: document.body, props: { root } });
+		flushSync();
+		box('LP-1').click();
+		flushSync();
+		box('LP-2').click();
+		await settle();
+		expect(setStandbyPanels).toHaveBeenCalledTimes(1);
+		expect(setStandbyPanels).toHaveBeenCalledWith('root', ['LP-1']);
+		unmount(component);
+	});
+
+	test('a refused toggle leaves the box as stored', async () => {
+		setStandbyPanels.mockResolvedValue(undefined);
+		const component = mount(StandbyGeneratorSection, { target: document.body, props: { root } });
+		flushSync();
+		box('LP-1').click();
+		await settle();
+		expect(box('LP-1').getAttribute('aria-checked')).toBe('false');
+		unmount(component);
+	});
+
 	test('a saved rating can be cleared again', async () => {
 		setGeneratorKva.mockResolvedValue(root);
 		const component = mount(StandbyGeneratorSection, { target: document.body, props: { root } });
