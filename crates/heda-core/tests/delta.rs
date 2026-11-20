@@ -157,6 +157,7 @@ fn a_balanced_delta_panel_carries_the_three_phase_current() {
     assert_eq!((lines.A, lines.B, lines.C), (173.21, 173.21, 173.21));
     assert_eq!(row.balanced_current, Some(173.21));
     assert_eq!(row.current, 173.21);
+    assert_eq!(row.unbalance, Some(0.0));
 }
 
 #[test]
@@ -180,6 +181,8 @@ fn an_unbalanced_delta_panel_sizes_on_its_most_loaded_line() {
     assert_eq!(row.current, 164.62);
     // 1.25 × 164.62 A = 205.8 A → 225 A breaker (PEC 2017 Table 2.40.1.6(A)).
     assert_eq!(row.at, 225.0);
+    // Average 58 100 / 3 = 19 366.67 VA; CA is furthest off, 4 966.67 VA: 25.65 %.
+    assert_eq!(row.unbalance, Some(25.65));
 }
 
 #[test]

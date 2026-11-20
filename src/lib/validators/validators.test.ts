@@ -334,9 +334,11 @@ describe('validators', () => {
 			ampere_frames: 30,
 			phase: 'ABC',
 			phase_va: { A: 1, B: 1, C: 1 },
-			balanced_current: 1.4
+			balanced_current: 1.4,
+			unbalance: 0
 		};
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, row).success).toBe(true);
+		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, unbalance: '0' }).success).toBe(false);
 		expect(v.safeParse(LOAD_SCHEDULE_ROW_SCHEMA, { ...row, phase: 'Z' }).success).toBe(false);
 		const delta_row = {
 			...row,

@@ -29,7 +29,9 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	/** Delta panels: current in each line, from the pair currents 120° apart. */
 	line_current: v.optional(LINE_CURRENT_SCHEMA),
 	/** Three-phase panels: balanced current, VA ÷ (line voltage × 1.732) (PEC 2017 App. D Ex. D6); `current` is the design value. */
-	balanced_current: v.optional(v.number())
+	balanced_current: v.optional(v.number()),
+	/** Three-phase panels: largest deviation of the phase (or line pair) VA from their average, in % (NEMA MG-1 14.35; PEC 2017 sets none). */
+	unbalance: v.optional(v.number())
 };
 
 /** One row of the load schedule table (computeNodeLoad). */

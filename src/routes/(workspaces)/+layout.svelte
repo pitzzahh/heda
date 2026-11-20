@@ -57,9 +57,11 @@
 	const three_phase_schedule = $derived.by(() => {
 		const on_load_tab = on_load_schedule && project_state.schedule_tab === 'load-sched';
 		const node_id = on_load_tab ? nodeIdFromRouteId(page.params.id) : undefined;
-		const supply_phase = node_id ? supplyPhaseOf(getNodeById(node_id) ?? undefined) : undefined;
+		const node = node_id ? (getNodeById(node_id) ?? undefined) : undefined;
+		const supply_phase = supplyPhaseOf(node);
 		return {
 			supply_phase,
+			unbalance: node?.unbalance,
 			loads: node_id && isThreePhaseSupply(supply_phase) ? getComputedLoads(node_id) : []
 		};
 	});
@@ -116,6 +118,7 @@
 						<BalancePhasesMenu
 							loads={three_phase_schedule.loads}
 							supply_phase={three_phase_schedule.supply_phase}
+							unbalance={three_phase_schedule.unbalance}
 						/>
 					{/if}
 					{#if isPreviewVersion(pj.version)}
