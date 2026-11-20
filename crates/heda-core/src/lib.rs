@@ -11,6 +11,7 @@ pub mod dispatch;
 pub mod edit;
 pub mod graph;
 pub mod js;
+pub mod legacy_v1;
 pub mod load_schedule;
 pub mod migrate;
 pub mod model;

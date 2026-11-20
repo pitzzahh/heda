@@ -85,12 +85,12 @@ describe('legacy v1 reader', () => {
 		await expectCode(`${LEGACY_V1_PLAIN_FIXED.split(':')[0]}:AA==:AA==`, 'format');
 	});
 
-	it('recognizes v1 envelopes only', () => {
-		expect(isLegacyV1Envelope(LEGACY_V1_PLAIN_FIXED)).toBe(true);
-		expect(isLegacyV1Envelope(LEGACY_V1_PLAIN_STEM)).toBe(true);
-		expect(isLegacyV1Envelope(LEGACY_V1_GIBBERISH_STEM)).toBe(true);
-		expect(isLegacyV1Envelope('{"v":2,"salt":"x","payload":"y"}')).toBe(false);
-		expect(isLegacyV1Envelope('not an envelope')).toBe(false);
+	it('recognizes v1 envelopes only', async () => {
+		expect(await isLegacyV1Envelope(LEGACY_V1_PLAIN_FIXED)).toBe(true);
+		expect(await isLegacyV1Envelope(LEGACY_V1_PLAIN_STEM)).toBe(true);
+		expect(await isLegacyV1Envelope(LEGACY_V1_GIBBERISH_STEM)).toBe(true);
+		expect(await isLegacyV1Envelope('{"v":2,"salt":"x","payload":"y"}')).toBe(false);
+		expect(await isLegacyV1Envelope('not an envelope')).toBe(false);
 	});
 
 	it('tries the configured salt before the filename stem', () => {

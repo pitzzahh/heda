@@ -4,6 +4,7 @@
 //! through here, so they cannot drift apart.
 
 use crate::edit;
+use crate::legacy_v1;
 use crate::session::Session;
 use serde::Deserialize;
 use serde_json::Value;
@@ -82,6 +83,24 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let PanelId { panel_id } = parse(args)?;
             to_json(session.balance_panel(&panel_id))
         }
+        "is_legacy_v1" => {
+            let Raw { raw } = parse(args)?;
+            to_json(legacy_v1::is_envelope(&raw))
+        }
+        "legacy_v1_decrypt" => {
+            let LegacyV1 {
+                raw,
+                passphrase,
+                salts,
+            } = parse(args)?;
+            // A refusal is an answer, not an error, so the app keeps its code.
+            to_json(match legacy_v1::decrypt(&raw, &passphrase, &salts) {
+                Ok(plain) => serde_json::json!({ "text": plain.text, "salt": plain.salt }),
+                Err(refusal) => {
+                    serde_json::json!({ "error": refusal.code, "message": refusal.message })
+                }
+            })
+        }
         _ => Err(format!("unknown command: {command}")),
     }
 }
@@ -108,6 +127,18 @@ pub fn dispatch_file(session: &mut Session, command: &str, args: Value) -> Resul
         }
         _ => Err(format!("unknown file command: {command}")),
     }
+}
+
+#[derive(Deserialize)]
+struct Raw {
+    raw: String,
+}
+
+#[derive(Deserialize)]
+struct LegacyV1 {
+    raw: String,
+    passphrase: String,
+    salts: Vec<String>,
 }
 
 #[derive(Deserialize)]

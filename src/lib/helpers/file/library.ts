@@ -228,7 +228,7 @@ export async function prepareImport(
 			return err instanceof FileDeviceKeyError ? 'other_device' : 'invalid';
 		}
 	}
-	if (!isLegacyV1Envelope(raw)) return 'invalid';
+	if (!(await isLegacyV1Envelope(raw))) return 'invalid';
 	const config = getLegacyV1Config();
 	if (!config) return 'legacy_unsupported';
 	const files = new Map([[original_name, bytes]]);
