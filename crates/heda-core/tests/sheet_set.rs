@@ -252,3 +252,24 @@ fn prints_the_overload_column_only_with_a_nameplate_motor() {
         .expect("header");
     assert!(schedule[at..].iter().any(|t| t == "9"));
 }
+
+#[test]
+fn a_long_owner_name_prints_in_full_in_the_title_block() {
+    // 1.3.2.2(B) names the owner: 119 characters (the field takes 120) wrap past two
+    // lines on A3, and every word still prints.
+    let owner = (1..=24)
+        .map(|n| format!("w{n:03}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut project = project("A3");
+    project["title_block"]["owner_name"] = json!(owner);
+    let mut session = Session::default();
+    session.open(project, nodes(false)).unwrap();
+    let sheets = session
+        .sheet_set_texts("Sunrise Apartment".into(), "2026-11-19".into())
+        .unwrap();
+    let printed = sheets[0].1.join(" ");
+    for word in owner.split(' ') {
+        assert!(printed.contains(word), "owner word {word:?} is missing");
+    }
+}
