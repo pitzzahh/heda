@@ -16,8 +16,11 @@ mod android;
 
 /// Every engine call (`crates/heda-core`): the open project lives here, in the app
 /// process, so a webview reload finds it again and a fresh launch starts empty.
+/// Async, so a long call (opening a large file, a big edit) runs on Tauri's async
+/// runtime instead of the main thread, which would freeze the window meanwhile. The app
+/// still gets the answers in order: `engine()` sends one call at a time.
 #[tauri::command]
-fn heda(
+async fn heda(
     session: tauri::State<'_, Mutex<heda_core::session::Session>>,
     command: String,
     args: serde_json::Value,
@@ -29,9 +32,8 @@ fn heda(
 }
 
 /// Every file the engine writes (`heda_core::dispatch::dispatch_file`), as raw bytes
-/// rather than JSON. Async, so it builds off the main thread, and on a copy of the
-/// session, so the lock (which the sync `heda` command waits on, on the main thread) is
-/// held only for the copy.
+/// rather than JSON. Off the main thread like `heda`, and on a copy of the session, so
+/// the lock the `heda` calls behind it wait on is held only for the copy.
 #[tauri::command]
 async fn heda_file(
     session: tauri::State<'_, Mutex<heda_core::session::Session>>,
