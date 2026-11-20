@@ -402,3 +402,41 @@ mod conduit_size_pec_2017_ch_10_tables_10_1_1_1_10_1_1_4_and_10_1_1_5 {
         assert_eq!(conduit_size(600.0, 4.0), Conduit::Text("Error"));
     }
 }
+
+mod allowable_ampacity_pec_2017_1_3_2_1_g_3_d {
+    use super::*;
+
+    #[test]
+    fn a_20_a_circuit_is_held_to_the_60_c_termination_column() {
+        // 3.5 mm² THHN: Table 3.10.2.6(B)(16) 90 °C 30 A, but at 20 A (≤ 100 A)
+        // 1.10.1.14(C)(1)(a) allows the 60 °C 20 A.
+        assert_eq!(allowable_ampacity(3.5, panel(20.0)), Some(20.0));
+    }
+
+    #[test]
+    fn corrects_for_ambient_and_raceway_fill_then_adds_the_sets() {
+        // 60 mm² THHN, 2 sets of a 4-wire wye feeder at 35 °C under a 225 A breaker:
+        // 2 × 3 = 6 current-carrying conductors → 0.8 (Table 3.10.2.6(B)(3)(a));
+        // 35 °C → 0.96 at 90 °C (Table 3.10.2.6(B)(2)(a)): 170 × 0.96 × 0.8 = 130.56 A,
+        // below the 75 °C termination's 155 A (1.10.1.14(C)(1)(b)); × 2 sets = 261.12 A.
+        let input = ConductorInput {
+            sets: 2.0,
+            qty: 4.0,
+            ambient_temp: 35.0,
+            ..panel(225.0)
+        };
+        assert_eq!(allowable_ampacity(60.0, input), Some(261.12));
+    }
+
+    #[test]
+    fn has_none_where_the_code_gives_no_value() {
+        // TW over 100 A: the 75 °C termination admits no 60 °C conductor.
+        assert_eq!(
+            allowable_ampacity(60.0, at_ambient(150.0, Rating::C60, 30.0)),
+            None
+        );
+        // No conductor fits (-1) or an unlisted size.
+        assert_eq!(allowable_ampacity(-1.0, panel(20.0)), None);
+        assert_eq!(allowable_ampacity(4.0, panel(20.0)), None);
+    }
+}
