@@ -26,10 +26,15 @@
 </script>
 
 <script lang="ts">
+	import { ExportIcon } from '#lib/assets/icons.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { getComputedLoads, getNodeById } from '#lib/db/queries/index.js';
+	import { exportRiserSvg } from '#lib/helpers/export/riser-svg.js';
+	import { toast } from 'svelte-sonner';
 	import { LINE, layoutRiser } from './layout.js';
 
 	let { node_id }: Props = $props();
+	let svg = $state<SVGSVGElement>();
 
 	const start = $derived(getNodeById(node_id) as PhaseLoadSchedule | null);
 	const drawn = $derived.by(() => {
@@ -39,11 +44,34 @@
 			? layoutRiser(tree, start.highest_unit_form ?? {})
 			: layoutRiser(tree);
 	});
+
+	// The drawn element, for the export (attachment: tracks mount and unmount).
+	function keepSvg(element: SVGSVGElement) {
+		svg = element;
+		return () => (svg = undefined);
+	}
+
+	async function saveSvg() {
+		if (!svg || !drawn) return;
+		try {
+			await exportRiserSvg(svg, drawn.boxes[0]?.title ?? 'Project');
+		} catch (error) {
+			console.error('Riser export failed:', error);
+			toast.error('Could not save the riser diagram');
+		}
+	}
 </script>
 
 {#if drawn}
+	<div class="flex justify-end pb-2">
+		<Button size="sm" variant="outline" onclick={saveSvg}>
+			<ExportIcon class="size-4" />
+			Save SVG
+		</Button>
+	</div>
 	<div class="min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-card p-2">
 		<svg
+			{@attach keepSvg}
 			width={drawn.width}
 			height={drawn.height}
 			viewBox="0 0 {drawn.width} {drawn.height}"
