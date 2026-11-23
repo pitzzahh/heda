@@ -1,8 +1,4 @@
-import type * as v from 'valibot';
-import type { COORDINATION_REFERENCE_SCHEMA } from '#lib/validators/coordination.js';
 import type { GenericPhasePanelSchema } from '#lib/types/panel.js';
-
-export type CoordinationReferenceInput = v.InferOutput<typeof COORDINATION_REFERENCE_SCHEMA>;
 
 export type CoordinationSystem = NonNullable<GenericPhasePanelSchema['system']>;
 

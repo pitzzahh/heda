@@ -83,7 +83,3 @@ export function getAllChildNodes(root_node_id: string, include_parent?: boolean)
 	}
 	return all_nodes;
 }
-
-export function nextTask(): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, 0));
-}

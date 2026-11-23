@@ -218,13 +218,6 @@ export const FIELD_VALIDATION = {
 	}
 };
 
-export const MIN_LOAD_QUANTITY = 1;
-export const MAX_LOAD_QUANTITY = 100;
-export const MIN_WIRE_LENGTH = 1;
-export const MAX_WIRE_LENGTH = 1000;
-export const MIN_VARIES = 0;
-export const MAX_VARIES = 100;
-
 export const AMBIENT_TEMPERATURES = Array.from({ length: 70 }, (_, index) => index + 1);
 
 /**

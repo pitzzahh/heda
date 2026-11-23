@@ -65,9 +65,3 @@ export function getDeviceKey(): Promise<string> {
 	}
 	return cached;
 }
-
-/** Test helper: drop the in-memory copy so the next call reloads or recreates. */
-export function resetDeviceKeyCache(): void {
-	cached = null;
-	memory_key = null;
-}

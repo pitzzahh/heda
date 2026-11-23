@@ -1,11 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import {
-	BaseDirectory,
-	exists,
-	open as openFile,
-	readFile,
-	type ExistsOptions
-} from '@tauri-apps/plugin-fs';
+import { exists, open as openFile, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
 import {
 	FileDeviceKeyError,
 	FileLegacyError,
@@ -44,41 +38,7 @@ export interface NeedMigration {
 	file_path: string;
 }
 
-export const BASE_DIR = BaseDirectory.Document;
-export const BASE_DIR_PATH = 'heda';
 export const EXTENSION = 'heda';
-
-export interface ParsedFileName {
-	baseName: string;
-	number: number | null;
-	extension: string;
-}
-
-export function getFileNameWithoutExtension(path: string, extension: string = EXTENSION): string {
-	const fileName = path.split('/').pop() || '';
-	const lastDotIndex = fileName.lastIndexOf(`.${extension}`);
-	return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
-}
-
-export function getFilePath(filePath: string): string {
-	const parts = filePath.split('/');
-	parts.pop();
-	return parts.join('/');
-}
-
-/* Parses a filename into its components: base name, number(if any), and extension
- * @example
- * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
- * parseFileName("Untitled (1).heda") -> { baseName: "Untitled", number: 1, extension: ".heda" }
- */
-
-export async function getFileMetaData(path: string) {
-	try {
-		return await invoke('get_file_metadata', { path });
-	} catch (err) {
-		console.error(`Error reading file attributes: ${JSON.stringify(err)}`);
-	}
-}
 
 export async function getFileName(path: string): Promise<string | undefined> {
 	try {
