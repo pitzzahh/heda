@@ -94,7 +94,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
 			<Dialog.Title>Sheet set (PDF)</Dialog.Title>
 			<Dialog.Description>
