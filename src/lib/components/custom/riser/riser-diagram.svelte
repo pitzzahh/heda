@@ -199,57 +199,68 @@
 </script>
 
 {#if drawn}
-	<div class="flex items-center justify-end gap-1 pb-2">
-		<Button
-			size="icon-sm"
-			variant="outline"
-			aria-label="Zoom out"
-			title="Zoom out (−)"
-			onclick={() => zoomCentre(1 / ZOOM_STEP)}
+	<div class="relative flex min-h-80 flex-1 flex-col">
+		<!-- Floats over the canvas as a sibling, so its clicks never start a drag. -->
+		<div
+			class="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-lg border border-border bg-background/80 p-1 shadow-sm backdrop-blur"
 		>
-			<MagnifyingGlassMinusIcon />
-		</Button>
-		<span class="w-12 text-center text-xs text-muted-foreground tabular-nums" aria-live="polite">
-			{Math.round(view.k * 100)}%
-		</span>
-		<Button
-			size="icon-sm"
-			variant="outline"
-			aria-label="Zoom in"
-			title="Zoom in (+)"
-			onclick={() => zoomCentre(ZOOM_STEP)}
+			<Button
+				size="icon-sm"
+				variant="outline"
+				aria-label="Zoom out"
+				title="Zoom out (−)"
+				onclick={() => zoomCentre(1 / ZOOM_STEP)}
+			>
+				<MagnifyingGlassMinusIcon />
+			</Button>
+			<span class="w-12 text-center text-xs text-muted-foreground tabular-nums" aria-live="polite">
+				{Math.round(view.k * 100)}%
+			</span>
+			<Button
+				size="icon-sm"
+				variant="outline"
+				aria-label="Zoom in"
+				title="Zoom in (+)"
+				onclick={() => zoomCentre(ZOOM_STEP)}
+			>
+				<MagnifyingGlassPlusIcon />
+			</Button>
+			<Button
+				size="icon-sm"
+				variant="outline"
+				aria-label="Fit to view"
+				title="Fit (0)"
+				onclick={fit}
+			>
+				<CornersOutIcon />
+			</Button>
+			<Button size="sm" variant="outline" class="ml-1" onclick={saveSvg}>
+				<ExportIcon class="size-4" />
+				Save SVG
+			</Button>
+		</div>
+		<div
+			{@attach attachFrame}
+			class={[
+				'relative min-h-0 flex-1 touch-none overflow-hidden rounded-xl border border-border bg-card outline-none select-none focus-visible:ring-2 focus-visible:ring-ring',
+				dragging ? 'cursor-grabbing' : 'cursor-grab'
+			]}
+			role="application"
+			aria-roledescription="pannable diagram"
+			aria-label="Riser diagram. Drag to pan, wheel or pinch to zoom; arrow keys pan, + and − zoom, 0 fits."
+			onpointerdown={onPointerDown}
+			onpointermove={onPointerMove}
+			onpointerup={onPointerUp}
+			onpointercancel={onPointerUp}
 		>
-			<MagnifyingGlassPlusIcon />
-		</Button>
-		<Button size="icon-sm" variant="outline" aria-label="Fit to view" title="Fit (0)" onclick={fit}>
-			<CornersOutIcon />
-		</Button>
-		<Button size="sm" variant="outline" class="ml-1" onclick={saveSvg}>
-			<ExportIcon class="size-4" />
-			Save SVG
-		</Button>
-	</div>
-	<div
-		{@attach attachFrame}
-		class={[
-			'relative min-h-80 flex-1 touch-none overflow-hidden rounded-xl border border-border bg-card outline-none select-none focus-visible:ring-2 focus-visible:ring-ring',
-			dragging ? 'cursor-grabbing' : 'cursor-grab'
-		]}
-		role="application"
-		aria-roledescription="pannable diagram"
-		aria-label="Riser diagram. Drag to pan, wheel or pinch to zoom; arrow keys pan, + and − zoom, 0 fits."
-		onpointerdown={onPointerDown}
-		onpointermove={onPointerMove}
-		onpointerup={onPointerUp}
-		onpointercancel={onPointerUp}
-	>
-		<RiserDrawing
-			layout={drawn}
-			items={items ?? drawn}
-			{detail}
-			transform={transformOf(view)}
-			class="absolute inset-0 size-full font-sans text-foreground"
-		/>
+			<RiserDrawing
+				layout={drawn}
+				items={items ?? drawn}
+				{detail}
+				transform={transformOf(view)}
+				class="absolute inset-0 size-full font-sans text-foreground"
+			/>
+		</div>
 	</div>
 {:else if drawn === null}
 	<div class="grid min-h-0 flex-1 place-items-center text-sm text-muted-foreground">
