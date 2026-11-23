@@ -87,7 +87,7 @@
 		<AppSidebar project={workspace.project} root_node={workspace.root_node as Node} />
 		<Sidebar.Inset class="overflow-y-auto">
 			<header
-				class="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-3 sm:px-4"
+				class="sticky top-0 z-10 flex h-[calc(3.5rem+var(--safe-area-top))] shrink-0 items-center justify-between gap-3 border-b bg-background/95 pt-(--safe-area-top) pr-[calc(0.75rem+var(--safe-area-right))] pl-[calc(0.75rem+var(--safe-area-left))] sm:pr-[calc(1rem+var(--safe-area-right))] sm:pl-[calc(1rem+var(--safe-area-left))]"
 			>
 				<div class="flex min-w-0 items-center gap-2">
 					<Sidebar.Trigger class="-ml-1" />
@@ -155,7 +155,9 @@
 			</header>
 
 			<svelte:boundary>
-				<div class="flex min-h-0 w-full flex-1 flex-col gap-4 p-4">
+				<div
+					class="flex min-h-0 w-full flex-1 flex-col gap-4 py-4 pr-[calc(1rem+var(--safe-area-right))] pl-[calc(1rem+var(--safe-area-left))]"
+				>
 					{@render children?.()}
 				</div>
 				{#snippet failed(error, reset)}

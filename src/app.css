@@ -57,6 +57,11 @@
 
 @layer base {
 	:root {
+		/* Status bar and notch insets from the Android shell (`#lib/helpers/system-bars.ts`). */
+		--safe-area-top: 0px;
+		--safe-area-right: 0px;
+		--safe-area-bottom: 0px;
+		--safe-area-left: 0px;
 		--background: oklch(97.8% 0.0035 87.4);
 		--foreground: oklch(23.5% 0.012 178.3);
 		--card: oklch(100% 0 0);

@@ -43,7 +43,10 @@
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
 			{side}
 		>
-			<div class="flex h-full w-full flex-col">
+			<!-- Full-screen on phones: the panel colour runs under the status bar and notch, the content keeps clear. -->
+			<div
+				class="flex h-full w-full flex-col pt-(--safe-area-top) pr-(--safe-area-right) pl-(--safe-area-left)"
+			>
 				{@render children?.()}
 			</div>
 		</Sheet.Content>
