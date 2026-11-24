@@ -39,8 +39,12 @@ export function createLeaveProject() {
 		});
 		if (plan === 'close') return true;
 
-		if (plan === 'save_then_close') {
-			return saveCurrentProject(project_state.current_project_path, undo_redo_state);
+		// A failed silent save falls through to the prompt, or the app could never be left.
+		if (
+			plan === 'save_then_close' &&
+			(await saveCurrentProject(project_state.current_project_path, undo_redo_state))
+		) {
+			return true;
 		}
 
 		before_prompt?.();
