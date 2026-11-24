@@ -108,7 +108,7 @@
 			<Label for="small_dwelling">Dwelling of at Most 50 m²</Label>
 			<p class="text-xs text-muted-foreground">
 				On one circuit (PEC 2017 2.10.1.11(C)(5)) it takes a 20 A service disconnect, not 15 A
-				(2.30.6.10(B)).
+				(2.30.6.10(B)); up to 3680 VA its plans may use A3 sheets (1.3.1.1(C)).
 			</p>
 		</div>
 		<Switch
