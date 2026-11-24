@@ -347,23 +347,43 @@ pub fn update_node(
     }
     let mut plan = Plan::default();
     if moved {
-        set_or_remove(&mut next, "phase_assignment", None);
-        set_or_remove(&mut next, "coordination_reference", None);
-        plan.put = reparent(tree, id, existing_node.parent_id.as_deref(), parent_id);
-        // Every circuit below now has other supply-side devices: its documented selection no longer holds.
-        plan.put.extend(
-            tree.subtree(id, &mut HashSet::new())
-                .into_iter()
-                .filter(|node| node.id != id && node.coordination_reference.is_some())
-                .filter_map(|node| tree.doc(&node.id).cloned())
-                .map(|mut doc| {
-                    set_or_remove(&mut doc, "coordination_reference", None);
-                    doc
-                }),
+        plan.put = moved_to(
+            tree,
+            id,
+            &mut next,
+            existing_node.parent_id.as_deref(),
+            parent_id,
         );
     }
     plan.put.insert(0, next);
     Ok(plan)
+}
+
+/// What moving `id` (its document `moved`) under `new_parent` also writes: the two child
+/// lists, and the documented selections below it, which no longer hold since every
+/// circuit there now has other supply-side devices. `moved` drops its phase pick (it
+/// means nothing on the new panel) and its own selection.
+fn moved_to(
+    tree: Tree,
+    id: &str,
+    moved: &mut Value,
+    old_parent: Option<&str>,
+    new_parent: &str,
+) -> Vec<Value> {
+    set_or_remove(moved, "phase_assignment", None);
+    set_or_remove(moved, "coordination_reference", None);
+    let mut put = reparent(tree, id, old_parent, new_parent);
+    put.extend(
+        tree.subtree(id, &mut HashSet::new())
+            .into_iter()
+            .filter(|node| node.id != id && node.coordination_reference.is_some())
+            .filter_map(|node| tree.doc(&node.id).cloned())
+            .map(|mut doc| {
+                set_or_remove(&mut doc, "coordination_reference", None);
+                doc
+            }),
+    );
+    put
 }
 
 /// The old and new parents of `id` with their child lists updated.
@@ -409,14 +429,13 @@ pub fn move_node(tree: Tree, id: &str, parent_id: &str) -> Result<Plan, String> 
         .collect();
     let mut moved = doc.clone();
     moved["parent_id"] = json!(parent_id);
-    set_or_remove(&mut moved, "phase_assignment", None);
     let mut plan = Plan::default();
     if used.contains(&node.circuit_number.unwrap_or(0.0)) {
         let next = used.iter().fold(0.0_f64, |max, number| max.max(*number)) + 1.0;
         moved["circuit_number"] = json!(next);
         plan.result.insert("renumbered_to".into(), json!(next));
     }
-    plan.put = reparent(tree, id, node.parent_id.as_deref(), parent_id);
+    plan.put = moved_to(tree, id, &mut moved, node.parent_id.as_deref(), parent_id);
     plan.put.insert(0, moved);
     Ok(plan)
 }

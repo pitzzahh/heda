@@ -564,6 +564,29 @@ fn a_move_drops_the_documented_selection_below_it_7_0_6_3() {
 }
 
 #[test]
+fn a_dragged_move_drops_the_documented_selection_below_it_7_0_6_3() {
+    // The sidebar's drag and drop moves through `move_node`; like a form move, the
+    // circuits it carries now have other supply-side devices.
+    let mut session = session("one_phase");
+    session
+        .put(vec![panel("Q", "root", 2.0, "one_phase")])
+        .unwrap();
+    let (sub, inner) = documented_subpanel(&mut session);
+    run(
+        &mut session,
+        "move_node",
+        json!({ "id": sub, "parent_id": "Q" }),
+    )
+    .unwrap();
+    assert!(doc(&mut session, &sub)
+        .get("coordination_reference")
+        .is_none());
+    assert!(doc(&mut session, &inner)
+        .get("coordination_reference")
+        .is_none());
+}
+
+#[test]
 fn an_edit_in_place_keeps_the_documented_selection() {
     let mut session = session("one_phase");
     let (sub, inner) = documented_subpanel(&mut session);
