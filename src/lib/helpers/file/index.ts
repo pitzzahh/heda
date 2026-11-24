@@ -30,7 +30,7 @@ import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getLegacyV1Config } from './legacy/credentials.js';
 import { isLegacyV1Envelope, legacyV1SaltCandidates } from './legacy/v1.js';
-import { migrateLegacyFile } from './legacy/migration.js';
+import { convertV2ToDevice, migrateLegacyFile } from './legacy/migration.js';
 import { tauriMigrationFileIO } from './legacy/tauri-io.js';
 
 export interface NeedPassword {
@@ -308,56 +308,12 @@ export async function convertHedaFileToDevice(
 	file_path: string,
 	password: string
 ): Promise<MigrateHedaFileResult> {
-	const io = tauriMigrationFileIO();
-	const original = await io.read(file_path);
-	const raw = new TextDecoder().decode(original);
-	if (detectFileVersion(raw) !== 2) {
-		throw new Error('Only a password-protected file can be converted to device encryption.');
-	}
-	const data = await decryptFilePayload<FileExport>(raw, password);
-	const device_key = await getDeviceKey();
-	const staged = new TextEncoder().encode(await packFileV3(data, device_key));
-	const temp_path = `${file_path}.v3.tmp`;
-
-	await io.write(temp_path, staged);
-	const staged_check = await decryptFilePayload<FileExport>(
-		new TextDecoder().decode(await io.read(temp_path)),
-		null,
-		device_key
-	);
-	if (JSON.stringify(staged_check) !== JSON.stringify(data)) {
-		await io.remove(temp_path);
-		throw new Error('The converted file did not pass verification.');
-	}
-
-	let backup_path = `${file_path}.v2.bak`;
-	for (let suffix = 1; (await io.exists(backup_path)) && suffix < 10_000; suffix++) {
-		backup_path = `${file_path}.v2.bak.${suffix}`;
-	}
-	const bytes_equal = (a: Uint8Array, b: Uint8Array): boolean => {
-		if (a.length !== b.length) return false;
-		let difference = 0;
-		for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
-		return difference === 0;
-	};
-	await io.write(backup_path, original);
-	const backup_check = await io.read(backup_path);
-	if (!bytes_equal(backup_check, original)) {
-		await io.remove(temp_path);
-		throw new Error('A verified backup of the original file could not be created.');
-	}
-
-	try {
-		await io.write(file_path, staged);
-		const committed = await io.read(file_path);
-		if (!bytes_equal(committed, staged)) throw new Error('The written file does not match.');
-		await decryptFilePayload<FileExport>(new TextDecoder().decode(committed), null, device_key);
-	} catch (err) {
-		await io.write(file_path, original);
-		await io.remove(temp_path);
-		throw err;
-	}
-	await io.remove(temp_path).catch(() => undefined);
+	const { backup_path } = await convertV2ToDevice<FileExport>({
+		file_path,
+		password,
+		device_key: await getDeviceKey(),
+		io: tauriMigrationFileIO()
+	});
 	return { backup_path };
 }
 
