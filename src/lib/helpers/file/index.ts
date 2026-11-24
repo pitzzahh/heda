@@ -1,5 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import { exists, open as openFile, readFile, type ExistsOptions } from '@tauri-apps/plugin-fs';
+import {
+	exists,
+	open as openFile,
+	readFile,
+	rename,
+	type ExistsOptions
+} from '@tauri-apps/plugin-fs';
 import {
 	FileDeviceKeyError,
 	FileLegacyError,
@@ -44,7 +50,7 @@ export async function getFileName(path: string): Promise<string | undefined> {
 	try {
 		return await invoke('get_file_name', { path });
 	} catch (err) {
-		console.error(`Error fetching environment variable: ${JSON.stringify(err)}`);
+		console.error(`Error reading the file name: ${JSON.stringify(err)}`);
 
 		return undefined;
 	}
@@ -72,17 +78,30 @@ export async function doesFileExists(
 	}
 }
 
-export async function generateUniqueFileName(
-	baseName: string,
-	options?: ExistsOptions
-): Promise<string> {
-	let fileName = `${baseName}.${EXTENSION}`;
-	let counter = 1;
-	while (await doesFileExists(fileName, options)) {
-		fileName = `${baseName}-(${counter}).${EXTENSION}`;
-		counter++;
+/**
+ * A new file is created exclusively (also a `content://` document, which cannot be
+ * renamed). An existing one is replaced through `<path>.tmp` and a rename, so a write
+ * cut off by a crash, a killed app or a full disk leaves the old file whole.
+ */
+async function writeSealed(envelope: string, file_path: string, new_file: boolean): Promise<void> {
+	if (!file_path) {
+		throw new Error('No file to write to');
 	}
-	return fileName;
+	const target = new_file ? file_path : `${file_path}.tmp`;
+	// Truncate: a temp file left by a crashed save must not keep a stale tail.
+	const file = await openFile(target, {
+		write: true,
+		create: true,
+		createNew: new_file,
+		truncate: true
+	});
+	try {
+		await file.write(new TextEncoder().encode(envelope));
+	} finally {
+		await file.close();
+	}
+	// shortcut: no fsync (the fs plugin has none), so power loss right after a save can still lose it.
+	if (!new_file) await rename(target, file_path);
 }
 
 export async function writeEncryptedFile<T>(
@@ -91,39 +110,18 @@ export async function writeEncryptedFile<T>(
 	file_path: string,
 	new_file: boolean = false
 ): Promise<void> {
-	if (!file_path) {
-		throw new Error('No file to write to');
-	}
-	// Truncate: without it a shorter save leaves a stale tail that corrupts the envelope.
-	const file = await openFile(file_path, {
-		write: true,
-		create: true,
-		createNew: new_file,
-		truncate: true
-	});
-	await file.write(new TextEncoder().encode(await packFileV2(data, password)));
-	await file.close();
+	await writeSealed(await packFileV2(data, password), file_path, new_file);
 }
 
 // Device-encrypted (v3) write: sealed with this installation's key, so no
-// password is needed to save or reopen. Same truncate guarantee as above.
+// password is needed to save or reopen.
 export async function writeDeviceEncryptedFile<T>(
 	data: T,
 	device_key: string,
 	file_path: string,
 	new_file: boolean = false
 ): Promise<void> {
-	if (!file_path) {
-		throw new Error('No file to write to');
-	}
-	const file = await openFile(file_path, {
-		write: true,
-		create: true,
-		createNew: new_file,
-		truncate: true
-	});
-	await file.write(new TextEncoder().encode(await packFileV3(data, device_key)));
-	await file.close();
+	await writeSealed(await packFileV3(data, device_key), file_path, new_file);
 }
 
 export async function handleLoadFile(
