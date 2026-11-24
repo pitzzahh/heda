@@ -77,10 +77,10 @@ fn a_one_circuit_installation_needs_15_a() {
 
 #[test]
 fn a_one_circuit_dwelling_needs_20_a() {
-    // (B): a dwelling unit on the single branch circuit 2.10.1.11(C)(5) permits (at most
-    // 50 m² and 3680 VA, one 20 A 2-wire circuit).
+    // (B): a dwelling unit on the single branch circuit 2.10.1.11(C)(5) permits to one of
+    // at most 50 m² (and 3680 VA, one 20 A 2-wire circuit).
     let mut dwelling = root(None);
-    dwelling["highest_unit_form"]["single_circuit_dwelling"] = json!(true);
+    dwelling["highest_unit_form"]["small_dwelling"] = json!(true);
     let nodes = vec![
         dwelling.clone(),
         panel("SP", 1.0),

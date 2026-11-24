@@ -17,7 +17,7 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import { setServiceEntrance, setSingleCircuitDwelling } from '#lib/db/mutations/index.js';
+	import { setServiceEntrance, setSmallDwelling } from '#lib/db/mutations/index.js';
 	import { getRootNode } from '#lib/db/queries/index.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
@@ -34,9 +34,7 @@
 	const root_node = $derived(project_state.loaded ? getRootNode() : undefined);
 	// Absent means the utility service supplies the project (PEC 2017 2.30.6.10).
 	const is_service = $derived(root_node?.highest_unit_form?.is_service !== false);
-	const single_circuit_dwelling = $derived(
-		root_node?.highest_unit_form?.single_circuit_dwelling === true
-	);
+	const small_dwelling = $derived(root_node?.highest_unit_form?.small_dwelling === true);
 
 	async function saveServiceEntrance(value: boolean) {
 		if (!root_node) return;
@@ -45,11 +43,11 @@
 		toast.success(value ? 'Service entrance minimums applied' : 'Supplied as a feeder');
 	}
 
-	async function saveSingleCircuitDwelling(value: boolean) {
+	async function saveSmallDwelling(value: boolean) {
 		if (!root_node) return;
-		const updated = await setSingleCircuitDwelling(root_node.id, value);
+		const updated = await setSmallDwelling(root_node.id, value);
 		if (!updated) return toast.warning('Failed to save the dwelling setting');
-		toast.success(value ? 'One-circuit dwelling: 20 A minimum' : 'One-circuit minimum: 15 A');
+		toast.success(value ? 'Marked as a dwelling of at most 50 m²' : 'No longer a small dwelling');
 	}
 
 	function handleHomeClick(event: MouseEvent) {
@@ -105,24 +103,21 @@
 			onCheckedChange={saveServiceEntrance}
 		/>
 	</div>
-	{#if is_service}
-		<div class="flex flex-row items-center justify-between gap-3">
-			<div class="space-y-0.5">
-				<Label for="single_circuit_dwelling">Single-Circuit Dwelling</Label>
-				<p class="text-xs text-muted-foreground">
-					A dwelling unit of at most 50 m² and 3680 VA on one 20 A circuit (PEC 2017
-					2.10.1.11(C)(5)): its one circuit takes a 20 A service disconnect, not 15 A
-					(2.30.6.10(B)).
-				</p>
-			</div>
-			<Switch
-				disabled={!root_node}
-				id="single_circuit_dwelling"
-				checked={single_circuit_dwelling}
-				onCheckedChange={saveSingleCircuitDwelling}
-			/>
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label for="small_dwelling">Dwelling of at Most 50 m²</Label>
+			<p class="text-xs text-muted-foreground">
+				On one circuit (PEC 2017 2.10.1.11(C)(5)) it takes a 20 A service disconnect, not 15 A
+				(2.30.6.10(B)).
+			</p>
 		</div>
-	{/if}
+		<Switch
+			disabled={!root_node}
+			id="small_dwelling"
+			checked={small_dwelling}
+			onCheckedChange={saveSmallDwelling}
+		/>
+	</div>
 
 	{#if root_node}
 		<Separator class="my-1 w-full" />

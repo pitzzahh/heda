@@ -23,7 +23,7 @@ import {
 	updateShortCircuitSource,
 	updateInterruptingRating,
 	setServiceEntrance,
-	setSingleCircuitDwelling,
+	setSmallDwelling,
 	setGeneratorKva,
 	setStandbyPanels,
 	changePhaseAssignment,
@@ -1154,7 +1154,7 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 		expect(await setServiceEntrance(panel.id, true)).toBeUndefined();
 	});
 
-	it('gives a one-circuit service 15 A, or 20 A for a single-circuit dwelling (PEC 2017 2.30.6.10(A), (B))', async () => {
+	it('gives a one-circuit service 15 A, or 20 A for a dwelling of at most 50 m² (PEC 2017 2.30.6.10(A), (B))', async () => {
 		resetData();
 		const created = await createProject('One circuit', {
 			distribution_unit: 'Utility Meter',
@@ -1177,11 +1177,11 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 		await settled();
 		expect(getComputedLoads(root)[0]?.at).toBe(15);
 
-		const unit = (await setSingleCircuitDwelling(root, true))?.highest_unit_form;
-		expect(unit).toMatchObject({ single_circuit_dwelling: true, is_service: true });
+		const unit = (await setSmallDwelling(root, true))?.highest_unit_form;
+		expect(unit).toMatchObject({ small_dwelling: true, is_service: true });
 		await settled();
 		expect(getComputedLoads(root)[0]?.at).toBe(20);
-		expect(await setSingleCircuitDwelling(panel.id, true)).toBeUndefined();
+		expect(await setSmallDwelling(panel.id, true)).toBeUndefined();
 	});
 
 	it('stores the standby generator and its panels on the supply (PEC 2017 7.2.1.4)', async () => {

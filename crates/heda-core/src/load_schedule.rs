@@ -480,7 +480,7 @@ fn service_minimum(graph: &Graph, panel: &Node, memo: &mut HashMap<String, LoadR
         .collect();
     let form = supply.highest_unit_form.as_ref();
     let minimum = if branch_circuits.len() <= 1 {
-        if form.and_then(|f| f.single_circuit_dwelling) == Some(true) {
+        if form.and_then(|f| f.small_dwelling) == Some(true) {
             20.0
         } else {
             15.0

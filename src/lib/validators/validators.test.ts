@@ -269,11 +269,10 @@ describe('validators', () => {
 		).toBe(false);
 	});
 
-	it('stores the single-circuit dwelling flag of PEC 2017 2.30.6.10(B) as a boolean', () => {
+	it('stores the small-dwelling flag (PEC 2017 2.10.1.11(C)(5), 2.30.6.10(B)) as a boolean', () => {
 		const root = { id: 'r', node_type: 'root', child_ids: [] };
-		const parse = (single_circuit_dwelling: unknown) =>
-			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { single_circuit_dwelling } })
-				.success;
+		const parse = (small_dwelling: unknown) =>
+			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { small_dwelling } }).success;
 		expect(parse(true)).toBe(true);
 		expect(parse(undefined)).toBe(true);
 		expect(parse('yes')).toBe(false);
