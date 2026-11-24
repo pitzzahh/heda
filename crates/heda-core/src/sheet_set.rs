@@ -1168,8 +1168,9 @@ fn title_block_ops(
                 "Signature and seal: ______________________".into(),
             ],
         ),
-        // The sheets hold schedules and a one-line diagram, nothing drawn to a scale, so
-        // neither a metric scale (PEC 2017 1.3.1.2) nor a graphic one (1.3.1.3) applies.
+        // NTS: the sheets hold schedules and a one-line diagram, nothing drawn to a scale.
+        // heda's reading: PEC 2017 1.3.1.3 asks a graphic scale on each sheet and names
+        // no exception; 1.3.1.2's metric scales fit only drawings made to one.
         (0.09, "SCALE / DATE", "NTS".into(), vec![input.date.clone()]),
         (
             0.07,
