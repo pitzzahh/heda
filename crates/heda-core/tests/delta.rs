@@ -333,6 +333,57 @@ fn d14_fault_at_the_230_v_transformer_bus_is_14_972_a() {
 }
 
 #[test]
+fn a_line_to_line_panel_on_delta_never_shows_less_than_its_bolted_fault() {
+    // A single-phase panel on a 230 V delta bus can only fault line to line. With D14's
+    // source (Zs per line) and the run's one-way Zc from Table 10.1.1.9, the bolted
+    // line-to-line fault is 230 / (2·(Zs + Zc)). The study shows the three-phase value at
+    // Zs + Zc, 230 / (√3·(Zs + Zc)), which is never less, so a breaker in the panel is
+    // checked against at least the current available at its line terminals (PEC 2017
+    // 1.10.1.9).
+    let source =
+        json!({ "utility_sc_kva": 1_000_000, "transformer_kva": 300, "transformer_z_percent": 5 });
+    let feeder = json!({
+        "conductor_qty": 2, "pole": "2", "phase_assignment": "AB", "length": 20,
+        "overrided_conductor_size": 30, "kaic": 25
+    });
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                root(source),
+                panel("P", "root", 1.0, phases::ONE_PHASE, feeder),
+                load(
+                    "L",
+                    "P",
+                    1.0,
+                    load_types::LIGHTING_LOAD,
+                    2_000.0,
+                    json!({ "conductor_qty": 2, "phase_assignment": "AB", "length": 10 }),
+                ),
+            ],
+        )
+        .unwrap();
+    let rows = session.short_circuits();
+    let l = rows.iter().find(|r| r.id == "L").unwrap();
+    let z_base = 0.230_f64.powi(2) / 0.300;
+    let zs = (300.0 / 1_000_000.0 + 0.05) * z_base;
+    let zc = heda_core::short_circuit::conductor_impedance_ohm(30.0, Some("PVC"), 20.0, 1.0, false)
+        .unwrap();
+    let line_to_line = 230.0 / (2.0 * (zs + zc));
+    let three_phase = 230.0 / (3.0_f64.sqrt() * (zs + zc));
+    let shown = l.supply_fault_current.unwrap();
+    assert!(shown >= line_to_line, "{shown} < {line_to_line}");
+    close(shown, three_phase, 1.0);
+    // Above the unmarked breaker's 5 kA (PEC 2017 2.40.7.4(C)), so it is flagged.
+    assert!(line_to_line > 5_000.0);
+    assert_ne!(
+        l.status,
+        heda_core::short_circuit::InterruptingRatingStatus::Ok
+    );
+}
+
+#[test]
 fn turning_a_panel_into_delta_recomputes_its_circuits() {
     let one_phase = panel("P", "root", 1.0, phases::ONE_PHASE, json!({}));
     let (mut session, computed) = open(vec![root(json!({})), one_phase, lighting("a", 1.0, 100.0)]);

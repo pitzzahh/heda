@@ -53,16 +53,16 @@ pub fn transformer_impedance_pu(z_percent: f64) -> f64 {
 }
 
 /// Impedance of one conductor run in ohms, from PEC 2017 Table 10.1.1.9 (R and XL
-/// per 305 m, by conduit) as |R + jXL|. Parallel sets divide it. A single-phase
-/// fault flows out on one conductor and back on the other, and the table is ohms
-/// to neutral (one conductor), so single-phase runs count twice. `None` for a size
-/// the table does not list.
+/// per 305 m, by conduit) as |R + jXL|. Parallel sets divide it. The table is ohms
+/// to neutral (one conductor), so a `round_trip` run, whose fault flows out on one
+/// conductor and back on the other, counts twice. `None` for a size the table does
+/// not list.
 pub fn conductor_impedance_ohm(
     size: f64,
     conduit_type: Option<&str>,
     length: f64,
     sets: f64,
-    is_single_phase: bool,
+    round_trip: bool,
 ) -> Option<f64> {
     let row = lookup(&CONDUCTOR_RESISTANCE_REACTANCE, size)?;
     let conduit = conduit_type.unwrap_or("").to_lowercase();
@@ -76,7 +76,7 @@ pub fn conductor_impedance_ohm(
     };
     let x = if is_steel { row.xl_steel } else { row.xl };
     let per_305_m = r.hypot(x);
-    Some(((per_305_m * length) / 305.0 / sets.max(1.0)) * if is_single_phase { 2.0 } else { 1.0 })
+    Some(((per_305_m * length) / 305.0 / sets.max(1.0)) * if round_trip { 2.0 } else { 1.0 })
 }
 
 /// PEC 2017 App. D Ex. D14 step 7b: pu Zw = (ohm / kV²) × (kVA base / 1000).
@@ -156,14 +156,12 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
     let single_phase_system = is_single_phase(root_phase);
     // A 3P-Y system is per unit at its 400 V line voltage (2.20.1.5(A); App. D Ex. D6, D8),
     // a delta one at its 230 V, as D14 itself is; both take the bolted three-phase fault
-    // at every bus. A single-phase circuit on delta is line to line: its run counts out
-    // and back, and the bus value is the three-phase one, above the 0.866 × of a
-    // line-to-line fault, the safe side.
-    // Buses and three-phase circuits take the bolted three-phase fault. A 230 V
-    // single-phase circuit can only fault line to neutral: its run counts out on the
-    // phase and back on the neutral, as in D13, and the rest of the path is the
-    // three-phase impedance per phase (heda takes the transformer's zero-sequence
-    // impedance equal to its positive one, as for the usual delta-wye unit).
+    // at every bus. On 3P-Y a 230 V single-phase circuit can only fault line to neutral:
+    // its run counts out on the phase and back on the neutral, as in D13, and the rest of
+    // the path is the three-phase impedance per phase (heda takes the transformer's
+    // zero-sequence impedance equal to its positive one, as for the usual delta-wye unit).
+    // On delta a single-phase circuit faults line to line, V / (2·(Zs + Zc)); heda shows
+    // the three-phase value with the run counted once, V / (√3·(Zs + Zc)), never less.
     let is_wye_system = root_phase == Some(phase_names::THREE_PHASE_WYE);
     let system_voltage = if is_wye_system {
         WYE_LINE_VOLTAGE
@@ -187,7 +185,7 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
                 .or(num::positive(node.length))
                 .unwrap_or(0.0),
             num::positive(node.conductor_sets).unwrap_or(1.0),
-            single_phase_system || !is_three_phase_circuit(node),
+            single_phase_system || (is_wye_system && !is_three_phase_circuit(node)),
         )
         .unwrap_or(0.0);
         conductor_ohm.insert(&node.id, ohms);
