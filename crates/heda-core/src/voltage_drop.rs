@@ -63,7 +63,13 @@ pub fn voltage_drops(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<
         let sets = num::positive(node.conductor_sets).unwrap_or(1.0);
         let run_z = (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0 / sets;
         let actual_z = num::round(run_z, 4);
-        let voltage_per_segment = num::round(k * computed.current * run_z, 4);
+        // The switch puts the breaker rating in the current column; the drop runs on what it shows.
+        let current = if node.is_at_used_as_currents_value == Some(true) {
+            computed.at
+        } else {
+            computed.current
+        };
+        let voltage_per_segment = num::round(k * current * run_z, 4);
         // Parents come first in preorder; the root (and a feeder with no drop) adds nothing.
         let voltage_at_end_circuit = num::round(
             parent_end_fraction.unwrap_or(0.0) * nominal_voltage + voltage_per_segment,
@@ -85,11 +91,7 @@ pub fn voltage_drops(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<
             percent_voltage_drop,
             from_node_name: from_node_name(parent),
             to_node_name: to_node_name(node),
-            current: if node.is_at_used_as_currents_value == Some(true) {
-                computed.at
-            } else {
-                computed.current
-            },
+            current,
             length,
         });
     }

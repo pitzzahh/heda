@@ -305,6 +305,20 @@ fn parallel_sets_divide_the_d15_feeder_drop() {
 }
 
 #[test]
+fn the_at_as_current_switch_drives_the_drop_it_shows() {
+    // D15's 20 A motor with the switch on: Table 4.30.4.2 gives 250 % × 20 = 50 A, a
+    // standard rating (Table 2.40.1.6(A)). The row shows 50 A, so D15 Eq. (1) runs on
+    // 50 A: 1.732 × 50 × √(1.2² + 0.063²) × 30.5 / 305.
+    let mut session = d15(json!({}), json!({ "is_at_used_as_currents_value": true }));
+    let branch_z = (1.2_f64.powi(2) + 0.063_f64.powi(2)).sqrt();
+    let drops = session.voltage_drops();
+    let m = drops.iter().find(|d| d.id == "M").unwrap();
+    assert_eq!(m.current, 50.0);
+    let expected = 1.732 * 50.0 * branch_z * 30.5 / 305.0;
+    assert_eq!(m.voltage_per_segment, (expected * 1e4).round() / 1e4);
+}
+
+#[test]
 fn d14_fault_at_the_230_v_transformer_bus_is_14_972_a() {
     // PEC 2017 App. D Ex. D14: 300 kVA bank at 5 % on a 1 000 MVA line, 230 V 3-phase.
     // pu Z = 300 / 1 000 000 + 0.05 = 0.0503; I = (1 / 0.0503) × 300 000 / (1.732 × 230).
