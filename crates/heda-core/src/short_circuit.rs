@@ -154,7 +154,7 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
         .as_ref()
         .and_then(|h| h.phase.as_deref());
     let single_phase_system = is_single_phase(root_phase);
-    // A 3P-Y system is per unit at 400 V (PEC 2017 App. D Ex. D14 step 9.4, 2.20.1.5(A)),
+    // A 3P-Y system is per unit at its 400 V line voltage (2.20.1.5(A); App. D Ex. D6, D8),
     // a delta one at its 230 V, as D14 itself is; both take the bolted three-phase fault
     // at every bus. A single-phase circuit on delta is line to line: its run counts out
     // and back, and the bus value is the three-phase one, above the 0.866 × of a
@@ -198,7 +198,7 @@ pub fn short_circuits(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec
         // A 230 V motor on a 3P-Y system feeds one phase at its own 230 V impedance. PEC only
         // works three-phase motors (D14), so this follows IEEE practice: low-voltage breakers
         // are rated on first-cycle current, where every motor counts at 4 × rated current
-        // (IEEE C37.13, the 0.25 pu of D14 step 8). The kVA is scaled by (400/230)² to put the
+        // (0.25 pu, the value D14 step 8 takes from IEEE Std 141). The kVA is scaled by (400/230)² to put the
         // motor's real ohms on the 400 V base, and every phase is charged with it.
         let line_to_neutral_scale = if is_wye_system && !is_three_phase_circuit(node) {
             let ratio = WYE_LINE_VOLTAGE / WYE_PHASE_VOLTAGE;

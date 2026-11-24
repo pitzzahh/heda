@@ -419,10 +419,11 @@ pub struct BalanceCircuit<'a> {
 /// Phases (or line pairs, on delta) for the single-phase circuits of one three-phase
 /// panel, largest load first onto the least loaded phase. Three-phase circuits only
 /// seed the totals. PEC 2017 App. D Ex. D6 6.1 asks for "balanced distribution of
-/// single phase loads" but leaves the method to the designer. The feeder is sized on
-/// its most loaded phase (2.20.3.22(A); App. D Ex. D6, D8), on a delta panel its most
-/// loaded line, so when the suggestion would not lower that (nor, at a tie, the
-/// unbalance) the circuits keep the phases they have. Returned in assignment order.
+/// single phase loads" but leaves the method to the designer. heda sizes the feeder on
+/// its most loaded phase, on a delta panel its most loaded line: D6 and D8 size on the
+/// total load (2.20.3.22(A) is the neutral), and the most loaded phase is the safe
+/// side. So when the suggestion would not lower that (nor, at a tie, the unbalance)
+/// the circuits keep the phases they have. Returned in assignment order.
 pub fn balanced_phase_assignments<'a>(
     circuits: &[BalanceCircuit<'a>],
     supply: Supply,

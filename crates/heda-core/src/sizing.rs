@@ -8,10 +8,12 @@ use serde::Serialize;
 
 // PEC 2017 App. D Ex. D6 6.3 and D14 step 9.4 use 1.732 for √3.
 pub const SQRT_3: f64 = 1.732;
-// PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400Y/230 V, three-phase 4-wire.
+// PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400 V/230 V, three-phase 4-wire, which heda
+// models as wye.
 pub const WYE_LINE_VOLTAGE: f64 = 400.0;
 pub const WYE_PHASE_VOLTAGE: f64 = 230.0;
-// PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire (delta).
+// PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire, which heda
+// models as delta (the PEC does not name the connection).
 pub const DELTA_LINE_VOLTAGE: f64 = 230.0;
 
 /// Load types with the same VA formula, which also size their conductor on the breaker rating.
@@ -383,8 +385,8 @@ pub fn gec_size(area: f64) -> Option<f64> {
 
 /// PEC 2017 2.50.2.9(D)(1) and Table 2.50.5.13(C)(1): the copper main or system bonding
 /// jumper for the largest copper ungrounded conductor or equivalent area (`area`, mm²).
-/// Over 500 mm², Note 1: at least 12½ % of `area`, taken up to a standard size of Table
-/// 3.10.2.6(B)(16), and never more than `area`. None without a conductor.
+/// Over 500 mm², Note 1: at least 12½ % of `area`; heda takes it up to a standard size of
+/// Table 3.10.2.6(B)(16) (Note 1 names no size), and never more than `area`. None without a conductor.
 pub fn bonding_jumper_size(area: f64) -> Option<f64> {
     if area.is_nan() || area <= 0.0 {
         return None;

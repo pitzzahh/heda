@@ -358,8 +358,9 @@ fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<Str
 /// The grounding at the supply, from the copper conductors it feeds: PEC 2017 Table
 /// 2.50.3.17's grounding electrode conductor and 2.50.2.9(D)(1)'s bonding jumper (Table
 /// 2.50.5.13(C)(1)), both by the equivalent area of those conductors. Parallel sets add,
-/// and so do the sets of each circuit on the supply, by Note 3 of Table 2.50.5.13(C)(1)
-/// (the largest sum of the corresponding conductors of each set). From a transformer these
+/// and so do the sets of each circuit on the supply, taken as the multiple sets of
+/// service-entrance conductors (2.30.4.1 Exception No. 2) of Note 3 of Table
+/// 2.50.5.13(C)(1): the largest sum of the corresponding conductors of each set. From a transformer these
 /// are a separately derived system's: 2.50.2.11(A)(5) sizes its GEC and (A)(1) its system
 /// bonding jumper the same way; else the service's GEC (2.50.2.5(D)) and main bonding jumper.
 fn grounding_lines(transformer: bool, tree: &RiserTree) -> Vec<String> {

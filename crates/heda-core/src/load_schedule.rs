@@ -213,8 +213,9 @@ pub fn load_row<'g>(
         let main_current = num::round(totals.current, 2);
         let ambient_temp = num::positive(panel_data.ambient_temperature).unwrap_or(30.0);
         let main_sizing = if feeder.share.largest_motor.is_some() {
-            // 2.30.7.1(A): a service main raised to its 2.30.6.10 minimum is no motor
-            // breaker, so the service conductors carry at least that rating.
+            // A service main raised to its 2.30.6.10 minimum is no motor breaker, so the
+            // service conductors carry at least that rating (heda's reading; 2.30.7.1(A)
+            // sizes them on the load and does not name this case).
             let floor = if service_at > trip { service_at } else { 0.0 };
             input(
                 feeder.load.max(floor),
@@ -327,7 +328,7 @@ pub fn load_row<'g>(
 /// What a circuit puts on each phase (3P-Y) or line pair (delta) of its supply, in the
 /// supply's label order: all its VA on its own one; a three-phase circuit a third on
 /// each, or a three-phase sub-panel its own VA on each (the split its panel's totals
-/// add, PEC 2017 2.20.3.22), to 0.01 VA. `None` on a single-phase supply.
+/// add; heda's own split, the PEC sets none), to 0.01 VA. `None` on a single-phase supply.
 fn phase_loads(supply: Supply, row: &LoadRow) -> Option<[Option<f64>; 3]> {
     if supply == Supply::OnePhase {
         return None;
@@ -543,7 +544,8 @@ mod tests {
         assert_eq!(phase_loads(Supply::OnePhase, &row(1_840.0, "A")), None);
     }
 
-    /// PEC 2017 App. D Ex. D6: the 6-kVA package ACU puts 2 000 VA on each phase.
+    /// A three-phase load splits evenly: D6's 6-kVA package ACU as 2 000 VA a phase
+    /// (heda's split; D6 totals the panel).
     #[test]
     fn three_phase_va_splits_evenly() {
         assert_eq!(
@@ -552,7 +554,7 @@ mod tests {
         );
     }
 
-    /// PEC 2017 2.20.3.22: a three-phase sub-panel's feeder carries its own phase loads.
+    /// A three-phase sub-panel's feeder carries its own phase loads (heda's split).
     #[test]
     fn a_three_phase_sub_panel_shows_its_own_split() {
         let wye = LoadRow {

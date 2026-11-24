@@ -3,7 +3,8 @@
 //! transaction, which is also what undo and redo replay.
 //!
 //! Every refusal is a message the app shows as it is. The supply rules are
-//! `phases::supply_error` (PEC 2017 2.20.1.5(A)); a new circuit's poles and wires
+//! `phases::supply_error` (heda's own rules for the PEC 2017 2.20.1.5(A) voltages,
+//! which that section only lists); a new circuit's poles and wires
 //! are `defaults::circuit_defaults`.
 
 use crate::defaults;

@@ -369,7 +369,7 @@ pub fn render(layout: &Layout) -> Result<Vec<u8>, String> {
 }
 
 // ---------------------------------------------------------------------------------------
-// Schedules of loads, PEC 2017 1.3.2.1(G)(1)(a)
+// Schedules of loads, PEC 2017 1.3.2.1(E)
 
 struct Schedules<'p> {
     sheets: Vec<Sheet>,
@@ -448,7 +448,7 @@ impl Schedules<'_> {
             row += 1;
         }
         // The root is the supply, not a panelboard: it has no main of its own to total
-        // (the service rating sits on the panel it feeds, PEC 2017 2.30.6.10).
+        // (the service disconnect is the panel it feeds; 2.30.6.10 sets its minimum rating).
         if node.node_type != "root" {
             let mut cells = total_cells(input, node, &total, panel_phase);
             if overload {
@@ -509,8 +509,8 @@ fn supply_description(phase: Option<&str>) -> String {
 }
 
 /// A single-phase panel's columns A–Q; a three-phase one also lists each circuit's phase
-/// and its VA per phase of a 400Y/230 V panel (PEC 2017 App. D Ex. D6), or per line pair
-/// of a 230 V delta one, after the current.
+/// and its VA per phase of a 400Y/230 V panel, or per line pair of a 230 V delta one,
+/// after the current (heda's columns: D6 totals the panel, with no per-phase split).
 fn schedule_headers(phase: Option<&str>) -> Vec<Header> {
     let mut headers = vec![
         header(" ", &["CRKT NO."]),
@@ -802,8 +802,8 @@ fn voltage_drop_sheet(
     root_phase: Option<&str>,
     drops: &[VoltageDropRow],
 ) -> Sheet {
-    // A three-phase study mixes three-phase and single-phase runs (App. D Ex. D15), and
-    // 3P-Y also 400 V and 230 V ones, so each row names its phase and voltage.
+    // A three-phase study mixes three-phase and single-phase runs (D15 works only
+    // three-phase ones), and 3P-Y also 400 V and 230 V ones, so each row names its phase and voltage.
     let three_phase = is_three_phase(root_phase);
     let mut headers = vec![header("From NODE", &[]), header("To NODE", &[])];
     if three_phase {

@@ -501,7 +501,7 @@ fn table(w: &mut Writer, caption: &str, headers: &[Header], rows: &[Row]) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Schedules of loads, PEC 2017 1.3.2.1(G)(1)(a): the columns the app and the Excel export show
+// Schedules of loads, PEC 2017 1.3.2.1(E): the columns the app and the Excel export show
 
 /// Phases (3P-Y) or line pairs (delta) a three-phase panel lists VA under.
 fn phase_labels(panel_phase: Option<&str>) -> &'static [&'static str] {
@@ -753,7 +753,7 @@ fn draw_schedules(w: &mut Writer, input: &mut SheetSetInputs) {
             })
             .collect();
         // The root is the supply, not a panelboard: it has no main of its own to total
-        // (the service rating sits on the panel it feeds, PEC 2017 2.30.6.10).
+        // (the service disconnect is the panel it feeds; 2.30.6.10 sets its minimum rating).
         if node.node_type != "root" {
             let cells = schedule_row(node, &total, input.docs, panel_phase, true);
             rows.push(with_overload(cells, "N/A".into()));
@@ -1168,7 +1168,8 @@ fn title_block_ops(
                 "Signature and seal: ______________________".into(),
             ],
         ),
-        // Schedules and the one-line riser are not drawn to scale (PEC 2017 1.3.1.2–1.3.1.3).
+        // The sheets hold schedules and a one-line diagram, nothing drawn to a scale, so
+        // neither a metric scale (PEC 2017 1.3.1.2) nor a graphic one (1.3.1.3) applies.
         (0.09, "SCALE / DATE", "NTS".into(), vec![input.date.clone()]),
         (
             0.07,

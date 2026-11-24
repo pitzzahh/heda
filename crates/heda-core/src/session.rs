@@ -5,7 +5,7 @@
 //! A row depends on the node, its descendants and the phase of the panel feeding it,
 //! so a write recomputes the written nodes, their ancestors (old and new parents)
 //! and their direct children, plus the service disconnect, the first panel on the
-//! supply (its minimum rating counts every circuit, PEC 2017 2.30.6.10); everything
+//! supply (its 2.30.6.10 minimum rating depends on every circuit below it); everything
 //! else stays cached. Each write answers with the rows it recomputed.
 
 use crate::graph::Graph;
@@ -324,7 +324,8 @@ impl Session {
     }
 
     /// The first panel on the supply: as the service disconnect, its minimum rating
-    /// counts every circuit and its siblings' ratings (PEC 2017 2.30.6.10, 2.30.6.11).
+    /// (PEC 2017 2.30.6.10) depends on every circuit below it, and the combined rating
+    /// of 2.30.6.11 on its siblings'.
     fn service_panels(&self) -> Vec<String> {
         self.graph
             .root()

@@ -50,7 +50,7 @@ pub fn with_project_defaults(project: &mut Value) {
 
 /// Breaker poles and conductor count of a circuit like `node` under a system of
 /// `system_phase`, where they differ from `node_defaults`. On 400Y/230 V:
-/// - 3P-Y sub-panel: 3-pole, three phase conductors + neutral (PEC 2017 App. D Ex. D6 6.3–6.4, D8 8.6–8.7);
+/// - 3P-Y sub-panel: 3-pole, three phase conductors + neutral (as the service of PEC 2017 App. D Ex. D6 6.3–6.4, D8 8.6–8.7);
 /// - three-phase load: 3-pole, three wires (D6 6.2 "3-wire", D9 9.2);
 /// - single-phase 230 V load or panel: 1-pole, line + neutral (D6 6.2 "2-wire", D7 7.4).
 ///
