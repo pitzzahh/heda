@@ -156,7 +156,7 @@
 
 			<svelte:boundary>
 				<div
-					class="flex min-h-0 w-full flex-1 flex-col gap-4 py-4 pr-[calc(1rem+var(--safe-area-right))] pl-[calc(1rem+var(--safe-area-left))]"
+					class="flex min-h-0 w-full flex-1 flex-col gap-4 pt-4 pr-[calc(1rem+var(--safe-area-right))] pb-[calc(1rem+var(--safe-area-bottom))] pl-[calc(1rem+var(--safe-area-left))]"
 				>
 					{@render children?.()}
 				</div>

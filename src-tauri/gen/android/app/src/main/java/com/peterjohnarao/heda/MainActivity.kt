@@ -15,17 +15,15 @@ class MainActivity : TauriActivity() {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
     // Edge-to-edge draws the WebView under the system bars, the notch and the keyboard.
-    // The navigation bar and the keyboard stay padded here; the status bar and the notch
+    // Only the keyboard stays padded here; the status bar and the navigation bar
     // go to the page as CSS insets (`#lib/helpers/system-bars.ts`), so its background
     // runs edge to edge and only its content keeps clear.
     val content = findViewById<View>(android.R.id.content)
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
-      val padded = insets.getInsets(
-        WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.ime()
-      )
-      val all = insets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
+      val padded = insets.getInsets(WindowInsetsCompat.Type.ime())
+      // Not the notch: in landscape it would indent a whole side for a small dip in its
+      // middle. In portrait it sits inside the status bar, which is counted.
+      val all = insets.getInsets(WindowInsetsCompat.Type.systemBars())
       view.setPadding(padded.left, padded.top, padded.right, padded.bottom)
       val density = resources.displayMetrics.density
       fun css(full: Int, pad: Int) = maxOf(0, full - pad) / density

@@ -4,7 +4,7 @@ type SystemBarsBridge = { set(color: string, dark: boolean): void; safeArea?(): 
 const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 
 /**
- * Mirrors the Android shell's status bar and notch insets into `--safe-area-*` (CSS px),
+ * Mirrors the Android shell's status and navigation bar insets into `--safe-area-*` (CSS px),
  * which the page shell, sidebar, drawers and toasts pad by. Elsewhere they stay 0px.
  * Our own variables, not `env(safe-area-inset-*)`: the shell already pads the
  * navigation bar, and the WebView may count it in `env()` too. `viewport-fit=cover`

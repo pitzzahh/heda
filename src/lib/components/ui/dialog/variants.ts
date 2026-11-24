@@ -42,10 +42,12 @@ export const dialogFrame = tv({
 		// Phones and tablets (below lg): a bottom drawer instead of a centred dialog.
 		// Important, so call-site widths (`sm:max-w-md`, …) only shape the desktop dialog.
 		drawer: [
-			// Inset from a landscape notch; the backdrop still covers the edges.
+			// Inset from side system bars; the backdrop still covers the edges.
 			'max-lg:top-auto! max-lg:right-(--safe-area-right)! max-lg:bottom-0! max-lg:left-(--safe-area-left)! max-lg:w-auto! max-lg:max-w-none!',
 			'max-lg:flex! max-lg:max-h-[min(92dvh,calc(100dvh-var(--safe-area-top)-0.5rem))]! max-lg:flex-col! max-lg:overflow-hidden!',
-			'max-lg:rounded-t-2xl! max-lg:rounded-b-none! max-lg:border-x-0! max-lg:border-b-0!',
+			// A transparent bottom border as deep as the navigation bar: the panel colour runs
+			// under it and the content stays above, whatever padding the call site sets.
+			'max-lg:rounded-t-2xl! max-lg:rounded-b-none! max-lg:border-x-0! max-lg:border-b-(length:--safe-area-bottom)! max-lg:border-b-transparent!',
 			'max-lg:[transform:translateY(var(--drawer-y,0))]! max-lg:[clip-path:none]!',
 			// Phone GPUs: a layer ready before the slide, and one light shadow instead of the
 			// four-layer dialog shadow, which is costly to paint across a full-width sheet.

@@ -15,11 +15,11 @@
 		closeButton = true,
 		expand = true,
 		gap = 8,
-		// Clear of the Android status bar and notch (0px elsewhere).
+		// Clear of the Android system bars (0px elsewhere).
 		offset = {
 			top: 'calc(16px + var(--safe-area-top))',
 			right: 'calc(16px + var(--safe-area-right))',
-			bottom: 24,
+			bottom: 'calc(24px + var(--safe-area-bottom))',
 			left: 'calc(16px + var(--safe-area-left))'
 		},
 		mobileOffset = offset,
