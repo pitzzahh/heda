@@ -1,4 +1,4 @@
-import { getProject, initializeDatabase, openFile, openSession, setProject } from '../index.js';
+import { getProject, initializeDatabase, openFile, closeSession, setProject } from '../index.js';
 import type { Node, Project } from '#lib/types/db.js';
 
 /**
@@ -47,5 +47,5 @@ export function deleteProject(project_id: string) {
 		console.error(`Project with ID ${project_id} not found`);
 		return;
 	}
-	openSession(undefined, []);
+	closeSession();
 }
