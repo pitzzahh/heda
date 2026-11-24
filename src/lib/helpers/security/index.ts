@@ -48,41 +48,31 @@ export function base64ToBytes(base64: string): Uint8Array {
 	return out;
 }
 
-// Memoized: repeated unlocks/decrypts of the same file reuse the derived key,
-// and the KDF is the slowest step. Saves use a fresh salt, so they re-derive.
-const derived_cache = new Map<string, Promise<Uint8Array>>();
-
-export function deriveKey(
+// Not memoized: a cache keyed by the password would keep it in memory after the
+// session clears it (`clearSessionPassword`).
+export async function deriveKey(
 	passphrase: string,
 	salt_hex: string,
 	iterations: number
 ): Promise<Uint8Array> {
-	const cache_key = `${iterations}:${salt_hex}:${passphrase}`;
-	const cached = derived_cache.get(cache_key);
-	if (cached) return cached;
-	if (derived_cache.size > 16) derived_cache.clear();
-	const derived = (async () => {
-		const base = await crypto.subtle.importKey(
-			'raw',
-			new TextEncoder().encode(passphrase),
-			'PBKDF2',
-			false,
-			['deriveBits']
-		);
-		const bits = await crypto.subtle.deriveBits(
-			{
-				name: 'PBKDF2',
-				hash: 'SHA-256',
-				salt: hexToBytes(salt_hex) as BufferSource,
-				iterations
-			},
-			base,
-			256
-		);
-		return new Uint8Array(bits);
-	})();
-	derived_cache.set(cache_key, derived);
-	return derived;
+	const base = await crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(passphrase),
+		'PBKDF2',
+		false,
+		['deriveBits']
+	);
+	const bits = await crypto.subtle.deriveBits(
+		{
+			name: 'PBKDF2',
+			hash: 'SHA-256',
+			salt: hexToBytes(salt_hex) as BufferSource,
+			iterations
+		},
+		base,
+		256
+	);
+	return new Uint8Array(bits);
 }
 
 // AES-256-GCM with a random 12-byte nonce per call. Packed form is
