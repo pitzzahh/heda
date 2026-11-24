@@ -175,3 +175,47 @@ fn a_service_main_raised_to_its_minimum_keeps_its_conductor_at_that_rating() {
     assert_eq!(all.rows["SP"].at, 60.0);
     assert_eq!(all.rows["SP"].conductor_size, 22.0);
 }
+
+#[test]
+fn the_service_conductors_carry_the_minimum_rating_whatever_the_motor_breaker() {
+    // PEC 2017 2.30.4.3(B): the ungrounded service-entrance conductors have an ampacity
+    // not less than the 2.30.6.10(A)–(D) minimum. (C), a motor and one lighting circuit
+    // (two 2-wire circuits), is 30 A, even once the motor's own 250 % breaker
+    // (Table 4.30.4.2) reaches 30 A by itself.
+    for flc in [10.0, 12.0, 16.0] {
+        let mut session = Session::default();
+        let rows = session
+            .open(
+                json!({}),
+                vec![
+                    root(None),
+                    panel("SP", 1.0),
+                    motor("m", "SP", 1.0, flc),
+                    load("a", "SP", 2.0, 2.0),
+                ],
+            )
+            .unwrap()
+            .rows;
+        let ampacity = rows["SP"].ampacity.unwrap();
+        assert!(ampacity >= 30.0, "FLC {flc} A: {ampacity} A");
+    }
+    // heda holds the (E) 60 A minimum the same way (three circuits).
+    for flc in [20.0, 22.0, 24.0, 28.0] {
+        let mut session = Session::default();
+        let rows = session
+            .open(
+                json!({}),
+                vec![
+                    root(None),
+                    panel("SP", 1.0),
+                    motor("m", "SP", 1.0, flc),
+                    load("a", "SP", 2.0, 2.0),
+                    load("b", "SP", 3.0, 2.0),
+                ],
+            )
+            .unwrap()
+            .rows;
+        let ampacity = rows["SP"].ampacity.unwrap();
+        assert!(ampacity >= 60.0, "FLC {flc} A: {ampacity} A");
+    }
+}
