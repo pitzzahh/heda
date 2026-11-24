@@ -510,7 +510,9 @@ fn supply_description(phase: Option<&str>) -> String {
 
 /// A single-phase panel's columns A–Q; a three-phase one also lists each circuit's phase
 /// and its VA per phase of a 400Y/230 V panel, or per line pair of a 230 V delta one,
-/// after the current (heda's columns: D6 totals the panel, with no per-phase split).
+/// after the current. PEC 2017 1.3.2.1(E)(3)(e) asks the schedule for "phase loading
+/// indicating full load line current"; the VA split is heda's layout (D6 totals the
+/// panel, with no per-phase split).
 fn schedule_headers(phase: Option<&str>) -> Vec<Header> {
     let mut headers = vec![
         header(" ", &["CRKT NO."]),
