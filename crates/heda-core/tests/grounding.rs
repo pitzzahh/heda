@@ -160,3 +160,41 @@ fn an_upsized_feeder_grows_its_egc_pec_2017_2_50_6_13_b() {
     // The engineer's EGC stands.
     assert_eq!(rows["set"].egc_size, Egc::Size(5.5));
 }
+
+#[test]
+fn an_unsized_supply_conductor_gives_no_gec_size() {
+    // 500 kVA at 230 V is 2 174 A: no conductor in Table 3.10.2.6(B)(16) carries it, so
+    // the supply's equivalent area, and the GEC and jumper sized on it, are unknown.
+    let mut big = panel("BIG", 1.0, 0.0);
+    big.as_object_mut()
+        .unwrap()
+        .remove("overrided_conductor_size");
+    big["circuit_number"] = json!(2);
+    let load = json!({
+        "id": "l", "node_type": "load", "parent_id": "BIG", "circuit_number": 1,
+        "conductor_sets": 1, "conductor_qty": 2, "length": 10,
+        "load_data": { "load_type": "lighting_load", "quantity": 1, "varies": 500_000 }
+    });
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                json!({ "id": "root", "node_type": "root",
+                        "highest_unit_form": { "phase": "one_phase" } }),
+                panel("MDP", 1.0, 38.0),
+                big,
+                load,
+            ],
+        )
+        .unwrap();
+    assert_eq!(session.snapshot().computed.rows["BIG"].conductor_size, -1.0);
+    let lines = session.riser("root").unwrap().boxes[0].lines.clone();
+    assert_eq!(
+        lines[1..3],
+        [
+            "GEC: supply conductors unsized",
+            "Main bonding jumper: unsized"
+        ]
+    );
+}

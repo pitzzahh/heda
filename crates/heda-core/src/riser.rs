@@ -112,8 +112,9 @@ pub struct RiserTree<'a> {
     pub branch_ats: Vec<f64>,
     /// Total VA of those branch circuits.
     pub branch_va: f64,
-    /// Equivalent area (mm², sets × size) of one ungrounded conductor of each branch circuit.
-    pub branch_area: f64,
+    /// Equivalent area (mm², sets × size) of one ungrounded conductor of each branch
+    /// circuit; `None` when one has no listed size.
+    pub branch_area: Option<f64>,
 }
 
 /// The tree under `id` from the computed rows.
@@ -132,7 +133,7 @@ pub fn riser_tree<'a>(
     let mut panels = Vec::new();
     let mut branch_ats = Vec::new();
     let mut branch_va = 0.0;
-    let mut branch_area = 0.0;
+    let mut branch_area = Some(0.0);
     let children: Vec<&Node> = graph.children(id).collect();
     for child in children {
         if child.node_type == "panel" {
@@ -141,7 +142,7 @@ pub fn riser_tree<'a>(
             let row = circuit(child, rows).row;
             branch_ats.push(row.at);
             branch_va += row.va;
-            branch_area += set_area(child, &row);
+            branch_area = add(branch_area, set_area(child, &row));
         }
     }
     Some(RiserTree {
@@ -153,14 +154,16 @@ pub fn riser_tree<'a>(
     })
 }
 
-/// One ungrounded conductor of every parallel set together, mm²; 0 without a size.
-fn set_area(node: &Node, row: &LoadRow) -> f64 {
-    let area = node.conductor_sets.unwrap_or(1.0) * row.conductor_size;
-    if area > 0.0 {
-        area
-    } else {
-        0.0
-    }
+/// One ungrounded conductor of every parallel set together, mm²; `None` without a listed
+/// size (-1).
+fn set_area(node: &Node, row: &LoadRow) -> Option<f64> {
+    (row.conductor_size > 0.0)
+        .then(|| (node.conductor_sets.unwrap_or(1.0) * row.conductor_size).max(0.0))
+}
+
+/// Two equivalent areas together; unknown when either is.
+fn add(a: Option<f64>, b: Option<f64>) -> Option<f64> {
+    Some(a? + b?)
 }
 
 fn num(value: f64) -> String {
@@ -364,13 +367,20 @@ fn transformer_lines(kva: f64, phase: Option<&str>, tree: &RiserTree) -> Vec<Str
 /// are a separately derived system's: 2.50.2.11(A)(5) sizes its GEC and (A)(1) its system
 /// bonding jumper the same way; else the service's GEC (2.50.2.5(D)) and main bonding jumper.
 fn grounding_lines(transformer: bool, tree: &RiserTree) -> Vec<String> {
-    let area: f64 = tree
+    let area = tree
         .panels
         .iter()
         .map(|panel| set_area(panel.circuit.node, &panel.circuit.row))
-        .sum::<f64>()
-        + tree.branch_area;
+        .fold(tree.branch_area, add);
     let jumper = if transformer { "System" } else { "Main" };
+    // A conductor with no listed size leaves the area unknown: a size from the others
+    // alone would be too small.
+    let Some(area) = area else {
+        return vec![
+            "GEC: supply conductors unsized".into(),
+            format!("{jumper} bonding jumper: unsized"),
+        ];
+    };
     [
         sizing::gec_size(area).map(|gec| format!("GEC ≥ {} mm² Cu", num(gec))),
         sizing::bonding_jumper_size(area)
