@@ -8,8 +8,7 @@ use serde::Serialize;
 
 // PEC 2017 App. D Ex. D6 6.3 and D14 step 9.4 use 1.732 for √3.
 pub const SQRT_3: f64 = 1.732;
-// PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400 V/230 V, three-phase 4-wire, which heda
-// models as wye.
+// PEC 2017 2.20.1.5(A) and App. D Ex. D6/D8: 400Y/230 V, three-phase 4-wire.
 pub const WYE_LINE_VOLTAGE: f64 = 400.0;
 pub const WYE_PHASE_VOLTAGE: f64 = 230.0;
 // PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire, which heda
