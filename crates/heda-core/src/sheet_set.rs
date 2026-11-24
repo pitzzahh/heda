@@ -1169,8 +1169,9 @@ fn title_block_ops(
             ],
         ),
         // NTS: the sheets hold schedules and a one-line diagram, nothing drawn to a scale.
-        // heda's reading: PEC 2017 1.3.1.3 asks a graphic scale on each sheet and names
-        // no exception; 1.3.1.2's metric scales fit only drawings made to one.
+        // PEC 2017 1.3.1.3 asks a graphic scale on each drawing sheet, and its FPN says it
+        // "denotes nominal or average plan scale"; heda draws no plan, so it shows none and
+        // says NTS (heda's reading: the clause names no exception).
         (0.09, "SCALE / DATE", "NTS".into(), vec![input.date.clone()]),
         (
             0.07,
