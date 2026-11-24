@@ -381,11 +381,12 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
     }
 }
 
-/// Why `node` cannot sit under `parent` with `children` below it, else `None`
-/// (PEC 2017 2.20.1.5(A)). A three-phase circuit needs a three-phase supply; a 3P-Y
-/// panel needs a 400Y/230 V one and a delta panel a 230 V delta one, since heda
-/// models no transformer between them; a single-phase panel (230 V, on a phase or a
-/// line pair) goes anywhere but has only one phase to give its circuits.
+/// Why `node` cannot sit under `parent` with `children` below it, else `None`: heda's own
+/// rules for the PEC 2017 2.20.1.5(A) voltages, which that section only lists. A
+/// three-phase circuit needs a three-phase supply; a 3P-Y panel needs a 400Y/230 V one
+/// and a delta panel a 230 V delta one, since heda models no transformer between them;
+/// a single-phase panel (230 V, on a phase or a line pair) goes anywhere but has only
+/// one phase to give its circuits.
 pub fn supply_error(node: &Node, parent: Option<&Node>, children: &[Node]) -> Option<&'static str> {
     let supply = supply_of(parent);
     match Supply::of(node.panel_phase()) {

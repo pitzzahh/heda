@@ -118,7 +118,8 @@ fn an_added_circuit_answers_its_parents_new_row() {
     assert_eq!(added["nodes"].as_array().unwrap().len(), 2);
 }
 
-/// PEC 2017 2.20.1.5(A): a three-phase circuit needs a three-phase supply.
+/// heda's supply rule (`phases::supply_error`) for the PEC 2017 2.20.1.5(A) voltages: a
+/// three-phase circuit needs a three-phase supply.
 #[test]
 fn refuses_a_circuit_its_panel_cannot_supply() {
     let mut session = session("one_phase");

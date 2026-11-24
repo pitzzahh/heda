@@ -167,7 +167,7 @@
 						varies: currentOfHorsepower(data.load_type, data.varies, supply_phase)
 					})
 				}) as GenericPhaseMainLoadSchema & { config_preference: 'CUSTOM' | 'DEFAULT' };
-				// The engine refuses a load its panel cannot supply (PEC 2017 2.20.1.5(A)).
+				// The engine refuses a load its panel cannot supply (heda's supply rules).
 				if (action === 'add') {
 					const parent_id = panel_id_from_tree as string;
 					const { error } = await addNode({ load_data, parent_id });

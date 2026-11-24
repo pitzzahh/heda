@@ -115,7 +115,7 @@
 				return;
 			}
 
-			// The engine refuses a panel its supply cannot feed (PEC 2017 2.20.1.5(A)).
+			// The engine refuses a panel its supply cannot feed (heda's supply rules).
 			if (action === 'add') {
 				const { error } = await addNode({ parent_id, panel_data: data });
 				if (error) return refuse(error);
