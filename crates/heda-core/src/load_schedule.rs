@@ -214,8 +214,9 @@ pub fn load_row<'g>(
         let ambient_temp = num::positive(panel_data.ambient_temperature).unwrap_or(30.0);
         let main_sizing = if feeder.share.largest_motor.is_some() {
             // A service main raised to its 2.30.6.10 minimum is no motor breaker, so the
-            // service conductors carry at least that rating (heda's reading; 2.30.7.1(A)
-            // sizes them on the load and does not name this case).
+            // service conductors carry at least that rating: PEC 2017 2.30.4.3(B) for the
+            // (A)–(D) minimums; heda holds the (E) one the same way (2.30.7.1(A) Ex. No. 2
+            // would allow the next standard size up).
             let floor = if service_at > trip { service_at } else { 0.0 };
             input(
                 feeder.load.max(floor),
