@@ -1,5 +1,4 @@
 import * as v from 'valibot';
-import { LOAD_TYPE_FIELD } from './load.js';
 import {
 	CIRCUIT_PHASE_FIELD,
 	LINE_CURRENT_SCHEMA,
@@ -55,18 +54,4 @@ export const NODE_BY_ID_RESULT_SCHEMA = v.object({
 	...COMPUTED_CIRCUIT_ENTRIES,
 	conduit_size: v.union([v.string(), v.number()]),
 	egc_size: v.union([v.number(), v.literal('error')])
-});
-
-/** Inputs shared by the AT, conductor, conduit and EGC sizing of one circuit. */
-export const COMPUTE_COMMON_PROPERTIES_SCHEMA = v.object({
-	va: v.number(),
-	current: v.number(),
-	conductor_set: v.number(),
-	conductor_qty: v.number(),
-	load_type: v.union([LOAD_TYPE_FIELD, v.literal('Main')]),
-	ambient_temp: v.number(),
-	overrided_at: v.optional(v.number()),
-	overrided_conductor_size: v.optional(v.number()),
-	overrided_egc_size: v.optional(v.number()),
-	overrided_conduit_size: v.optional(v.number())
 });

@@ -29,11 +29,7 @@ import {
 	PHASE_ASSIGNMENT_FIELD,
 	PHASE_VA_SCHEMA
 } from './shared.js';
-import {
-	COMPUTE_COMMON_PROPERTIES_SCHEMA,
-	LOAD_SCHEDULE_ROW_SCHEMA,
-	NODE_BY_ID_RESULT_SCHEMA
-} from './schedule.js';
+import { LOAD_SCHEDULE_ROW_SCHEMA, NODE_BY_ID_RESULT_SCHEMA } from './schedule.js';
 import { VOLTAGE_DROP_RESULT_SCHEMA } from './voltage-drop.js';
 import { FILE_EXPORT_SCHEMA, FILE_PROTECTION_FIELD, RECENT_PROJECT_SCHEMA } from './file.js';
 import { OVERRIDE_FIELD_TYPE_FIELD } from './misc.js';
@@ -373,16 +369,6 @@ describe('validators', () => {
 		expect(
 			v.safeParse(NODE_BY_ID_RESULT_SCHEMA, { ...row, egc_size: 'error', conduit_size: '16' })
 				.success
-		).toBe(true);
-		expect(
-			v.safeParse(COMPUTE_COMMON_PROPERTIES_SCHEMA, {
-				va: 1,
-				current: 1,
-				conductor_set: 1,
-				conductor_qty: 2,
-				load_type: 'Main',
-				ambient_temp: 30
-			}).success
 		).toBe(true);
 		expect(
 			v.safeParse(VOLTAGE_DROP_RESULT_SCHEMA, {
