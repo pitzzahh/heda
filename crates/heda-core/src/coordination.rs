@@ -93,7 +93,7 @@ pub struct Pair {
     pub section: &'static str,
     pub upstream: Device,
     pub downstream: Device,
-    /// Available fault current at the downstream device (A), from the short circuit study.
+    /// Available fault current at the downstream device's line terminals (A), from the short circuit study.
     pub available_fault_current: Option<f64>,
     pub status: Status,
 }
@@ -108,9 +108,19 @@ pub fn coordination(
     let Some(root) = graph.root() else {
         return Vec::new();
     };
+    // At each device's line terminals (1.10.1.9): a panel's main sits at its own bus, the
+    // end of its feeder; a circuit's breaker sits in the panel that feeds it.
     let fault_at: HashMap<&str, f64> = faults
         .iter()
-        .filter_map(|row| Some((row.id.as_str(), row.node_fault_current?)))
+        .filter_map(|row| {
+            let is_panel = graph.get(&row.id)?.node_type == "panel";
+            let current = if is_panel {
+                row.node_fault_current
+            } else {
+                row.supply_fault_current
+            };
+            Some((row.id.as_str(), current?))
+        })
         .collect();
     let mut pairs = Vec::new();
     for node in graph.preorder(root) {
