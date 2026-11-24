@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getState } from '#lib/state/index.svelte.js';
 import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 import type { DialogState } from '#lib/state/types.js';
+import { settled } from '#lib/db/index.js';
 import { resetData } from '#lib/db/mutations/index.js';
 import { saveCurrentProject } from '#lib/helpers/file/index.js';
 import { planWindowCloseAction } from '#lib/helpers/file/close-request.js';
@@ -32,6 +33,8 @@ export function createLeaveProject() {
 	}
 
 	async function confirmLeave(before_prompt?: () => void): Promise<boolean> {
+		// An edit still in flight sets the unsaved flag only when the engine answers it.
+		await settled();
 		const plan = planWindowCloseAction({
 			project_loaded: project_state.loaded,
 			has_unsaved_actions: undo_redo_state.has_unsaved_actions,
