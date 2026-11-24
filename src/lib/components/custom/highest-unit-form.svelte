@@ -53,7 +53,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { use_password: false, is_service: true }
+		initialInput: { use_password: false, is_service: true, small_dwelling: false }
 	});
 
 	let submitting = $state(false);
@@ -74,7 +74,8 @@
 			const project_input = {
 				distribution_unit: data.distribution_unit,
 				phase: data.phase,
-				is_service: data.is_service
+				is_service: data.is_service,
+				small_dwelling: data.small_dwelling
 			};
 			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
@@ -278,7 +279,19 @@
 						checked={field.input ?? true}
 						onCheckedChange={(v) => field.onInput(v)}
 						label="Utility service entrance"
-						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits, 15 A for one), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+					/>
+				</div>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['small_dwelling']}>
+			{#snippet children(field)}
+				<div class="rounded-xl border p-3">
+					<Checkbox
+						checked={field.input ?? false}
+						onCheckedChange={(v) => field.onInput(v)}
+						label="Dwelling of at most 50 m²"
+						description="On one circuit it takes a 20 A service disconnect (PEC 2017 2.30.6.10(B)), and up to 3680 VA its plans may use A3 sheets (1.3.1.1(C))."
 					/>
 				</div>
 			{/snippet}

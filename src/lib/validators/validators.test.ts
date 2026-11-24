@@ -133,6 +133,18 @@ describe('validators', () => {
 		expect(service(false)).toBe(false);
 	});
 
+	it('takes a project as no small dwelling unless told so (PEC 2017 1.3.1.1(C), 2.30.6.10(B))', () => {
+		const dwelling = (small_dwelling?: boolean) => {
+			const result = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				phase: default_phases.ONE_PHASE,
+				small_dwelling
+			});
+			return result.success ? result.output.small_dwelling : null;
+		};
+		expect(dwelling(undefined)).toBe(false);
+		expect(dwelling(true)).toBe(true);
+	});
+
 	it('trims an optional project name and caps its length', () => {
 		const parse = (project_name?: string) =>
 			v.safeParse(HIGHEST_UNIT_SCHEMA, { phase: default_phases.ONE_PHASE, project_name });
