@@ -1,6 +1,7 @@
 //! Phase rules of the three-phase systems of PEC 2017 2.20.1.5(A): 400Y/230 V wye,
-//! three-phase 4-wire (Appendix D Examples D6 and D8), and 230 V delta, three-phase
-//! 3-wire (the system of Examples D14 and D15).
+//! three-phase 4-wire (Appendix D Examples D6 and D8), and 230 V three-phase 3-wire
+//! (the system of Examples D14 and D15), which heda models as delta (the PEC does not
+//! name the connection).
 
 use crate::model::{phases, Node};
 use crate::num;

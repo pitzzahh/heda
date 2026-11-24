@@ -7,7 +7,8 @@ import {
 import type { PhaseAssignment } from '#lib/types/phase.js';
 
 // Three-phase wye (400Y/230 V, 4-wire) per PEC 2017 2.20.1.5(A) and Appendix D
-// Examples D6 and D8; three-phase delta (230 V, 3-wire) per 2.20.1.5(A) and D14/D15.
+// Examples D6 and D8; 230 V three-phase 3-wire per 2.20.1.5(A) and D14/D15, which heda
+// models as delta (the PEC does not name the connection).
 // Mirrors crates/heda-core/src/phases.rs for the checks the UI runs synchronously.
 
 /** What a single-phase circuit connects to under a panel of `supply_phase`: phases, or line pairs on delta. */
