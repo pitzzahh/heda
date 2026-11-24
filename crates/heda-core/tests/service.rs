@@ -57,8 +57,44 @@ fn two_2_wire_circuits_need_30_a() {
     ];
     assert_eq!(main_at(nodes, "SP"), 30.0);
     // A 3-wire circuit is not a 2-wire one, so (E) applies.
-    let nodes = vec![root(None), panel("SP", 1.0), load("a", "SP", 1.0, 3.0)];
+    let nodes = vec![
+        root(None),
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+        load("b", "SP", 2.0, 3.0),
+    ];
     assert_eq!(main_at(nodes, "SP"), 60.0);
+}
+
+#[test]
+fn a_one_circuit_installation_needs_15_a() {
+    // (A): only the limited loads of a single branch circuit, 2- or 3-wire; 400 VA is
+    // 1.7 A, so the 15 A minimum is the main. An empty service panel has no more.
+    let nodes = vec![root(None), panel("SP", 1.0), load("a", "SP", 1.0, 3.0)];
+    assert_eq!(main_at(nodes, "SP"), 15.0);
+    assert_eq!(main_at(vec![root(None), panel("SP", 1.0)], "SP"), 15.0);
+}
+
+#[test]
+fn a_one_circuit_dwelling_needs_20_a() {
+    // (B): a dwelling unit on the single branch circuit 2.10.1.11(C)(5) permits (at most
+    // 50 m² and 3680 VA, one 20 A 2-wire circuit).
+    let mut dwelling = root(None);
+    dwelling["highest_unit_form"]["single_circuit_dwelling"] = json!(true);
+    let nodes = vec![
+        dwelling.clone(),
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+    ];
+    assert_eq!(main_at(nodes, "SP"), 20.0);
+    // A second circuit takes it out of (B): (C) for two 2-wire circuits.
+    let nodes = vec![
+        dwelling,
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+        load("b", "SP", 2.0, 2.0),
+    ];
+    assert_eq!(main_at(nodes, "SP"), 30.0);
 }
 
 #[test]

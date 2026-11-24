@@ -455,8 +455,9 @@ fn split(supply: Supply, phase_va: Option<PhaseVa>, pair_va: Option<PairVa>) -> 
 }
 
 /// The least rating of `panel`'s main when it is the service disconnecting means: the
-/// first panel the utility service feeds. PEC 2017 2.30.6.10 sets the minimum (30 A for
-/// no more than two 2-wire branch circuits, (C); 60 A otherwise, (D) and (E)), and
+/// first panel the utility service feeds. PEC 2017 2.30.6.10 sets the minimum (15 A for
+/// a single branch circuit, (A), or 20 A for a dwelling on one, (B); 30 A for no more
+/// than two 2-wire branch circuits, (C); 60 A otherwise, (D) and (E)), and
 /// 2.30.6.11 lets every disconnect on the service count toward it, so this one makes
 /// up what the others lack, as the next standard rating. 0 for any other panel.
 fn service_minimum(graph: &Graph, panel: &Node, memo: &mut HashMap<String, LoadRow>) -> f64 {
@@ -477,7 +478,14 @@ fn service_minimum(graph: &Graph, panel: &Node, memo: &mut HashMap<String, LoadR
         .into_iter()
         .filter(|node| node.load_data.is_some() && node.panel_data.is_none())
         .collect();
-    let minimum = if branch_circuits.len() <= 2
+    let form = supply.highest_unit_form.as_ref();
+    let minimum = if branch_circuits.len() <= 1 {
+        if form.and_then(|f| f.single_circuit_dwelling) == Some(true) {
+            20.0
+        } else {
+            15.0
+        }
+    } else if branch_circuits.len() == 2
         && branch_circuits.iter().all(|c| c.conductor_qty == Some(2.0))
     {
         30.0
