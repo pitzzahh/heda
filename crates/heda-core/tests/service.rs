@@ -156,9 +156,10 @@ fn motor(id: &str, parent: &str, circuit: f64, flc: f64) -> Value {
 #[test]
 fn a_service_main_raised_to_its_minimum_keeps_its_conductor_at_that_rating() {
     // An 8 A motor and two 400 VA lighting circuits: the 4.30.2.4 load is about 13 A, but
-    // 2.30.6.10(E) makes the service main 60 A, and 2.30.7.1(A) lets the service breaker be
-    // no higher than the conductor's ampacity. At 60 A (≤ 100 A, 1.10.1.14(C)(1)(a)) the
-    // 60 °C column of Table 3.10.2.6(B)(16) applies: 14 mm² is 55 A, 22 mm² is 70 A.
+    // 2.30.6.10(E) makes the service main 60 A. heda holds the service conductors at that
+    // (E) minimum as 2.30.4.3(B) holds (A)–(D) (2.30.7.1(A) Ex. No. 2 would let 14 mm²
+    // sit under it). At 60 A (≤ 100 A, 1.10.1.14(C)(1)(a)) the 60 °C column of
+    // Table 3.10.2.6(B)(16) applies: 14 mm² is 55 A, 22 mm² is 70 A.
     let mut session = Session::default();
     let all = session
         .open(
