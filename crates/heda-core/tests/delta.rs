@@ -243,6 +243,67 @@ fn d15_voltage_drop_on_a_230_v_three_phase_system() {
     );
 }
 
+/// D15's panel and motor, with `feeder` and `motor` fields added to their nodes.
+fn d15(feeder: Value, motor: Value) -> Session {
+    let feeder_z = (0.029_f64.powi(2) + 0.048_f64.powi(2)).sqrt();
+    let branch_z = (1.2_f64.powi(2) + 0.063_f64.powi(2)).sqrt();
+    let motor_va = 1.732 * 230.0 * 20.0;
+    let other_va = 295.0 * 230.0 * 1.732 - motor_va;
+    let mut feeder_fields = json!({ "length": 15.2, "overrided_z": feeder_z });
+    feeder_fields
+        .as_object_mut()
+        .unwrap()
+        .extend(feeder.as_object().unwrap().clone());
+    let mut motor_fields = json!({ "length": 30.5, "overrided_z": branch_z });
+    motor_fields
+        .as_object_mut()
+        .unwrap()
+        .extend(motor.as_object().unwrap().clone());
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                root(json!({})),
+                panel("P", "root", 1.0, phases::THREE_PHASE_DELTA, feeder_fields),
+                load(
+                    "M",
+                    "P",
+                    1.0,
+                    load_types::THREE_P_MOTOR_RATED_CURRENT,
+                    20.0,
+                    motor_fields,
+                ),
+                load(
+                    "X",
+                    "P",
+                    3.0,
+                    load_types::THREE_P_EQUIPMENT,
+                    other_va,
+                    json!({ "length": 10 }),
+                ),
+            ],
+        )
+        .unwrap();
+    session
+}
+
+#[test]
+fn parallel_sets_divide_the_d15_feeder_drop() {
+    // PEC 2017 App. D Ex. D15 Eq. (1), VD = k·I·Z, with the feeder run as two parallel
+    // sets: Table 10.1.1.9's Z is per conductor, and n equal conductors in parallel
+    // (PEC 2017 3.10.2.1(H)) carry I/n each, so the run's Z is Z/n. As the short-circuit study
+    // divides it (short_circuit::conductor_impedance_ohm).
+    let mut session = d15(json!({ "conductor_sets": 2 }), json!({}));
+    let feeder_z = (0.029_f64.powi(2) + 0.048_f64.powi(2)).sqrt();
+    let expected = 1.732 * 295.0 * feeder_z * 15.2 / 305.0 / 2.0;
+    let drops = session.voltage_drops();
+    let p = drops.iter().find(|d| d.id == "P").unwrap();
+    // Half of D15's 1.428 V: 0.714 V.
+    assert_eq!(p.voltage_per_segment, (expected * 1e4).round() / 1e4);
+    assert_eq!(p.voltage_per_segment, 0.714);
+}
+
 #[test]
 fn d14_fault_at_the_230_v_transformer_bus_is_14_972_a() {
     // PEC 2017 App. D Ex. D14: 300 kVA bank at 5 % on a 1 000 MVA line, 230 V 3-phase.

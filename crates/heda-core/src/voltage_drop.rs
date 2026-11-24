@@ -58,7 +58,10 @@ pub fn voltage_drops(graph: &Graph, memo: &mut HashMap<String, LoadRow>) -> Vec<
             .or_else(|| lookup(&ALTERNATING_CURRENT_REACTANCE, conductor_size).copied());
         // Ohms of this run: Table 10.1.1.9 gives Ω per 305 m. D15 carries it unrounded
         // into VD (1.732 × 295 A × 0.0561 Ω × 15.2 / 305 = 1.428 V); 0.0001 Ω is display only.
-        let run_z = (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0;
+        // Parallel sets (3.10.2.1(H)) each carry an equal share, so the run is Z / sets,
+        // as in the short-circuit study.
+        let sets = num::positive(node.conductor_sets).unwrap_or(1.0);
+        let run_z = (length.unwrap_or(f64::NAN) * z.unwrap_or(f64::NAN)) / 305.0 / sets;
         let actual_z = num::round(run_z, 4);
         let voltage_per_segment = num::round(k * computed.current * run_z, 4);
         // Parents come first in preorder; the root (and a feeder with no drop) adds nothing.
