@@ -220,3 +220,38 @@ fn the_service_conductors_carry_the_minimum_rating_whatever_the_motor_breaker() 
         assert!(ampacity >= 60.0, "FLC {flc} A: {ampacity} A");
     }
 }
+
+/// An edit's answer for every panel on the supply, against the same documents opened fresh.
+fn answers_match_a_fresh_open(nodes: Vec<Value>, write: Value) {
+    let mut session = Session::default();
+    session.open(json!({}), nodes.clone()).unwrap();
+    let answered = session.put(vec![write.clone()]).unwrap().rows;
+    let mut written = nodes;
+    written.retain(|node| node["id"] != write["id"]);
+    written.push(write);
+    let fresh = Session::default().open(json!({}), written).unwrap().rows;
+    for id in ["A", "B"] {
+        let row = answered
+            .get(id)
+            .unwrap_or_else(|| panic!("{id} was not recomputed"));
+        assert_eq!(row.at, fresh[id].at, "{id}");
+        assert_eq!(row.conductor_size, fresh[id].conductor_size, "{id}");
+    }
+}
+
+#[test]
+fn a_panel_moved_ahead_of_the_service_disconnect_takes_over_its_minimum() {
+    // 2.30.6.10(E) and 2.30.6.11: three 2-wire circuits need 60 A combined. The first
+    // panel on the supply makes up what the others lack (A 45 A, B 15 A); renumbering
+    // B ahead of A swaps the two, and both answer it at once.
+    let nodes = vec![
+        root(None),
+        panel("A", 2.0),
+        load("a1", "A", 1.0, 2.0),
+        load("a2", "A", 2.0, 2.0),
+        load("a3", "A", 3.0, 2.0),
+        panel("B", 3.0),
+    ];
+    answers_match_a_fresh_open(nodes.clone(), panel("B", 1.0));
+    answers_match_a_fresh_open(nodes, panel("A", 4.0));
+}

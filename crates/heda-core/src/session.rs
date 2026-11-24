@@ -146,11 +146,13 @@ impl Session {
     pub fn put(&mut self, nodes: Vec<Value>) -> Result<Computed, String> {
         let parsed = parse_nodes(&nodes)?;
         let ids: Vec<String> = parsed.iter().map(|node| node.id.clone()).collect();
-        // The old chain (a move leaves its old parents stale), then the new one.
+        // The old chain (a move leaves its old parents stale) and service disconnect, then
+        // the new ones.
         let mut touched: Vec<String> = ids
             .iter()
             .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
+        touched.extend(self.service_panels());
         self.graph.upsert(parsed);
         for doc in nodes {
             self.docs.insert(id_of(&doc), doc);
@@ -171,6 +173,7 @@ impl Session {
             .iter()
             .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
+        touched.extend(self.service_panels());
         self.graph.remove(ids);
         touched.extend(self.service_panels());
         for id in ids {
