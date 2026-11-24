@@ -55,8 +55,54 @@ jobs:
             echo "new=true" >> "$GITHUB_OUTPUT"
           fi
 
-  publish-desktop:
+  # the gate of AGENTS.md, so a release never ships a build whose tests fail
+  gate:
     needs: version
+    if: needs.version.outputs.new == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust 1.99.1
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './crates/heda-core -> target'
+          key: gate
+
+      # vitest runs the engine as WebAssembly; the CLI must match the crate's exact wasm-bindgen pin
+      - name: Install wasm-bindgen-cli
+        run: |
+          V=$(sed -nE 's/^wasm-bindgen = \{ version = "=([^"]+)".*/\1/p' crates/heda-core/Cargo.toml)
+          cargo install wasm-bindgen-cli --version "$V" --locked
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+      - name: Check
+        run: bun run check
+
+  publish-desktop:
+    needs: [version, gate]
     if: needs.version.outputs.new == 'true'
     permissions:
       contents: write
