@@ -227,6 +227,24 @@ fn a_panel_covers_itself_and_what_it_feeds_not_its_feeder() {
 }
 
 #[test]
+fn a_panel_fed_from_the_supply_counts_its_main() {
+    // MDP hangs straight off the supply, so its main is the service disconnect (PEC 2017
+    // 2.30.6.10) and the only breaker ahead of its circuits: it belongs to MDP's own list.
+    let bom = session().bill_of_materials("MDP").unwrap();
+    assert_eq!(
+        bom.breakers,
+        [
+            // a, b and c.
+            breaker(20.0, 50.0, 3),
+            // LP-1's feeder breaker in MDP, and LP-1's own main.
+            breaker(60.0, 100.0, 2),
+            // MDP's main.
+            breaker(100.0, 100.0, 1),
+        ]
+    );
+}
+
+#[test]
 fn computed_sizes_flow_through_when_nothing_is_overridden() {
     let mut session = session();
     let plain = json!({

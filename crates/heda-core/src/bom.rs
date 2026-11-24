@@ -173,7 +173,8 @@ pub fn bill_of_materials(
             .parent_id
             .as_deref()
             .is_some_and(|parent| Some(parent) != root_id);
-        if fed_by_panel {
+        // A top panel fed from the supply is not among `circuits`, so its main is counted here.
+        if fed_by_panel || panel.id == top.id {
             let poles = text(&panel.id, "pole").unwrap_or_default();
             add_breaker(&mut breakers, row.at, row.ampere_frames, poles);
         }
