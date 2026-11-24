@@ -103,6 +103,15 @@ export function setServiceEntrance(root_id: string, is_service: boolean) {
 	return mergeUnitForm(root_id, { is_service });
 }
 
+/**
+ * Marks the project as a dwelling unit on the single branch circuit PEC 2017
+ * 2.10.1.11(C)(5) permits, so a one-circuit service disconnect takes the 20 A of
+ * 2.30.6.10(B) instead of (A)'s 15 A.
+ */
+export function setSingleCircuitDwelling(root_id: string, single_circuit_dwelling: boolean) {
+	return mergeUnitForm(root_id, { single_circuit_dwelling });
+}
+
 /** Sets the standby generator's nameplate kVA (PEC 2017 Article 7.2); undefined removes it. */
 export function setGeneratorKva(root_id: string, generator_kva: number | undefined) {
 	return mergeUnitForm(root_id, { generator_kva: generator_kva ?? null });

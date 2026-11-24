@@ -269,6 +269,16 @@ describe('validators', () => {
 		).toBe(false);
 	});
 
+	it('stores the single-circuit dwelling flag of PEC 2017 2.30.6.10(B) as a boolean', () => {
+		const root = { id: 'r', node_type: 'root', child_ids: [] };
+		const parse = (single_circuit_dwelling: unknown) =>
+			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { single_circuit_dwelling } })
+				.success;
+		expect(parse(true)).toBe(true);
+		expect(parse(undefined)).toBe(true);
+		expect(parse('yes')).toBe(false);
+	});
+
 	it('describes short-circuit rows and their status', () => {
 		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'under_rated').success).toBe(true);
 		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'unknown').success).toBe(false);

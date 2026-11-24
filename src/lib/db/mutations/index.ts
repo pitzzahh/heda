@@ -19,6 +19,7 @@ export {
 	overrideField,
 	setGeneratorKva,
 	setServiceEntrance,
+	setSingleCircuitDwelling,
 	setStandbyPanels,
 	updateConductorSets,
 	updateInterruptingRating,
