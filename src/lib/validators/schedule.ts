@@ -35,7 +35,7 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	ampacity: v.optional(v.number()),
 	/** A motor's largest overload relay rating, from its nameplate current (PEC 2017 4.30.3.2(A)(1)); absent without one. */
 	overload: v.optional(v.number()),
-	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (PEC 2017 2.20.3.22). */
+	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (heda's split; the PEC sets none). */
 	phase_loads: v.optional(
 		v.tuple([v.nullable(v.number()), v.nullable(v.number()), v.nullable(v.number())])
 	)
