@@ -39,7 +39,8 @@ const OVERRIDE_NOTE: &str = "* Set by the engineer (override), not the computed 
 const RISER_MAX_SCALE: f64 = 0.45;
 const RISER_MIN_SCALE: f64 = 0.18;
 
-/// PEC 2017 1.3.1.1(C): A3 sheets only up to this load (and 50 m², which heda does not record).
+/// PEC 2017 1.3.1.1(C): A3 sheets only up to this load, for a dwelling unit of at most 50 m²
+/// (the project's `small_dwelling`, which heda cannot measure).
 pub const A3_SHEET_MAX_VA: f64 = 3680.0;
 
 /// The drawing sheet sizes of PEC 2017 1.3.1.1, landscape (width, height) in mm: (A) the

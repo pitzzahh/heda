@@ -464,6 +464,15 @@ impl Session {
             .and_then(|block| serde_json::from_value(block.clone()).ok())
             .unwrap_or_default();
         if title_block.sheet_size.as_deref() == Some("A3") {
+            let small_dwelling = self
+                .graph
+                .root()
+                .and_then(|root| root.highest_unit_form.as_ref())
+                .and_then(|form| form.small_dwelling)
+                == Some(true);
+            if !small_dwelling {
+                return Err("A3 sheets are only for a dwelling unit of at most 50 m² (PEC 2017 1.3.1.1(C)); mark the project as one in Settings, or pick a larger sheet.".into());
+            }
             // As the app totals it: the rows under the root, a NaN row counting as 0.
             let total_va: f64 = self
                 .graph
