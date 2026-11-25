@@ -186,13 +186,17 @@ fn names_the_requiring_section_and_carries_the_available_fault_current() {
     let e1 = pairs.iter().find(|p| p.downstream.id == "e1").unwrap();
     assert_eq!(e1.system, System::CriticalOperationsPower);
     assert_eq!(e1.section, "7.8.4.5");
-    let at_e1 = faults
-        .iter()
-        .find(|f| f.id == "e1")
-        .unwrap()
-        .node_fault_current;
-    assert!(at_e1.is_some());
-    assert_eq!(e1.available_fault_current, at_e1);
+    let fault = |id: &str| faults.iter().find(|f| f.id == id).unwrap();
+    // e1's breaker sits in EP, so the fault current at its line terminals (PEC 2017
+    // 1.10.1.9) is EP's bus, not the far end of e1's 10 m run.
+    let at_ep_bus = fault("e1").supply_fault_current;
+    assert!(at_ep_bus.is_some());
+    assert!(at_ep_bus > fault("e1").node_fault_current);
+    assert_eq!(e1.available_fault_current, at_ep_bus);
+    // EP's main sits at EP's own bus, the end of its feeder.
+    let ep = pairs.iter().find(|p| p.downstream.id == "EP").unwrap();
+    assert_eq!(ep.available_fault_current, fault("EP").node_fault_current);
+    assert_eq!(fault("EP").node_fault_current, at_ep_bus);
 }
 
 #[test]

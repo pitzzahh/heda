@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decryptFilePayload } from '../format.js';
+import { decryptFilePayload, FilePasswordError, packFileV2 } from '../format.js';
 import {
 	LEGACY_V1_FIXTURE_FIXED_SALT,
 	LEGACY_V1_FIXTURE_PASSPHRASE,
@@ -9,6 +9,7 @@ import {
 import {
 	LegacyMigrationError,
 	LegacyMigrationRestoreError,
+	convertV2ToDevice,
 	legacyBackupPath,
 	legacyMigrationTempPath,
 	migrateLegacyFile,
@@ -240,5 +241,54 @@ describe('legacy v1 migration', () => {
 		io.files.set(BACKUP_PATH, new TextEncoder().encode('one'));
 		io.files.set(`${BACKUP_PATH}.1`, new TextEncoder().encode('two'));
 		await expect(uniqueLegacyBackupPath(FILE_PATH, io)).resolves.toBe(`${BACKUP_PATH}.2`);
+	});
+});
+
+describe('v2 to device conversion', () => {
+	const PASSWORD = 'shared-file-password';
+	const V2_BACKUP = `${FILE_PATH}.v2.bak`;
+
+	async function v2IO(rules: Rule[] = []): Promise<{ io: MemoryIO; original: string }> {
+		const original = await packFileV2(LEGACY_V1_FIXTURE_PAYLOAD, PASSWORD);
+		return { io: new MemoryIO({ [FILE_PATH]: original }, rules), original };
+	}
+
+	function convert(io: MemoryIO, password = PASSWORD) {
+		return convertV2ToDevice<typeof LEGACY_V1_FIXTURE_PAYLOAD>({
+			file_path: FILE_PATH,
+			password,
+			device_key: DEVICE_KEY,
+			io
+		});
+	}
+
+	it('stages, backs up and commits a device-sealed copy', async () => {
+		const { io, original } = await v2IO();
+		const result = await convert(io);
+
+		expect(result.backup_path).toBe(V2_BACKUP);
+		expect(io.writes).toEqual([legacyMigrationTempPath(FILE_PATH, 3), V2_BACKUP, FILE_PATH]);
+		expect(io.bytes(V2_BACKUP)).toBe(original);
+		await expect(decryptFilePayload(io.bytes(FILE_PATH), null, DEVICE_KEY)).resolves.toEqual(
+			LEGACY_V1_FIXTURE_PAYLOAD
+		);
+	});
+
+	it('writes nothing for a wrong password', async () => {
+		const { io } = await v2IO();
+		await expect(convert(io, 'not-the-password')).rejects.toBeInstanceOf(FilePasswordError);
+		expect(io.write_attempts).toEqual([]);
+	});
+
+	it('restores the original, verified, when the commit is cut off', async () => {
+		const { io, original } = await v2IO([
+			{ op: 'read', path: FILE_PATH, action: 'corrupt', skip: 1, count: 1 }
+		]);
+		const err = (await convert(io).catch((e) => e)) as LegacyMigrationError;
+
+		expect(err).toBeInstanceOf(LegacyMigrationError);
+		expect(err.step).toBe('commit');
+		expect(io.bytes(FILE_PATH)).toBe(original);
+		expect(io.bytes(V2_BACKUP)).toBe(original);
 	});
 });

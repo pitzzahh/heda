@@ -160,3 +160,80 @@ fn an_upsized_feeder_grows_its_egc_pec_2017_2_50_6_13_b() {
     // The engineer's EGC stands.
     assert_eq!(rows["set"].egc_size, Egc::Size(5.5));
 }
+
+fn on_line(mut panel: Value, line: &str) -> Value {
+    panel["phase_assignment"] = json!(line);
+    panel
+}
+
+#[test]
+fn single_phase_sets_add_up_per_line_note_3() {
+    // Note 3 takes the largest sum of the corresponding conductors of each set, so on a
+    // three-phase supply only the sets on the same line add. 3P-Y, one 30 mm² set on each
+    // of A, B and C: 30 mm² per line, GEC 8 mm² and jumper 8 mm² (not 90 mm²'s 30 mm²).
+    let lines = supply_lines(
+        json!({ "phase": "three_phase_wye" }),
+        vec![
+            on_line(panel("A", 1.0, 30.0), "A"),
+            on_line(panel("B", 1.0, 30.0), "B"),
+            on_line(panel("C", 1.0, 30.0), "C"),
+        ],
+    );
+    assert_eq!(
+        lines[1..3],
+        ["GEC ≥ 8 mm² Cu", "Main bonding jumper ≥ 8 mm² Cu"]
+    );
+    // Delta, one 60 mm² set on each pair: every line carries two, 120 mm². Table
+    // 2.50.3.17 and Table 2.50.5.13(C)(1) give 30 mm² for it (180 mm² in all would be
+    // the GEC's 50 mm²).
+    let lines = supply_lines(
+        json!({ "phase": "three_phase_delta" }),
+        vec![
+            on_line(panel("AB", 1.0, 60.0), "AB"),
+            on_line(panel("BC", 1.0, 60.0), "BC"),
+            on_line(panel("CA", 1.0, 60.0), "CA"),
+        ],
+    );
+    assert_eq!(
+        lines[1..3],
+        ["GEC ≥ 30 mm² Cu", "Main bonding jumper ≥ 30 mm² Cu"]
+    );
+}
+
+#[test]
+fn an_unsized_supply_conductor_gives_no_gec_size() {
+    // 500 kVA at 230 V is 2 174 A: no conductor in Table 3.10.2.6(B)(16) carries it, so
+    // the supply's equivalent area, and the GEC and jumper sized on it, are unknown.
+    let mut big = panel("BIG", 1.0, 0.0);
+    big.as_object_mut()
+        .unwrap()
+        .remove("overrided_conductor_size");
+    big["circuit_number"] = json!(2);
+    let load = json!({
+        "id": "l", "node_type": "load", "parent_id": "BIG", "circuit_number": 1,
+        "conductor_sets": 1, "conductor_qty": 2, "length": 10,
+        "load_data": { "load_type": "lighting_load", "quantity": 1, "varies": 500_000 }
+    });
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                json!({ "id": "root", "node_type": "root",
+                        "highest_unit_form": { "phase": "one_phase" } }),
+                panel("MDP", 1.0, 38.0),
+                big,
+                load,
+            ],
+        )
+        .unwrap();
+    assert_eq!(session.snapshot().computed.rows["BIG"].conductor_size, -1.0);
+    let lines = session.riser("root").unwrap().boxes[0].lines.clone();
+    assert_eq!(
+        lines[1..3],
+        [
+            "GEC: supply conductors unsized",
+            "Main bonding jumper: unsized"
+        ]
+    );
+}

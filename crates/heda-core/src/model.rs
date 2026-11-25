@@ -141,6 +141,11 @@ pub struct HighestUnitForm {
     /// service disconnecting means (PEC 2017 2.30.6.10). Absent means yes.
     #[serde(default)]
     pub is_service: Option<bool>,
+    /// Whether the project is a dwelling unit of at most 50 m², which heda cannot measure.
+    /// Such a dwelling may run on one branch circuit (PEC 2017 2.10.1.11(C)(5)), and then
+    /// its service disconnect takes 2.30.6.10(B)'s 20 A, not (A)'s 15 A. Absent means no.
+    #[serde(default)]
+    pub small_dwelling: Option<bool>,
     /// The optional standby generator's nameplate rating (PEC 2017 Article 7.2).
     #[serde(default, deserialize_with = "number")]
     pub generator_kva: Option<f64>,

@@ -47,14 +47,14 @@
 
 	const project_state = getProjectState();
 	const undo_redo_state = getUndoRedoState();
-	// PEC 2017 1.3.1.1(C): A3 only for a dwelling of at most 3680 VA (and 50 m², which heda
-	// does not record, so the engineer confirms it). The engine refuses A3 past it too.
+	// PEC 2017 1.3.1.1(C): A3 only for a dwelling unit of at most 50 m² (the project marks
+	// it; heda cannot measure it) and 3680 VA. The engine refuses A3 otherwise too.
 	const total_va = $derived(
 		getComputedLoads(getRootNode()?.id ?? '').reduce((sum, row) => sum + (row.va || 0), 0)
 	);
-	const sizes = $derived(
-		SHEET_SIZES.filter((size) => size.value !== 'A3' || total_va <= A3_SHEET_MAX_VA)
-	);
+	const small_dwelling = $derived(getRootNode()?.highest_unit_form?.small_dwelling === true);
+	const a3_allowed = $derived(small_dwelling && total_va <= A3_SHEET_MAX_VA);
+	const sizes = $derived(SHEET_SIZES.filter((size) => size.value !== 'A3' || a3_allowed));
 	// The parent mounts this dialog per opening, so the stored block is read fresh each time.
 	const form = createForm({ schema: TITLE_BLOCK_SCHEMA, initialInput: buildInitialInput() });
 	let exporting = $state(false);
@@ -85,7 +85,7 @@
 
 	function buildInitialInput(): TitleBlock {
 		const stored = getProject()?.title_block;
-		// A stored size the load has outgrown (A3, 1.3.1.1(C)) is not offered, so start from the first.
+		// A stored A3 the project no longer qualifies for (1.3.1.1(C)) is not offered: start from the first.
 		const sheet_size = sizes.some((size) => size.value === stored?.sheet_size)
 			? stored?.sheet_size
 			: SHEET_SIZES[0].value;
@@ -94,7 +94,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
 			<Dialog.Title>Sheet set (PDF)</Dialog.Title>
 			<Dialog.Description>
@@ -145,11 +145,15 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						{#if total_va <= A3_SHEET_MAX_VA}
-							<p class="text-[0.8rem] text-muted-foreground">
+						<p class="text-[0.8rem] text-muted-foreground">
+							{#if a3_allowed}
 								A3 is only for a dwelling unit of at most 50 m² and 3680 VA (1.3.1.1(C)).
-							</p>
-						{/if}
+							{:else if !small_dwelling}
+								A3 needs the project marked as a dwelling of at most 50 m² in Settings (1.3.1.1(C)).
+							{:else}
+								A3 is only for a dwelling of at most 3680 VA (1.3.1.1(C)).
+							{/if}
+						</p>
 						<FieldErrors errors={field.errors} />
 					</div>
 				{/snippet}

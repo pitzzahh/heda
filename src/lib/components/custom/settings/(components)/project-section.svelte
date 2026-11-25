@@ -17,7 +17,7 @@
 	import { getState } from '#lib/state/index.svelte.js';
 	import { DIALOG_STATE_CTX } from '#lib/state/constants.js';
 	import type { DialogState } from '#lib/state/types.js';
-	import { setServiceEntrance } from '#lib/db/mutations/index.js';
+	import { setServiceEntrance, setSmallDwelling } from '#lib/db/mutations/index.js';
 	import { getRootNode } from '#lib/db/queries/index.js';
 	import { createLeaveProject } from '#lib/hooks/leave-project.svelte.js';
 	import { toast } from 'svelte-sonner';
@@ -34,12 +34,20 @@
 	const root_node = $derived(project_state.loaded ? getRootNode() : undefined);
 	// Absent means the utility service supplies the project (PEC 2017 2.30.6.10).
 	const is_service = $derived(root_node?.highest_unit_form?.is_service !== false);
+	const small_dwelling = $derived(root_node?.highest_unit_form?.small_dwelling === true);
 
 	async function saveServiceEntrance(value: boolean) {
 		if (!root_node) return;
 		const updated = await setServiceEntrance(root_node.id, value);
 		if (!updated) return toast.warning('Failed to save the service entrance');
 		toast.success(value ? 'Service entrance minimums applied' : 'Supplied as a feeder');
+	}
+
+	async function saveSmallDwelling(value: boolean) {
+		if (!root_node) return;
+		const updated = await setSmallDwelling(root_node.id, value);
+		if (!updated) return toast.warning('Failed to save the dwelling setting');
+		toast.success(value ? 'Marked as a dwelling of at most 50 m²' : 'No longer a small dwelling');
 	}
 
 	function handleHomeClick(event: MouseEvent) {
@@ -84,7 +92,7 @@
 			<Label for="service_entrance">Utility Service Entrance</Label>
 			<p class="text-xs text-muted-foreground">
 				{is_service
-					? 'The first panel holds the service disconnecting means: at least 60 A, or 30 A for up to two 2-wire circuits (PEC 2017 2.30.6.10).'
+					? 'The first panel holds the service disconnecting means: at least 60 A, 30 A for up to two 2-wire circuits, 15 A for one circuit (PEC 2017 2.30.6.10).'
 					: 'The supply is a feeder from another service, so no service minimum applies.'}
 			</p>
 		</div>
@@ -93,6 +101,21 @@
 			id="service_entrance"
 			checked={is_service}
 			onCheckedChange={saveServiceEntrance}
+		/>
+	</div>
+	<div class="flex flex-row items-center justify-between gap-3">
+		<div class="space-y-0.5">
+			<Label for="small_dwelling">Dwelling of at Most 50 m²</Label>
+			<p class="text-xs text-muted-foreground">
+				On one circuit (PEC 2017 2.10.1.11(C)(5)) it takes a 20 A service disconnect, not 15 A
+				(2.30.6.10(B)); up to 3680 VA its plans may use A3 sheets (1.3.1.1(C)).
+			</p>
+		</div>
+		<Switch
+			disabled={!root_node}
+			id="small_dwelling"
+			checked={small_dwelling}
+			onCheckedChange={saveSmallDwelling}
 		/>
 	</div>
 

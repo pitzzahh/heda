@@ -11,6 +11,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { error } from '@tauri-apps/plugin-log';
 	import { forwardConsoleToLog } from '#lib/helpers/log.js';
+	import { watchSafeArea } from '#lib/helpers/system-bars.js';
 	import { toast } from 'svelte-sonner';
 	import { Toaster } from '#lib/components/ui/toast/index.js';
 	import { buttonVariants } from '#lib/components/ui/button/index.js';
@@ -65,6 +66,7 @@
 		let unlisten: (() => void) | undefined;
 		let unlisten_close: (() => void) | undefined;
 		let unlisten_back: (() => void) | undefined;
+		const unwatch_safe_area = watchSafeArea();
 		if (isAndroidApp()) {
 			onBackButtonPress(() => void handleBackButton())
 				.then((listener) => {
@@ -104,6 +106,7 @@
 			unlisten?.();
 			unlisten_close?.();
 			unlisten_back?.();
+			unwatch_safe_area();
 		};
 	});
 

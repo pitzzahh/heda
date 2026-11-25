@@ -10,8 +10,8 @@
 //! - Conduit: one run per circuit, of the row's size and the circuit's conduit type.
 //! - Circuit breakers: one per circuit, in the panelboard that feeds it, plus a main in
 //!   every panelboard fed from another panelboard. A panelboard fed straight from the
-//!   supply has only its main (the service disconnecting means, PEC 2017 2.30.6.10, when
-//!   the supply is the utility service).
+//!   supply has only its main (the service disconnecting means when the supply is the
+//!   utility service; PEC 2017 2.30.6.10 sets its minimum rating).
 //! - Panelboards, with their main rating and how many circuits they hold.
 
 use crate::graph::Graph;
@@ -173,7 +173,8 @@ pub fn bill_of_materials(
             .parent_id
             .as_deref()
             .is_some_and(|parent| Some(parent) != root_id);
-        if fed_by_panel {
+        // A top panel fed from the supply is not among `circuits`, so its main is counted here.
+        if fed_by_panel || panel.id == top.id {
             let poles = text(&panel.id, "pole").unwrap_or_default();
             add_breaker(&mut breakers, row.at, row.ampere_frames, poles);
         }

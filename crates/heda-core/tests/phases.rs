@@ -278,8 +278,8 @@ fn circuit<'a>(id: &'a str, va: f64, phase: &'a str) -> BalanceCircuit<'a> {
 
 #[test]
 fn balancing_seeds_a_three_phase_sub_panel_with_its_own_phases() {
-    // The sub-panel puts all 3 000 VA on A, so its feeder carries it there (PEC 2017
-    // 2.20.3.22(A)); spread evenly, the 1 000 VA load would tie on A and stay there.
+    // The sub-panel puts all 3 000 VA on A, so its feeder carries it there (heda's
+    // per-phase split); spread evenly, the 1 000 VA load would tie on A and stay there.
     let circuits = [
         BalanceCircuit {
             split: Some([3_000.0, 0.0, 0.0]),

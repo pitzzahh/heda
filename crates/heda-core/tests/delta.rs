@@ -243,6 +243,81 @@ fn d15_voltage_drop_on_a_230_v_three_phase_system() {
     );
 }
 
+/// D15's panel and motor, with `feeder` and `motor` fields added to their nodes.
+fn d15(feeder: Value, motor: Value) -> Session {
+    let feeder_z = (0.029_f64.powi(2) + 0.048_f64.powi(2)).sqrt();
+    let branch_z = (1.2_f64.powi(2) + 0.063_f64.powi(2)).sqrt();
+    let motor_va = 1.732 * 230.0 * 20.0;
+    let other_va = 295.0 * 230.0 * 1.732 - motor_va;
+    let mut feeder_fields = json!({ "length": 15.2, "overrided_z": feeder_z });
+    feeder_fields
+        .as_object_mut()
+        .unwrap()
+        .extend(feeder.as_object().unwrap().clone());
+    let mut motor_fields = json!({ "length": 30.5, "overrided_z": branch_z });
+    motor_fields
+        .as_object_mut()
+        .unwrap()
+        .extend(motor.as_object().unwrap().clone());
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                root(json!({})),
+                panel("P", "root", 1.0, phases::THREE_PHASE_DELTA, feeder_fields),
+                load(
+                    "M",
+                    "P",
+                    1.0,
+                    load_types::THREE_P_MOTOR_RATED_CURRENT,
+                    20.0,
+                    motor_fields,
+                ),
+                load(
+                    "X",
+                    "P",
+                    3.0,
+                    load_types::THREE_P_EQUIPMENT,
+                    other_va,
+                    json!({ "length": 10 }),
+                ),
+            ],
+        )
+        .unwrap();
+    session
+}
+
+#[test]
+fn parallel_sets_divide_the_d15_feeder_drop() {
+    // PEC 2017 App. D Ex. D15 Eq. (1), VD = k·I·Z, with the feeder run as two parallel
+    // sets: Table 10.1.1.9's Z is per conductor, and n equal conductors in parallel
+    // (PEC 2017 3.10.2.1(H)) carry I/n each, so the run's Z is Z/n. As the short-circuit study
+    // divides it (short_circuit::conductor_impedance_ohm).
+    let mut session = d15(json!({ "conductor_sets": 2 }), json!({}));
+    let feeder_z = (0.029_f64.powi(2) + 0.048_f64.powi(2)).sqrt();
+    let expected = 1.732 * 295.0 * feeder_z * 15.2 / 305.0 / 2.0;
+    let drops = session.voltage_drops();
+    let p = drops.iter().find(|d| d.id == "P").unwrap();
+    // Half of D15's 1.428 V: 0.714 V.
+    assert_eq!(p.voltage_per_segment, (expected * 1e4).round() / 1e4);
+    assert_eq!(p.voltage_per_segment, 0.714);
+}
+
+#[test]
+fn the_at_as_current_switch_drives_the_drop_it_shows() {
+    // D15's 20 A motor with the switch on: Table 4.30.4.2 gives 250 % × 20 = 50 A, a
+    // standard rating (Table 2.40.1.6(A)). The row shows 50 A, so D15 Eq. (1) runs on
+    // 50 A: 1.732 × 50 × √(1.2² + 0.063²) × 30.5 / 305.
+    let mut session = d15(json!({}), json!({ "is_at_used_as_currents_value": true }));
+    let branch_z = (1.2_f64.powi(2) + 0.063_f64.powi(2)).sqrt();
+    let drops = session.voltage_drops();
+    let m = drops.iter().find(|d| d.id == "M").unwrap();
+    assert_eq!(m.current, 50.0);
+    let expected = 1.732 * 50.0 * branch_z * 30.5 / 305.0;
+    assert_eq!(m.voltage_per_segment, (expected * 1e4).round() / 1e4);
+}
+
 #[test]
 fn d14_fault_at_the_230_v_transformer_bus_is_14_972_a() {
     // PEC 2017 App. D Ex. D14: 300 kVA bank at 5 % on a 1 000 MVA line, 230 V 3-phase.
@@ -255,6 +330,57 @@ fn d14_fault_at_the_230_v_transformer_bus_is_14_972_a() {
         .unwrap();
     let rows = session.short_circuits();
     assert_eq!(rows[0].supply_fault_current.unwrap().round(), 14_972.0);
+}
+
+#[test]
+fn a_line_to_line_panel_on_delta_never_shows_less_than_its_bolted_fault() {
+    // A single-phase panel on a 230 V delta bus can only fault line to line. With D14's
+    // source (Zs per line) and the run's one-way Zc from Table 10.1.1.9, the bolted
+    // line-to-line fault is 230 / (2·(Zs + Zc)). The study shows the three-phase value at
+    // Zs + Zc, 230 / (√3·(Zs + Zc)), which is never less, so a breaker in the panel is
+    // checked against at least the current available at its line terminals (PEC 2017
+    // 1.10.1.9).
+    let source =
+        json!({ "utility_sc_kva": 1_000_000, "transformer_kva": 300, "transformer_z_percent": 5 });
+    let feeder = json!({
+        "conductor_qty": 2, "pole": "2", "phase_assignment": "AB", "length": 20,
+        "overrided_conductor_size": 30, "kaic": 25
+    });
+    let mut session = Session::default();
+    session
+        .open(
+            json!({}),
+            vec![
+                root(source),
+                panel("P", "root", 1.0, phases::ONE_PHASE, feeder),
+                load(
+                    "L",
+                    "P",
+                    1.0,
+                    load_types::LIGHTING_LOAD,
+                    2_000.0,
+                    json!({ "conductor_qty": 2, "phase_assignment": "AB", "length": 10 }),
+                ),
+            ],
+        )
+        .unwrap();
+    let rows = session.short_circuits();
+    let l = rows.iter().find(|r| r.id == "L").unwrap();
+    let z_base = 0.230_f64.powi(2) / 0.300;
+    let zs = (300.0 / 1_000_000.0 + 0.05) * z_base;
+    let zc = heda_core::short_circuit::conductor_impedance_ohm(30.0, Some("PVC"), 20.0, 1.0, false)
+        .unwrap();
+    let line_to_line = 230.0 / (2.0 * (zs + zc));
+    let three_phase = 230.0 / (3.0_f64.sqrt() * (zs + zc));
+    let shown = l.supply_fault_current.unwrap();
+    assert!(shown >= line_to_line, "{shown} < {line_to_line}");
+    close(shown, three_phase, 1.0);
+    // Above the unmarked breaker's 5 kA (PEC 2017 2.40.7.4(C)), so it is flagged.
+    assert!(line_to_line > 5_000.0);
+    assert_ne!(
+        l.status,
+        heda_core::short_circuit::InterruptingRatingStatus::Ok
+    );
 }
 
 #[test]

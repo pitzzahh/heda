@@ -103,6 +103,15 @@ export function setServiceEntrance(root_id: string, is_service: boolean) {
 	return mergeUnitForm(root_id, { is_service });
 }
 
+/**
+ * Marks the project as a dwelling unit of at most 50 m². On the one branch circuit PEC
+ * 2017 2.10.1.11(C)(5) permits it, its service disconnect takes the 20 A of
+ * 2.30.6.10(B) instead of (A)'s 15 A.
+ */
+export function setSmallDwelling(root_id: string, small_dwelling: boolean) {
+	return mergeUnitForm(root_id, { small_dwelling });
+}
+
 /** Sets the standby generator's nameplate kVA (PEC 2017 Article 7.2); undefined removes it. */
 export function setGeneratorKva(root_id: string, generator_kva: number | undefined) {
 	return mergeUnitForm(root_id, { generator_kva: generator_kva ?? null });

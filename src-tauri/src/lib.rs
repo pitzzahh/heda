@@ -1,8 +1,8 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 #[cfg(desktop)]
 use tauri::webview::NewWindowResponse;
@@ -54,15 +54,6 @@ fn get_file_name(path: String) -> String {
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned()
-}
-
-#[tauri::command]
-fn get_file_metadata(path: String) -> Result<(u64, SystemTime), String> {
-    let path = PathBuf::from(path);
-    let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
-    // Some filesystems do not record a modification time.
-    let modified = metadata.modified().map_err(|e| e.to_string())?;
-    Ok((metadata.len(), modified))
 }
 
 /// One random key per installation, used to encrypt `.heda` files without a
@@ -367,7 +358,6 @@ pub fn run() {
             heda,
             heda_file,
             get_file_name,
-            get_file_metadata,
             allow_project_folder,
             take_pending_file_open,
             ack_close_request,

@@ -1,5 +1,4 @@
 import * as v from 'valibot';
-import { LOAD_TYPE_FIELD } from './load.js';
 import {
 	CIRCUIT_PHASE_FIELD,
 	LINE_CURRENT_SCHEMA,
@@ -36,7 +35,7 @@ const COMPUTED_CIRCUIT_ENTRIES = {
 	ampacity: v.optional(v.number()),
 	/** A motor's largest overload relay rating, from its nameplate current (PEC 2017 4.30.3.2(A)(1)); absent without one. */
 	overload: v.optional(v.number()),
-	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (PEC 2017 2.20.3.22). */
+	/** On a three-phase supply: the VA it puts on each phase (or line pair) in label order, null where none (heda's split; the PEC sets none). */
 	phase_loads: v.optional(
 		v.tuple([v.nullable(v.number()), v.nullable(v.number()), v.nullable(v.number())])
 	)
@@ -55,18 +54,4 @@ export const NODE_BY_ID_RESULT_SCHEMA = v.object({
 	...COMPUTED_CIRCUIT_ENTRIES,
 	conduit_size: v.union([v.string(), v.number()]),
 	egc_size: v.union([v.number(), v.literal('error')])
-});
-
-/** Inputs shared by the AT, conductor, conduit and EGC sizing of one circuit. */
-export const COMPUTE_COMMON_PROPERTIES_SCHEMA = v.object({
-	va: v.number(),
-	current: v.number(),
-	conductor_set: v.number(),
-	conductor_qty: v.number(),
-	load_type: v.union([LOAD_TYPE_FIELD, v.literal('Main')]),
-	ambient_temp: v.number(),
-	overrided_at: v.optional(v.number()),
-	overrided_conductor_size: v.optional(v.number()),
-	overrided_egc_size: v.optional(v.number()),
-	overrided_conduit_size: v.optional(v.number())
 });

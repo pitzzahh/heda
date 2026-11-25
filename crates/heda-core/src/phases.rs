@@ -1,6 +1,7 @@
 //! Phase rules of the three-phase systems of PEC 2017 2.20.1.5(A): 400Y/230 V wye,
-//! three-phase 4-wire (Appendix D Examples D6 and D8), and 230 V delta, three-phase
-//! 3-wire (the system of Examples D14 and D15).
+//! three-phase 4-wire (Appendix D Examples D6 and D8), and 230 V three-phase 3-wire
+//! (the system of Examples D14 and D15), which heda models as delta (the PEC does not
+//! name the connection).
 
 use crate::model::{phases, Node};
 use crate::num;
@@ -381,11 +382,12 @@ pub fn panel_totals(panel: &Node, circuits: &[CircuitTotal]) -> PanelTotals {
     }
 }
 
-/// Why `node` cannot sit under `parent` with `children` below it, else `None`
-/// (PEC 2017 2.20.1.5(A)). A three-phase circuit needs a three-phase supply; a 3P-Y
-/// panel needs a 400Y/230 V one and a delta panel a 230 V delta one, since heda
-/// models no transformer between them; a single-phase panel (230 V, on a phase or a
-/// line pair) goes anywhere but has only one phase to give its circuits.
+/// Why `node` cannot sit under `parent` with `children` below it, else `None`: heda's own
+/// rules for the PEC 2017 2.20.1.5(A) voltages, which that section only lists. A
+/// three-phase circuit needs a three-phase supply; a 3P-Y panel needs a 400Y/230 V one
+/// and a delta panel a 230 V delta one, since heda models no transformer between them;
+/// a single-phase panel (230 V, on a phase or a line pair) goes anywhere but has only
+/// one phase to give its circuits.
 pub fn supply_error(node: &Node, parent: Option<&Node>, children: &[Node]) -> Option<&'static str> {
     let supply = supply_of(parent);
     match Supply::of(node.panel_phase()) {
@@ -419,10 +421,11 @@ pub struct BalanceCircuit<'a> {
 /// Phases (or line pairs, on delta) for the single-phase circuits of one three-phase
 /// panel, largest load first onto the least loaded phase. Three-phase circuits only
 /// seed the totals. PEC 2017 App. D Ex. D6 6.1 asks for "balanced distribution of
-/// single phase loads" but leaves the method to the designer. The feeder is sized on
-/// its most loaded phase (2.20.3.22(A); App. D Ex. D6, D8), on a delta panel its most
-/// loaded line, so when the suggestion would not lower that (nor, at a tie, the
-/// unbalance) the circuits keep the phases they have. Returned in assignment order.
+/// single phase loads" but leaves the method to the designer. heda sizes the feeder on
+/// its most loaded phase, on a delta panel its most loaded line: D6 and D8 size on the
+/// total load (2.20.3.22(A) is the neutral), and the most loaded phase is the safe
+/// side. So when the suggestion would not lower that (nor, at a tie, the unbalance)
+/// the circuits keep the phases they have. Returned in assignment order.
 pub fn balanced_phase_assignments<'a>(
     circuits: &[BalanceCircuit<'a>],
     supply: Supply,

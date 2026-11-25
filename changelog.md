@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0-6] - 2026-11-25
+
+### Added
+
+- A new project asks whether it is a dwelling of at most 50 m² (also in Settings): such a dwelling may have a one-circuit service with the PEC 2017 2.30.6.10(A) and (B) minimums, and only it may print the sheet set on A3 (PEC 2017 1.3.1.1(C))
+
+### Changed
+
+- On Android the app draws edge to edge, behind the status bar, the notch and the navigation bar
+- Dialogs are capped to the screen height and scroll only their middle
+- The riser's zoom toolbar floats over the diagram
+
+### Fixed
+
+- Saving replaces the file through a temp file and a rename, so a failed save never leaves a half-written file
+- Leaving a project waits for edits still in flight, and asks before leaving when the silent save fails
+- Voltage drop divides a run's impedance by its parallel sets and uses the current the row shows
+- The bill of materials counts the main of a panel fed straight from the supply
+- Coordination reads a circuit's fault current at its breaker, and a dragged move drops its documented selections
+- A delta line-to-line fault counts the run once
+- Service conductors keep their floor whatever the motor breaker
+- Moving a panel ahead of the service disconnect recomputes the old one
+- The riser prints no GEC size while a supply conductor is unsized, and sums the supply's set areas per line for it
+- Derived file keys are no longer cached in memory
+
 ## [2.9.0-5] - 2026-11-20
 
 ### Added

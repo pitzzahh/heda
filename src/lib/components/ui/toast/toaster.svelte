@@ -15,7 +15,14 @@
 		closeButton = true,
 		expand = true,
 		gap = 8,
-		offset = { top: 16, right: 16, bottom: 24, left: 16 },
+		// Clear of the Android system bars (0px elsewhere).
+		offset = {
+			top: 'calc(16px + var(--safe-area-top))',
+			right: 'calc(16px + var(--safe-area-right))',
+			bottom: 'calc(24px + var(--safe-area-bottom))',
+			left: 'calc(16px + var(--safe-area-left))'
+		},
+		mobileOffset = offset,
 		toastOptions,
 		class: classProp,
 		...rest
@@ -71,6 +78,7 @@
 	{expand}
 	{gap}
 	{offset}
+	{mobileOffset}
 	class={cn('font-sans!', classProp)}
 	successIcon={successIcon as unknown as IconProp}
 	errorIcon={errorIcon as unknown as IconProp}

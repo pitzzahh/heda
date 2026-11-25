@@ -29,11 +29,7 @@ import {
 	PHASE_ASSIGNMENT_FIELD,
 	PHASE_VA_SCHEMA
 } from './shared.js';
-import {
-	COMPUTE_COMMON_PROPERTIES_SCHEMA,
-	LOAD_SCHEDULE_ROW_SCHEMA,
-	NODE_BY_ID_RESULT_SCHEMA
-} from './schedule.js';
+import { LOAD_SCHEDULE_ROW_SCHEMA, NODE_BY_ID_RESULT_SCHEMA } from './schedule.js';
 import { VOLTAGE_DROP_RESULT_SCHEMA } from './voltage-drop.js';
 import { FILE_EXPORT_SCHEMA, FILE_PROTECTION_FIELD, RECENT_PROJECT_SCHEMA } from './file.js';
 import { OVERRIDE_FIELD_TYPE_FIELD } from './misc.js';
@@ -135,6 +131,18 @@ describe('validators', () => {
 		};
 		expect(service(undefined)).toBe(true);
 		expect(service(false)).toBe(false);
+	});
+
+	it('takes a project as no small dwelling unless told so (PEC 2017 1.3.1.1(C), 2.30.6.10(B))', () => {
+		const dwelling = (small_dwelling?: boolean) => {
+			const result = v.safeParse(HIGHEST_UNIT_SCHEMA, {
+				phase: default_phases.ONE_PHASE,
+				small_dwelling
+			});
+			return result.success ? result.output.small_dwelling : null;
+		};
+		expect(dwelling(undefined)).toBe(false);
+		expect(dwelling(true)).toBe(true);
 	});
 
 	it('trims an optional project name and caps its length', () => {
@@ -273,6 +281,15 @@ describe('validators', () => {
 		).toBe(false);
 	});
 
+	it('stores the small-dwelling flag (PEC 2017 2.10.1.11(C)(5), 2.30.6.10(B)) as a boolean', () => {
+		const root = { id: 'r', node_type: 'root', child_ids: [] };
+		const parse = (small_dwelling: unknown) =>
+			v.safeParse(NODE_DOC_SCHEMA, { ...root, highest_unit_form: { small_dwelling } }).success;
+		expect(parse(true)).toBe(true);
+		expect(parse(undefined)).toBe(true);
+		expect(parse('yes')).toBe(false);
+	});
+
 	it('describes short-circuit rows and their status', () => {
 		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'under_rated').success).toBe(true);
 		expect(v.safeParse(INTERRUPTING_RATING_STATUS_FIELD, 'unknown').success).toBe(false);
@@ -373,16 +390,6 @@ describe('validators', () => {
 		expect(
 			v.safeParse(NODE_BY_ID_RESULT_SCHEMA, { ...row, egc_size: 'error', conduit_size: '16' })
 				.success
-		).toBe(true);
-		expect(
-			v.safeParse(COMPUTE_COMMON_PROPERTIES_SCHEMA, {
-				va: 1,
-				current: 1,
-				conductor_set: 1,
-				conductor_qty: 2,
-				load_type: 'Main',
-				ambient_temp: 30
-			}).success
 		).toBe(true);
 		expect(
 			v.safeParse(VOLTAGE_DROP_RESULT_SCHEMA, {

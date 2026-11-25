@@ -26,7 +26,7 @@
 
 	const is_one_phase = $derived(main_phase === default_phases.ONE_PHASE);
 	// A panel is single-phase or the supply's own three-phase system: heda models no
-	// transformer between 400Y/230 V and 230 V delta (PEC 2017 2.20.1.5(A)).
+	// transformer between 400Y/230 V and 230 V delta (its own rule, not PEC text).
 	const phase_options = $derived(
 		DEFAULT_PHASES.filter(
 			(option) => option.value === default_phases.ONE_PHASE || option.value === main_phase

@@ -81,6 +81,8 @@ export const NODE_DOC_SCHEMA = v.object({
 			transformer_z_percent: v.optional(TRANSFORMER_Z_PERCENT_FIELD),
 			/** false when the supply is a feeder, not the utility service; absent means service (PEC 2017 2.30.6.10). */
 			is_service: v.optional(v.boolean()),
+			/** A dwelling unit of at most 50 m² (PEC 2017 2.10.1.11(C)(5), 2.30.6.10(B)); absent means no. */
+			small_dwelling: v.optional(v.boolean()),
 			/** The standby generator's nameplate kVA and the panels it carries (PEC 2017 7.2.1.4). */
 			generator_kva: v.optional(GENERATOR_KVA_FIELD),
 			standby_panels: v.optional(v.array(v.string())),

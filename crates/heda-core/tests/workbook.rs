@@ -119,8 +119,9 @@ fn keeps_each_value_s_type_in_the_circuits_and_the_total() {
 
 #[test]
 fn gives_the_supply_no_total_row() {
-    // The root is the supply, not a panelboard: no main of its own (PEC 2017 2.30.6.10
-    // puts the service rating on the panel it feeds). As the screen and the PDF, no row.
+    // The root is the supply, not a panelboard: no main of its own (the service
+    // disconnect is the panel it feeds; PEC 2017 2.30.6.10 sets its minimum rating). As
+    // the screen and the PDF, no row.
     for fixture in ["one_phase", "three_phase_wye"] {
         let book = layout(fixture, Kind::LoadSchedule, "root");
         let root = &book.sheets[0];

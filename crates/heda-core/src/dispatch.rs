@@ -19,14 +19,6 @@ pub fn dispatch(session: &mut Session, command: &str, args: Value) -> Result<Val
             let Open { project, nodes } = parse(args)?;
             to_json(session.open_file(project, nodes)?)
         }
-        "put" => {
-            let Nodes { nodes } = parse(args)?;
-            to_json(session.put(nodes)?)
-        }
-        "remove" => {
-            let Remove { ids } = parse(args)?;
-            to_json(session.remove(&ids))
-        }
         "set_project" => {
             let SetProject { project } = parse(args)?;
             to_json(session.set_project(project))
@@ -174,11 +166,6 @@ struct SheetSet {
 struct Open {
     #[serde(default)]
     project: Value,
-    nodes: Vec<Value>,
-}
-
-#[derive(Deserialize)]
-struct Nodes {
     nodes: Vec<Value>,
 }
 

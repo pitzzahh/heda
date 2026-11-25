@@ -208,16 +208,18 @@ pub fn load_row<'g>(
         );
         let feeder = feeder_load(node, &circuits);
         let trip = sizing::feeder_trip(feeder.load, feeder.ceiling);
-        let service_at = service_rating(graph, node, trip, memo);
+        let service_minimum = service_minimum(graph, node, memo);
+        let service_at = trip.max(service_minimum);
         let main_at = num::positive(node.overrided_at).unwrap_or(service_at);
         let main_current = num::round(totals.current, 2);
         let ambient_temp = num::positive(panel_data.ambient_temperature).unwrap_or(30.0);
         let main_sizing = if feeder.share.largest_motor.is_some() {
-            // 2.30.7.1(A): a service main raised to its 2.30.6.10 minimum is no motor
-            // breaker, so the service conductors carry at least that rating.
-            let floor = if service_at > trip { service_at } else { 0.0 };
+            // The service conductors carry at least the 2.30.6.10 minimum, whatever the
+            // motor breaker: PEC 2017 2.30.4.3(B) for the (A)–(D) minimums; heda holds the
+            // (E) one the same way (2.30.7.1(A) Ex. No. 2 would allow the next standard
+            // size up).
             input(
-                feeder.load.max(floor),
+                feeder.load.max(service_minimum),
                 main_at,
                 Sizing::MotorFeeder,
                 ambient_temp,
@@ -327,7 +329,7 @@ pub fn load_row<'g>(
 /// What a circuit puts on each phase (3P-Y) or line pair (delta) of its supply, in the
 /// supply's label order: all its VA on its own one; a three-phase circuit a third on
 /// each, or a three-phase sub-panel its own VA on each (the split its panel's totals
-/// add, PEC 2017 2.20.3.22), to 0.01 VA. `None` on a single-phase supply.
+/// add; heda's own split, the PEC sets none), to 0.01 VA. `None` on a single-phase supply.
 fn phase_loads(supply: Supply, row: &LoadRow) -> Option<[Option<f64>; 3]> {
     if supply == Supply::OnePhase {
         return None;
@@ -452,19 +454,15 @@ fn split(supply: Supply, phase_va: Option<PhaseVa>, pair_va: Option<PairVa>) -> 
     }
 }
 
-/// The rating of `panel`'s main when it is the service disconnecting means: the first
-/// panel the utility service feeds. PEC 2017 2.30.6.10 sets its minimum (30 A for no
-/// more than two 2-wire branch circuits, (C); 60 A otherwise, (D) and (E)), and
+/// The least rating of `panel`'s main when it is the service disconnecting means: the
+/// first panel the utility service feeds. PEC 2017 2.30.6.10 sets the minimum (15 A for
+/// a single branch circuit, (A), or 20 A for a dwelling on one, (B); 30 A for no more
+/// than two 2-wire branch circuits, (C); 60 A otherwise, (D) and (E)), and
 /// 2.30.6.11 lets every disconnect on the service count toward it, so this one makes
-/// up what the others lack. Any other panel keeps `at`.
-fn service_rating(
-    graph: &Graph,
-    panel: &Node,
-    at: f64,
-    memo: &mut HashMap<String, LoadRow>,
-) -> f64 {
+/// up what the others lack, as the next standard rating. 0 for any other panel.
+fn service_minimum(graph: &Graph, panel: &Node, memo: &mut HashMap<String, LoadRow>) -> f64 {
     let Some(supply) = panel.parent_id.as_deref().and_then(|id| graph.get(id)) else {
-        return at;
+        return 0.0;
     };
     let is_service = supply.node_type == "root"
         && supply.highest_unit_form.as_ref().and_then(|f| f.is_service) != Some(false);
@@ -473,14 +471,21 @@ fn service_rating(
         .find(|child| child.panel_data.is_some())
         .is_some_and(|first| first.id == panel.id);
     if !is_service || !is_first_panel {
-        return at;
+        return 0.0;
     }
     let branch_circuits: Vec<&Node> = graph
         .preorder(supply)
         .into_iter()
         .filter(|node| node.load_data.is_some() && node.panel_data.is_none())
         .collect();
-    let minimum = if branch_circuits.len() <= 2
+    let form = supply.highest_unit_form.as_ref();
+    let minimum = if branch_circuits.len() <= 1 {
+        if form.and_then(|f| f.small_dwelling) == Some(true) {
+            20.0
+        } else {
+            15.0
+        }
+    } else if branch_circuits.len() == 2
         && branch_circuits.iter().all(|c| c.conductor_qty == Some(2.0))
     {
         30.0
@@ -493,13 +498,13 @@ fn service_rating(
         .map(|child| load_row(graph, child, memo).at)
         .sum();
     let needed = minimum - others;
-    if at >= needed {
-        return at;
+    if needed <= 0.0 {
+        return 0.0;
     }
     crate::tables::STANDARD_AMPERE_RATINGS
         .into_iter()
         .find(|rating| *rating >= needed)
-        .unwrap_or(at)
+        .unwrap_or(0.0)
 }
 
 #[cfg(test)]
@@ -543,7 +548,8 @@ mod tests {
         assert_eq!(phase_loads(Supply::OnePhase, &row(1_840.0, "A")), None);
     }
 
-    /// PEC 2017 App. D Ex. D6: the 6-kVA package ACU puts 2 000 VA on each phase.
+    /// A three-phase load splits evenly: D6's 6-kVA package ACU as 2 000 VA a phase
+    /// (heda's split; D6 totals the panel).
     #[test]
     fn three_phase_va_splits_evenly() {
         assert_eq!(
@@ -552,7 +558,7 @@ mod tests {
         );
     }
 
-    /// PEC 2017 2.20.3.22: a three-phase sub-panel's feeder carries its own phase loads.
+    /// A three-phase sub-panel's feeder carries its own phase loads (heda's split).
     #[test]
     fn a_three_phase_sub_panel_shows_its_own_split() {
         let wye = LoadRow {

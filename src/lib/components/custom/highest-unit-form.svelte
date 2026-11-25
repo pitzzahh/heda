@@ -21,7 +21,7 @@
 	import { HIGHEST_UNIT_SCHEMA } from '#lib/validators/index.js';
 	import type { Phase } from '#lib/types/phase.js';
 	import { DEFAULT_PHASES, PHASE_SYSTEM_VOLTAGES } from '#lib/constants.js';
-	import { createProject, updateProjectTitle } from '#lib/db/mutations/index.js';
+	import { createProject } from '#lib/db/mutations/index.js';
 	import { getAllChildNodes } from '#lib/db/queries/index.js';
 	import { setSession } from '#lib/db/session.js';
 	import { getDeviceKey } from '#lib/helpers/security/device-key.js';
@@ -35,14 +35,13 @@
 		writeEncryptedFile,
 		EXTENSION,
 		doesFileExists,
-		generateUniqueFileName,
 		allowProjectFolder
 	} from '#lib/helpers/file/index.js';
 	import { LockKeyIcon } from '#lib/assets/icons.js';
 	import { getProjectState } from '#lib/hooks/project-state.svelte.js';
 	import { getSettingsState } from '#lib/hooks/settings-state.svelte.js';
 	import { getUndoRedoState } from '#lib/hooks/undo-redo.svelte.js';
-	import { remove, copyFile } from '@tauri-apps/plugin-fs';
+	import { copyFile } from '@tauri-apps/plugin-fs';
 	import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 	import type { FileExport } from '#lib/types/main.js';
 
@@ -54,7 +53,7 @@
 
 	const form = createForm({
 		schema: HIGHEST_UNIT_SCHEMA,
-		initialInput: { use_password: false, is_service: true }
+		initialInput: { use_password: false, is_service: true, small_dwelling: false }
 	});
 
 	let submitting = $state(false);
@@ -75,7 +74,8 @@
 			const project_input = {
 				distribution_unit: data.distribution_unit,
 				phase: data.phase,
-				is_service: data.is_service
+				is_service: data.is_service,
+				small_dwelling: data.small_dwelling
 			};
 			const password = data.use_password ? data.password : undefined;
 			const device_key = password ? null : await getDeviceKey();
@@ -109,7 +109,7 @@
 				await allowProjectFolder(file_path_with_file);
 			}
 
-			let project_name = (await getFileName(file_path_with_file)) ?? 'Untitled';
+			const project_name = (await getFileName(file_path_with_file)) || 'Untitled';
 
 			const created_project = await createProject(project_name, project_input);
 
@@ -121,15 +121,8 @@
 
 			const { project, root_node_id } = created_project;
 
-			if (!project_name) {
-				project_name = await generateUniqueFileName('Untitled Project');
-				updateProjectTitle(project.id, project_name);
-				toast.warning('Project title not fetched from file name.', {
-					description: 'The project title is changed to untitled to avoid conflicts.'
-				});
-			}
-
-			if (await doesFileExists(file_path_with_file)) {
+			const replacing = await doesFileExists(file_path_with_file);
+			if (replacing) {
 				if (settings_state.backup_project_file_if_exists) {
 					const toast_id = toast.loading('Backing up project file', {
 						description:
@@ -141,9 +134,13 @@
 						description:
 							'The old project file has been backed up, you can find it in the same folder.'
 					});
-					project_state.removeRecentProject(project.id, true);
 				}
-				await remove(file_path_with_file);
+			}
+			// The new project takes over the path; an old entry for it would reopen it under a stale id.
+			for (const old of project_state.recent_projects?.filter(
+				(recent) => recent.project_path === file_path_with_file
+			) ?? []) {
+				project_state.removeRecentProject(old.id);
 			}
 
 			const file_data: FileExport = {
@@ -152,9 +149,9 @@
 			};
 
 			if (password) {
-				await writeEncryptedFile(file_data, password, file_path_with_file, true);
+				await writeEncryptedFile(file_data, password, file_path_with_file, !replacing);
 			} else {
-				await writeDeviceEncryptedFile(file_data, device_key!, file_path_with_file, true);
+				await writeDeviceEncryptedFile(file_data, device_key!, file_path_with_file, !replacing);
 			}
 			closeDialog();
 			project_state.addRecentProject(
@@ -282,7 +279,19 @@
 						checked={field.input ?? true}
 						onCheckedChange={(v) => field.onInput(v)}
 						label="Utility service entrance"
-						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+						description="On: the first panel holds the service disconnecting means, at least 60 A (30 A for up to two 2-wire circuits, 15 A for one), PEC 2017 2.30.6.10. Turn off when this supply is a feeder from another building's service."
+					/>
+				</div>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['small_dwelling']}>
+			{#snippet children(field)}
+				<div class="rounded-xl border p-3">
+					<Checkbox
+						checked={field.input ?? false}
+						onCheckedChange={(v) => field.onInput(v)}
+						label="Dwelling of at most 50 m²"
+						description="On one circuit it takes a 20 A service disconnect (PEC 2017 2.30.6.10(B)), and up to 3680 VA its plans may use A3 sheets (1.3.1.1(C))."
 					/>
 				</div>
 			{/snippet}

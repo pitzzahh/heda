@@ -50,7 +50,8 @@ export const THREE_PHASE_LOAD_TYPES: readonly string[] = [
 /** The phases of a 400Y/230 V system, in order. */
 export const PHASE_ASSIGNMENTS = ['A', 'B', 'C'] as const;
 
-// PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire (delta).
+// PEC 2017 2.20.1.5(A) and App. D Ex. D14/D15: 230 V, three-phase 3-wire, which heda
+// models as delta (the PEC does not name the connection).
 /** The line pairs of a 230 V delta system, where its single-phase circuits connect. */
 export const LINE_PAIRS = ['AB', 'BC', 'CA'] as const;
 
@@ -217,13 +218,6 @@ export const FIELD_VALIDATION = {
 		MATCH: 'Must match.'
 	}
 };
-
-export const MIN_LOAD_QUANTITY = 1;
-export const MAX_LOAD_QUANTITY = 100;
-export const MIN_WIRE_LENGTH = 1;
-export const MAX_WIRE_LENGTH = 1000;
-export const MIN_VARIES = 0;
-export const MAX_VARIES = 100;
 
 export const AMBIENT_TEMPERATURES = Array.from({ length: 70 }, (_, index) => index + 1);
 

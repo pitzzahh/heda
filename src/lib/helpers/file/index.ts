@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
-	BaseDirectory,
 	exists,
 	open as openFile,
 	readFile,
+	rename,
 	type ExistsOptions
 } from '@tauri-apps/plugin-fs';
 import {
@@ -30,7 +30,7 @@ import { getAllChildNodes, getCurrentProject } from '#lib/db/queries/index.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getLegacyV1Config } from './legacy/credentials.js';
 import { isLegacyV1Envelope, legacyV1SaltCandidates } from './legacy/v1.js';
-import { migrateLegacyFile } from './legacy/migration.js';
+import { convertV2ToDevice, migrateLegacyFile } from './legacy/migration.js';
 import { tauriMigrationFileIO } from './legacy/tauri-io.js';
 
 export interface NeedPassword {
@@ -44,47 +44,13 @@ export interface NeedMigration {
 	file_path: string;
 }
 
-export const BASE_DIR = BaseDirectory.Document;
-export const BASE_DIR_PATH = 'heda';
 export const EXTENSION = 'heda';
-
-export interface ParsedFileName {
-	baseName: string;
-	number: number | null;
-	extension: string;
-}
-
-export function getFileNameWithoutExtension(path: string, extension: string = EXTENSION): string {
-	const fileName = path.split('/').pop() || '';
-	const lastDotIndex = fileName.lastIndexOf(`.${extension}`);
-	return lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
-}
-
-export function getFilePath(filePath: string): string {
-	const parts = filePath.split('/');
-	parts.pop();
-	return parts.join('/');
-}
-
-/* Parses a filename into its components: base name, number(if any), and extension
- * @example
- * parseFileName("Untitled.heda") -> { baseName: "Untitled", number: null, extension: ".heda" }
- * parseFileName("Untitled (1).heda") -> { baseName: "Untitled", number: 1, extension: ".heda" }
- */
-
-export async function getFileMetaData(path: string) {
-	try {
-		return await invoke('get_file_metadata', { path });
-	} catch (err) {
-		console.error(`Error reading file attributes: ${JSON.stringify(err)}`);
-	}
-}
 
 export async function getFileName(path: string): Promise<string | undefined> {
 	try {
 		return await invoke('get_file_name', { path });
 	} catch (err) {
-		console.error(`Error fetching environment variable: ${JSON.stringify(err)}`);
+		console.error(`Error reading the file name: ${JSON.stringify(err)}`);
 
 		return undefined;
 	}
@@ -112,17 +78,30 @@ export async function doesFileExists(
 	}
 }
 
-export async function generateUniqueFileName(
-	baseName: string,
-	options?: ExistsOptions
-): Promise<string> {
-	let fileName = `${baseName}.${EXTENSION}`;
-	let counter = 1;
-	while (await doesFileExists(fileName, options)) {
-		fileName = `${baseName}-(${counter}).${EXTENSION}`;
-		counter++;
+/**
+ * A new file is created exclusively (also a `content://` document, which cannot be
+ * renamed). An existing one is replaced through `<path>.tmp` and a rename, so a write
+ * cut off by a crash, a killed app or a full disk leaves the old file whole.
+ */
+async function writeSealed(envelope: string, file_path: string, new_file: boolean): Promise<void> {
+	if (!file_path) {
+		throw new Error('No file to write to');
 	}
-	return fileName;
+	const target = new_file ? file_path : `${file_path}.tmp`;
+	// Truncate: a temp file left by a crashed save must not keep a stale tail.
+	const file = await openFile(target, {
+		write: true,
+		create: true,
+		createNew: new_file,
+		truncate: true
+	});
+	try {
+		await file.write(new TextEncoder().encode(envelope));
+	} finally {
+		await file.close();
+	}
+	// shortcut: no fsync (the fs plugin has none), so power loss right after a save can still lose it.
+	if (!new_file) await rename(target, file_path);
 }
 
 export async function writeEncryptedFile<T>(
@@ -131,39 +110,18 @@ export async function writeEncryptedFile<T>(
 	file_path: string,
 	new_file: boolean = false
 ): Promise<void> {
-	if (!file_path) {
-		throw new Error('No file to write to');
-	}
-	// Truncate: without it a shorter save leaves a stale tail that corrupts the envelope.
-	const file = await openFile(file_path, {
-		write: true,
-		create: true,
-		createNew: new_file,
-		truncate: true
-	});
-	await file.write(new TextEncoder().encode(await packFileV2(data, password)));
-	await file.close();
+	await writeSealed(await packFileV2(data, password), file_path, new_file);
 }
 
 // Device-encrypted (v3) write: sealed with this installation's key, so no
-// password is needed to save or reopen. Same truncate guarantee as above.
+// password is needed to save or reopen.
 export async function writeDeviceEncryptedFile<T>(
 	data: T,
 	device_key: string,
 	file_path: string,
 	new_file: boolean = false
 ): Promise<void> {
-	if (!file_path) {
-		throw new Error('No file to write to');
-	}
-	const file = await openFile(file_path, {
-		write: true,
-		create: true,
-		createNew: new_file,
-		truncate: true
-	});
-	await file.write(new TextEncoder().encode(await packFileV3(data, device_key)));
-	await file.close();
+	await writeSealed(await packFileV3(data, device_key), file_path, new_file);
 }
 
 export async function handleLoadFile(
@@ -350,56 +308,12 @@ export async function convertHedaFileToDevice(
 	file_path: string,
 	password: string
 ): Promise<MigrateHedaFileResult> {
-	const io = tauriMigrationFileIO();
-	const original = await io.read(file_path);
-	const raw = new TextDecoder().decode(original);
-	if (detectFileVersion(raw) !== 2) {
-		throw new Error('Only a password-protected file can be converted to device encryption.');
-	}
-	const data = await decryptFilePayload<FileExport>(raw, password);
-	const device_key = await getDeviceKey();
-	const staged = new TextEncoder().encode(await packFileV3(data, device_key));
-	const temp_path = `${file_path}.v3.tmp`;
-
-	await io.write(temp_path, staged);
-	const staged_check = await decryptFilePayload<FileExport>(
-		new TextDecoder().decode(await io.read(temp_path)),
-		null,
-		device_key
-	);
-	if (JSON.stringify(staged_check) !== JSON.stringify(data)) {
-		await io.remove(temp_path);
-		throw new Error('The converted file did not pass verification.');
-	}
-
-	let backup_path = `${file_path}.v2.bak`;
-	for (let suffix = 1; (await io.exists(backup_path)) && suffix < 10_000; suffix++) {
-		backup_path = `${file_path}.v2.bak.${suffix}`;
-	}
-	const bytes_equal = (a: Uint8Array, b: Uint8Array): boolean => {
-		if (a.length !== b.length) return false;
-		let difference = 0;
-		for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
-		return difference === 0;
-	};
-	await io.write(backup_path, original);
-	const backup_check = await io.read(backup_path);
-	if (!bytes_equal(backup_check, original)) {
-		await io.remove(temp_path);
-		throw new Error('A verified backup of the original file could not be created.');
-	}
-
-	try {
-		await io.write(file_path, staged);
-		const committed = await io.read(file_path);
-		if (!bytes_equal(committed, staged)) throw new Error('The written file does not match.');
-		await decryptFilePayload<FileExport>(new TextDecoder().decode(committed), null, device_key);
-	} catch (err) {
-		await io.write(file_path, original);
-		await io.remove(temp_path);
-		throw err;
-	}
-	await io.remove(temp_path).catch(() => undefined);
+	const { backup_path } = await convertV2ToDevice<FileExport>({
+		file_path,
+		password,
+		device_key: await getDeviceKey(),
+		io: tauriMigrationFileIO()
+	});
 	return { backup_path };
 }
 

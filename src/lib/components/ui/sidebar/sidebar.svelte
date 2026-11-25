@@ -39,11 +39,15 @@
 		<Sheet.Content
 			data-sidebar="sidebar"
 			data-mobile="true"
-			class="w-(--sidebar-width) max-w-none bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+			class="w-(--sidebar-width) max-w-none bg-sidebar p-0 text-sidebar-foreground shadow-none! [&>button]:hidden"
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
 			{side}
 		>
-			<div class="flex h-full w-full flex-col">
+			<!-- Full-screen on phones: the panel colour runs under the system bars, the
+			     content keeps clear. No overlay shadow: its inset rim would frame the screen. -->
+			<div
+				class="flex h-full w-full flex-col pt-(--safe-area-top) pr-(--safe-area-right) pb-(--safe-area-bottom) pl-(--safe-area-left)"
+			>
 				{@render children?.()}
 			</div>
 		</Sheet.Content>

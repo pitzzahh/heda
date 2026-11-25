@@ -86,21 +86,30 @@ describe('dialogFrame', () => {
 		expect(dialogFrame().backdrop()).not.toContain('data-[closed]');
 	});
 
+	test('desktop dialogs cap their height and scroll only the middle', () => {
+		expect(dialogFrame().popup()).toContain('max-h-[calc(100dvh-4rem)]');
+		expect(dialogFrame().popup()).toContain('flex-col');
+		expect(dialogFrame().scroll()).toContain('overflow-y-auto');
+		expect(dialogFrame().header()).toContain('shrink-0');
+		expect(dialogFrame().footer()).toContain('shrink-0');
+	});
+
 	test('below lg every modal is a bottom drawer that slides back down', () => {
 		const drawer = dialogFrame().drawer();
 		// Anchored to the bottom edge, full width, scrolling within the screen.
 		for (const cls of [
 			'max-lg:bottom-0!',
 			'max-lg:top-auto!',
-			'max-lg:w-full!',
+			'max-lg:left-(--safe-area-left)!',
+			'max-lg:right-(--safe-area-right)!',
 			'max-lg:max-w-none!'
 		]) {
 			expect(drawer).toContain(cls);
 		}
-		expect(drawer).toContain('max-lg:max-h-[92dvh]!');
+		expect(drawer).toContain('max-lg:max-h-[min(92dvh,calc(100dvh-var(--safe-area-top)-0.5rem))]!');
 		// Only the middle scrolls; the panel itself is a fixed column.
 		expect(drawer).toContain('max-lg:overflow-hidden!');
-		expect(dialogFrame().scroll()).toContain('max-lg:overflow-y-auto');
+		expect(dialogFrame().scroll()).toContain('overflow-y-auto');
 		// Slides from and back to below the screen, overriding every desktop motion.
 		expect(drawer).toContain('max-lg:[transform:translateY(var(--drawer-y,0))]!');
 		expect(drawer).toContain('max-lg:data-[state=closed]:[--drawer-y:100%]');

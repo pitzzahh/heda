@@ -8,6 +8,7 @@ const {
 	write_file_mock,
 	exists_file_mock,
 	remove_file_mock,
+	rename_mock,
 	getCurrentProject_mock,
 	getAllChildNodes_mock,
 	getSessionPassword_mock,
@@ -23,6 +24,7 @@ const {
 	write_file_mock: vi.fn(),
 	exists_file_mock: vi.fn(),
 	remove_file_mock: vi.fn(),
+	rename_mock: vi.fn(),
 	getCurrentProject_mock: vi.fn(),
 	getAllChildNodes_mock: vi.fn(),
 	getSessionPassword_mock: vi.fn(),
@@ -47,7 +49,8 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 	open: open_mock,
 	readFile: read_file_mock,
 	writeFile: write_file_mock,
-	remove: remove_file_mock
+	remove: remove_file_mock,
+	rename: rename_mock
 }));
 vi.mock('#lib/db/queries/index.js', () => ({
 	getCurrentProject: getCurrentProject_mock,
@@ -84,22 +87,35 @@ function legacyBytes(): Uint8Array {
 }
 
 describe('writeEncryptedFile', () => {
-	it('truncates on overwrite so no stale tail survives', async () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
 		open_mock.mockResolvedValue({ write: write_mock, close: close_mock });
-		await writeEncryptedFile({ a: 1 }, 'pw', '/tmp/x.heda');
-		expect(open_mock).toHaveBeenCalledWith(
-			'/tmp/x.heda',
-			expect.objectContaining({ truncate: true })
-		);
 	});
 
-	it('creates new files exclusively', async () => {
-		open_mock.mockResolvedValue({ write: write_mock, close: close_mock });
+	it('replaces an existing file through a truncated temp file', async () => {
+		await writeEncryptedFile({ a: 1 }, 'pw', '/tmp/x.heda');
+		expect(open_mock).toHaveBeenCalledWith(
+			'/tmp/x.heda.tmp',
+			expect.objectContaining({ truncate: true, createNew: false })
+		);
+		expect(rename_mock).toHaveBeenCalledWith('/tmp/x.heda.tmp', '/tmp/x.heda');
+	});
+
+	it('leaves the existing file alone when the write is cut off', async () => {
+		write_mock.mockRejectedValueOnce(new Error('disk full'));
+		await expect(writeEncryptedFile({ a: 1 }, 'pw', '/tmp/x.heda')).rejects.toThrow('disk full');
+		expect(close_mock).toHaveBeenCalledTimes(1);
+		expect(rename_mock).not.toHaveBeenCalled();
+		expect(open_mock).not.toHaveBeenCalledWith('/tmp/x.heda', expect.anything());
+	});
+
+	it('creates new files exclusively, in place', async () => {
 		await writeEncryptedFile({ a: 1 }, 'pw', '/tmp/x.heda', true);
 		expect(open_mock).toHaveBeenCalledWith(
 			'/tmp/x.heda',
 			expect.objectContaining({ createNew: true, truncate: true })
 		);
+		expect(rename_mock).not.toHaveBeenCalled();
 	});
 });
 
@@ -117,10 +133,7 @@ describe('saveCurrentProject', () => {
 
 	it('writes the current project and clears the unsaved flag', async () => {
 		await expect(saveCurrentProject('/tmp/x.heda', undo_redo_state)).resolves.toBe(true);
-		expect(open_mock).toHaveBeenCalledWith(
-			'/tmp/x.heda',
-			expect.objectContaining({ truncate: true })
-		);
+		expect(rename_mock).toHaveBeenCalledWith('/tmp/x.heda.tmp', '/tmp/x.heda');
 		expect(undo_redo_state.resetUnsavedActions).toHaveBeenCalledTimes(1);
 		expect(toast.error).not.toHaveBeenCalled();
 	});
@@ -163,7 +176,7 @@ describe('saveCurrentProject', () => {
 			saveCurrentProject('/tmp/b.heda', undo_redo_state)
 		]);
 		expect([first, second]).toEqual([true, true]);
-		expect(open_mock.mock.calls.map(([path]) => path)).toEqual(['/tmp/a.heda', '/tmp/b.heda']);
+		expect(rename_mock.mock.calls.map(([, path]) => path)).toEqual(['/tmp/a.heda', '/tmp/b.heda']);
 		expect(undo_redo_state.resetUnsavedActions).toHaveBeenCalledTimes(2);
 	});
 

@@ -28,6 +28,9 @@ export const HIGHEST_UNIT_SCHEMA = v.pipe(
 		// The utility service supplies the project, so its first panel holds the service
 		// disconnecting means and its PEC 2017 2.30.6.10 minimum rating.
 		is_service: v.optional(v.boolean(), true),
+		// A dwelling unit of at most 50 m², which heda cannot measure: PEC 2017 1.3.1.1(C)
+		// (A3 sheets) and 2.30.6.10(B) (a 20 A service on one circuit) turn on it.
+		small_dwelling: v.optional(v.boolean(), false),
 		// Android only: desktop names the file in the save dialog. Blank means
 		// "Untitled project"; unsafe characters are replaced when the file is made.
 		project_name: v.optional(

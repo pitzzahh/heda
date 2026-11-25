@@ -267,7 +267,7 @@
 
 	<!-- Same bar as the workspace header, so home and app read as one product. -->
 	<header
-		class="relative z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 sm:px-6"
+		class="relative z-10 flex h-[calc(3.5rem+var(--safe-area-top))] shrink-0 items-center justify-between border-b bg-background/95 pt-(--safe-area-top) pr-[calc(1rem+var(--safe-area-right))] pl-[calc(1rem+var(--safe-area-left))] sm:pr-[calc(1.5rem+var(--safe-area-right))] sm:pl-[calc(1.5rem+var(--safe-area-left))]"
 	>
 		<div class="flex items-center gap-2.5">
 			<img src={heda_logo_for_dark} alt="" class="hidden size-7 dark:block" />
@@ -289,7 +289,7 @@
 	</header>
 
 	<main
-		class="relative z-10 mx-auto grid w-full max-w-5xl flex-1 content-center items-center gap-10 px-6 py-10 lg:grid-cols-2 lg:gap-16"
+		class="relative z-10 mx-auto grid w-full max-w-5xl flex-1 content-center items-center gap-10 pt-10 pr-[calc(1.5rem+var(--safe-area-right))] pb-[calc(2.5rem+var(--safe-area-bottom))] pl-[calc(1.5rem+var(--safe-area-left))] lg:grid-cols-2 lg:gap-16"
 	>
 		<section>
 			<h1 class="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">

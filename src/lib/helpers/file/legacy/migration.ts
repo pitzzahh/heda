@@ -74,11 +74,12 @@ export function legacyBackupPath(file_path: string): string {
 	return `${file_path}.v1.bak`;
 }
 
-export async function uniqueLegacyBackupPath(
-	file_path: string,
-	io: MigrationFileIO
-): Promise<string> {
-	const base = legacyBackupPath(file_path);
+export function uniqueLegacyBackupPath(file_path: string, io: MigrationFileIO): Promise<string> {
+	return uniqueBackupPath(legacyBackupPath(file_path), io);
+}
+
+/** `base`, else the first free `base.N`. */
+async function uniqueBackupPath(base: string, io: MigrationFileIO): Promise<string> {
 	if (!(await io.exists(base))) return base;
 	for (let suffix = 1; suffix < 10_000; suffix++) {
 		const candidate = `${base}.${suffix}`;
@@ -151,10 +152,6 @@ export async function migrateLegacyFile<T>(
 ): Promise<LegacyMigrationResult<T>> {
 	const { file_path, new_password, device_key, legacy, io } = options;
 	const target_version: 2 | 3 = device_key ? 3 : 2;
-	const verify =
-		target_version === 3
-			? (raw: string) => decryptFilePayload<unknown>(raw, null, device_key ?? null)
-			: (raw: string) => decryptFilePayload<unknown>(raw, new_password ?? null);
 
 	let original: Uint8Array;
 	try {
@@ -174,12 +171,86 @@ export async function migrateLegacyFile<T>(
 		);
 	}
 
+	const backup_path = await replaceVerified({
+		file_path,
+		original,
+		data: decoded.data,
+		target_version,
+		secret: target_version === 3 ? (device_key ?? '') : (new_password ?? ''),
+		backup_base: legacyBackupPath(file_path),
+		io
+	});
+	return { data: decoded.data, backup_path, legacy_salt: decoded.salt };
+}
+
+export interface DeviceConversionOptions {
+	file_path: string;
+	/** The password the v2 file is sealed with. */
+	password: string;
+	device_key: string;
+	io: MigrationFileIO;
+}
+
+/**
+ * Re-seals a password-protected v2 file with the device key (v3), with the same
+ * staged, verified replace as the legacy migration; the original is kept as a
+ * verified `.v2.bak`. A wrong password throws `FilePasswordError` before anything
+ * is written.
+ */
+export async function convertV2ToDevice<T>(
+	options: DeviceConversionOptions
+): Promise<{ data: T; backup_path: string }> {
+	const { file_path, password, device_key, io } = options;
+	let original: Uint8Array;
+	try {
+		original = await io.read(file_path);
+	} catch (err) {
+		throw new LegacyMigrationError('read', 'The file could not be read.', err);
+	}
+	const raw = decodeText(original);
+	if (detectFileVersion(raw) !== 2) {
+		throw new Error('Only a password-protected file can be converted to device encryption.');
+	}
+	const data = await decryptFilePayload<T>(raw, password, null, 2);
+	const backup_path = await replaceVerified({
+		file_path,
+		original,
+		data,
+		target_version: 3,
+		secret: device_key,
+		backup_base: `${file_path}.v2.bak`,
+		io
+	});
+	return { data, backup_path };
+}
+
+interface ReplaceOptions<T> {
+	file_path: string;
+	original: Uint8Array;
+	data: T;
+	target_version: 2 | 3;
+	/** The new file password (v2) or the device key (v3). */
+	secret: string;
+	backup_base: string;
+	io: MigrationFileIO;
+}
+
+/**
+ * Replaces `file_path` with `data` sealed as `target_version`, only after a staged
+ * copy and a byte-for-byte backup of `original` are verified; a failed commit
+ * restores the original. Answers the backup's path.
+ */
+async function replaceVerified<T>(options: ReplaceOptions<T>): Promise<string> {
+	const { file_path, original, data, target_version, secret, backup_base, io } = options;
+	const verify = (raw: string) =>
+		target_version === 3
+			? decryptFilePayload<unknown>(raw, null, secret)
+			: decryptFilePayload<unknown>(raw, secret);
+
 	let staged: Uint8Array;
 	try {
 		staged = new TextEncoder().encode(
-			target_version === 3
-				? await packFileV3(decoded.data, device_key ?? '')
-				: await packFileV2(decoded.data, new_password ?? '')
+			target_version === 3 ? await packFileV3(data, secret) : await packFileV2(data, secret)
 		);
 	} catch (err) {
 		throw new LegacyMigrationError('stage', 'The upgraded file could not be prepared.', err);
@@ -194,7 +265,7 @@ export async function migrateLegacyFile<T>(
 	}
 
 	try {
-		await verifyStagedPayload(await io.read(temp_path), verify, decoded.data, target_version);
+		await verifyStagedPayload(await io.read(temp_path), verify, data, target_version);
 	} catch (err) {
 		await discard(io, temp_path);
 		throw new LegacyMigrationError(
@@ -206,7 +277,7 @@ export async function migrateLegacyFile<T>(
 
 	let backup_path: string | null = null;
 	try {
-		backup_path = await uniqueLegacyBackupPath(file_path, io);
+		backup_path = await uniqueBackupPath(backup_base, io);
 		await io.write(backup_path, original);
 		if (!bytesEqual(await io.read(backup_path), original)) {
 			throw new Error('The backup does not match the original file.');
@@ -222,36 +293,26 @@ export async function migrateLegacyFile<T>(
 		);
 	}
 
-	const verified_backup_path = backup_path;
-	if (!verified_backup_path) {
-		throw new LegacyMigrationError('backup', 'The backup path is missing.', undefined);
-	}
-
 	try {
 		await io.write(file_path, staged);
 		const committed = await io.read(file_path);
 		if (!bytesEqual(committed, staged)) {
 			throw new Error('The written file does not match the staged file.');
 		}
-		await verifyStagedPayload(committed, verify, decoded.data, target_version);
+		await verifyStagedPayload(committed, verify, data, target_version);
 	} catch (err) {
 		const migration_error = new LegacyMigrationError(
 			'commit',
 			'The file could not be replaced; the original has been restored.',
 			err,
-			verified_backup_path
+			backup_path
 		);
 		await restoreOriginal(io, file_path, original, migration_error);
 		await discard(io, temp_path);
 		throw migration_error;
 	}
 
-	// The upgraded file is committed; a leftover copy is only cosmetic.
+	// The new file is committed; a leftover copy is only cosmetic.
 	await discard(io, temp_path);
-
-	return {
-		data: decoded.data,
-		backup_path: verified_backup_path,
-		legacy_salt: decoded.salt
-	};
+	return backup_path;
 }

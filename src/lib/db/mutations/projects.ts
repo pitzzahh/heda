@@ -1,4 +1,4 @@
-import { getProject, initializeDatabase, openFile, openSession, setProject } from '../index.js';
+import { getProject, initializeDatabase, openFile, closeSession, setProject } from '../index.js';
 import type { Node, Project } from '#lib/types/db.js';
 
 /**
@@ -25,10 +25,6 @@ export async function createProject(
 	}
 }
 
-export function updateProjectTitle(id: string, project_name: string) {
-	return patchProject(id, { project_name });
-}
-
 /** Saves the sheet set's title block on the project (PEC 2017 1.3.2.2). */
 export function updateTitleBlock(id: string, title_block: Project['title_block']) {
 	return patchProject(id, { title_block });
@@ -51,5 +47,5 @@ export function deleteProject(project_id: string) {
 		console.error(`Project with ID ${project_id} not found`);
 		return;
 	}
-	openSession(undefined, []);
+	closeSession();
 }

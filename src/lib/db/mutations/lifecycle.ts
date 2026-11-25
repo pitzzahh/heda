@@ -1,11 +1,11 @@
-import { initializeDatabase, openFile, openSession } from '../index.js';
+import { initializeDatabase, openFile, closeSession } from '../index.js';
 import type { Project } from '#lib/types/db.js';
 import type { FileExport } from '#lib/types/main.js';
 import { clearQueryCache } from '../queries/index.js';
 
 export function resetData(minimumDeletedTime: number = 0) {
 	void minimumDeletedTime;
-	openSession(undefined, []);
+	closeSession();
 	clearQueryCache();
 }
 

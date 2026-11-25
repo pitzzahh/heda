@@ -5,8 +5,9 @@
 //! A row depends on the node, its descendants and the phase of the panel feeding it,
 //! so a write recomputes the written nodes, their ancestors (old and new parents)
 //! and their direct children, plus the service disconnect, the first panel on the
-//! supply (its minimum rating counts every circuit, PEC 2017 2.30.6.10); everything
-//! else stays cached. Each write answers with the rows it recomputed.
+//! supply, before and after the write (its 2.30.6.10 minimum rating depends on every
+//! circuit on the supply); everything else stays cached. Each write answers with the
+//! rows it recomputed.
 
 use crate::graph::Graph;
 use crate::load_schedule::{load_row, LoadRow};
@@ -146,11 +147,13 @@ impl Session {
     pub fn put(&mut self, nodes: Vec<Value>) -> Result<Computed, String> {
         let parsed = parse_nodes(&nodes)?;
         let ids: Vec<String> = parsed.iter().map(|node| node.id.clone()).collect();
-        // The old chain (a move leaves its old parents stale), then the new one.
+        // The old chain (a move leaves its old parents stale) and service disconnect, then
+        // the new ones.
         let mut touched: Vec<String> = ids
             .iter()
             .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
+        touched.extend(self.service_panels());
         self.graph.upsert(parsed);
         for doc in nodes {
             self.docs.insert(id_of(&doc), doc);
@@ -171,6 +174,7 @@ impl Session {
             .iter()
             .flat_map(|id| self.graph.ancestors_and_self(id))
             .collect();
+        touched.extend(self.service_panels());
         self.graph.remove(ids);
         touched.extend(self.service_panels());
         for id in ids {
@@ -324,7 +328,8 @@ impl Session {
     }
 
     /// The first panel on the supply: as the service disconnect, its minimum rating
-    /// counts every circuit and its siblings' ratings (PEC 2017 2.30.6.10, 2.30.6.11).
+    /// (PEC 2017 2.30.6.10) depends on every circuit on the supply, under its siblings
+    /// too, and the combined rating of 2.30.6.11 on its siblings'.
     fn service_panels(&self) -> Vec<String> {
         self.graph
             .root()
@@ -459,6 +464,15 @@ impl Session {
             .and_then(|block| serde_json::from_value(block.clone()).ok())
             .unwrap_or_default();
         if title_block.sheet_size.as_deref() == Some("A3") {
+            let small_dwelling = self
+                .graph
+                .root()
+                .and_then(|root| root.highest_unit_form.as_ref())
+                .and_then(|form| form.small_dwelling)
+                == Some(true);
+            if !small_dwelling {
+                return Err("A3 sheets are only for a dwelling unit of at most 50 m² (PEC 2017 1.3.1.1(C)); mark the project as one in Settings, or pick a larger sheet.".into());
+            }
             // As the app totals it: the rows under the root, a NaN row counting as 0.
             let total_va: f64 = self
                 .graph

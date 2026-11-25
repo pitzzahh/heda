@@ -57,8 +57,44 @@ fn two_2_wire_circuits_need_30_a() {
     ];
     assert_eq!(main_at(nodes, "SP"), 30.0);
     // A 3-wire circuit is not a 2-wire one, so (E) applies.
-    let nodes = vec![root(None), panel("SP", 1.0), load("a", "SP", 1.0, 3.0)];
+    let nodes = vec![
+        root(None),
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+        load("b", "SP", 2.0, 3.0),
+    ];
     assert_eq!(main_at(nodes, "SP"), 60.0);
+}
+
+#[test]
+fn a_one_circuit_installation_needs_15_a() {
+    // (A): only the limited loads of a single branch circuit, 2- or 3-wire; 400 VA is
+    // 1.7 A, so the 15 A minimum is the main. An empty service panel has no more.
+    let nodes = vec![root(None), panel("SP", 1.0), load("a", "SP", 1.0, 3.0)];
+    assert_eq!(main_at(nodes, "SP"), 15.0);
+    assert_eq!(main_at(vec![root(None), panel("SP", 1.0)], "SP"), 15.0);
+}
+
+#[test]
+fn a_one_circuit_dwelling_needs_20_a() {
+    // (B): a dwelling unit on the single branch circuit 2.10.1.11(C)(5) permits to one of
+    // at most 50 m² (and 3680 VA, one 20 A 2-wire circuit).
+    let mut dwelling = root(None);
+    dwelling["highest_unit_form"]["small_dwelling"] = json!(true);
+    let nodes = vec![
+        dwelling.clone(),
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+    ];
+    assert_eq!(main_at(nodes, "SP"), 20.0);
+    // A second circuit takes it out of (B): (C) for two 2-wire circuits.
+    let nodes = vec![
+        dwelling,
+        panel("SP", 1.0),
+        load("a", "SP", 1.0, 2.0),
+        load("b", "SP", 2.0, 2.0),
+    ];
+    assert_eq!(main_at(nodes, "SP"), 30.0);
 }
 
 #[test]
@@ -156,9 +192,10 @@ fn motor(id: &str, parent: &str, circuit: f64, flc: f64) -> Value {
 #[test]
 fn a_service_main_raised_to_its_minimum_keeps_its_conductor_at_that_rating() {
     // An 8 A motor and two 400 VA lighting circuits: the 4.30.2.4 load is about 13 A, but
-    // 2.30.6.10(E) makes the service main 60 A, and 2.30.7.1(A) lets the service breaker be
-    // no higher than the conductor's ampacity. At 60 A (≤ 100 A, 1.10.1.14(C)(1)(a)) the
-    // 60 °C column of Table 3.10.2.6(B)(16) applies: 14 mm² is 55 A, 22 mm² is 70 A.
+    // 2.30.6.10(E) makes the service main 60 A. heda holds the service conductors at that
+    // (E) minimum as 2.30.4.3(B) holds (A)–(D) (2.30.7.1(A) Ex. No. 2 would let 14 mm²
+    // sit under it). At 60 A (≤ 100 A, 1.10.1.14(C)(1)(a)) the 60 °C column of
+    // Table 3.10.2.6(B)(16) applies: 14 mm² is 55 A, 22 mm² is 70 A.
     let mut session = Session::default();
     let all = session
         .open(
@@ -174,4 +211,83 @@ fn a_service_main_raised_to_its_minimum_keeps_its_conductor_at_that_rating() {
         .unwrap();
     assert_eq!(all.rows["SP"].at, 60.0);
     assert_eq!(all.rows["SP"].conductor_size, 22.0);
+}
+
+#[test]
+fn the_service_conductors_carry_the_minimum_rating_whatever_the_motor_breaker() {
+    // PEC 2017 2.30.4.3(B): the ungrounded service-entrance conductors have an ampacity
+    // not less than the 2.30.6.10(A)–(D) minimum. (C), a motor and one lighting circuit
+    // (two 2-wire circuits), is 30 A, even once the motor's own 250 % breaker
+    // (Table 4.30.4.2) reaches 30 A by itself.
+    for flc in [10.0, 12.0, 16.0] {
+        let mut session = Session::default();
+        let rows = session
+            .open(
+                json!({}),
+                vec![
+                    root(None),
+                    panel("SP", 1.0),
+                    motor("m", "SP", 1.0, flc),
+                    load("a", "SP", 2.0, 2.0),
+                ],
+            )
+            .unwrap()
+            .rows;
+        let ampacity = rows["SP"].ampacity.unwrap();
+        assert!(ampacity >= 30.0, "FLC {flc} A: {ampacity} A");
+    }
+    // heda holds the (E) 60 A minimum the same way (three circuits).
+    for flc in [20.0, 22.0, 24.0, 28.0] {
+        let mut session = Session::default();
+        let rows = session
+            .open(
+                json!({}),
+                vec![
+                    root(None),
+                    panel("SP", 1.0),
+                    motor("m", "SP", 1.0, flc),
+                    load("a", "SP", 2.0, 2.0),
+                    load("b", "SP", 3.0, 2.0),
+                ],
+            )
+            .unwrap()
+            .rows;
+        let ampacity = rows["SP"].ampacity.unwrap();
+        assert!(ampacity >= 60.0, "FLC {flc} A: {ampacity} A");
+    }
+}
+
+/// An edit's answer for every panel on the supply, against the same documents opened fresh.
+fn answers_match_a_fresh_open(nodes: Vec<Value>, write: Value) {
+    let mut session = Session::default();
+    session.open(json!({}), nodes.clone()).unwrap();
+    let answered = session.put(vec![write.clone()]).unwrap().rows;
+    let mut written = nodes;
+    written.retain(|node| node["id"] != write["id"]);
+    written.push(write);
+    let fresh = Session::default().open(json!({}), written).unwrap().rows;
+    for id in ["A", "B"] {
+        let row = answered
+            .get(id)
+            .unwrap_or_else(|| panic!("{id} was not recomputed"));
+        assert_eq!(row.at, fresh[id].at, "{id}");
+        assert_eq!(row.conductor_size, fresh[id].conductor_size, "{id}");
+    }
+}
+
+#[test]
+fn a_panel_moved_ahead_of_the_service_disconnect_takes_over_its_minimum() {
+    // 2.30.6.10(E) and 2.30.6.11: three 2-wire circuits need 60 A combined. The first
+    // panel on the supply makes up what the others lack (A 45 A, B 15 A); renumbering
+    // B ahead of A swaps the two, and both answer it at once.
+    let nodes = vec![
+        root(None),
+        panel("A", 2.0),
+        load("a1", "A", 1.0, 2.0),
+        load("a2", "A", 2.0, 2.0),
+        load("a3", "A", 3.0, 2.0),
+        panel("B", 3.0),
+    ];
+    answers_match_a_fresh_open(nodes.clone(), panel("B", 1.0));
+    answers_match_a_fresh_open(nodes, panel("A", 4.0));
 }

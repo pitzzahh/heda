@@ -129,7 +129,7 @@ export function initializeDatabase(): Promise<void> {
 		}
 		if (!hasKeepalive()) {
 			// A webview reload after the user left the project: nothing to restore.
-			openSession(undefined, []);
+			closeSession();
 			return;
 		}
 		const snapshot = await engine<EngineSnapshot>('snapshot');
@@ -165,28 +165,15 @@ export function getRow(id: string): ComputedRow | undefined {
 	return rows.get(id);
 }
 
-function assertNewIds(items: readonly Node[], existing: ReadonlyMap<string, Node>): void {
-	// A tampered file must not smuggle in a second node under an existing id. Checked before any write.
-	const ids = new Set<string>();
-	for (const item of items) {
-		if (ids.has(item.id) || existing.has(item.id)) {
-			throw new Error('Item with same id already exists');
-		}
-		ids.add(item.id);
-	}
-}
-
-/** Replaces the whole session (`undefined` and no nodes to close it). Throws, writing nothing, on a duplicate id. */
-export function openSession(next_project: Project | undefined, next_nodes: readonly Node[]): void {
-	assertNewIds(next_nodes, new Map());
+/** Closes the session: no project, no nodes, no history. */
+export function closeSession(): void {
 	epoch += 1;
-	project = next_project;
+	project = undefined;
 	setHistory({ undo: 0, redo: 0 });
 	nodes.clear();
 	rows.clear();
-	for (const node of next_nodes) nodes.set(node.id, node);
 	notify();
-	send('open', { project: next_project ?? null, nodes: next_nodes });
+	send('open', { project: null, nodes: [] });
 }
 
 /**

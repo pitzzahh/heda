@@ -10,7 +10,7 @@ export {
 	updateNode,
 	updateNodeParentById
 } from './nodes.js';
-export { createProject, deleteProject, updateProjectTitle, updateTitleBlock } from './projects.js';
+export { createProject, deleteProject, updateTitleBlock } from './projects.js';
 export {
 	changeInsulation,
 	changePhaseAssignment,
@@ -19,6 +19,7 @@ export {
 	overrideField,
 	setGeneratorKva,
 	setServiceEntrance,
+	setSmallDwelling,
 	setStandbyPanels,
 	updateConductorSets,
 	updateInterruptingRating,

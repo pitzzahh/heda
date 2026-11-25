@@ -18,7 +18,8 @@ export const dialogFrame = tv({
 		],
 		// Motion is selected by the root; every path retraces itself on close.
 		popup: [
-			'fixed top-1/2 left-1/2 z-50 overflow-visible outline-hidden',
+			// Capped column: header and footer stay put, only the scroll slot scrolls.
+			'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-4rem)] flex-col overflow-visible outline-hidden',
 			'[transform:translate(-50%,-50%)_translate(var(--dialog-x,0),var(--dialog-y,0))_scale(var(--dialog-scale,1))]',
 			'data-starting-style:opacity-0',
 			'motion-reduce:transition-none'
@@ -34,15 +35,19 @@ export const dialogFrame = tv({
 			'absolute top-4 right-4 z-20 grid size-8 place-items-center rounded-full text-muted-foreground outline-hidden transition-[color,background-color,scale] duration-[var(--duration-fast)] ease-[var(--ease-smooth)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:transition-none max-lg:top-3 max-lg:right-3',
 		header: 'flex shrink-0 flex-col gap-2 max-lg:gap-1',
 		footer: 'flex shrink-0 items-center justify-end gap-2',
-		body: 'relative overflow-hidden max-lg:flex max-lg:min-h-0 max-lg:flex-col',
-		// Drawers scroll only this middle; the header sits above it and the footer below it.
-		scroll: 'max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-contain',
+		body: 'relative flex min-h-0 flex-col overflow-hidden',
+		// Only this middle scrolls; the header sits above it and the footer below it.
+		// The 1-unit inset keeps field focus rings from being clipped by the scroll box.
+		scroll: '-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1',
 		// Phones and tablets (below lg): a bottom drawer instead of a centred dialog.
 		// Important, so call-site widths (`sm:max-w-md`, …) only shape the desktop dialog.
 		drawer: [
-			'max-lg:top-auto! max-lg:bottom-0! max-lg:left-0! max-lg:w-full! max-lg:max-w-none!',
-			'max-lg:flex! max-lg:max-h-[92dvh]! max-lg:flex-col! max-lg:overflow-hidden!',
-			'max-lg:rounded-t-2xl! max-lg:rounded-b-none! max-lg:border-x-0! max-lg:border-b-0!',
+			// Inset from side system bars; the backdrop still covers the edges.
+			'max-lg:top-auto! max-lg:right-(--safe-area-right)! max-lg:bottom-0! max-lg:left-(--safe-area-left)! max-lg:w-auto! max-lg:max-w-none!',
+			'max-lg:flex! max-lg:max-h-[min(92dvh,calc(100dvh-var(--safe-area-top)-0.5rem))]! max-lg:flex-col! max-lg:overflow-hidden!',
+			// A transparent bottom border as deep as the navigation bar: the panel colour runs
+			// under it and the content stays above, whatever padding the call site sets.
+			'max-lg:rounded-t-2xl! max-lg:rounded-b-none! max-lg:border-x-0! max-lg:border-b-(length:--safe-area-bottom)! max-lg:border-b-transparent!',
 			'max-lg:[transform:translateY(var(--drawer-y,0))]! max-lg:[clip-path:none]!',
 			// Phone GPUs: a layer ready before the slide, and one light shadow instead of the
 			// four-layer dialog shadow, which is costly to paint across a full-width sheet.
