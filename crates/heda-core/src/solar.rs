@@ -50,6 +50,13 @@ pub fn least_rating(max_current: f64) -> f64 {
     max_current * 1.25
 }
 
+/// 6.90.2.5: PV systems operating at 80 V dc or more between any two conductors take a
+/// listed PV arc-fault circuit interrupter (or equivalent listed components). Checked on
+/// the 6.90.2.1 maximum voltage, the most the dc circuits can see.
+pub fn needs_arc_fault_protection(max_voltage: f64) -> bool {
+    round9(max_voltage) >= 80.0
+}
+
 /// 7.5.1.12(B)(2): 125 % of the inverter output current plus the rating of the device
 /// protecting the busbar, the panel's main.
 pub fn busbar_load(inverter_current: f64, main_at: f64) -> f64 {
@@ -102,6 +109,9 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
             String::new()
         };
         lines.push(format!("PV max voltage: {} V{over}", up(voltage)));
+        if needs_arc_fault_protection(voltage) {
+            lines.push("PV dc arc-fault protection required".into());
+        }
     }
     if let Some(isc) = num::positive(pv.module_isc) {
         let source = source_circuit_current(isc);

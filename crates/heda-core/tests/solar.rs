@@ -125,6 +125,8 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
         [
             "Solar PV: 2 × 10 modules",
             "PV max voltage: 514.8 V",
+            // 6.90.2.5: 514.8 V is 80 V dc or more.
+            "PV dc arc-fault protection required",
             // 17.375 A, 21.71875 A; output 2 × 17.375 = 34.75 A, × 125 % = 43.4375 A.
             "PV source circuit: 17.38 A",
             "PV source cond./OCPD ≥ 21.72 A",
@@ -188,4 +190,28 @@ fn a_partial_system_shows_only_what_its_inputs_give() {
     // One string: no output circuit line.
     let service = lines_of(&riser(json!({ "module_isc": 13.9 }), 100.0), "root");
     assert!(!service.iter().any(|l| l.starts_with("PV output")));
+}
+
+#[test]
+fn arc_fault_protection_starts_at_80_v_dc() {
+    // 6.90.2.5: "80 volts dc or greater".
+    assert!(needs_arc_fault_protection(80.0));
+    assert!(!needs_arc_fault_protection(79.99));
+    // 2 × 40 V at 25 °C (no correction) is exactly 80 V; 2 × 39 V × 1.02 at 20 °C is 79.56 V.
+    let service = lines_of(
+        &riser(
+            json!({ "module_voc": 40, "modules_per_string": 2, "lowest_ambient": 25 }),
+            100.0,
+        ),
+        "root",
+    );
+    assert!(service.contains(&"PV dc arc-fault protection required".to_string()));
+    let service = lines_of(
+        &riser(
+            json!({ "module_voc": 39, "modules_per_string": 2, "lowest_ambient": 20 }),
+            100.0,
+        ),
+        "root",
+    );
+    assert!(!service.iter().any(|l| l.contains("arc-fault")));
 }

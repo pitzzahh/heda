@@ -80,9 +80,9 @@
 		<Label>Solar PV System</Label>
 		<p class="text-xs text-muted-foreground">
 			Identical strings of crystalline silicon modules on one interactive inverter, from their
-			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1), circuit currents and the
-			least conductor and OCPD ratings (6.90.2.2, 6.90.2.3), and the back-fed busbar check
-			(7.5.1.12(B)(2)(c)).
+			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1) and, from 80 V, the dc
+			arc-fault protection it needs (6.90.2.5), circuit currents and the least conductor and OCPD
+			ratings (6.90.2.2, 6.90.2.3), and the back-fed busbar check (7.5.1.12(B)(2)(c)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
