@@ -189,6 +189,9 @@ pub struct SolarPv {
     /// That panel's busbar rating, A (7.5.1.12(B)(2)(c)).
     #[serde(default, deserialize_with = "number")]
     pub busbar_rating: Option<f64>,
+    /// Whether that panelboard is center-fed (7.5.1.12(B)(2)(c)(4)).
+    #[serde(default, deserialize_with = "boolean")]
+    pub center_fed: Option<bool>,
 }
 
 impl Node {

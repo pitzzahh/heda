@@ -63,25 +63,60 @@ pub fn busbar_load(inverter_current: f64, main_at: f64) -> f64 {
     inverter_current * 1.25 + main_at
 }
 
-/// Which busbar method of 7.5.1.12(B)(2)(c) a back-fed panel meets.
+/// The inverter's breaker: the next standard rating of Table 2.40.1.6(A) at or above the
+/// 125 % of 6.90.2.3(B)(1).
+pub fn inverter_ocpd(inverter_current: f64) -> f64 {
+    next_rating(round9(least_rating(inverter_current)))
+}
+
+/// A back-fed panel, for the busbar methods of 7.5.1.12(B)(2)(c).
+#[derive(Debug, Clone, Copy)]
+pub struct BackFed {
+    pub inverter_current: f64,
+    /// The rating of the device protecting the busbar, the panel's main.
+    pub main_at: f64,
+    pub busbar_rating: f64,
+    /// The ratings of the panel's load devices: its branch and feeder breakers.
+    pub load_ocpds: f64,
+    pub center_fed: bool,
+    pub dwelling: bool,
+}
+
+/// The first method of 7.5.1.12(B)(2)(c) a back-fed panel meets. Method (5), multiple-
+/// ampacity busbars under engineering supervision, has no rule to check here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Busbar {
-    /// (c)(1): the load is within the busbar ampacity, anywhere on it.
+    /// (1): the load is within the busbar ampacity, the inverter breaker anywhere.
     Anywhere,
-    /// (c)(2): within 120 % of it, with the inverter breaker at the end opposite the main.
+    /// (2): within 120 % of it, with the inverter breaker at the end opposite the main.
     OppositeEnd,
+    /// (4): a center-fed panelboard in a dwelling, within 120 %, the inverter breaker at
+    /// either end but not both.
+    EitherEnd,
+    /// (3): every breaker but the main, load and supply, within the busbar ampacity, and
+    /// the main within the busbar rating.
+    SumOfDevices,
     Over,
 }
 
-pub fn busbar_check(load: f64, busbar_rating: f64) -> Busbar {
-    if exceeds(load, busbar_rating) {
-        if exceeds(load, busbar_rating * 1.2) {
-            Busbar::Over
-        } else {
-            Busbar::OppositeEnd
-        }
-    } else {
+pub fn busbar_method(panel: BackFed) -> Busbar {
+    let busbar = panel.busbar_rating;
+    let load = busbar_load(panel.inverter_current, panel.main_at);
+    let within_120 = !exceeds(load, busbar * 1.2);
+    let devices = panel.load_ocpds + inverter_ocpd(panel.inverter_current);
+    if !exceeds(load, busbar) {
         Busbar::Anywhere
+    } else if within_120 && !panel.center_fed {
+        // A center-fed busbar has no end opposite its main.
+        Busbar::OppositeEnd
+    } else if within_120 && panel.dwelling {
+        // shortcut: "dwellings" is read from the one- or two-family dwelling box, so a
+        // multifamily dwelling misses (4); add a dwelling-occupancy input if one is asked for.
+        Busbar::EitherEnd
+    } else if !exceeds(devices, busbar) && !exceeds(panel.main_at, busbar) {
+        Busbar::SumOfDevices
+    } else {
+        Busbar::Over
     }
 }
 
@@ -129,30 +164,45 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
         lines.push(format!(
             "Inverter cond. ≥ {} A, OCPD {} A",
             up(least),
-            show(next_rating(round9(least)))
+            show(inverter_ocpd(current))
         ));
     }
     lines
 }
 
-/// The lines of the panel the inverter back-feeds, from its main's rating.
-pub fn panel_lines(pv: &SolarPv, main_at: f64) -> Vec<String> {
+/// The lines of the panel the inverter back-feeds, from its main's rating and the ratings
+/// of its load devices.
+pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
     let Some(current) = num::positive(pv.inverter_current) else {
         return vec!["PV back-fed".into()];
     };
     let Some(busbar) = num::positive(pv.busbar_rating) else {
         return vec!["PV back-fed, busbar rating not set".into()];
     };
-    let load = busbar_load(current, main_at);
-    let check = busbar_check(load, busbar);
-    let over = if check == Busbar::Over { ", OVER" } else { "" };
+    let panel = BackFed {
+        inverter_current: current,
+        main_at,
+        busbar_rating: busbar,
+        load_ocpds,
+        center_fed: pv.center_fed == Some(true),
+        dwelling: pv.dwelling == Some(true),
+    };
+    let method = busbar_method(panel);
+    let over = if method == Busbar::Over { ", OVER" } else { "" };
     let mut lines = vec![format!(
         "PV on busbar: {} A of {} A{over}",
-        up(load),
+        up(busbar_load(current, main_at)),
         show(busbar)
     )];
-    if check == Busbar::OppositeEnd {
-        lines.push("PV CB at end opposite main".into());
+    match method {
+        Busbar::OppositeEnd => lines.push("PV CB at end opposite main".into()),
+        Busbar::EitherEnd => lines.push("PV CB at one end, not both".into()),
+        Busbar::SumOfDevices => lines.push(format!(
+            "CBs but main: {} A of {} A",
+            show(load_ocpds + inverter_ocpd(current)),
+            show(busbar)
+        )),
+        Busbar::Anywhere | Busbar::Over => {}
     }
     lines
 }

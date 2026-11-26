@@ -34,5 +34,7 @@ export const SOLAR_PV_SCHEMA = v.object({
 	dwelling: v.optional(v.boolean()),
 	inverter_current: v.optional(positive('inverter output current')),
 	panel: v.optional(v.string()),
-	busbar_rating: v.optional(positive('busbar rating'))
+	busbar_rating: v.optional(positive('busbar rating')),
+	/** 7.5.1.12(B)(2)(c)(4): a center-fed panelboard has no end opposite its main. */
+	center_fed: v.optional(v.boolean())
 });

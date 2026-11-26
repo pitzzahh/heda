@@ -505,7 +505,9 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 let pv = source.and_then(|s| s.solar_pv.as_ref());
                 if let Some(pv) = pv.filter(|pv| pv.panel.as_deref() == Some(&node.circuit.node.id))
                 {
-                    lines.extend(solar::panel_lines(pv, node.circuit.row.at));
+                    let load_ocpds = node.branch_ats.iter().sum::<f64>()
+                        + node.panels.iter().map(|p| p.circuit.row.at).sum::<f64>();
+                    lines.extend(solar::panel_lines(pv, node.circuit.row.at, load_ocpds));
                 }
                 (title, lines)
             }

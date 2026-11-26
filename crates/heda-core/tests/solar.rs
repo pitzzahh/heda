@@ -63,25 +63,78 @@ fn source_circuits_size_on_156_percent_of_isc() {
     assert!((least_rating(max) - 13.9 * 1.5625).abs() < 1e-9);
 }
 
+fn back_fed(inverter_current: f64, main_at: f64, busbar_rating: f64) -> BackFed {
+    BackFed {
+        inverter_current,
+        main_at,
+        busbar_rating,
+        load_ocpds: 0.0,
+        center_fed: false,
+        dwelling: false,
+    }
+}
+
 #[test]
 fn the_busbar_takes_one_of_the_7_5_1_12_b_2_c_methods() {
-    // 22 A inverter on a 100 A main: 27.5 + 100 = 127.5 A.
+    // 22 A inverter on a 100 A main: 27.5 + 100 = 127.5 A; its breaker is 30 A.
     assert_eq!(busbar_load(22.0, 100.0), 127.5);
-    assert_eq!(busbar_check(127.5, 150.0), Busbar::Anywhere);
-    assert_eq!(busbar_check(127.5, 125.0), Busbar::OppositeEnd);
-    // 120 % of 100 A is 120 A < 127.5 A.
-    assert_eq!(busbar_check(127.5, 100.0), Busbar::Over);
-    // 40 A on a 125 A main and busbar: 50 + 125 = 175 A > 150 A.
-    assert_eq!(busbar_check(busbar_load(40.0, 125.0), 125.0), Busbar::Over);
-    // At exactly 100 % and 120 % the rule is met ("shall not exceed").
+    assert_eq!(inverter_ocpd(22.0), 30.0);
+    // (1): 127.5 A ≤ 150 A.
     assert_eq!(
-        busbar_check(busbar_load(16.0, 80.0), 100.0),
+        busbar_method(back_fed(22.0, 100.0, 150.0)),
         Busbar::Anywhere
     );
+    // (2): 127.5 A ≤ 120 % × 125 A = 150 A.
     assert_eq!(
-        busbar_check(busbar_load(16.0, 100.0), 100.0),
+        busbar_method(back_fed(22.0, 100.0, 125.0)),
         Busbar::OppositeEnd
     );
+    // At exactly 100 % and 120 % the rule is met ("shall not exceed"): 20 + 80, 20 + 100.
+    assert_eq!(busbar_method(back_fed(16.0, 80.0, 100.0)), Busbar::Anywhere);
+    assert_eq!(
+        busbar_method(back_fed(16.0, 100.0, 100.0)),
+        Busbar::OppositeEnd
+    );
+}
+
+#[test]
+fn a_center_fed_panel_takes_method_4_in_a_dwelling_only() {
+    // 27.5 + 80 = 107.5 A ≤ 120 A, but a center-fed busbar has no end opposite its main.
+    let center = BackFed {
+        center_fed: true,
+        load_ocpds: 80.0,
+        ..back_fed(22.0, 80.0, 100.0)
+    };
+    // Not a dwelling: (3) is left, 80 + 30 = 110 A > 100 A.
+    assert_eq!(busbar_method(center), Busbar::Over);
+    // (4): in a dwelling, at either end but not both, within 120 %.
+    let dwelling = BackFed {
+        dwelling: true,
+        ..center
+    };
+    assert_eq!(busbar_method(dwelling), Busbar::EitherEnd);
+}
+
+#[test]
+fn method_3_sums_every_breaker_but_the_main() {
+    // 127.5 A > 120 A rules out (1) and (2); 70 A of load breakers + the 30 A inverter
+    // breaker = 100 A, not over the 100 A busbar, and the 100 A main is within its rating.
+    let panel = BackFed {
+        load_ocpds: 70.0,
+        ..back_fed(22.0, 100.0, 100.0)
+    };
+    assert_eq!(busbar_method(panel), Busbar::SumOfDevices);
+    let full = BackFed {
+        load_ocpds: 80.0,
+        ..panel
+    };
+    assert_eq!(busbar_method(full), Busbar::Over);
+    // The main may not exceed the busbar rating: 125 A on a 100 A busbar, 20 + 125 = 145 A.
+    let main_over = BackFed {
+        load_ocpds: 40.0,
+        ..back_fed(16.0, 125.0, 100.0)
+    };
+    assert_eq!(busbar_method(main_over), Busbar::Over);
 }
 
 fn riser(pv: Value, main_at: f64) -> Vec<(String, Vec<String>)> {
@@ -91,6 +144,9 @@ fn riser(pv: Value, main_at: f64) -> Vec<(String, Vec<String>)> {
         json!({ "id": "MDP", "node_type": "panel", "parent_id": "root", "circuit_number": 1,
             "conductor_sets": 1, "conductor_qty": 2, "overrided_at": main_at,
             "panel_data": { "name": "MDP", "phase": "one_phase", "ambient_temperature": 30 } }),
+        // Two 40 A branch breakers: 80 A of load devices for method (3).
+        light("L1", 1.0),
+        light("L2", 2.0),
     ];
     let mut session = Session::default();
     session.open(json!({}), nodes).unwrap();
@@ -100,6 +156,12 @@ fn riser(pv: Value, main_at: f64) -> Vec<(String, Vec<String>)> {
         .iter()
         .map(|b| (b.id.clone(), b.lines.clone()))
         .collect()
+}
+
+fn light(id: &str, circuit: f64) -> Value {
+    json!({ "id": id, "node_type": "load", "parent_id": "MDP", "circuit_number": circuit,
+        "conductor_sets": 1, "conductor_qty": 2, "overrided_at": 40,
+        "load_data": { "load_type": "lighting_load", "quantity": 1, "varies": 1000 } })
 }
 
 fn dwelling_array() -> Value {
@@ -142,7 +204,8 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
 #[test]
 fn the_back_fed_panel_shows_its_busbar_check() {
     let boxes = riser(dwelling_array(), 100.0);
-    // 27.5 + 100 = 127.5 A is over 120 % of the 100 A busbar (120 A).
+    // 27.5 + 100 = 127.5 A is over 120 % of the 100 A busbar (120 A), and the breakers but
+    // the main, 80 + 30 = 110 A, are over 100 A (method (3)).
     assert_eq!(
         lines_of(&boxes, "MDP").last().unwrap(),
         "PV on busbar: 127.5 A of 100 A, OVER"
@@ -162,6 +225,25 @@ fn the_back_fed_panel_shows_its_busbar_check() {
     assert_eq!(
         lines_of(&riser(pv, 80.0), "MDP").last().unwrap(),
         "PV on busbar: 107.5 A of 150 A"
+    );
+    // Center-fed in a dwelling: (4).
+    let mut pv = dwelling_array();
+    pv["center_fed"] = json!(true);
+    assert_eq!(
+        lines_of(&riser(pv.clone(), 80.0), "MDP").last().unwrap(),
+        "PV CB at one end, not both"
+    );
+    // Center-fed elsewhere, on a 125 A busbar: 127.5 A > 125 A, and (2) needs ends, so (3):
+    // 110 A ≤ 125 A with the 100 A main within it.
+    pv["dwelling"] = json!(false);
+    pv["busbar_rating"] = json!(125);
+    let mdp = lines_of(&riser(pv, 100.0), "MDP");
+    assert_eq!(
+        mdp[mdp.len() - 2..],
+        [
+            "PV on busbar: 127.5 A of 125 A",
+            "CBs but main: 110 A of 125 A"
+        ]
     );
 }
 

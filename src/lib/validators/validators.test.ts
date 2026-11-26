@@ -283,7 +283,8 @@ describe('validators', () => {
 			dwelling: true,
 			inverter_current: 22,
 			panel: 'MDP',
-			busbar_rating: 100
+			busbar_rating: 100,
+			center_fed: false
 		};
 		expect(v.safeParse(SOLAR_PV_SCHEMA, pv).success).toBe(true);
 		for (const invalid of [
@@ -294,7 +295,8 @@ describe('validators', () => {
 			// Table 6.90.2.1(A) has no factor below −40 °C.
 			{ lowest_ambient: -41 },
 			{ inverter_current: '22' },
-			{ busbar_rating: 0 }
+			{ busbar_rating: 0 },
+			{ center_fed: 'yes' }
 		]) {
 			expect(v.safeParse(SOLAR_PV_SCHEMA, { ...pv, ...invalid }).success).toBe(false);
 		}

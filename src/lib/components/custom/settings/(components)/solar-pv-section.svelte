@@ -6,7 +6,7 @@
 		root: Node;
 	}
 
-	type NumberKey = Exclude<keyof SolarPv, 'dwelling' | 'panel'>;
+	type NumberKey = Exclude<keyof SolarPv, 'dwelling' | 'center_fed' | 'panel'>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
 		{ key: 'module_voc', label: 'Module Voc', unit: 'V', step: 'any' },
@@ -147,6 +147,17 @@
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
 				On or in a one- or two-family dwelling (600 V dc limit, else 1000 V)
+			</Label>
+		{/snippet}
+	</Field>
+	<Field of={form} path={['center_fed']}>
+		{#snippet children(field)}
+			<Label class="flex items-center gap-2 text-xs font-normal">
+				<Checkbox
+					checked={field.input ?? false}
+					onCheckedChange={(checked) => field.onInput(checked)}
+				/>
+				That panelboard is center-fed (PEC 2017 7.5.1.12(B)(2)(c)(4))
 			</Label>
 		{/snippet}
 	</Field>
