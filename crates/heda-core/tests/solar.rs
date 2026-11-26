@@ -189,11 +189,16 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
             "PV max voltage: 514.8 V",
             // 6.90.2.5: 514.8 V is 80 V dc or more.
             "PV dc arc-fault protection required",
-            // 17.375 A, 21.71875 A; output 2 × 17.375 = 34.75 A, × 125 % = 43.4375 A.
+            // 17.375 A, 21.71875 A. The other string can feed this one (6.90.2.3(A)), and
+            // with no module rating given Exception (2) cannot apply: a device of at least
+            // 21.72 A, the 25 A of Table 2.40.1.6(A).
             "PV source circuit: 17.38 A",
-            "PV source cond./OCPD ≥ 21.72 A",
+            "PV source cond. ≥ 21.72 A",
+            "PV source OCPD: 25 A",
+            // Output 2 × 17.375 = 34.75 A, × 125 % = 43.4375 A; fed by the array alone, so a
+            // conductor carrying it needs no device (6.90.2.3(A)).
             "PV output circuit: 34.75 A",
-            "PV output cond./OCPD ≥ 43.44 A",
+            "PV output cond. ≥ 43.44 A, no OCPD",
             // 22 A × 125 % = 27.5 A; the next standard rating (Table 2.40.1.6(A)) is 30 A.
             "Inverter output: 22 A",
             "Inverter cond. ≥ 27.5 A, OCPD 30 A",
@@ -367,34 +372,159 @@ fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
 }
 
 #[test]
-fn dc_conductors_are_sized_on_their_breaker_in_the_corrected_ambient() {
+fn dc_conductors_meet_6_90_2_2_b_in_the_corrected_ambient() {
     // 2 strings of Isc 13.9 A, dc wiring at 34 °C (Table 3.10.2.6(B)(2)(a), 31–35 °C, 90 °C:
-    // 0.96). Source circuits: 21.72 A → 25 A breaker; 4 current-carrying conductors in
-    // one raceway, 80 % (Table 3.10.2.6(B)(3)(a)). 60 °C terminations (≤ 100 A,
-    // 1.10.1.14(C)): 3.5 mm² 20 A < 25 A, 5.5 mm² 30 A; corrected 40 × 0.96 × 0.8 = 30.72 A.
-    // Output circuit: 43.44 A → 45 A; 2 conductors; 8.0 mm² 40 A < 45 A, 14 mm² 55 A;
-    // corrected 75 × 0.96 = 72 A.
+    // 0.96). Source circuit: 17.375 A, 125 % = 21.72 A, 25 A device; 4 current-carrying
+    // conductors in one raceway, 80 % (Table 3.10.2.6(B)(3)(a)). (B)(1) at the 60 °C
+    // terminations (≤ 100 A, 1.10.1.14(C)): 3.5 mm² 20 A < 21.72 A, 5.5 mm² 30 A. (B)(2):
+    // 40 × 0.96 × 0.8 = 30.72 A ≥ 17.375 A. 2.40.1.4: 25 A ≤ 30 A.
+    // Output circuit, no device: (B)(1) 43.44 A: 8.0 mm² 40 A, 14 mm² 55 A; (B)(2) 75 × 0.96
+    // = 72 A ≥ 34.75 A.
     let mut pv = dwelling_array();
     pv["dc_ambient"] = json!(34);
     let service = lines_of(&riser(pv.clone(), 100.0), "root");
-    assert!(service.contains(&"PV source: 25 A OCPD, 5.5 mm² Cu".to_string()));
-    assert!(service.contains(&"PV output: 45 A OCPD, 14 mm² Cu".to_string()));
+    assert!(service.contains(&"PV source cond.: 5.5 mm² Cu".to_string()));
+    assert!(service.contains(&"PV output cond.: 14 mm² Cu".to_string()));
     // Less than 23 mm above the roof: 34 + 33 = 67 °C (66–70 °C, 90 °C: 0.58).
-    // Source: 5.5 mm² 40 × 0.58 × 0.8 = 18.56 A < 25 A; 8.0 mm² 55 × 0.58 × 0.8 = 25.52 A.
-    // Output: 14 mm² 75 × 0.58 = 43.5 A < 45 A; 22 mm² 95 × 0.58 = 55.1 A, terminations 70 A.
+    // Source: 5.5 mm² 40 × 0.58 × 0.8 = 18.56 A carries 17.375 A, but the 25 A device is above
+    // the next standard rating over 18.56 A, 20 A (2.40.1.4(B)); 8.0 mm²: 55 × 0.58 × 0.8 =
+    // 25.52 A ≥ 25 A. Output: 14 mm² 75 × 0.58 = 43.5 A ≥ 34.75 A, terminations 55 A ≥ 43.44 A.
     pv["near_roof"] = json!(true);
     let service = lines_of(&riser(pv, 100.0), "root");
-    assert!(service.contains(&"PV source: 25 A OCPD, 8 mm² Cu".to_string()));
-    assert!(service.contains(&"PV output: 45 A OCPD, 22 mm² Cu".to_string()));
+    assert!(service.contains(&"PV source cond.: 8 mm² Cu".to_string()));
+    assert!(service.contains(&"PV output cond.: 14 mm² Cu".to_string()));
+}
+
+#[test]
+fn a_string_needs_a_device_only_where_other_sources_can_feed_it() {
+    // 6.90.2.3(A) Exception (1): one string and no backfeed.
+    assert_eq!(
+        source_protection(13.9, 1.0, 0.0, None),
+        SourceProtection::NotRequired { available: 17.375 }
+    );
+    // Exception (2): the other string's 17.375 A within the module's listed 25 A.
+    assert_eq!(
+        source_protection(13.9, 2.0, 0.0, Some(25.0)),
+        SourceProtection::NotRequired { available: 17.375 }
+    );
+    // Three strings: 2 × 17.375 = 34.75 A > 25 A, a 25 A device (≥ 21.72 A, ≤ the module's 25 A).
+    assert_eq!(
+        source_protection(13.9, 3.0, 0.0, Some(25.0)),
+        SourceProtection::Device {
+            rating: 25.0,
+            fuse: false
+        }
+    );
+    // A module listed for 20 A cannot take the 25 A device the 21.72 A needs.
+    assert_eq!(
+        source_protection(13.9, 3.0, 0.0, Some(20.0)),
+        SourceProtection::Over { needed: Some(25.0) }
+    );
+    // Inverter backfeed is an external source even on one string: 5 A within 25 A, and the
+    // conductor carries the larger of the two.
+    assert_eq!(
+        source_protection(13.9, 1.0, 5.0, Some(25.0)),
+        SourceProtection::NotRequired { available: 17.375 }
+    );
+    assert_eq!(
+        source_protection(13.9, 1.0, 30.0, Some(30.0)),
+        SourceProtection::NotRequired { available: 30.0 }
+    );
+    // Isc 5 A: 6.25 A × 125 % = 7.81 A; 2.40.1.6(A)'s fuse-only 10 A is below the 15 A breaker.
+    assert_eq!(
+        source_protection(5.0, 2.0, 0.0, None),
+        SourceProtection::Device {
+            rating: 10.0,
+            fuse: true
+        }
+    );
+}
+
+#[test]
+fn a_device_protects_up_to_the_next_standard_rating_2_40_1_4_b() {
+    // 23.5 A is not a standard rating; the next above it is 25 A.
+    assert!(protects(25.0, 23.5));
+    assert!(!protects(30.0, 23.5));
+    // 20 A is a standard rating, so (B)(2) does not apply.
+    assert!(!protects(25.0, 20.0));
+    assert!(protects(20.0, 20.0));
+    // 750 A: the next is 800 A; over 800 A (B)(3) gives no next size up.
+    assert!(protects(800.0, 750.0));
+    assert!(!protects(1000.0, 950.0));
+    // 7 A: the next is the 10 A fuse rating, so a 15 A device may not protect it.
+    assert!(protects(10.0, 7.0));
+    assert!(!protects(15.0, 7.0));
+}
+
+#[test]
+fn the_riser_shows_an_unprotected_string_and_its_fuse() {
+    // One string: no device.
+    let service = lines_of(&riser(json!({ "module_isc": 13.9 }), 100.0), "root");
+    assert!(service.contains(&"PV source cond. ≥ 21.72 A, no OCPD".to_string()));
+    // Isc 5 A, two strings: the 10 A fuse.
+    let service = lines_of(
+        &riser(json!({ "module_isc": 5, "strings": 2 }), 100.0),
+        "root",
+    );
+    assert!(service.contains(&"PV source fuse: 10 A".to_string()));
+    // Over the module's listed rating.
+    let service = lines_of(
+        &riser(
+            json!({ "module_isc": 13.9, "strings": 3, "module_max_ocpd": 20 }),
+            100.0,
+        ),
+        "root",
+    );
+    assert!(service.contains(&"Module max fuse < 25 A, OVER".to_string()));
+}
+
+#[test]
+fn strings_in_separate_raceways_adjust_less() {
+    // 10 strings of Isc 13.9 A at 30 °C (factor 1), 25 A devices, in one raceway: 20
+    // conductors, 50 %. 5.5 mm²: 40 × 0.5 = 20 A carries 17.375 A, but 20 A is a standard
+    // rating, so the 25 A device may not protect it (2.40.1.4(B)(2)); 8.0 mm²: 27.5 A.
+    let pv = json!({ "module_isc": 13.9, "strings": 10, "dc_ambient": 30 });
+    let ten = lines_of(&riser(pv, 100.0), "root");
+    assert!(ten.contains(&"PV source cond.: 8 mm² Cu".to_string()));
+    // Two per raceway: 4 conductors, 80 %, 5.5 mm² 32 A, terminations 30 A ≥ 21.72 A.
+    let pv =
+        json!({ "module_isc": 13.9, "strings": 10, "dc_ambient": 30, "strings_per_raceway": 2 });
+    let two = lines_of(&riser(pv, 100.0), "root");
+    assert!(two.contains(&"PV source cond.: 5.5 mm² Cu".to_string()));
 }
 
 #[test]
 fn the_inverter_conductor_is_sized_at_its_panel() {
-    // 22 A → 30 A breaker; MDP at 30 °C (factor 1), one-phase, 2 conductors:
-    // 3.5 mm² 20 A < 30 A at 60 °C terminations, 5.5 mm² 30 A; corrected 40 A.
+    // 22 A → 30 A breaker; MDP at 30 °C (factor 1), one-phase, 2 conductors. (B)(1): 3.5 mm²
+    // 20 A < 27.5 A at 60 °C terminations, 5.5 mm² 30 A; (B)(2): 40 A ≥ 22 A; 30 A ≤ 30 A.
     let mdp = lines_of(&riser(dwelling_array(), 100.0), "MDP");
     assert!(mdp.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
-    assert_eq!(conductor_size(30.0, 2.0, 30.0), Some(5.5));
+    let inverter = |ambient| PvConductor {
+        max_current: 22.0,
+        available: 22.0,
+        ocpd: Some(30.0),
+        conductors: 2.0,
+        ambient,
+    };
+    assert_eq!(conductor_size(inverter(30.0)), Some(5.5));
     // Past the 90 °C column (above 85 °C) no size fits.
-    assert_eq!(conductor_size(30.0, 2.0, 90.0), None);
+    assert_eq!(conductor_size(inverter(90.0)), None);
+}
+
+#[test]
+fn an_inverter_past_the_standard_ratings_is_over() {
+    // 5000 A × 125 % = 6250 A, past Table 2.40.1.6(A)'s 6000 A.
+    assert_eq!(inverter_ocpd(5000.0), 0.0);
+    let pv = json!({ "inverter_current": 5000, "supply_side": true });
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert!(service.contains(&"Inverter cond. ≥ 6250 A, OCPD OVER".to_string()));
+    assert_eq!(
+        service.last().unwrap(),
+        "PV CB past Table 2.40.1.6(A), OVER"
+    );
+    let panel = BackFed {
+        load_ocpds: 0.0,
+        ..back_fed(5000.0, 100.0, 100.0)
+    };
+    assert_eq!(busbar_method(panel), Busbar::Over);
 }

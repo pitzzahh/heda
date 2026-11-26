@@ -9,7 +9,9 @@ use crate::num;
 use crate::sizing::{
     adjustment_factor, corrected_ampacity, next_rating, termination_ampacity, Rating,
 };
-use crate::tables::{COPPER_AMPACITIES, PV_VOLTAGE_CORRECTION};
+use crate::tables::{
+    COPPER_AMPACITIES, FUSE_ONLY_RATINGS, PV_VOLTAGE_CORRECTION, STANDARD_AMPERE_RATINGS,
+};
 
 /// Table 6.90.2.1(A)'s factor for the lowest expected ambient: 1 from 25 °C up (the table
 /// corrects below 25 °C only); a value between two rows takes the colder row. None below
@@ -116,30 +118,123 @@ pub fn busbar_method(panel: BackFed) -> Busbar {
         // shortcut: "dwellings" is read from the one- or two-family dwelling box, so a
         // multifamily dwelling misses (4); add a dwelling-occupancy input if one is asked for.
         Busbar::EitherEnd
-    } else if !exceeds(devices, busbar) && !exceeds(panel.main_at, busbar) {
+    } else if inverter_ocpd(panel.inverter_current) > 0.0
+        && !exceeds(devices, busbar)
+        && !exceeds(panel.main_at, busbar)
+    {
         Busbar::SumOfDevices
     } else {
         Busbar::Over
     }
 }
 
+/// The smallest standard overcurrent device rating at or above `at`, from Table
+/// 2.40.1.6(A) and the fuse-only ratings 2.40.1.6(A) adds (1, 3, 6, 10, 601 A), and whether
+/// only a fuse comes in it. None past the table.
+pub fn standard_device_rating(at: f64) -> Option<(f64, bool)> {
+    let at = round9(at);
+    let breaker = STANDARD_AMPERE_RATINGS.into_iter().find(|r| at <= *r);
+    let fuse = FUSE_ONLY_RATINGS.into_iter().find(|r| at <= *r);
+    match (breaker, fuse) {
+        (Some(b), Some(f)) if f < b => Some((f, true)),
+        (Some(b), _) => Some((b, false)),
+        (None, Some(f)) => Some((f, true)),
+        (None, None) => None,
+    }
+}
+
+/// 2.40.1.4: a device rated `ocpd` protects a conductor of `ampacity` when it is rated no
+/// more, or, by (B), up to 800 A, when it is the next standard rating above it (a PV or
+/// inverter circuit supplies no receptacles, (B)(1)).
+pub fn protects(ocpd: f64, ampacity: f64) -> bool {
+    ocpd <= ampacity
+        || (ocpd <= 800.0 && standard_device_rating(ampacity).is_some_and(|(r, _)| ocpd <= r))
+}
+
+/// A PV or inverter circuit's conductor requirement (6.90.2.2(B)).
+#[derive(Debug, Clone, Copy)]
+pub struct PvConductor {
+    /// 6.90.2.2(A): the circuit's maximum current.
+    pub max_current: f64,
+    /// The most current that can reach the conductor, which it must carry where no device
+    /// protects it (6.90.2.3(A)); `max_current` for a circuit fed from one end.
+    pub available: f64,
+    /// The device protecting it, if one is required.
+    pub ocpd: Option<f64>,
+    /// Current-carrying conductors in the raceway (Table 3.10.2.6(B)(3)(a)).
+    pub conductors: f64,
+    pub ambient: f64,
+}
+
 /// The smallest copper conductor of Table 3.10.2.6(B)(16), 90 °C column (THHN, THWN-2,
-/// heda's default insulation), for a circuit protected at `ocpd`: its termination
-/// ampacity (1.10.1.14(C)) and its ampacity corrected for the ambient (Table
-/// 3.10.2.6(B)(2)(a)) and for `conductors` current-carrying conductors in the raceway
-/// (Table 3.10.2.6(B)(3)(a)) both at least the breaker rating. That meets 6.90.2.2(B)'s
-/// 125 % before and 100 % after correction, since the breaker is at least 125 % of the
-/// maximum current, and has the breaker protect the conductor (2.40.1.4) without the next
-/// size up of 2.40.1.4(B), as heda sizes every circuit. None when no size does.
-pub fn conductor_size(ocpd: f64, conductors: f64, ambient: f64) -> Option<f64> {
-    let adjustment = adjustment_factor(conductors);
+/// heda's default insulation), that meets 6.90.2.2(B): (1) 125 % of the maximum current
+/// before correction, at the termination ampacity of 1.10.1.14(C) (60 °C up to 100 A, else
+/// 75 °C); (2) the maximum current after the ambient correction of Table 3.10.2.6(B)(2)(a)
+/// and the adjustment of Table 3.10.2.6(B)(3)(a), and with no device, the most current
+/// that can reach it (6.90.2.3(A)). With a device, that device protects the conductor at
+/// its allowable ampacity, the lower of the two (2.40.1.4). None when no size does.
+pub fn conductor_size(circuit: PvConductor) -> Option<f64> {
+    let least = least_rating(circuit.max_current);
+    // 1.10.1.14(C)(1): the circuit's rating picks the termination column.
+    let rating = circuit.ocpd.unwrap_or(least);
+    let adjustment = adjustment_factor(circuit.conductors);
+    let carried = circuit.max_current.max(circuit.available);
     COPPER_AMPACITIES
         .iter()
         .map(|(size, _)| *size)
         .find(|size| {
-            termination_ampacity(*size, Rating::C90, ocpd) >= ocpd
-                && corrected_ampacity(*size, Rating::C90, ambient, adjustment) >= ocpd
+            let termination = termination_ampacity(*size, Rating::C90, rating);
+            let corrected = corrected_ampacity(*size, Rating::C90, circuit.ambient, adjustment);
+            round9(termination) >= round9(least)
+                && round9(corrected) >= round9(carried)
+                && circuit
+                    .ocpd
+                    .is_none_or(|ocpd| protects(ocpd, round9(termination.min(corrected))))
         })
+}
+
+/// A source circuit's protection, 6.90.2.3(A): a string is current limited, so it needs a
+/// device only where other sources can feed it: the other strings in parallel, each at its
+/// 6.90.2.2(A)(1) maximum, and the inverter's backfeed. With none, Exception (1), no
+/// device; else none under Exception (2) where that current is within the module's listed
+/// maximum overcurrent rating (and the conductor, sized to carry it); else a device of at
+/// least 125 % (6.90.2.3(B)(1)), at a standard rating.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SourceProtection {
+    /// No device; the conductor carries this much from the other sources.
+    NotRequired { available: f64 },
+    /// A device of this rating; `fuse` when only a fuse comes in it.
+    Device { rating: f64, fuse: bool },
+    /// Needed, but this standard rating is over the module's listed maximum (or, with
+    /// `None`, the current is past the standard ratings).
+    Over { needed: Option<f64> },
+}
+
+pub fn source_protection(
+    module_isc: f64,
+    strings: f64,
+    backfeed: f64,
+    module_max_ocpd: Option<f64>,
+) -> SourceProtection {
+    let max = source_circuit_current(module_isc);
+    let others = (strings - 1.0) * max + backfeed;
+    if round9(others) <= 0.0 {
+        return SourceProtection::NotRequired { available: max };
+    }
+    if module_max_ocpd.is_some_and(|limit| !exceeds(others, limit)) {
+        return SourceProtection::NotRequired {
+            available: max.max(others),
+        };
+    }
+    match standard_device_rating(least_rating(max)) {
+        Some((rating, _)) if module_max_ocpd.is_some_and(|limit| rating > limit) => {
+            SourceProtection::Over {
+                needed: Some(rating),
+            }
+        }
+        Some((rating, fuse)) => SourceProtection::Device { rating, fuse },
+        None => SourceProtection::Over { needed: None },
+    }
 }
 
 /// The ambient the dc wiring is corrected for: the outdoor temperature, plus 33 °C for a
@@ -156,11 +251,18 @@ pub fn dc_ambient(pv: &SolarPv) -> Option<f64> {
 
 /// The inverter output conductor at the panel it connects to, in that panel's ambient: two
 /// current-carrying conductors on a one-phase panel, three on a three-phase one (the
-/// neutral of a wye circuit carries only the unbalanced current, 3.10.2.6(B)(5)(a)).
+/// neutral of a wye circuit carries only the unbalanced current, 3.10.2.6(B)(5)(a)). Its
+/// breaker is required (7.5.1.12(B)(1)), so it protects the conductor (2.40.1.4).
 pub fn inverter_conductor_line(pv: &SolarPv, ambient: f64, phase: Option<&str>) -> Option<String> {
     let current = num::positive(pv.inverter_current)?;
     let conductors = if phase == Some(ONE_PHASE) { 2.0 } else { 3.0 };
-    let size = conductor_size(inverter_ocpd(current), conductors, ambient);
+    let size = conductor_size(PvConductor {
+        max_current: current,
+        available: current,
+        ocpd: Some(inverter_ocpd(current)).filter(|ocpd| *ocpd > 0.0),
+        conductors,
+        ambient,
+    });
     Some(format!("Inverter cond.: {}", size_text(size)))
 }
 
@@ -193,16 +295,24 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
         }
     }
     if let Some(isc) = num::positive(pv.module_isc) {
-        let source = source_circuit_current(isc);
         let ambient = dc_ambient(pv);
-        // shortcut: every string is taken to share one raceway (two conductors each), the
-        // most adjustment; add a raceway count if designers ask for separate runs.
-        let source_sizing = ambient.map(|ambient| (2.0 * strings, ambient));
-        lines.extend(circuit_lines("PV source", source, source_sizing));
+        let backfeed = num::positive(pv.inverter_backfeed).unwrap_or(0.0);
+        let protection =
+            source_protection(isc, strings, backfeed, num::positive(pv.module_max_ocpd));
+        let source = source_circuit_current(isc);
+        // Each string is two current-carrying conductors; those sharing a raceway adjust.
+        let grouped = num::positive(pv.strings_per_raceway).map_or(strings, |n| n.min(strings));
+        lines.extend(source_lines(
+            source,
+            protection,
+            ambient.map(|a| (2.0 * grouped, a)),
+        ));
         if strings > 1.0 {
-            // 6.90.2.2(A)(2): the sum of the parallel source circuits' maximum currents.
-            let output_sizing = ambient.map(|ambient| (2.0, ambient));
-            lines.extend(circuit_lines("PV output", source * strings, output_sizing));
+            // 6.90.2.2(A)(2): the sum of the parallel source circuits' maximum currents. The
+            // output circuit is fed by the array alone, plus any inverter backfeed, so a
+            // conductor carrying the larger needs no device (6.90.2.3(A)).
+            let output = source * strings;
+            lines.extend(output_lines(output, backfeed, ambient));
         }
     }
     if let Some(current) = num::positive(pv.inverter_current) {
@@ -210,11 +320,10 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
         // next standard rating of Table 2.40.1.6(A) at or above 125 %.
         let least = least_rating(current);
         lines.push(format!("Inverter output: {} A", up(current)));
-        lines.push(format!(
-            "Inverter cond. ≥ {} A, OCPD {} A",
-            up(least),
-            show(inverter_ocpd(current))
-        ));
+        lines.push(match inverter_ocpd(current) {
+            0.0 => format!("Inverter cond. ≥ {} A, OCPD OVER", up(least)),
+            ocpd => format!("Inverter cond. ≥ {} A, OCPD {} A", up(least), show(ocpd)),
+        });
     }
     lines
 }
@@ -233,6 +342,9 @@ pub fn supply_side_lines(pv: &SolarPv, service_rating: Option<f64>) -> Vec<Strin
         return vec!["PV on supply side of service".into()];
     };
     let ocpd = inverter_ocpd(current);
+    if ocpd == 0.0 {
+        return vec!["PV CB past Table 2.40.1.6(A), OVER".into()];
+    }
     let (sign, over) = if exceeds(ocpd, service) {
         (">", ", OVER")
     } else {
@@ -306,19 +418,63 @@ pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
     lines
 }
 
-fn circuit_lines(circuit: &str, max_current: f64, sizing: Option<(f64, f64)>) -> Vec<String> {
-    let least = least_rating(max_current);
-    let mut lines = vec![
-        format!("{circuit} circuit: {} A", up(max_current)),
-        format!("{circuit} cond./OCPD ≥ {} A", up(least)),
-    ];
+fn source_lines(
+    max_current: f64,
+    protection: SourceProtection,
+    sizing: Option<(f64, f64)>,
+) -> Vec<String> {
+    let least = up(least_rating(max_current));
+    let mut lines = vec![format!("PV source circuit: {} A", up(max_current))];
+    let (ocpd, available) = match protection {
+        SourceProtection::NotRequired { available } => {
+            lines.push(format!("PV source cond. ≥ {least} A, no OCPD"));
+            (None, available)
+        }
+        SourceProtection::Device { rating, fuse } => {
+            let device = if fuse { "fuse" } else { "OCPD" };
+            lines.push(format!("PV source cond. ≥ {least} A"));
+            lines.push(format!("PV source {device}: {} A", show(rating)));
+            (Some(rating), max_current)
+        }
+        SourceProtection::Over { needed } => {
+            lines.push(format!("PV source cond./OCPD ≥ {least} A"));
+            lines.push(match needed {
+                Some(rating) => format!("Module max fuse < {} A, OVER", show(rating)),
+                None => "PV source OCPD past table, OVER".into(),
+            });
+            return lines;
+        }
+    };
     if let Some((conductors, ambient)) = sizing {
-        let ocpd = next_rating(round9(least));
-        lines.push(format!(
-            "{circuit}: {} A OCPD, {}",
-            show(ocpd),
-            size_text(conductor_size(ocpd, conductors, ambient))
-        ));
+        let size = conductor_size(PvConductor {
+            max_current,
+            available,
+            ocpd,
+            conductors,
+            ambient,
+        });
+        lines.push(format!("PV source cond.: {}", size_text(size)));
+    }
+    lines
+}
+
+fn output_lines(max_current: f64, backfeed: f64, ambient: Option<f64>) -> Vec<String> {
+    let mut lines = vec![
+        format!("PV output circuit: {} A", up(max_current)),
+        format!(
+            "PV output cond. ≥ {} A, no OCPD",
+            up(least_rating(max_current))
+        ),
+    ];
+    if let Some(ambient) = ambient {
+        let size = conductor_size(PvConductor {
+            max_current,
+            available: backfeed,
+            ocpd: None,
+            conductors: 2.0,
+            ambient,
+        });
+        lines.push(format!("PV output cond.: {}", size_text(size)));
     }
     lines
 }

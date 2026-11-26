@@ -23,6 +23,17 @@ export const SOLAR_PV_SCHEMA = v.object({
 	module_isc: v.optional(positive('module short-circuit current')),
 	modules_per_string: v.optional(count('modules per string')),
 	strings: v.optional(count('number of strings')),
+	/** The module's listed maximum series fuse rating (6.90.2.3(A) Exception (2)). */
+	module_max_ocpd: v.optional(positive('module maximum series fuse rating')),
+	/** Strings sharing one raceway (Table 3.10.2.6(B)(3)(a)); absent means all. */
+	strings_per_raceway: v.optional(count('strings per raceway')),
+	/** The inverter's rated dc backfeed current (6.90.2.3(A) Exception (1)); absent means none. */
+	inverter_backfeed: v.optional(
+		v.pipe(
+			v.number('Please enter the inverter backfeed current.'),
+			v.minValue(0, 'The inverter backfeed current cannot be negative.')
+		)
+	),
 	/** Table 6.90.2.1(A) ends at −40 °C. */
 	lowest_ambient: v.optional(
 		v.pipe(

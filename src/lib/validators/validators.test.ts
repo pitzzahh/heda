@@ -288,7 +288,10 @@ describe('validators', () => {
 			supply_side: false,
 			on_feeder: true,
 			dc_ambient: 34,
-			near_roof: true
+			near_roof: true,
+			module_max_ocpd: 25,
+			strings_per_raceway: 2,
+			inverter_backfeed: 0
 		};
 		expect(v.safeParse(SOLAR_PV_SCHEMA, pv).success).toBe(true);
 		for (const invalid of [
@@ -304,7 +307,10 @@ describe('validators', () => {
 			{ supply_side: 1 },
 			{ on_feeder: 'no' },
 			{ dc_ambient: '34' },
-			{ near_roof: 0 }
+			{ near_roof: 0 },
+			{ module_max_ocpd: 0 },
+			{ strings_per_raceway: 1.5 },
+			{ inverter_backfeed: -1 }
 		]) {
 			expect(v.safeParse(SOLAR_PV_SCHEMA, { ...pv, ...invalid }).success).toBe(false);
 		}

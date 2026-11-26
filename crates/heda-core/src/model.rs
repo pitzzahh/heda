@@ -174,6 +174,18 @@ pub struct SolarPv {
     /// Strings in parallel on the PV output circuit.
     #[serde(default, deserialize_with = "number")]
     pub strings: Option<f64>,
+    /// The module's maximum series fuse (overcurrent protection) rating from its listing, A
+    /// (6.90.2.3(A) Exception (2)).
+    #[serde(default, deserialize_with = "number")]
+    pub module_max_ocpd: Option<f64>,
+    /// Strings run together in one raceway, for the source-circuit adjustment; absent means
+    /// all of them.
+    #[serde(default, deserialize_with = "number")]
+    pub strings_per_raceway: Option<f64>,
+    /// The inverter's rated dc backfeed current into the array, A (6.90.2.3(A) Exception
+    /// (1): "backfeed from inverters"); absent means none.
+    #[serde(default, deserialize_with = "number")]
+    pub inverter_backfeed: Option<f64>,
     /// The lowest expected ambient temperature, °C (6.90.2.1(A)(2)).
     #[serde(default, deserialize_with = "number")]
     pub lowest_ambient: Option<f64>,

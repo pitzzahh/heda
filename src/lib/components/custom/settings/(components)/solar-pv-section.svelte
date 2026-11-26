@@ -16,8 +16,11 @@
 		{ key: 'module_isc', label: 'Module Isc', unit: 'A', step: 'any' },
 		{ key: 'modules_per_string', label: 'Modules per string', unit: 'pcs', step: '1' },
 		{ key: 'strings', label: 'Strings in parallel', unit: 'pcs', step: '1' },
+		{ key: 'module_max_ocpd', label: 'Module max series fuse', unit: 'A', step: 'any' },
+		{ key: 'strings_per_raceway', label: 'Strings per raceway', unit: 'pcs', step: '1' },
 		{ key: 'lowest_ambient', label: 'Lowest expected ambient', unit: '°C', step: 'any' },
 		{ key: 'dc_ambient', label: 'DC wiring ambient', unit: '°C', step: 'any' },
+		{ key: 'inverter_backfeed', label: 'Inverter dc backfeed', unit: 'A', step: 'any' },
 		{ key: 'inverter_current', label: 'Inverter output current', unit: 'A', step: 'any' },
 		{ key: 'busbar_rating', label: 'Busbar rating', unit: 'A', step: 'any' }
 	];
@@ -88,9 +91,9 @@
 			Identical strings of crystalline silicon modules on one interactive inverter, from their
 			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1) and, from 80 V, the dc
 			arc-fault protection it needs (6.90.2.5), circuit currents and the least conductor and OCPD
-			ratings (6.90.2.2, 6.90.2.3) with copper sizes once the dc ambient is set, and the back-fed
-			busbar check (7.5.1.12(B)(2)(c)), or on the supply side, the inverter breaker against the
-			service rating (7.5.1.12(A)).
+			ratings, where a device is required (6.90.2.2, 6.90.2.3), with copper sizes once the dc
+			ambient is set, and the back-fed busbar check (7.5.1.12(B)(2)(c)), or on the supply side, the
+			inverter breaker against the service rating (7.5.1.12(A)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">

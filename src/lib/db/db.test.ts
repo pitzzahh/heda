@@ -1243,8 +1243,9 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 		const unit = (await setSolarPv(root, pv))?.highest_unit_form;
 		expect(unit).toMatchObject({ solar_pv: pv, is_service: true });
 		const boxes = (await getRiserAsync(root))?.boxes;
-		// 13.9 A × 125 % = 17.375 A, × 125 % = 21.71875 A (6.90.2.2(A)(1), (B)(1)).
-		expect(boxes?.[0]?.lines).toContain('PV source cond./OCPD ≥ 21.72 A');
+		// 13.9 A × 125 % = 17.375 A, × 125 % = 21.71875 A (6.90.2.2(A)(1), (B)(1)); one
+		// string with no other source needs no device (6.90.2.3(A) Exception (1)).
+		expect(boxes?.[0]?.lines).toContain('PV source cond. ≥ 21.72 A, no OCPD');
 		// 22 A × 125 % = 27.5 A: the next standard breaker is 30 A (6.90.2.3(B)(1), 2.40.1.6(A)).
 		expect(boxes?.[0]?.lines).toContain('Inverter cond. ≥ 27.5 A, OCPD 30 A');
 		expect(boxes?.find((b) => b.id === panel.id)?.lines.join('\n')).toContain('PV on busbar');
