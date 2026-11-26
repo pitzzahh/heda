@@ -6,7 +6,7 @@
 		root: Node;
 	}
 
-	type NumberKey = Exclude<keyof SolarPv, 'dwelling' | 'center_fed' | 'panel'>;
+	type NumberKey = Exclude<keyof SolarPv, 'dwelling' | 'center_fed' | 'panel' | 'supply_side'>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
 		{ key: 'module_voc', label: 'Module Voc', unit: 'V', step: 'any' },
@@ -19,6 +19,7 @@
 	];
 
 	const NO_PANEL = 'none';
+	const SUPPLY_SIDE = 'supply_side';
 
 	const panelName = (node: Node | undefined) => node?.panel_data?.name ?? 'Panel';
 
@@ -29,7 +30,7 @@
 </script>
 
 <script lang="ts">
-	import { createForm, Field, reset, validate } from '@formisch/svelte';
+	import { createForm, Field, getInput, reset, setInput, validate } from '@formisch/svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
@@ -50,6 +51,7 @@
 
 	const form = createForm({ schema: SOLAR_PV_SCHEMA, initialInput: buildInitialInput() });
 	const panels = $derived(getAllChildNodes(root.id).filter((node) => node.node_type === 'panel'));
+	const supply_side = $derived(getInput(form, { path: ['supply_side'] }));
 	let saving = $state(false);
 
 	async function save() {
@@ -82,7 +84,8 @@
 			Identical strings of crystalline silicon modules on one interactive inverter, from their
 			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1) and, from 80 V, the dc
 			arc-fault protection it needs (6.90.2.5), circuit currents and the least conductor and OCPD
-			ratings (6.90.2.2, 6.90.2.3), and the back-fed busbar check (7.5.1.12(B)(2)(c)).
+			ratings (6.90.2.2, 6.90.2.3), and the back-fed busbar check (7.5.1.12(B)(2)(c)), or on the
+			supply side, the inverter breaker against the service rating (7.5.1.12(A)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
@@ -120,16 +123,22 @@
 					<Label class="text-xs font-normal">Inverter connects to</Label>
 					<Select.Root
 						type="single"
-						value={field.input ?? NO_PANEL}
-						onValueChange={(value) => field.onInput(value === NO_PANEL ? undefined : value)}
+						value={supply_side ? SUPPLY_SIDE : (field.input ?? NO_PANEL)}
+						onValueChange={(value) => {
+							setInput(form, { path: ['supply_side'], input: value === SUPPLY_SIDE || undefined });
+							field.onInput(value === NO_PANEL || value === SUPPLY_SIDE ? undefined : value);
+						}}
 					>
 						<Select.Trigger class="w-full">
-							{field.input
-								? panelName(panels.find((panel) => panel.id === field.input))
-								: 'No panel'}
+							{supply_side
+								? 'Supply side of the service'
+								: field.input
+									? panelName(panels.find((panel) => panel.id === field.input))
+									: 'No panel'}
 						</Select.Trigger>
 						<Select.Content>
 							<Select.Item value={NO_PANEL}>No panel</Select.Item>
+							<Select.Item value={SUPPLY_SIDE}>Supply side of the service</Select.Item>
 							{#each panels as panel (panel.id)}
 								<Select.Item value={panel.id}>{panelName(panel)}</Select.Item>
 							{/each}

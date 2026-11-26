@@ -297,3 +297,40 @@ fn arc_fault_protection_starts_at_80_v_dc() {
     );
     assert!(!service.iter().any(|l| l.contains("arc-fault")));
 }
+
+#[test]
+fn a_supply_side_connection_stays_within_the_service_rating() {
+    // 7.5.1.12(A): the 30 A inverter breaker (22 A × 125 % = 27.5 A) within the 100 A
+    // service disconnect, the one main on the supply (2.30.6.11).
+    let pv = json!({ "inverter_current": 22, "supply_side": true });
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert_eq!(service.last().unwrap(), "PV CB 30 A ≤ 100 A service");
+    // 80 A × 125 % = 100 A, a 100 A breaker: not over a 100 A service ("shall not exceed");
+    // 82 A × 125 % = 102.5 A takes 110 A, over it.
+    let pv = json!({ "inverter_current": 80, "supply_side": true });
+    assert_eq!(
+        lines_of(&riser(pv, 100.0), "root").last().unwrap(),
+        "PV CB 100 A ≤ 100 A service"
+    );
+    let pv = json!({ "inverter_current": 82, "supply_side": true });
+    assert_eq!(
+        lines_of(&riser(pv, 100.0), "root").last().unwrap(),
+        "PV CB 110 A > 100 A service, OVER"
+    );
+}
+
+#[test]
+fn a_supply_side_connection_needs_a_service() {
+    let nodes = vec![
+        json!({ "id": "root", "node_type": "root", "highest_unit_form": {
+        "phase": "one_phase", "is_service": false,
+        "solar_pv": { "inverter_current": 22, "supply_side": true } } }),
+    ];
+    let mut session = Session::default();
+    session.open(json!({}), nodes).unwrap();
+    let lines = session.riser("root").unwrap().boxes[0].lines.clone();
+    assert_eq!(
+        lines.last().unwrap(),
+        "PV supply side: supply is not a service"
+    );
+}

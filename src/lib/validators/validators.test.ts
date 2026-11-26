@@ -284,7 +284,8 @@ describe('validators', () => {
 			inverter_current: 22,
 			panel: 'MDP',
 			busbar_rating: 100,
-			center_fed: false
+			center_fed: false,
+			supply_side: false
 		};
 		expect(v.safeParse(SOLAR_PV_SCHEMA, pv).success).toBe(true);
 		for (const invalid of [
@@ -296,7 +297,8 @@ describe('validators', () => {
 			{ lowest_ambient: -41 },
 			{ inverter_current: '22' },
 			{ busbar_rating: 0 },
-			{ center_fed: 'yes' }
+			{ center_fed: 'yes' },
+			{ supply_side: 1 }
 		]) {
 			expect(v.safeParse(SOLAR_PV_SCHEMA, { ...pv, ...invalid }).success).toBe(false);
 		}

@@ -336,6 +336,19 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
     ));
     lines.extend(generator_lines(source, phase, tree));
     lines.extend(source.solar_pv.iter().flat_map(solar::service_lines));
+    if let Some(pv) = source
+        .solar_pv
+        .as_ref()
+        .filter(|pv| pv.supply_side == Some(true))
+    {
+        // 2.30.6.11: the service rating is the combined rating of its disconnects, the
+        // mains and the circuits wired straight on the supply.
+        let service = (source.is_service != Some(false)).then(|| {
+            tree.panels.iter().map(|p| p.circuit.row.at).sum::<f64>()
+                + tree.branch_ats.iter().sum::<f64>()
+        });
+        lines.extend(solar::supply_side_lines(pv, service));
+    }
     if let Some(kva) = num::positive(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
     }

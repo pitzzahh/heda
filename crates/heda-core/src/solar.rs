@@ -170,6 +170,32 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
     lines
 }
 
+/// 7.5.1.12(A): a source connected on the supply side of the service disconnecting means
+/// (as 2.30.6.13(6) permits) keeps the ratings of all overcurrent devices on power
+/// production sources within the rating of the service, here the inverter breaker within
+/// the combined rating of the service disconnects (2.30.6.11). A standby generator is
+/// transferred, not interconnected, so it does not count. `None` when the supply is not
+/// the service.
+pub fn supply_side_lines(pv: &SolarPv, service_rating: Option<f64>) -> Vec<String> {
+    let Some(service) = service_rating else {
+        return vec!["PV supply side: supply is not a service".into()];
+    };
+    let Some(current) = num::positive(pv.inverter_current) else {
+        return vec!["PV on supply side of service".into()];
+    };
+    let ocpd = inverter_ocpd(current);
+    let (sign, over) = if exceeds(ocpd, service) {
+        (">", ", OVER")
+    } else {
+        ("≤", "")
+    };
+    vec![format!(
+        "PV CB {} A {sign} {} A service{over}",
+        show(ocpd),
+        show(service)
+    )]
+}
+
 /// The lines of the panel the inverter back-feeds, from its main's rating and the ratings
 /// of its load devices.
 pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
