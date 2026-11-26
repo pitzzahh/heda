@@ -119,8 +119,8 @@
 			current, least conductor and OCPD ratings and where a device is required (6.90.2.2, 6.90.2.3),
 			copper sizes once the ambients are set, and the inverter connection: the busbar methods and
 			their labels on a back-fed panel (7.5.1.12(B)(2)(c)), the feeder and its taps on a feeder
-			((B)(2)(a), (b)), or the inverter breaker against the service rating on the supply side
-			(7.5.1.12(A)).
+			(7.5.1.12(B)(2)(a), (b)), each marked with all its sources (7.5.1.12(B)(3)), or the inverter
+			breaker against the service rating on the supply side (7.5.1.12(A)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
@@ -213,8 +213,8 @@
 					checked={field.input ?? false}
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
-				DC wiring in sunlight less than 23 mm above the roof (+33 °C, 3.10.2.6(B)(3)(c); not for XHHW-2,
-				which its exception exempts)
+				DC wiring in sunlight less than 23 mm above the roof (+33 °C, 3.10.2.6(B)(3)(c); leave off for
+				XHHW-2, which the exception exempts from the adder)
 			</Label>
 		{/snippet}
 	</Field>
