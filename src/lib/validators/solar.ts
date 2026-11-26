@@ -34,6 +34,8 @@ export const SOLAR_PV_SCHEMA = v.object({
 	dwelling: v.optional(v.boolean()),
 	inverter_current: v.optional(positive('inverter output current')),
 	panel: v.optional(v.string()),
+	/** 7.5.1.12(B)(2)(a): on that panel's feeder, away from the panel end, not its busbar. */
+	on_feeder: v.optional(v.boolean()),
 	/** 7.5.1.12(A): on the supply side of the service disconnecting means, not at a panel. */
 	supply_side: v.optional(v.boolean()),
 	busbar_rating: v.optional(positive('busbar rating')),

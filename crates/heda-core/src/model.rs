@@ -186,6 +186,10 @@ pub struct SolarPv {
     /// The panel the inverter output connects to.
     #[serde(default)]
     pub panel: Option<String>,
+    /// Whether the inverter output connects to that panel's feeder, away from the panel
+    /// end, instead of to its busbar (7.5.1.12(B)(2)(a)).
+    #[serde(default, deserialize_with = "boolean")]
+    pub on_feeder: Option<bool>,
     /// Whether the inverter output connects on the supply side of the service
     /// disconnecting means instead (7.5.1.12(A), 2.30.6.13(6)).
     #[serde(default, deserialize_with = "boolean")]

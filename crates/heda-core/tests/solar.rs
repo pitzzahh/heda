@@ -334,3 +334,34 @@ fn a_supply_side_connection_needs_a_service() {
         "PV supply side: supply is not a service"
     );
 }
+
+fn feeder_lines(inverter_current: f64, main_at: f64) -> Vec<String> {
+    // MDP fed by 22 mm² THHN: up to 100 A the terminations take the 60 °C column, 70 A
+    // (Table 3.10.2.6(B)(16), 1.10.1.14(C)); at 90 °C, 30 °C ambient, it carries 95 A.
+    let nodes = vec![
+        json!({ "id": "root", "node_type": "root", "highest_unit_form": {
+            "phase": "one_phase", "solar_pv": { "inverter_current": inverter_current,
+                "panel": "MDP", "on_feeder": true } } }),
+        json!({ "id": "MDP", "node_type": "panel", "parent_id": "root", "circuit_number": 1,
+            "conductor_sets": 1, "conductor_qty": 2, "overrided_at": main_at,
+            "overrided_conductor_size": 22,
+            "panel_data": { "name": "MDP", "phase": "one_phase", "ambient_temperature": 30 } }),
+    ];
+    let mut session = Session::default();
+    session.open(json!({}), nodes).unwrap();
+    let layout = session.riser("root").unwrap();
+    let mdp = layout.boxes.iter().find(|b| b.id == "MDP").unwrap();
+    let start = mdp.lines.iter().position(|l| l.starts_with("PV")).unwrap();
+    mdp.lines[start..].to_vec()
+}
+
+#[test]
+fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
+    // 7.5.1.12(B)(2)(a)(1): 50 A feeder breaker + 16 A × 125 % = 70 A, not over 70 A.
+    assert_eq!(feeder_lines(16.0, 50.0), ["PV on feeder: 70 A of 70 A"]);
+    // 50 + 17 × 125 % = 71.25 A > 70 A: (2), a load-side breaker no larger than 70 A.
+    assert_eq!(
+        feeder_lines(17.0, 50.0),
+        ["PV on feeder: 71.25 A of 70 A", "Needs load-side CB ≤ 70 A"]
+    );
+}

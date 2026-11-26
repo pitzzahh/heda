@@ -6,7 +6,10 @@
 		root: Node;
 	}
 
-	type NumberKey = Exclude<keyof SolarPv, 'dwelling' | 'center_fed' | 'panel' | 'supply_side'>;
+	type NumberKey = Exclude<
+		keyof SolarPv,
+		'dwelling' | 'center_fed' | 'on_feeder' | 'panel' | 'supply_side'
+	>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
 		{ key: 'module_voc', label: 'Module Voc', unit: 'V', step: 'any' },
@@ -156,6 +159,17 @@
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
 				On or in a one- or two-family dwelling (600 V dc limit, else 1000 V)
+			</Label>
+		{/snippet}
+	</Field>
+	<Field of={form} path={['on_feeder']}>
+		{#snippet children(field)}
+			<Label class="flex items-center gap-2 text-xs font-normal">
+				<Checkbox
+					checked={field.input ?? false}
+					onCheckedChange={(checked) => field.onInput(checked)}
+				/>
+				On that panel's feeder, away from the panel, not its busbar (7.5.1.12(B)(2)(a))
 			</Label>
 		{/snippet}
 	</Field>

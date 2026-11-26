@@ -196,6 +196,30 @@ pub fn supply_side_lines(pv: &SolarPv, service_rating: Option<f64>) -> Vec<Strin
     )]
 }
 
+/// 7.5.1.12(B)(2)(a): a connection to a feeder away from its far end, the panel end,
+/// protects the feeder on the load side of it in one of two ways: (1) its ampacity at least
+/// the primary source's breaker plus 125 % of the inverter current, or (2) a breaker on the
+/// load side of the connection rated no more than that ampacity, which heda leaves to the
+/// designer. (b)'s taps on such a feeder are not drawn on the riser, so not checked.
+pub fn feeder_lines(pv: &SolarPv, feeder_at: f64, ampacity: Option<f64>) -> Vec<String> {
+    let Some(current) = num::positive(pv.inverter_current) else {
+        return vec!["PV on feeder".into()];
+    };
+    let Some(ampacity) = ampacity else {
+        return vec!["PV on feeder, ampacity unknown".into()];
+    };
+    let need = busbar_load(current, feeder_at);
+    let mut lines = vec![format!(
+        "PV on feeder: {} A of {} A",
+        up(need),
+        show(ampacity)
+    )];
+    if exceeds(need, ampacity) {
+        lines.push(format!("Needs load-side CB ≤ {} A", show(ampacity)));
+    }
+    lines
+}
+
 /// The lines of the panel the inverter back-feeds, from its main's rating and the ratings
 /// of its load devices.
 pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {

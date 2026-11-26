@@ -520,7 +520,14 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 {
                     let load_ocpds = node.branch_ats.iter().sum::<f64>()
                         + node.panels.iter().map(|p| p.circuit.row.at).sum::<f64>();
-                    lines.extend(solar::panel_lines(pv, node.circuit.row.at, load_ocpds));
+                    let row = &node.circuit.row;
+                    lines.extend(if pv.on_feeder == Some(true) {
+                        // The source feeds the busbar through the feeder, so the feeder
+                        // rule applies instead of the busbar methods.
+                        solar::feeder_lines(pv, row.at, row.ampacity)
+                    } else {
+                        solar::panel_lines(pv, row.at, load_ocpds)
+                    });
                 }
                 (title, lines)
             }
