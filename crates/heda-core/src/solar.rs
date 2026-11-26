@@ -1,7 +1,9 @@
 //! Solar PV systems, PEC 2017 Article 6.90, and their interconnection, Article 7.5: the
-//! maximum dc voltage (6.90.2.1), circuit currents and the least conductor ampacity and
-//! overcurrent device rating (6.90.2.2, 6.90.2.3), and the busbar of the panel the
-//! inverter back-feeds (7.5.1.12(B)(2)(c)). The riser shows them.
+//! maximum dc voltage and its limit by building (6.90.2.1), dc arc-fault protection
+//! (6.90.2.5), circuit currents (6.90.2.2(A)), where a device is required and its rating
+//! (6.90.2.3), conductor sizes (6.90.2.2(B), 2.40.1.4), and the inverter connection: on the
+//! supply side (7.5.1.12(A)), on a feeder and its taps ((B)(2)(a), (b)), or on a busbar by
+//! methods (1)-(5) of (B)(2)(c), with its labels and marking ((B)(3)). The riser shows them.
 
 use crate::model::SolarPv;
 use crate::num;
@@ -396,7 +398,8 @@ pub fn supply_side_lines(pv: &SolarPv, service_rating: Option<f64>) -> Vec<Strin
 /// protects the feeder on the load side of it in one of two ways: (1) its ampacity at least
 /// the primary source's breaker plus 125 % of the inverter current, or (2) a breaker on the
 /// load side of the connection rated no more than that ampacity, which heda leaves to the
-/// designer. (b)'s taps on such a feeder are not drawn on the riser, so not checked.
+/// designer. (b): taps on that feeder are sized on the same sum in place of the feeder
+/// breaker's rating, by the feeder tap rules (`tap_ampacities`).
 pub fn feeder_lines(pv: &SolarPv, feeder_at: f64, ampacity: Option<f64>) -> Vec<String> {
     let Some(current) = num::positive(pv.inverter_current) else {
         return vec!["PV on feeder".into()];
@@ -413,8 +416,25 @@ pub fn feeder_lines(pv: &SolarPv, feeder_at: f64, ampacity: Option<f64>) -> Vec<
     if exceeds(need, ampacity) {
         lines.push(format!("Needs load-side CB ≤ {} A", show(ampacity)));
     }
+    let (three_m, seven_m) = tap_ampacities(need);
+    lines.push(format!(
+        "Taps: 3 m ≥ {} A, 7.5 m ≥ {} A",
+        up(three_m),
+        up(seven_m)
+    ));
     lines.push(MARKING.into());
     lines
+}
+
+/// 7.5.1.12(B)(2)(b) sizes taps on a PV-fed feeder on 125 % of the inverter current plus
+/// the feeder breaker's rating, `rating`, in the feeder tap rules. PEC 2017 cites them as
+/// 2.40.2.2(B), which is Grounded Conductor; Feeder Taps is 2.40.2.1(B) (NEC 240.21(B)).
+/// A tap up to 3000 mm that leaves the enclosure carries at least a tenth of it
+/// (2.40.2.1(B)(1)(4)), one up to 7500 mm a third ((B)(2)(1)); the taps' own loads and
+/// end devices ((B)(1)(1)) are the designer's, and 2.40.1.4(B)'s next size up never applies
+/// to taps.
+pub fn tap_ampacities(rating: f64) -> (f64, f64) {
+    (rating / 10.0, rating / 3.0)
 }
 
 /// 7.5.1.12(B)(3): equipment with overcurrent devices on a busbar or conductor supplied

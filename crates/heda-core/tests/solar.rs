@@ -429,9 +429,15 @@ fn feeder_lines(inverter_current: f64, main_at: f64) -> Vec<String> {
 #[test]
 fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
     // 7.5.1.12(B)(2)(a)(1): 50 A feeder breaker + 16 A × 125 % = 70 A, not over 70 A.
+    // (b): taps sized on the same 70 A, 3 m ≥ 70 / 10 = 7 A, 7.5 m ≥ 70 / 3 = 23.34 A
+    // (2.40.2.1(B)(1)(4), (B)(2)(1)).
     assert_eq!(
         feeder_lines(16.0, 50.0),
-        ["PV on feeder: 70 A of 70 A", MARK]
+        [
+            "PV on feeder: 70 A of 70 A",
+            "Taps: 3 m ≥ 7 A, 7.5 m ≥ 23.34 A",
+            MARK
+        ]
     );
     // 50 + 17 × 125 % = 71.25 A > 70 A: (2), a load-side breaker no larger than 70 A.
     assert_eq!(
@@ -439,6 +445,8 @@ fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
         [
             "PV on feeder: 71.25 A of 70 A",
             "Needs load-side CB ≤ 70 A",
+            // 71.25 / 10 = 7.125 A, 71.25 / 3 = 23.75 A.
+            "Taps: 3 m ≥ 7.13 A, 7.5 m ≥ 23.75 A",
             MARK
         ]
     );
@@ -671,4 +679,9 @@ fn the_supply_side_takes_precedence_and_needs_the_inverter_ambient() {
     pv["inverter_ambient"] = json!(30);
     let service = lines_of(&riser(pv, 100.0), "root");
     assert!(service.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
+}
+
+#[test]
+fn feeder_taps_take_a_tenth_and_a_third() {
+    assert_eq!(tap_ampacities(300.0), (30.0, 100.0));
 }
