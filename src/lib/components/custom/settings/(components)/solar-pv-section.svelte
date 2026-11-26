@@ -67,6 +67,8 @@
 	const form = createForm({ schema: SOLAR_PV_SCHEMA, initialInput: buildInitialInput() });
 	const panels = $derived(getAllChildNodes(root.id).filter((node) => node.node_type === 'panel'));
 	const supply_side = $derived(getInput(form, { path: ['supply_side'] }));
+	// The feeder and busbar choices apply only to an inverter connected at a panel.
+	const at_panel = $derived(!supply_side && !!getInput(form, { path: ['panel'] }));
 	let saving = $state(false);
 
 	async function save() {
@@ -97,11 +99,13 @@
 		<Label>Solar PV System</Label>
 		<p class="text-xs text-muted-foreground">
 			Identical strings of crystalline silicon modules on one interactive inverter, from their
-			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1) and, from 80 V, the dc
-			arc-fault protection it needs (6.90.2.5), circuit currents and the least conductor and OCPD
-			ratings, where a device is required (6.90.2.2, 6.90.2.3), with copper sizes once the dc
-			ambient is set, and the back-fed busbar check (7.5.1.12(B)(2)(c)), or on the supply side, the
-			inverter breaker against the service rating (7.5.1.12(A)).
+			nameplates. The riser shows the max dc voltage against the limit for where the array is (PEC
+			2017 6.90.2.1), the dc arc-fault protection it needs from 80 V (6.90.2.5), each circuit's
+			current, least conductor and OCPD ratings and where a device is required (6.90.2.2, 6.90.2.3),
+			copper sizes once the ambients are set, and the inverter connection: the busbar methods and
+			their labels on a back-fed panel (7.5.1.12(B)(2)(c)), the feeder and its taps on a feeder
+			((B)(2)(a), (b)), or the inverter breaker against the service rating on the supply side
+			(7.5.1.12(A)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
@@ -199,40 +203,42 @@
 			</Label>
 		{/snippet}
 	</Field>
-	<Field of={form} path={['on_feeder']}>
-		{#snippet children(field)}
-			<Label class="flex items-center gap-2 text-xs font-normal">
-				<Checkbox
-					checked={field.input ?? false}
-					onCheckedChange={(checked) => field.onInput(checked)}
-				/>
-				On that panel's feeder, away from the panel, not its busbar (7.5.1.12(B)(2)(a))
-			</Label>
-		{/snippet}
-	</Field>
-	<Field of={form} path={['center_fed']}>
-		{#snippet children(field)}
-			<Label class="flex items-center gap-2 text-xs font-normal">
-				<Checkbox
-					checked={field.input ?? false}
-					onCheckedChange={(checked) => field.onInput(checked)}
-				/>
-				That panelboard is center-fed (PEC 2017 7.5.1.12(B)(2)(c)(4))
-			</Label>
-		{/snippet}
-	</Field>
-	<Field of={form} path={['engineered_busbar']}>
-		{#snippet children(field)}
-			<Label class="flex items-center gap-2 text-xs font-normal">
-				<Checkbox
-					checked={field.input ?? false}
-					onCheckedChange={(checked) => field.onInput(checked)}
-				/>
-				Multiple-ampacity busbar designed under engineering supervision, with fault current and busbar
-				load calculations (7.5.1.12(B)(2)(c)(5))
-			</Label>
-		{/snippet}
-	</Field>
+	{#if at_panel}
+		<Field of={form} path={['on_feeder']}>
+			{#snippet children(field)}
+				<Label class="flex items-center gap-2 text-xs font-normal">
+					<Checkbox
+						checked={field.input ?? false}
+						onCheckedChange={(checked) => field.onInput(checked)}
+					/>
+					On that panel's feeder, away from the panel, not its busbar (7.5.1.12(B)(2)(a))
+				</Label>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['center_fed']}>
+			{#snippet children(field)}
+				<Label class="flex items-center gap-2 text-xs font-normal">
+					<Checkbox
+						checked={field.input ?? false}
+						onCheckedChange={(checked) => field.onInput(checked)}
+					/>
+					That panelboard is center-fed (PEC 2017 7.5.1.12(B)(2)(c)(4))
+				</Label>
+			{/snippet}
+		</Field>
+		<Field of={form} path={['engineered_busbar']}>
+			{#snippet children(field)}
+				<Label class="flex items-center gap-2 text-xs font-normal">
+					<Checkbox
+						checked={field.input ?? false}
+						onCheckedChange={(checked) => field.onInput(checked)}
+					/>
+					Multiple-ampacity busbar designed under engineering supervision, with fault current and busbar
+					load calculations (7.5.1.12(B)(2)(c)(5))
+				</Label>
+			{/snippet}
+		</Field>
+	{/if}
 	<div class="flex justify-end">
 		<Button type="submit" size="sm" loading={saving} disabled={!form.isDirty}>Save</Button>
 	</div>
