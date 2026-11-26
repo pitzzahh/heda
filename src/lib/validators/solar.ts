@@ -54,6 +54,8 @@ export const SOLAR_PV_SCHEMA = v.object({
 	/** 3.10.2.6(B)(3)(c): in sunlight less than 23 mm above the roof, 33 °C is added. */
 	near_roof: v.optional(v.boolean()),
 	inverter_current: v.optional(positive('inverter output current')),
+	/** The inverter output circuit's ambient; absent takes the connected panel's. */
+	inverter_ambient: v.optional(v.number('Please enter the inverter circuit ambient temperature.')),
 	panel: v.optional(v.string()),
 	/** 7.5.1.12(B)(2)(a): on that panel's feeder, away from the panel end, not its busbar. */
 	on_feeder: v.optional(v.boolean()),

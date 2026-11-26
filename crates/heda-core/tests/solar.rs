@@ -206,6 +206,9 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
             // 22 A × 125 % = 27.5 A; the next standard rating (Table 2.40.1.6(A)) is 30 A.
             "Inverter output: 22 A",
             "Inverter cond. ≥ 27.5 A, OCPD 30 A",
+            // In MDP's 30 °C: (B)(1) 27.5 A, 3.5 mm² 20 A, 5.5 mm² 30 A at 60 °C terminations;
+            // (B)(2) 40 A ≥ 22 A; the 30 A breaker ≤ 30 A.
+            "Inverter cond.: 5.5 mm² Cu",
         ]
     );
 }
@@ -501,8 +504,8 @@ fn strings_in_separate_raceways_adjust_less() {
 fn the_inverter_conductor_is_sized_at_its_panel() {
     // 22 A → 30 A breaker; MDP at 30 °C (factor 1), one-phase, 2 conductors. (B)(1): 3.5 mm²
     // 20 A < 27.5 A at 60 °C terminations, 5.5 mm² 30 A; (B)(2): 40 A ≥ 22 A; 30 A ≤ 30 A.
-    let mdp = lines_of(&riser(dwelling_array(), 100.0), "MDP");
-    assert!(mdp.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
+    let service = lines_of(&riser(dwelling_array(), 100.0), "root");
+    assert!(service.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
     let inverter = |ambient| PvConductor {
         max_current: 22.0,
         available: 22.0,
@@ -571,4 +574,35 @@ fn method_4_takes_multifamily_dwellings_too() {
     assert!(is_dwelling(Some("one_two_family")));
     assert!(!is_dwelling(Some("other")));
     assert!(!is_dwelling(None));
+}
+
+#[test]
+fn the_inverter_conductor_takes_its_own_ambient_and_the_next_size_up() {
+    // 22 A, 30 A breaker. At 60 °C (56–60 °C, 90 °C: 0.71): 5.5 mm² 40 × 0.71 = 28.4 A; the
+    // next standard rating above 28.4 A is 30 A, so the 30 A breaker protects it (2.40.1.4(B)).
+    let mut pv = dwelling_array();
+    pv["inverter_ambient"] = json!(60);
+    let service = lines_of(&riser(pv.clone(), 100.0), "root");
+    assert!(service.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
+    // At 70 °C (66–70 °C: 0.58): 5.5 mm² 23.2 A, whose next standard rating is 25 A < 30 A;
+    // 8.0 mm² 55 × 0.58 = 31.9 A, terminations 40 A.
+    pv["inverter_ambient"] = json!(70);
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert!(service.contains(&"Inverter cond.: 8 mm² Cu".to_string()));
+}
+
+#[test]
+fn the_supply_side_takes_precedence_and_needs_the_inverter_ambient() {
+    // A panel left chosen is not back-fed once the inverter is on the supply side.
+    let mut pv = dwelling_array();
+    pv["supply_side"] = json!(true);
+    let boxes = riser(pv.clone(), 100.0);
+    assert!(!lines_of(&boxes, "MDP").iter().any(|l| l.contains("PV")));
+    // Without a panel, the conductor needs its own ambient.
+    assert!(!lines_of(&boxes, "root")
+        .iter()
+        .any(|l| l.starts_with("Inverter cond.:")));
+    pv["inverter_ambient"] = json!(30);
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert!(service.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
 }

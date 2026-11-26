@@ -23,6 +23,7 @@
 		{ key: 'dc_ambient', label: 'DC wiring ambient', unit: '°C', step: 'any' },
 		{ key: 'inverter_backfeed', label: 'Inverter dc backfeed', unit: 'A', step: 'any' },
 		{ key: 'inverter_current', label: 'Inverter output current', unit: 'A', step: 'any' },
+		{ key: 'inverter_ambient', label: 'Inverter circuit ambient', unit: '°C', step: 'any' },
 		{ key: 'busbar_rating', label: 'Busbar rating', unit: 'A', step: 'any' }
 	];
 

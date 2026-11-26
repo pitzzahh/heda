@@ -202,6 +202,9 @@ pub struct SolarPv {
     /// The inverter's continuous output current rating, A (6.90.2.2(A)(3)).
     #[serde(default, deserialize_with = "number")]
     pub inverter_current: Option<f64>,
+    /// The ambient of the inverter output circuit, °C; absent takes the connected panel's.
+    #[serde(default, deserialize_with = "number")]
+    pub inverter_ambient: Option<f64>,
     /// The panel the inverter output connects to.
     #[serde(default)]
     pub panel: Option<String>,

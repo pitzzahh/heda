@@ -335,7 +335,12 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         tree,
     ));
     lines.extend(generator_lines(source, phase, tree));
-    lines.extend(source.solar_pv.iter().flat_map(solar::service_lines));
+    if let Some(pv) = &source.solar_pv {
+        let panel_ambient = solar::connected_panel(pv)
+            .and_then(|id| find_panel(tree, id))
+            .and_then(|panel| panel.circuit.node.panel_data.as_ref()?.ambient_temperature);
+        lines.extend(solar::service_lines(pv, panel_ambient));
+    }
     if let Some(pv) = source
         .solar_pv
         .as_ref()
@@ -416,6 +421,15 @@ fn grounding_lines(transformer: bool, supply: Supply, tree: &RiserTree) -> Vec<S
     .into_iter()
     .flatten()
     .collect()
+}
+
+/// The panel `id` in the tree.
+fn find_panel<'t, 'a>(tree: &'t RiserTree<'a>, id: &str) -> Option<&'t RiserTree<'a>> {
+    tree.panels.iter().find_map(|panel| {
+        (panel.circuit.node.id == id)
+            .then_some(panel)
+            .or_else(|| find_panel(panel, id))
+    })
 }
 
 fn standby_panels(source: &HighestUnitForm) -> Vec<&str> {
@@ -516,18 +530,12 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                     lines.push("On standby generator".into());
                 }
                 let pv = source.and_then(|s| s.solar_pv.as_ref());
-                if let Some(pv) = pv.filter(|pv| pv.panel.as_deref() == Some(&node.circuit.node.id))
+                if let Some(pv) =
+                    pv.filter(|pv| solar::connected_panel(pv) == Some(&node.circuit.node.id))
                 {
                     let load_ocpds = node.branch_ats.iter().sum::<f64>()
                         + node.panels.iter().map(|p| p.circuit.row.at).sum::<f64>();
                     let row = &node.circuit.row;
-                    let panel = node.circuit.node.panel_data.as_ref();
-                    let ambient = panel.and_then(|p| p.ambient_temperature);
-                    let phase = panel.and_then(|p| p.phase.as_deref());
-                    lines
-                        .extend(ambient.and_then(|ambient| {
-                            solar::inverter_conductor_line(pv, ambient, phase)
-                        }));
                     lines.extend(if pv.on_feeder == Some(true) {
                         // The source feeds the busbar through the feeder, so the feeder
                         // rule applies instead of the busbar methods.

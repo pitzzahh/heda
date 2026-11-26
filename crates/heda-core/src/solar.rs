@@ -3,7 +3,6 @@
 //! overcurrent device rating (6.90.2.2, 6.90.2.3), and the busbar of the panel the
 //! inverter back-feeds (7.5.1.12(B)(2)(c)). The riser shows them.
 
-use crate::model::phases::ONE_PHASE;
 use crate::model::SolarPv;
 use crate::num;
 use crate::sizing::{
@@ -266,25 +265,32 @@ pub fn dc_ambient(pv: &SolarPv) -> Option<f64> {
     pv.dc_ambient.map(|ambient| ambient + adder)
 }
 
-/// The inverter output conductor at the panel it connects to, in that panel's ambient: two
-/// current-carrying conductors on a one-phase panel, three on a three-phase one (the
-/// neutral of a wye circuit carries only the unbalanced current, 3.10.2.6(B)(5)(a)). Its
-/// breaker is required (7.5.1.12(B)(1)), so it protects the conductor (2.40.1.4).
-pub fn inverter_conductor_line(pv: &SolarPv, ambient: f64, phase: Option<&str>) -> Option<String> {
+/// The panel the inverter output connects to: none on the supply side (7.5.1.12(A)),
+/// which takes precedence over a panel left chosen.
+pub fn connected_panel(pv: &SolarPv) -> Option<&str> {
+    pv.panel.as_deref().filter(|_| pv.supply_side != Some(true))
+}
+
+/// The inverter output conductor, in its own ambient or else the connected panel's. It
+/// carries two or three current-carrying conductors (one- or three-phase; a wye neutral
+/// carries only the unbalanced current, 3.10.2.6(B)(5)(a)), which Table 3.10.2.6(B)(3)(a)
+/// does not adjust. Its breaker is required (7.5.1.12(B)(1)), so it protects the conductor
+/// (2.40.1.4).
+pub fn inverter_conductor_line(pv: &SolarPv, panel_ambient: Option<f64>) -> Option<String> {
     let current = num::positive(pv.inverter_current)?;
-    let conductors = if phase == Some(ONE_PHASE) { 2.0 } else { 3.0 };
+    let ambient = pv.inverter_ambient.or(panel_ambient)?;
     let size = conductor_size(PvConductor {
         max_current: current,
         available: current,
         ocpd: Some(inverter_ocpd(current)).filter(|ocpd| *ocpd > 0.0),
-        conductors,
+        conductors: 3.0,
         ambient,
     });
     Some(format!("Inverter cond.: {}", size_text(size)))
 }
 
 /// The riser's service lines for the PV system: each line once its inputs are set.
-pub fn service_lines(pv: &SolarPv) -> Vec<String> {
+pub fn service_lines(pv: &SolarPv, panel_ambient: Option<f64>) -> Vec<String> {
     let modules = num::positive(pv.modules_per_string);
     let strings = num::positive(pv.strings).unwrap_or(1.0);
     let mut lines = Vec::new();
@@ -343,6 +349,7 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
             0.0 => format!("Inverter cond. ≥ {} A, OCPD OVER", up(least)),
             ocpd => format!("Inverter cond. ≥ {} A, OCPD {} A", up(least), show(ocpd)),
         });
+        lines.extend(inverter_conductor_line(pv, panel_ambient));
     }
     lines
 }
