@@ -75,6 +75,8 @@ fn back_fed(inverter_current: f64, main_at: f64, busbar_rating: f64) -> BackFed 
         load_ocpds: 0.0,
         center_fed: false,
         dwelling: false,
+        load_current: 0.0,
+        engineered: false,
     }
 }
 
@@ -213,49 +215,106 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
     );
 }
 
+/// The back-fed panel's PV lines, from its first.
+fn pv_lines(boxes: &[(String, Vec<String>)], id: &str) -> Vec<String> {
+    let lines = lines_of(boxes, id);
+    let start = lines.iter().position(|l| l.starts_with("PV")).unwrap();
+    lines[start..].to_vec()
+}
+
+const MARK: &str = "Mark: all power sources";
+
 #[test]
 fn the_back_fed_panel_shows_its_busbar_check() {
-    let boxes = riser(dwelling_array(), 100.0);
     // 27.5 + 100 = 127.5 A is over 120 % of the 100 A busbar (120 A), and the breakers but
-    // the main, 80 + 30 = 110 A, are over 100 A (method (3)).
+    // the main, 80 + 30 = 110 A, are over 100 A (method (3)). Every back-fed panel is
+    // marked with all its sources (7.5.1.12(B)(3)).
+    let boxes = riser(dwelling_array(), 100.0);
     assert_eq!(
-        lines_of(&boxes, "MDP").last().unwrap(),
-        "PV on busbar: 127.5 A of 100 A, OVER"
+        pv_lines(&boxes, "MDP"),
+        ["PV on busbar: 127.5 A of 100 A, OVER", MARK]
     );
-    // On an 80 A main: 27.5 + 80 = 107.5 A, within 120 % of 100 A only.
+    // On an 80 A main: 27.5 + 80 = 107.5 A, within 120 % of 100 A only: (2), with its label.
     let boxes = riser(dwelling_array(), 80.0);
-    let mdp = lines_of(&boxes, "MDP");
     assert_eq!(
-        mdp[mdp.len() - 2..],
+        pv_lines(&boxes, "MDP"),
         [
             "PV on busbar: 107.5 A of 100 A",
-            "PV CB at end opposite main"
+            "PV CB at end opposite main",
+            "Label: do not relocate PV CB",
+            MARK
         ]
     );
     let mut pv = dwelling_array();
     pv["busbar_rating"] = json!(150);
     assert_eq!(
-        lines_of(&riser(pv, 80.0), "MDP").last().unwrap(),
-        "PV on busbar: 107.5 A of 150 A"
+        pv_lines(&riser(pv, 80.0), "MDP"),
+        ["PV on busbar: 107.5 A of 150 A", MARK]
     );
     // Center-fed in a dwelling: (4).
     let mut pv = dwelling_array();
     pv["center_fed"] = json!(true);
     assert_eq!(
-        lines_of(&riser(pv.clone(), 80.0), "MDP").last().unwrap(),
-        "PV CB at one end, not both"
+        pv_lines(&riser(pv.clone(), 80.0), "MDP"),
+        [
+            "PV on busbar: 107.5 A of 100 A",
+            "PV CB at one end, not both",
+            MARK
+        ]
     );
     // Center-fed elsewhere, on a 125 A busbar: 127.5 A > 125 A, and (2) needs ends, so (3):
-    // 110 A ≤ 125 A with the 100 A main within it.
+    // 110 A ≤ 125 A with the 100 A main within it, with its label.
     pv["building"] = json!("other");
     pv["busbar_rating"] = json!(125);
-    let mdp = lines_of(&riser(pv, 100.0), "MDP");
     assert_eq!(
-        mdp[mdp.len() - 2..],
+        pv_lines(&riser(pv.clone(), 100.0), "MDP"),
         [
             "PV on busbar: 127.5 A of 125 A",
-            "CBs but main: 110 A of 125 A"
+            "CBs but main: 110 A of 125 A",
+            "Label: multiple sources, CB total",
+            MARK
         ]
+    );
+    // (5): an engineered multiple-ampacity busbar, where no other method is met.
+    pv["busbar_rating"] = json!(100);
+    pv["engineered_busbar"] = json!(true);
+    assert_eq!(
+        pv_lines(&riser(pv, 100.0), "MDP"),
+        [
+            "PV on busbar: 127.5 A of 100 A",
+            "Busbar by engineering design",
+            MARK
+        ]
+    );
+}
+
+#[test]
+fn method_2_needs_the_busbar_sized_for_its_load() {
+    // 127.5 A ≤ 150 A (120 % of 125 A), but a 130 A Article 2.20 load is over the 125 A
+    // busbar, so (2) fails; (3) still holds, 0 + 30 A ≤ 125 A.
+    let panel = BackFed {
+        load_current: 130.0,
+        ..back_fed(22.0, 100.0, 125.0)
+    };
+    assert_eq!(busbar_method(panel), Busbar::SumOfDevices);
+    let at_rating = BackFed {
+        load_current: 125.0,
+        ..panel
+    };
+    assert_eq!(busbar_method(at_rating), Busbar::OppositeEnd);
+    // (5) only where nothing else is met.
+    let engineered = BackFed {
+        engineered: true,
+        load_ocpds: 200.0,
+        ..panel
+    };
+    assert_eq!(busbar_method(engineered), Busbar::Engineered);
+    assert_eq!(
+        busbar_method(BackFed {
+            engineered: true,
+            ..back_fed(22.0, 100.0, 150.0)
+        }),
+        Busbar::Anywhere
     );
 }
 
@@ -370,11 +429,18 @@ fn feeder_lines(inverter_current: f64, main_at: f64) -> Vec<String> {
 #[test]
 fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
     // 7.5.1.12(B)(2)(a)(1): 50 A feeder breaker + 16 A × 125 % = 70 A, not over 70 A.
-    assert_eq!(feeder_lines(16.0, 50.0), ["PV on feeder: 70 A of 70 A"]);
+    assert_eq!(
+        feeder_lines(16.0, 50.0),
+        ["PV on feeder: 70 A of 70 A", MARK]
+    );
     // 50 + 17 × 125 % = 71.25 A > 70 A: (2), a load-side breaker no larger than 70 A.
     assert_eq!(
         feeder_lines(17.0, 50.0),
-        ["PV on feeder: 71.25 A of 70 A", "Needs load-side CB ≤ 70 A"]
+        [
+            "PV on feeder: 71.25 A of 70 A",
+            "Needs load-side CB ≤ 70 A",
+            MARK
+        ]
     );
 }
 
@@ -568,7 +634,7 @@ fn method_4_takes_multifamily_dwellings_too() {
     pv["center_fed"] = json!(true);
     pv["building"] = json!("multifamily");
     assert_eq!(
-        lines_of(&riser(pv, 80.0), "MDP").last().unwrap(),
+        pv_lines(&riser(pv, 80.0), "MDP")[1],
         "PV CB at one end, not both"
     );
     assert!(is_dwelling(Some("one_two_family")));

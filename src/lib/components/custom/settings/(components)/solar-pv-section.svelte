@@ -9,7 +9,13 @@
 
 	type NumberKey = Exclude<
 		keyof SolarPv,
-		'building' | 'center_fed' | 'on_feeder' | 'near_roof' | 'panel' | 'supply_side'
+		| 'building'
+		| 'center_fed'
+		| 'engineered_busbar'
+		| 'on_feeder'
+		| 'near_roof'
+		| 'panel'
+		| 'supply_side'
 	>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
@@ -211,6 +217,18 @@
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
 				That panelboard is center-fed (PEC 2017 7.5.1.12(B)(2)(c)(4))
+			</Label>
+		{/snippet}
+	</Field>
+	<Field of={form} path={['engineered_busbar']}>
+		{#snippet children(field)}
+			<Label class="flex items-center gap-2 text-xs font-normal">
+				<Checkbox
+					checked={field.input ?? false}
+					onCheckedChange={(checked) => field.onInput(checked)}
+				/>
+				Multiple-ampacity busbar designed under engineering supervision, with fault current and busbar
+				load calculations (7.5.1.12(B)(2)(c)(5))
 			</Label>
 		{/snippet}
 	</Field>

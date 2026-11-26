@@ -103,15 +103,19 @@ pub struct BackFed {
     pub load_ocpds: f64,
     pub center_fed: bool,
     pub dwelling: bool,
+    /// The panel's load current calculated by Article 2.20, which (2) sizes the busbar for.
+    pub load_current: f64,
+    /// (5): a multiple-ampacity busbar designed under engineering supervision.
+    pub engineered: bool,
 }
 
-/// The first method of 7.5.1.12(B)(2)(c) a back-fed panel meets. Method (5), multiple-
-/// ampacity busbars under engineering supervision, has no rule to check here.
+/// The first method of 7.5.1.12(B)(2)(c) a back-fed panel meets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Busbar {
     /// (1): the load is within the busbar ampacity, the inverter breaker anywhere.
     Anywhere,
-    /// (2): within 120 % of it, with the inverter breaker at the end opposite the main.
+    /// (2): within 120 % of it, with the inverter breaker at the end opposite the main, and
+    /// the busbar sized for its Article 2.20 load.
     OppositeEnd,
     /// (4): a center-fed panelboard in a dwelling, within 120 %, the inverter breaker at
     /// either end but not both.
@@ -119,6 +123,9 @@ pub enum Busbar {
     /// (3): every breaker but the main, load and supply, within the busbar ampacity, and
     /// the main within the busbar rating.
     SumOfDevices,
+    /// (5): a multiple-ampacity busbar designed under engineering supervision, which
+    /// includes the available fault current and busbar load calculations.
+    Engineered,
     Over,
 }
 
@@ -129,7 +136,7 @@ pub fn busbar_method(panel: BackFed) -> Busbar {
     let devices = panel.load_ocpds + inverter_ocpd(panel.inverter_current);
     if !exceeds(load, busbar) {
         Busbar::Anywhere
-    } else if within_120 && !panel.center_fed {
+    } else if within_120 && !panel.center_fed && !exceeds(panel.load_current, busbar) {
         // A center-fed busbar has no end opposite its main.
         Busbar::OppositeEnd
     } else if within_120 && panel.dwelling {
@@ -139,6 +146,8 @@ pub fn busbar_method(panel: BackFed) -> Busbar {
         && !exceeds(panel.main_at, busbar)
     {
         Busbar::SumOfDevices
+    } else if panel.engineered {
+        Busbar::Engineered
     } else {
         Busbar::Over
     }
@@ -404,12 +413,17 @@ pub fn feeder_lines(pv: &SolarPv, feeder_at: f64, ampacity: Option<f64>) -> Vec<
     if exceeds(need, ampacity) {
         lines.push(format!("Needs load-side CB ≤ {} A", show(ampacity)));
     }
+    lines.push(MARKING.into());
     lines
 }
 
+/// 7.5.1.12(B)(3): equipment with overcurrent devices on a busbar or conductor supplied
+/// from multiple sources is marked to show all of them.
+const MARKING: &str = "Mark: all power sources";
+
 /// The lines of the panel the inverter back-feeds, from its main's rating and the ratings
 /// of its load devices.
-pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
+pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64, load_current: f64) -> Vec<String> {
     let Some(current) = num::positive(pv.inverter_current) else {
         return vec!["PV back-fed".into()];
     };
@@ -423,6 +437,8 @@ pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
         load_ocpds,
         center_fed: pv.center_fed == Some(true),
         dwelling: is_dwelling(pv.building.as_deref()),
+        load_current,
+        engineered: pv.engineered_busbar == Some(true),
     };
     let method = busbar_method(panel);
     let over = if method == Busbar::Over { ", OVER" } else { "" };
@@ -431,16 +447,25 @@ pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
         up(busbar_load(current, main_at)),
         show(busbar)
     )];
+    // (2) and (3) each take a permanent warning label (1.10.1.21(B)).
     match method {
-        Busbar::OppositeEnd => lines.push("PV CB at end opposite main".into()),
+        Busbar::OppositeEnd => lines.extend([
+            "PV CB at end opposite main".into(),
+            "Label: do not relocate PV CB".into(),
+        ]),
         Busbar::EitherEnd => lines.push("PV CB at one end, not both".into()),
-        Busbar::SumOfDevices => lines.push(format!(
-            "CBs but main: {} A of {} A",
-            show(load_ocpds + inverter_ocpd(current)),
-            show(busbar)
-        )),
+        Busbar::SumOfDevices => lines.extend([
+            format!(
+                "CBs but main: {} A of {} A",
+                show(load_ocpds + inverter_ocpd(current)),
+                show(busbar)
+            ),
+            "Label: multiple sources, CB total".into(),
+        ]),
+        Busbar::Engineered => lines.push("Busbar by engineering design".into()),
         Busbar::Anywhere | Busbar::Over => {}
     }
+    lines.push(MARKING.into());
     lines
 }
 

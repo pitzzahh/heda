@@ -62,6 +62,8 @@ export const SOLAR_PV_SCHEMA = v.object({
 	/** 7.5.1.12(A): on the supply side of the service disconnecting means, not at a panel. */
 	supply_side: v.optional(v.boolean()),
 	busbar_rating: v.optional(positive('busbar rating')),
+	/** 7.5.1.12(B)(2)(c)(5): a multiple-ampacity busbar designed under engineering supervision. */
+	engineered_busbar: v.optional(v.boolean()),
 	/** 7.5.1.12(B)(2)(c)(4): a center-fed panelboard has no end opposite its main. */
 	center_fed: v.optional(v.boolean())
 });

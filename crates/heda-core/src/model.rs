@@ -219,6 +219,11 @@ pub struct SolarPv {
     /// That panel's busbar rating, A (7.5.1.12(B)(2)(c)).
     #[serde(default, deserialize_with = "number")]
     pub busbar_rating: Option<f64>,
+    /// Whether that panel's busbar is a multiple-ampacity busbar designed under engineering
+    /// supervision, with available fault current and busbar load calculations
+    /// (7.5.1.12(B)(2)(c)(5)).
+    #[serde(default, deserialize_with = "boolean")]
+    pub engineered_busbar: Option<bool>,
     /// Whether that panelboard is center-fed (7.5.1.12(B)(2)(c)(4)).
     #[serde(default, deserialize_with = "boolean")]
     pub center_fed: Option<bool>,

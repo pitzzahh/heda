@@ -541,7 +541,7 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                         // rule applies instead of the busbar methods.
                         solar::feeder_lines(pv, row.at, row.ampacity)
                     } else {
-                        solar::panel_lines(pv, row.at, load_ocpds)
+                        solar::panel_lines(pv, row.at, load_ocpds, row.current)
                     });
                 }
                 (title, lines)
