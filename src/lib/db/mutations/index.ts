@@ -20,6 +20,7 @@ export {
 	setGeneratorKva,
 	setServiceEntrance,
 	setSmallDwelling,
+	setSolarPv,
 	setStandbyPanels,
 	updateConductorSets,
 	updateInterruptingRating,

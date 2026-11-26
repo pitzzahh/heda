@@ -22,6 +22,7 @@ import {
 	SHORT_CIRCUIT_SOURCE_SCHEMA
 } from './short-circuit.js';
 import { STANDBY_GENERATOR_SCHEMA } from './generator.js';
+import { SOLAR_PV_SCHEMA } from './solar.js';
 import {
 	CIRCUIT_PHASE_FIELD,
 	LINE_CURRENT_SCHEMA,
@@ -268,6 +269,34 @@ describe('validators', () => {
 		expect(v.safeParse(STANDBY_GENERATOR_SCHEMA, { generator_kva: 25 }).success).toBe(true);
 		for (const generator_kva of [0, -5, '25']) {
 			expect(v.safeParse(STANDBY_GENERATOR_SCHEMA, { generator_kva }).success).toBe(false);
+		}
+	});
+
+	it('takes a solar PV system field by field (PEC 2017 6.90.2.1, Table 6.90.2.1(A))', () => {
+		expect(v.safeParse(SOLAR_PV_SCHEMA, {}).success).toBe(true);
+		const pv = {
+			module_voc: 49.5,
+			module_isc: 13.9,
+			modules_per_string: 10,
+			strings: 2,
+			lowest_ambient: -40,
+			dwelling: true,
+			inverter_current: 22,
+			panel: 'MDP',
+			busbar_rating: 100
+		};
+		expect(v.safeParse(SOLAR_PV_SCHEMA, pv).success).toBe(true);
+		for (const invalid of [
+			{ module_voc: 0 },
+			{ module_isc: -1 },
+			{ modules_per_string: 2.5 },
+			{ strings: 0 },
+			// Table 6.90.2.1(A) has no factor below −40 °C.
+			{ lowest_ambient: -41 },
+			{ inverter_current: '22' },
+			{ busbar_rating: 0 }
+		]) {
+			expect(v.safeParse(SOLAR_PV_SCHEMA, { ...pv, ...invalid }).success).toBe(false);
 		}
 	});
 

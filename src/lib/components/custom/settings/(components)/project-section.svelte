@@ -23,6 +23,7 @@
 	import { toast } from 'svelte-sonner';
 	import { isAndroidApp } from '#lib/helpers/platform.js';
 	import StandbyGeneratorSection from './standby-generator-section.svelte';
+	import SolarPvSection from './solar-pv-section.svelte';
 
 	let { close_settings }: Props = $props();
 
@@ -122,6 +123,8 @@
 	{#if root_node}
 		<Separator class="my-1 w-full" />
 		<StandbyGeneratorSection root={root_node} />
+		<Separator class="my-1 w-full" />
+		<SolarPvSection root={root_node} />
 	{/if}
 
 	<Separator class="my-1 w-full" />
