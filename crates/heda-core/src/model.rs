@@ -180,6 +180,12 @@ pub struct SolarPv {
     /// Whether the array is on or in a one- or two-family dwelling (6.90.2.1: 600 V, else 1000 V).
     #[serde(default, deserialize_with = "boolean")]
     pub dwelling: Option<bool>,
+    /// The outdoor temperature where the dc wiring runs, °C, for its conductor sizes.
+    #[serde(default, deserialize_with = "number")]
+    pub dc_ambient: Option<f64>,
+    /// Whether that wiring runs in sunlight less than 23 mm above the roof (3.10.2.6(B)(3)(c)).
+    #[serde(default, deserialize_with = "boolean")]
+    pub near_roof: Option<bool>,
     /// The inverter's continuous output current rating, A (6.90.2.2(A)(3)).
     #[serde(default, deserialize_with = "number")]
     pub inverter_current: Option<f64>,

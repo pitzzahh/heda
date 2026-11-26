@@ -8,7 +8,7 @@
 
 	type NumberKey = Exclude<
 		keyof SolarPv,
-		'dwelling' | 'center_fed' | 'on_feeder' | 'panel' | 'supply_side'
+		'dwelling' | 'center_fed' | 'on_feeder' | 'near_roof' | 'panel' | 'supply_side'
 	>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
@@ -17,6 +17,7 @@
 		{ key: 'modules_per_string', label: 'Modules per string', unit: 'pcs', step: '1' },
 		{ key: 'strings', label: 'Strings in parallel', unit: 'pcs', step: '1' },
 		{ key: 'lowest_ambient', label: 'Lowest expected ambient', unit: '°C', step: 'any' },
+		{ key: 'dc_ambient', label: 'DC wiring ambient', unit: '°C', step: 'any' },
 		{ key: 'inverter_current', label: 'Inverter output current', unit: 'A', step: 'any' },
 		{ key: 'busbar_rating', label: 'Busbar rating', unit: 'A', step: 'any' }
 	];
@@ -87,8 +88,9 @@
 			Identical strings of crystalline silicon modules on one interactive inverter, from their
 			nameplates. The riser shows the max dc voltage (PEC 2017 6.90.2.1) and, from 80 V, the dc
 			arc-fault protection it needs (6.90.2.5), circuit currents and the least conductor and OCPD
-			ratings (6.90.2.2, 6.90.2.3), and the back-fed busbar check (7.5.1.12(B)(2)(c)), or on the
-			supply side, the inverter breaker against the service rating (7.5.1.12(A)).
+			ratings (6.90.2.2, 6.90.2.3) with copper sizes once the dc ambient is set, and the back-fed
+			busbar check (7.5.1.12(B)(2)(c)), or on the supply side, the inverter breaker against the
+			service rating (7.5.1.12(A)).
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
@@ -159,6 +161,17 @@
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
 				On or in a one- or two-family dwelling (600 V dc limit, else 1000 V)
+			</Label>
+		{/snippet}
+	</Field>
+	<Field of={form} path={['near_roof']}>
+		{#snippet children(field)}
+			<Label class="flex items-center gap-2 text-xs font-normal">
+				<Checkbox
+					checked={field.input ?? false}
+					onCheckedChange={(checked) => field.onInput(checked)}
+				/>
+				DC wiring in sunlight less than 23 mm above the roof (+33 °C, 3.10.2.6(B)(3)(c))
 			</Label>
 		{/snippet}
 	</Field>

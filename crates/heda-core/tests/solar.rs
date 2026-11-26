@@ -365,3 +365,36 @@ fn a_feeder_connection_needs_the_ampacity_or_a_load_side_breaker() {
         ["PV on feeder: 71.25 A of 70 A", "Needs load-side CB ≤ 70 A"]
     );
 }
+
+#[test]
+fn dc_conductors_are_sized_on_their_breaker_in_the_corrected_ambient() {
+    // 2 strings of Isc 13.9 A, dc wiring at 34 °C (Table 3.10.2.6(B)(2)(a), 31–35 °C, 90 °C:
+    // 0.96). Source circuits: 21.72 A → 25 A breaker; 4 current-carrying conductors in
+    // one raceway, 80 % (Table 3.10.2.6(B)(3)(a)). 60 °C terminations (≤ 100 A,
+    // 1.10.1.14(C)): 3.5 mm² 20 A < 25 A, 5.5 mm² 30 A; corrected 40 × 0.96 × 0.8 = 30.72 A.
+    // Output circuit: 43.44 A → 45 A; 2 conductors; 8.0 mm² 40 A < 45 A, 14 mm² 55 A;
+    // corrected 75 × 0.96 = 72 A.
+    let mut pv = dwelling_array();
+    pv["dc_ambient"] = json!(34);
+    let service = lines_of(&riser(pv.clone(), 100.0), "root");
+    assert!(service.contains(&"PV source: 25 A OCPD, 5.5 mm² Cu".to_string()));
+    assert!(service.contains(&"PV output: 45 A OCPD, 14 mm² Cu".to_string()));
+    // Less than 23 mm above the roof: 34 + 33 = 67 °C (66–70 °C, 90 °C: 0.58).
+    // Source: 5.5 mm² 40 × 0.58 × 0.8 = 18.56 A < 25 A; 8.0 mm² 55 × 0.58 × 0.8 = 25.52 A.
+    // Output: 14 mm² 75 × 0.58 = 43.5 A < 45 A; 22 mm² 95 × 0.58 = 55.1 A, terminations 70 A.
+    pv["near_roof"] = json!(true);
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert!(service.contains(&"PV source: 25 A OCPD, 8 mm² Cu".to_string()));
+    assert!(service.contains(&"PV output: 45 A OCPD, 22 mm² Cu".to_string()));
+}
+
+#[test]
+fn the_inverter_conductor_is_sized_at_its_panel() {
+    // 22 A → 30 A breaker; MDP at 30 °C (factor 1), one-phase, 2 conductors:
+    // 3.5 mm² 20 A < 30 A at 60 °C terminations, 5.5 mm² 30 A; corrected 40 A.
+    let mdp = lines_of(&riser(dwelling_array(), 100.0), "MDP");
+    assert!(mdp.contains(&"Inverter cond.: 5.5 mm² Cu".to_string()));
+    assert_eq!(conductor_size(30.0, 2.0, 30.0), Some(5.5));
+    // Past the 90 °C column (above 85 °C) no size fits.
+    assert_eq!(conductor_size(30.0, 2.0, 90.0), None);
+}

@@ -337,7 +337,7 @@ fn current_carrying(sets: f64, qty: f64) -> f64 {
 
 /// PEC 2017 Table 3.10.2.6(B)(3)(a) (p. 172): adjustment factors for more than three
 /// current-carrying conductors in a raceway.
-fn adjustment_factor(conductors: f64) -> f64 {
+pub fn adjustment_factor(conductors: f64) -> f64 {
     if conductors <= 3.0 {
         1.0
     } else if conductors <= 6.0 {

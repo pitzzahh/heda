@@ -3,10 +3,13 @@
 //! overcurrent device rating (6.90.2.2, 6.90.2.3), and the busbar of the panel the
 //! inverter back-feeds (7.5.1.12(B)(2)(c)). The riser shows them.
 
+use crate::model::phases::ONE_PHASE;
 use crate::model::SolarPv;
 use crate::num;
-use crate::sizing::next_rating;
-use crate::tables::PV_VOLTAGE_CORRECTION;
+use crate::sizing::{
+    adjustment_factor, corrected_ampacity, next_rating, termination_ampacity, Rating,
+};
+use crate::tables::{COPPER_AMPACITIES, PV_VOLTAGE_CORRECTION};
 
 /// Table 6.90.2.1(A)'s factor for the lowest expected ambient: 1 from 25 °C up (the table
 /// corrects below 25 °C only); a value between two rows takes the colder row. None below
@@ -120,6 +123,47 @@ pub fn busbar_method(panel: BackFed) -> Busbar {
     }
 }
 
+/// The smallest copper conductor of Table 3.10.2.6(B)(16), 90 °C column (THHN, THWN-2,
+/// heda's default insulation), for a circuit protected at `ocpd`: its termination
+/// ampacity (1.10.1.14(C)) and its ampacity corrected for the ambient (Table
+/// 3.10.2.6(B)(2)(a)) and for `conductors` current-carrying conductors in the raceway
+/// (Table 3.10.2.6(B)(3)(a)) both at least the breaker rating. That meets 6.90.2.2(B)'s
+/// 125 % before and 100 % after correction, since the breaker is at least 125 % of the
+/// maximum current, and has the breaker protect the conductor (2.40.1.4) without the next
+/// size up of 2.40.1.4(B), as heda sizes every circuit. None when no size does.
+pub fn conductor_size(ocpd: f64, conductors: f64, ambient: f64) -> Option<f64> {
+    let adjustment = adjustment_factor(conductors);
+    COPPER_AMPACITIES
+        .iter()
+        .map(|(size, _)| *size)
+        .find(|size| {
+            termination_ampacity(*size, Rating::C90, ocpd) >= ocpd
+                && corrected_ampacity(*size, Rating::C90, ambient, adjustment) >= ocpd
+        })
+}
+
+/// The ambient the dc wiring is corrected for: the outdoor temperature, plus 33 °C for a
+/// raceway or cable in sunlight less than 23 mm above the roof (3.10.2.6(B)(3)(c); its
+/// XHHW-2 exception does not apply to heda's conductor types).
+pub fn dc_ambient(pv: &SolarPv) -> Option<f64> {
+    let adder = if pv.near_roof == Some(true) {
+        33.0
+    } else {
+        0.0
+    };
+    pv.dc_ambient.map(|ambient| ambient + adder)
+}
+
+/// The inverter output conductor at the panel it connects to, in that panel's ambient: two
+/// current-carrying conductors on a one-phase panel, three on a three-phase one (the
+/// neutral of a wye circuit carries only the unbalanced current, 3.10.2.6(B)(5)(a)).
+pub fn inverter_conductor_line(pv: &SolarPv, ambient: f64, phase: Option<&str>) -> Option<String> {
+    let current = num::positive(pv.inverter_current)?;
+    let conductors = if phase == Some(ONE_PHASE) { 2.0 } else { 3.0 };
+    let size = conductor_size(inverter_ocpd(current), conductors, ambient);
+    Some(format!("Inverter cond.: {}", size_text(size)))
+}
+
 /// The riser's service lines for the PV system: each line once its inputs are set.
 pub fn service_lines(pv: &SolarPv) -> Vec<String> {
     let modules = num::positive(pv.modules_per_string);
@@ -150,10 +194,15 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
     }
     if let Some(isc) = num::positive(pv.module_isc) {
         let source = source_circuit_current(isc);
-        lines.extend(circuit_lines("PV source", source));
+        let ambient = dc_ambient(pv);
+        // shortcut: every string is taken to share one raceway (two conductors each), the
+        // most adjustment; add a raceway count if designers ask for separate runs.
+        let source_sizing = ambient.map(|ambient| (2.0 * strings, ambient));
+        lines.extend(circuit_lines("PV source", source, source_sizing));
         if strings > 1.0 {
             // 6.90.2.2(A)(2): the sum of the parallel source circuits' maximum currents.
-            lines.extend(circuit_lines("PV output", source * strings));
+            let output_sizing = ambient.map(|ambient| (2.0, ambient));
+            lines.extend(circuit_lines("PV output", source * strings, output_sizing));
         }
     }
     if let Some(current) = num::positive(pv.inverter_current) {
@@ -257,11 +306,27 @@ pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
     lines
 }
 
-fn circuit_lines(circuit: &str, max_current: f64) -> [String; 2] {
-    [
+fn circuit_lines(circuit: &str, max_current: f64, sizing: Option<(f64, f64)>) -> Vec<String> {
+    let least = least_rating(max_current);
+    let mut lines = vec![
         format!("{circuit} circuit: {} A", up(max_current)),
-        format!("{circuit} cond./OCPD ≥ {} A", up(least_rating(max_current))),
-    ]
+        format!("{circuit} cond./OCPD ≥ {} A", up(least)),
+    ];
+    if let Some((conductors, ambient)) = sizing {
+        let ocpd = next_rating(round9(least));
+        lines.push(format!(
+            "{circuit}: {} A OCPD, {}",
+            show(ocpd),
+            size_text(conductor_size(ocpd, conductors, ambient))
+        ));
+    }
+    lines
+}
+
+fn size_text(size: Option<f64>) -> String {
+    size.map_or("no listed size".into(), |size| {
+        format!("{} mm² Cu", show(size))
+    })
 }
 
 /// Whether `value` is over `limit`, past float noise (1.25 × 80 is 100, not 100.000…1).

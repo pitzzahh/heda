@@ -32,6 +32,10 @@ export const SOLAR_PV_SCHEMA = v.object({
 	),
 	/** 6.90.2.1: 600 V on or in one- and two-family dwellings, else 1000 V. */
 	dwelling: v.optional(v.boolean()),
+	/** The outdoor temperature where the dc wiring runs, for its conductor sizes. */
+	dc_ambient: v.optional(v.number('Please enter the dc wiring ambient temperature.')),
+	/** 3.10.2.6(B)(3)(c): in sunlight less than 23 mm above the roof, 33 °C is added. */
+	near_roof: v.optional(v.boolean()),
 	inverter_current: v.optional(positive('inverter output current')),
 	panel: v.optional(v.string()),
 	/** 7.5.1.12(B)(2)(a): on that panel's feeder, away from the panel end, not its busbar. */

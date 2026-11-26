@@ -521,6 +521,13 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                     let load_ocpds = node.branch_ats.iter().sum::<f64>()
                         + node.panels.iter().map(|p| p.circuit.row.at).sum::<f64>();
                     let row = &node.circuit.row;
+                    let panel = node.circuit.node.panel_data.as_ref();
+                    let ambient = panel.and_then(|p| p.ambient_temperature);
+                    let phase = panel.and_then(|p| p.phase.as_deref());
+                    lines
+                        .extend(ambient.and_then(|ambient| {
+                            solar::inverter_conductor_line(pv, ambient, phase)
+                        }));
                     lines.extend(if pv.on_feeder == Some(true) {
                         // The source feeds the busbar through the feeder, so the feeder
                         // rule applies instead of the busbar methods.
