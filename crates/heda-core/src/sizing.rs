@@ -208,7 +208,7 @@ pub fn feeder_trip(load: f64, ceiling: f64) -> f64 {
 }
 
 /// The smallest standard rating of Table 2.40.1.6(A) at or above `at`; 0 past the table.
-fn next_rating(at: f64) -> f64 {
+pub fn next_rating(at: f64) -> f64 {
     STANDARD_AMPERE_RATINGS
         .into_iter()
         .find(|rating| at <= *rating)

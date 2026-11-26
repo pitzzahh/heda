@@ -488,7 +488,7 @@ pub fn remove_nodes(tree: Tree, ids: &[String]) -> Plan {
             Some(doc)
         })
         .collect();
-    drop_standby_panels(tree, &seen, &mut put);
+    drop_removed_panels(tree, &seen, &mut put);
     Plan {
         put,
         remove,
@@ -496,18 +496,18 @@ pub fn remove_nodes(tree: Tree, ids: &[String]) -> Plan {
     }
 }
 
-/// A removed panel leaves the supply's standby panels in the same step, so the riser no
-/// longer counts it and the settings never keep an id they cannot show.
-fn drop_standby_panels(tree: Tree, removed: &HashSet<String>, put: &mut Vec<Value>) {
+/// A removed panel leaves the supply's standby panels and its PV connection in the same
+/// step, so the riser no longer counts it and the settings never keep an id they cannot show.
+fn drop_removed_panels(tree: Tree, removed: &HashSet<String>, put: &mut Vec<Value>) {
+    let gone = |panel: &Value| panel.as_str().is_some_and(|panel| removed.contains(panel));
     for (id, doc) in tree.docs {
-        let Some(list) = doc["highest_unit_form"]["standby_panels"].as_array() else {
-            continue;
-        };
-        let gone = |panel: &Value| panel.as_str().is_some_and(|panel| removed.contains(panel));
-        if !list.iter().any(gone) {
+        let unit = &doc["highest_unit_form"];
+        let list = unit["standby_panels"].as_array();
+        let standby = list.is_some_and(|list| list.iter().any(gone));
+        let pv = gone(&unit["solar_pv"]["panel"]);
+        if !standby && !pv {
             continue;
         }
-        let kept: Vec<Value> = list.iter().filter(|panel| !gone(panel)).cloned().collect();
         let index = match put.iter().position(|doc| doc["id"] == id.as_str()) {
             Some(index) => index,
             None => {
@@ -515,7 +515,15 @@ fn drop_standby_panels(tree: Tree, removed: &HashSet<String>, put: &mut Vec<Valu
                 put.len() - 1
             }
         };
-        put[index]["highest_unit_form"]["standby_panels"] = Value::Array(kept);
+        let unit = &mut put[index]["highest_unit_form"];
+        if let Some(list) = list.filter(|_| standby) {
+            unit["standby_panels"] = list.iter().filter(|panel| !gone(panel)).cloned().collect();
+        }
+        if pv {
+            if let Some(solar) = unit["solar_pv"].as_object_mut() {
+                solar.remove("panel");
+            }
+        }
     }
 }
 

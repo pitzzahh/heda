@@ -11,6 +11,7 @@ use crate::model::{phases, HighestUnitForm, Node};
 use crate::num;
 use crate::phases::{supply_of, Supply};
 use crate::sizing::{self, Conduit, Egc};
+use crate::solar;
 use crate::text::Metrics;
 use serde::Serialize;
 use serde_json::Value;
@@ -334,6 +335,7 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         tree,
     ));
     lines.extend(generator_lines(source, phase, tree));
+    lines.extend(source.solar_pv.iter().flat_map(solar::service_lines));
     if let Some(kva) = num::positive(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
     }
@@ -499,6 +501,11 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 let (title, mut lines) = panel_box(node);
                 if standby.contains(&node.circuit.node.id.as_str()) {
                     lines.push("On standby generator".into());
+                }
+                let pv = source.and_then(|s| s.solar_pv.as_ref());
+                if let Some(pv) = pv.filter(|pv| pv.panel.as_deref() == Some(&node.circuit.node.id))
+                {
+                    lines.extend(solar::panel_lines(pv, node.circuit.row.at));
                 }
                 (title, lines)
             }

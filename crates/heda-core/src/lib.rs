@@ -24,6 +24,7 @@ pub mod session;
 pub mod sheet_set;
 pub mod short_circuit;
 pub mod sizing;
+pub mod solar;
 pub mod tables;
 pub mod text;
 pub mod voltage_drop;

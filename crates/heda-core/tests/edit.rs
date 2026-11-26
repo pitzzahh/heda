@@ -604,3 +604,26 @@ fn an_edit_in_place_keeps_the_documented_selection() {
         "Table B"
     );
 }
+
+#[test]
+fn removing_the_pv_panel_drops_the_pv_connection_in_one_step() {
+    let mut session = Session::default();
+    let mut supply = root("one_phase");
+    supply["child_ids"] = json!(["P"]);
+    supply["highest_unit_form"]["solar_pv"] = json!({ "panel": "P", "inverter_current": 22 });
+    session
+        .open(
+            json!({ "id": "p" }),
+            vec![supply, panel("P", "root", 1.0, "one_phase")],
+        )
+        .unwrap();
+    run(&mut session, "remove_nodes", json!({ "ids": ["P"] })).unwrap();
+    let root = doc(&mut session, "root");
+    assert_eq!(
+        root["highest_unit_form"]["solar_pv"],
+        json!({ "inverter_current": 22 })
+    );
+    run(&mut session, "undo", json!({})).unwrap();
+    let root = doc(&mut session, "root");
+    assert_eq!(root["highest_unit_form"]["solar_pv"]["panel"], "P");
+}

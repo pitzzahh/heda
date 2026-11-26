@@ -152,6 +152,43 @@ pub struct HighestUnitForm {
     /// The panels the standby generator carries; a panel under one of them comes with it.
     #[serde(default)]
     pub standby_panels: Option<Vec<String>>,
+    /// The optional interactive solar PV system (PEC 2017 Article 6.90, 7.5).
+    #[serde(default)]
+    pub solar_pv: Option<SolarPv>,
+}
+
+/// A solar PV system of identical strings of crystalline or multicrystalline silicon modules
+/// feeding one interactive inverter, connected on the load side of a panel (PEC 2017
+/// 7.5.1.12(B)). Values come from the module and inverter nameplates.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct SolarPv {
+    /// A module's rated open-circuit voltage, V.
+    #[serde(default, deserialize_with = "number")]
+    pub module_voc: Option<f64>,
+    /// A module's rated short-circuit current, A.
+    #[serde(default, deserialize_with = "number")]
+    pub module_isc: Option<f64>,
+    /// Modules in series in each string (one PV source circuit).
+    #[serde(default, deserialize_with = "number")]
+    pub modules_per_string: Option<f64>,
+    /// Strings in parallel on the PV output circuit.
+    #[serde(default, deserialize_with = "number")]
+    pub strings: Option<f64>,
+    /// The lowest expected ambient temperature, °C (6.90.2.1(A)(2)).
+    #[serde(default, deserialize_with = "number")]
+    pub lowest_ambient: Option<f64>,
+    /// Whether the array is on or in a one- or two-family dwelling (6.90.2.1: 600 V, else 1000 V).
+    #[serde(default, deserialize_with = "boolean")]
+    pub dwelling: Option<bool>,
+    /// The inverter's continuous output current rating, A (6.90.2.2(A)(3)).
+    #[serde(default, deserialize_with = "number")]
+    pub inverter_current: Option<f64>,
+    /// The panel the inverter output connects to.
+    #[serde(default)]
+    pub panel: Option<String>,
+    /// That panel's busbar rating, A (7.5.1.12(B)(2)(c)).
+    #[serde(default, deserialize_with = "number")]
+    pub busbar_rating: Option<f64>,
 }
 
 impl Node {

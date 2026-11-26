@@ -357,3 +357,22 @@ pub fn lookup<T>(table: &[(f64, T)], key: f64) -> Option<&T> {
         .find(|(k, _)| *k == key)
         .map(|(_, value)| value)
 }
+
+/// PEC 2017 Table 6.90.2.1(A) (PDF p. 695, printed p. 671): voltage correction factors for
+/// crystalline and multicrystalline silicon modules, for ambients below 25 °C, as
+/// `(lowest °C of the row's range, factor)`, warmest first: the row "24 to 20" is `(20.0, 1.02)`.
+pub const PV_VOLTAGE_CORRECTION: [(f64, f64); 13] = [
+    (20.0, 1.02),
+    (15.0, 1.04),
+    (10.0, 1.06),
+    (5.0, 1.08),
+    (0.0, 1.10),
+    (-5.0, 1.12),
+    (-10.0, 1.14),
+    (-15.0, 1.16),
+    (-20.0, 1.18),
+    (-25.0, 1.20),
+    (-30.0, 1.21),
+    (-35.0, 1.23),
+    (-40.0, 1.25),
+];
