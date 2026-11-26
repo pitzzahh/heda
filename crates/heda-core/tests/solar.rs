@@ -342,6 +342,17 @@ fn a_partial_system_shows_only_what_its_inputs_give() {
         pv_lines(&boxes, "MDP"),
         ["PV back-fed, busbar rating not set", MARK]
     );
+    // A feeder connection is marked the same way before its inputs are complete.
+    let boxes = riser(json!({ "panel": "MDP", "on_feeder": true }), 100.0);
+    assert_eq!(pv_lines(&boxes, "MDP"), ["PV on feeder", MARK]);
+    let pv = heda_core::model::SolarPv {
+        inverter_current: Some(22.0),
+        ..Default::default()
+    };
+    assert_eq!(
+        heda_core::solar::feeder_lines(&pv, 100.0, None),
+        ["PV on feeder, ampacity unknown", MARK]
+    );
     // One string: no output circuit line.
     let service = lines_of(&riser(json!({ "module_isc": 13.9 }), 100.0), "root");
     assert!(!service.iter().any(|l| l.starts_with("PV output")));
