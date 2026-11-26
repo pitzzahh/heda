@@ -334,11 +334,13 @@ fn twelve_modules_are_over_600_v_on_a_dwelling_only() {
 fn a_partial_system_shows_only_what_its_inputs_give() {
     let boxes = riser(json!({ "panel": "MDP" }), 100.0);
     assert!(!lines_of(&boxes, "root").iter().any(|l| l.contains("PV")));
-    assert_eq!(lines_of(&boxes, "MDP").last().unwrap(), "PV back-fed");
+    // A back-fed panel is marked with all its sources (7.5.1.12(B)(3)) before its inputs
+    // are complete.
+    assert_eq!(pv_lines(&boxes, "MDP"), ["PV back-fed", MARK]);
     let boxes = riser(json!({ "panel": "MDP", "inverter_current": 22 }), 100.0);
     assert_eq!(
-        lines_of(&boxes, "MDP").last().unwrap(),
-        "PV back-fed, busbar rating not set"
+        pv_lines(&boxes, "MDP"),
+        ["PV back-fed, busbar rating not set", MARK]
     );
     // One string: no output circuit line.
     let service = lines_of(&riser(json!({ "module_isc": 13.9 }), 100.0), "root");

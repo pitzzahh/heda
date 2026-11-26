@@ -194,7 +194,8 @@
 					checked={field.input ?? false}
 					onCheckedChange={(checked) => field.onInput(checked)}
 				/>
-				DC wiring in sunlight less than 23 mm above the roof (+33 °C, 3.10.2.6(B)(3)(c))
+				DC wiring in sunlight less than 23 mm above the roof (+33 °C, 3.10.2.6(B)(3)(c); not for XHHW-2,
+				which its exception exempts)
 			</Label>
 		{/snippet}
 	</Field>

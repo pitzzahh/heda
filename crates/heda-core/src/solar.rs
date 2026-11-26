@@ -265,8 +265,8 @@ pub fn source_protection(
 }
 
 /// The ambient the dc wiring is corrected for: the outdoor temperature, plus 33 °C for a
-/// raceway or cable in sunlight less than 23 mm above the roof (3.10.2.6(B)(3)(c); its
-/// XHHW-2 exception does not apply to heda's conductor types).
+/// raceway or cable in sunlight less than 23 mm above the roof (3.10.2.6(B)(3)(c)). Its
+/// exception exempts XHHW-2, so the near-roof box is left off for XHHW-2 wiring.
 pub fn dc_ambient(pv: &SolarPv) -> Option<f64> {
     let adder = if pv.near_roof == Some(true) {
         33.0
@@ -402,10 +402,10 @@ pub fn supply_side_lines(pv: &SolarPv, service_rating: Option<f64>) -> Vec<Strin
 /// breaker's rating, by the feeder tap rules (`tap_ampacities`).
 pub fn feeder_lines(pv: &SolarPv, feeder_at: f64, ampacity: Option<f64>) -> Vec<String> {
     let Some(current) = num::positive(pv.inverter_current) else {
-        return vec!["PV on feeder".into()];
+        return vec!["PV on feeder".into(), MARKING.into()];
     };
     let Some(ampacity) = ampacity else {
-        return vec!["PV on feeder, ampacity unknown".into()];
+        return vec!["PV on feeder, ampacity unknown".into(), MARKING.into()];
     };
     let need = busbar_load(current, feeder_at);
     let mut lines = vec![format!(
@@ -445,10 +445,10 @@ const MARKING: &str = "Mark: all power sources";
 /// of its load devices.
 pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64, load_current: f64) -> Vec<String> {
     let Some(current) = num::positive(pv.inverter_current) else {
-        return vec!["PV back-fed".into()];
+        return vec!["PV back-fed".into(), MARKING.into()];
     };
     let Some(busbar) = num::positive(pv.busbar_rating) else {
-        return vec!["PV back-fed, busbar rating not set".into()];
+        return vec!["PV back-fed, busbar rating not set".into(), MARKING.into()];
     };
     let panel = BackFed {
         inverter_current: current,
