@@ -38,9 +38,21 @@
 
 	const panelName = (node: Node | undefined) => node?.panel_data?.name ?? 'Panel';
 
-	/** The stored system, or none once every field is cleared. */
-	function toStored(output: SolarPv): SolarPv | undefined {
-		return Object.values(output).some((value) => value !== undefined) ? output : undefined;
+	/**
+	 * The stored system without the choices its connection hides (they would stay stored and
+	 * uneditable), or none once every field is cleared.
+	 */
+	export function toStored(output: SolarPv): SolarPv | undefined {
+		const at_panel = !output.supply_side && !!output.panel;
+		const back_fed = at_panel && !output.on_feeder;
+		const stored: SolarPv = {
+			...output,
+			on_feeder: at_panel ? output.on_feeder : undefined,
+			busbar_rating: back_fed ? output.busbar_rating : undefined,
+			center_fed: back_fed ? output.center_fed : undefined,
+			engineered_busbar: back_fed ? output.engineered_busbar : undefined
+		};
+		return Object.values(stored).some((value) => value !== undefined) ? stored : undefined;
 	}
 </script>
 
@@ -69,6 +81,8 @@
 	const supply_side = $derived(getInput(form, { path: ['supply_side'] }));
 	// The feeder and busbar choices apply only to an inverter connected at a panel.
 	const at_panel = $derived(!supply_side && !!getInput(form, { path: ['panel'] }));
+	// The busbar choices apply only to an inverter on the panel's busbar.
+	const back_fed = $derived(at_panel && !getInput(form, { path: ['on_feeder'] }));
 	let saving = $state(false);
 
 	async function save() {
@@ -77,10 +91,11 @@
 		if (!result.success) return;
 		saving = true;
 		try {
-			const updated = await setSolarPv(root.id, toStored(result.output));
+			const stored = toStored(result.output);
+			const updated = await setSolarPv(root.id, stored);
 			if (!updated) return toast.warning('Failed to save the solar PV system');
 			// The saved system becomes the new baseline, so clearing a field counts as a change.
-			reset(form, { initialInput: result.output });
+			reset(form, { initialInput: stored ?? {} });
 			toast.success('Solar PV system saved');
 		} finally {
 			saving = false;
@@ -109,7 +124,7 @@
 		</p>
 	</div>
 	<div class="grid gap-2 sm:grid-cols-2">
-		{#each NUMBER_FIELDS as { key, label, unit, step } (key)}
+		{#each NUMBER_FIELDS.filter(({ key }) => key !== 'busbar_rating' || back_fed) as { key, label, unit, step } (key)}
 			<Field of={form} path={[key]}>
 				{#snippet children(field)}
 					<div class="flex min-w-0 flex-col gap-1">
@@ -215,6 +230,8 @@
 				</Label>
 			{/snippet}
 		</Field>
+	{/if}
+	{#if back_fed}
 		<Field of={form} path={['center_fed']}>
 			{#snippet children(field)}
 				<Label class="flex items-center gap-2 text-xs font-normal">
