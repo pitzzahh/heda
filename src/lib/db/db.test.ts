@@ -25,6 +25,7 @@ import {
 	setServiceEntrance,
 	setSmallDwelling,
 	setGeneratorKva,
+	setSolarPv,
 	setStandbyPanels,
 	changePhaseAssignment,
 	changePhaseAssignments,
@@ -1212,6 +1213,43 @@ describe('service disconnecting means, PEC 2017 2.30.6.10', () => {
 		expect(
 			(await setGeneratorKva(root, undefined))?.highest_unit_form?.generator_kva
 		).toBeUndefined();
+	});
+
+	it('stores the solar PV system on the supply and checks it on the riser (PEC 2017 6.90, 7.5)', async () => {
+		resetData();
+		const created = await createProject('Solar', {
+			distribution_unit: 'Utility Meter',
+			phase: default_phases.ONE_PHASE,
+			is_service: true
+		});
+		const root = created!.root_node_id;
+		const panel = await add({
+			parent_id: root,
+			panel_data: {
+				name: 'MDP',
+				circuit_number: 1,
+				ambient_temperature: 30,
+				length: 10,
+				terminal_temperature: STANDARD_TERMINAL_TEMPERATURE,
+				phase: default_phases.ONE_PHASE
+			}
+		})!;
+		const pv = {
+			module_isc: 13.9,
+			inverter_current: 22,
+			panel: panel.id,
+			busbar_rating: 100
+		};
+		const unit = (await setSolarPv(root, pv))?.highest_unit_form;
+		expect(unit).toMatchObject({ solar_pv: pv, is_service: true });
+		const boxes = (await getRiserAsync(root))?.boxes;
+		// 13.9 A × 125 % = 17.375 A, × 125 % = 21.71875 A (6.90.2.2(A)(1), (B)(1)); one
+		// string with no other source needs no device (6.90.2.3(A) Exception (1)).
+		expect(boxes?.[0]?.lines).toContain('PV source cond. ≥ 21.72 A, no OCPD');
+		// 22 A × 125 % = 27.5 A: the next standard breaker is 30 A (6.90.2.3(B)(1), 2.40.1.6(A)).
+		expect(boxes?.[0]?.lines).toContain('Inverter cond. ≥ 27.5 A, OCPD 30 A');
+		expect(boxes?.find((b) => b.id === panel.id)?.lines.join('\n')).toContain('PV on busbar');
+		expect((await setSolarPv(root, undefined))?.highest_unit_form?.solar_pv).toBeUndefined();
 	});
 });
 

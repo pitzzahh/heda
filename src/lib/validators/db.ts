@@ -6,6 +6,7 @@ import {
 } from './short-circuit.js';
 import { GENERATOR_KVA_FIELD } from './generator.js';
 import { PHASE_ASSIGNMENT_FIELD } from './shared.js';
+import { SOLAR_PV_SCHEMA } from './solar.js';
 import { TITLE_BLOCK_SCHEMA } from './title-block.js';
 
 // Canonical data shapes for the stored project and node documents. Types derive from these schemas
@@ -86,6 +87,8 @@ export const NODE_DOC_SCHEMA = v.object({
 			/** The standby generator's nameplate kVA and the panels it carries (PEC 2017 7.2.1.4). */
 			generator_kva: v.optional(GENERATOR_KVA_FIELD),
 			standby_panels: v.optional(v.array(v.string())),
+			/** The interactive solar PV system (PEC 2017 Article 6.90, 7.5.1.12(B)). */
+			solar_pv: v.optional(SOLAR_PV_SCHEMA),
 			/** Set once a 3P-Y file's circuits carry 400Y/230 V defaults, so they are never rewritten again. */
 			wye_circuit_defaults: v.optional(v.boolean()),
 			/** Set once a file is opened under the PEC 2017 sizing tables, so its notice and migration run once. */

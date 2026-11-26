@@ -9,6 +9,10 @@ pub const STANDARD_AMPERE_RATINGS: [f64; 37] = [
     1000.0, 1200.0, 1600.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0, 6000.0,
 ];
 
+/// PEC 2017 2.40.1.6(A): "Additional standard ampere ratings for fuses shall be 1, 3, 6,
+/// 10, and 601." (PDF p. 108.)
+pub const FUSE_ONLY_RATINGS: [f64; 5] = [1.0, 3.0, 6.0, 10.0, 601.0];
+
 /// PEC 2017 Table 3.10.2.6(B)(16), copper (p. 174): allowable ampacity at 30 °C ambient,
 /// not more than three current-carrying conductors, as `(size_mm2, [60 °C, 75 °C, 90 °C])`.
 pub const COPPER_AMPACITIES: [(f64, [f64; 3]); 21] = [
@@ -357,3 +361,22 @@ pub fn lookup<T>(table: &[(f64, T)], key: f64) -> Option<&T> {
         .find(|(k, _)| *k == key)
         .map(|(_, value)| value)
 }
+
+/// PEC 2017 Table 6.90.2.1(A) (PDF p. 695, printed p. 671): voltage correction factors for
+/// crystalline and multicrystalline silicon modules, for ambients below 25 °C, as
+/// `(lowest °C of the row's range, factor)`, warmest first: the row "24 to 20" is `(20.0, 1.02)`.
+pub const PV_VOLTAGE_CORRECTION: [(f64, f64); 13] = [
+    (20.0, 1.02),
+    (15.0, 1.04),
+    (10.0, 1.06),
+    (5.0, 1.08),
+    (0.0, 1.10),
+    (-5.0, 1.12),
+    (-10.0, 1.14),
+    (-15.0, 1.16),
+    (-20.0, 1.18),
+    (-25.0, 1.20),
+    (-30.0, 1.21),
+    (-35.0, 1.23),
+    (-40.0, 1.25),
+];

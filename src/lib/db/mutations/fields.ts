@@ -2,6 +2,7 @@ import { findNode, patchNode, patchNodes } from './nodes.js';
 import type { ShortCircuitSource } from '#lib/types/short-circuit.js';
 import type { FieldType } from '#lib/types/misc.js';
 import type { PhaseAssignment } from '#lib/types/phase.js';
+import type { SolarPv } from '#lib/types/solar.js';
 
 export type { FieldType };
 
@@ -120,6 +121,14 @@ export function setGeneratorKva(root_id: string, generator_kva: number | undefin
 /** Chooses the panels the standby generator carries (PEC 2017 7.2.1.4(B)). */
 export function setStandbyPanels(root_id: string, standby_panels: string[]) {
 	return mergeUnitForm(root_id, { standby_panels });
+}
+
+/**
+ * Stores the solar PV system (PEC 2017 Article 6.90, 7.5.1.12(B)) whole, replacing the
+ * last one; undefined removes it.
+ */
+export function setSolarPv(root_id: string, solar_pv: SolarPv | undefined) {
+	return mergeUnitForm(root_id, { solar_pv: solar_pv ?? null });
 }
 
 /** Overrides the circuit-number phase (or delta line pair) of a circuit; undefined restores the default. */

@@ -11,6 +11,7 @@ use crate::model::{phases, HighestUnitForm, Node};
 use crate::num;
 use crate::phases::{supply_of, Supply};
 use crate::sizing::{self, Conduit, Egc};
+use crate::solar;
 use crate::text::Metrics;
 use serde::Serialize;
 use serde_json::Value;
@@ -334,6 +335,25 @@ fn source_lines(source: &HighestUnitForm, tree: &RiserTree) -> Vec<String> {
         tree,
     ));
     lines.extend(generator_lines(source, phase, tree));
+    if let Some(pv) = &source.solar_pv {
+        let panel_ambient = solar::connected_panel(pv)
+            .and_then(|id| find_panel(tree, id))
+            .and_then(|panel| panel.circuit.node.panel_data.as_ref()?.ambient_temperature);
+        lines.extend(solar::service_lines(pv, panel_ambient));
+    }
+    if let Some(pv) = source
+        .solar_pv
+        .as_ref()
+        .filter(|pv| pv.supply_side == Some(true))
+    {
+        // 2.30.6.11: the service rating is the combined rating of its disconnects, the
+        // mains and the circuits wired straight on the supply.
+        let service = (source.is_service != Some(false)).then(|| {
+            tree.panels.iter().map(|p| p.circuit.row.at).sum::<f64>()
+                + tree.branch_ats.iter().sum::<f64>()
+        });
+        lines.extend(solar::supply_side_lines(pv, service));
+    }
     if let Some(kva) = num::positive(source.utility_sc_kva) {
         lines.push(format!("Utility fault level: {} kVA", num(kva)));
     }
@@ -401,6 +421,15 @@ fn grounding_lines(transformer: bool, supply: Supply, tree: &RiserTree) -> Vec<S
     .into_iter()
     .flatten()
     .collect()
+}
+
+/// The panel `id` in the tree.
+fn find_panel<'t, 'a>(tree: &'t RiserTree<'a>, id: &str) -> Option<&'t RiserTree<'a>> {
+    tree.panels.iter().find_map(|panel| {
+        (panel.circuit.node.id == id)
+            .then_some(panel)
+            .or_else(|| find_panel(panel, id))
+    })
 }
 
 fn standby_panels(source: &HighestUnitForm) -> Vec<&str> {
@@ -499,6 +528,21 @@ pub fn layout_riser(tree: &RiserTree, source: Option<&HighestUnitForm>) -> Riser
                 let (title, mut lines) = panel_box(node);
                 if standby.contains(&node.circuit.node.id.as_str()) {
                     lines.push("On standby generator".into());
+                }
+                let pv = source.and_then(|s| s.solar_pv.as_ref());
+                if let Some(pv) =
+                    pv.filter(|pv| solar::connected_panel(pv) == Some(&node.circuit.node.id))
+                {
+                    let load_ocpds = node.branch_ats.iter().sum::<f64>()
+                        + node.panels.iter().map(|p| p.circuit.row.at).sum::<f64>();
+                    let row = &node.circuit.row;
+                    lines.extend(if pv.on_feeder == Some(true) {
+                        // The source feeds the busbar through the feeder, so the feeder
+                        // rule applies instead of the busbar methods.
+                        solar::feeder_lines(pv, row.at, row.ampacity)
+                    } else {
+                        solar::panel_lines(pv, row.at, load_ocpds, row.current)
+                    });
                 }
                 (title, lines)
             }

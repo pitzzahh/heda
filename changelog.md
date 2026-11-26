@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0-7] - 2026-11-26
+
+### Added
+
+- Solar PV systems (PEC 2017 6.90): enter the system in project settings, and the riser checks it, including the dc voltage limit for where the array is (6.90.2.1), dc arc-fault protection from 80 V (6.90.2.5), and the PV and inverter circuit sizes at the PEC minimum (6.90.2.3)
+- A PV connection is checked wherever it lands: on a panel's back-fed busbar by methods (1) to (5) with its labels, on a feeder with its taps, or on the supply side of the service (7.5.1.12(A))
+
 ## [2.9.0-6] - 2026-11-25
 
 ### Added
