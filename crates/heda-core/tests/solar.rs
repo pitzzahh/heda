@@ -1,8 +1,8 @@
 //! Solar PV systems, PEC 2017 Article 6.90, and their load-side interconnection,
 //! 7.5.1.12(B). Every expected value is worked by hand from the PEC (checked on the
 //! rendered pages, PDF pp. 695–697 and 735):
-//! - 6.90.2.1: the maximum dc voltage is 600 V on one- and two-family dwellings, else
-//!   1000 V; (A)(2) takes the series modules' rated Voc × Table 6.90.2.1(A)'s factor.
+//! - 6.90.2.1: the maximum dc voltage is 600 V on one- and two-family dwellings, 1000 V
+//!   on other buildings, 1500 V for listed equipment away from buildings; (A)(2) takes the series modules' rated Voc × Table 6.90.2.1(A)'s factor.
 //! - 6.90.2.2(A)(1)(1): a source circuit's maximum current is Isc × 125 %; (A)(2) an
 //!   output circuit's is the sum of the parallel source circuits; (A)(3) an inverter output
 //!   circuit's is the inverter's continuous output current rating.
@@ -51,8 +51,12 @@ fn the_max_voltage_and_its_limit_follow_6_90_2_1() {
     // 10 × 49.5 V at 18 °C (19 to 15: 1.04) = 514.8 V.
     let voltage = max_voltage(49.5, 10.0, 18.0).unwrap();
     assert!((voltage - 514.8).abs() < 1e-9);
-    assert_eq!(voltage_limit(true), 600.0);
-    assert_eq!(voltage_limit(false), 1000.0);
+    assert_eq!(voltage_limit("one_two_family"), Some(600.0));
+    assert_eq!(voltage_limit("multifamily"), Some(1000.0));
+    assert_eq!(voltage_limit("other"), Some(1000.0));
+    // Not on or in a building: listed equipment up to 1500 V.
+    assert_eq!(voltage_limit("none"), Some(1500.0));
+    assert_eq!(voltage_limit(""), None);
 }
 
 #[test]
@@ -166,7 +170,7 @@ fn light(id: &str, circuit: f64) -> Value {
 
 fn dwelling_array() -> Value {
     json!({ "module_voc": 49.5, "module_isc": 13.9, "modules_per_string": 10, "strings": 2,
-        "lowest_ambient": 18, "dwelling": true, "inverter_current": 22,
+        "lowest_ambient": 18, "building": "one_two_family", "inverter_current": 22,
         "panel": "MDP", "busbar_rating": 100 })
 }
 
@@ -186,7 +190,7 @@ fn the_riser_shows_the_pv_circuits_on_the_service() {
         service[start..],
         [
             "Solar PV: 2 × 10 modules",
-            "PV max voltage: 514.8 V",
+            "PV max dc: 514.8 V",
             // 6.90.2.5: 514.8 V is 80 V dc or more.
             "PV dc arc-fault protection required",
             // 17.375 A, 21.71875 A. The other string can feed this one (6.90.2.3(A)), and
@@ -240,7 +244,7 @@ fn the_back_fed_panel_shows_its_busbar_check() {
     );
     // Center-fed elsewhere, on a 125 A busbar: 127.5 A > 125 A, and (2) needs ends, so (3):
     // 110 A ≤ 125 A with the 100 A main within it.
-    pv["dwelling"] = json!(false);
+    pv["building"] = json!("other");
     pv["busbar_rating"] = json!(125);
     let mdp = lines_of(&riser(pv, 100.0), "MDP");
     assert_eq!(
@@ -258,10 +262,10 @@ fn twelve_modules_are_over_600_v_on_a_dwelling_only() {
     let mut pv = dwelling_array();
     pv["modules_per_string"] = json!(12);
     let service = lines_of(&riser(pv.clone(), 100.0), "root");
-    assert!(service.contains(&"PV max voltage: 617.76 V, OVER 600 V".to_string()));
-    pv["dwelling"] = json!(false);
+    assert!(service.contains(&"PV max dc: 617.76 V, OVER 600 V".to_string()));
+    pv["building"] = json!("other");
     let service = lines_of(&riser(pv, 100.0), "root");
-    assert!(service.contains(&"PV max voltage: 617.76 V".to_string()));
+    assert!(service.contains(&"PV max dc: 617.76 V".to_string()));
 }
 
 #[test]
@@ -527,4 +531,44 @@ fn an_inverter_past_the_standard_ratings_is_over() {
         ..back_fed(5000.0, 100.0, 100.0)
     };
     assert_eq!(busbar_method(panel), Busbar::Over);
+}
+
+#[test]
+fn every_building_takes_its_6_90_2_1_limit() {
+    // 12 × 49.5 V × 1.04 = 617.76 V; 30 modules = 1544.4 V.
+    let line = |building: Value, modules: f64| {
+        let mut pv = dwelling_array();
+        pv["building"] = building;
+        pv["modules_per_string"] = json!(modules);
+        let service = lines_of(&riser(pv, 100.0), "root");
+        service
+            .into_iter()
+            .find(|l| l.starts_with("PV max dc"))
+            .unwrap()
+    };
+    assert_eq!(line(json!("multifamily"), 12.0), "PV max dc: 617.76 V");
+    assert_eq!(line(json!("none"), 12.0), "PV max dc: 617.76 V");
+    assert_eq!(
+        line(json!("none"), 30.0),
+        "PV max dc: 1544.4 V, OVER 1500 V"
+    );
+    assert_eq!(line(json!(null), 12.0), "PV max dc: 617.76 V");
+    let mut pv = dwelling_array();
+    pv["building"] = json!(null);
+    let service = lines_of(&riser(pv, 100.0), "root");
+    assert!(service.contains(&"PV dc limit: building not set".to_string()));
+}
+
+#[test]
+fn method_4_takes_multifamily_dwellings_too() {
+    let mut pv = dwelling_array();
+    pv["center_fed"] = json!(true);
+    pv["building"] = json!("multifamily");
+    assert_eq!(
+        lines_of(&riser(pv, 80.0), "MDP").last().unwrap(),
+        "PV CB at one end, not both"
+    );
+    assert!(is_dwelling(Some("one_two_family")));
+    assert!(!is_dwelling(Some("other")));
+    assert!(!is_dwelling(None));
 }

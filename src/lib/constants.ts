@@ -246,3 +246,15 @@ export const COORDINATION_SYSTEMS = [
 	{ value: 'critical_operations_power', label: 'Critical operations power (PEC 7.8.4.5)' },
 	{ value: 'critical_operations_data', label: 'Critical operations data (PEC 6.45.1.27)' }
 ] as const;
+
+/**
+ * Where a solar PV array is, for its PEC 2017 6.90.2.1 dc limit: 600 V on or in one- and
+ * two-family dwellings, 1000 V on other buildings, 1500 V for listed equipment away from
+ * buildings. The two dwellings also take 7.5.1.12(B)(2)(c)(4).
+ */
+export const PV_BUILDINGS = [
+	{ value: 'one_two_family', label: 'One- or two-family dwelling (600 V)' },
+	{ value: 'multifamily', label: 'Multifamily dwelling (1000 V)' },
+	{ value: 'other', label: 'Other building (1000 V)' },
+	{ value: 'none', label: 'Not on a building (1500 V)' }
+] as const;

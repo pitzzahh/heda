@@ -189,9 +189,10 @@ pub struct SolarPv {
     /// The lowest expected ambient temperature, °C (6.90.2.1(A)(2)).
     #[serde(default, deserialize_with = "number")]
     pub lowest_ambient: Option<f64>,
-    /// Whether the array is on or in a one- or two-family dwelling (6.90.2.1: 600 V, else 1000 V).
-    #[serde(default, deserialize_with = "boolean")]
-    pub dwelling: Option<bool>,
+    /// Where the array is (`solar::building`): on or in a one- or two-family dwelling, a
+    /// multifamily dwelling, another building, or not on a building (6.90.2.1).
+    #[serde(default)]
+    pub building: Option<String>,
     /// The outdoor temperature where the dc wiring runs, °C, for its conductor sizes.
     #[serde(default, deserialize_with = "number")]
     pub dc_ambient: Option<f64>,

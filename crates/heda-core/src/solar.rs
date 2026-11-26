@@ -32,14 +32,33 @@ pub fn max_voltage(module_voc: f64, modules: f64, lowest_ambient: f64) -> Option
     voltage_correction(lowest_ambient).map(|factor| module_voc * modules * factor)
 }
 
-/// 6.90.2.1: PV dc circuits on or in one- and two-family dwellings may reach 600 V, on
-/// other buildings 1000 V.
-pub fn voltage_limit(dwelling: bool) -> f64 {
-    if dwelling {
-        600.0
-    } else {
-        1000.0
+/// Where a PV array is, as `SolarPv.building` stores it.
+pub mod building {
+    pub const ONE_TWO_FAMILY: &str = "one_two_family";
+    pub const MULTIFAMILY: &str = "multifamily";
+    pub const OTHER: &str = "other";
+    /// Not on or in a building (a ground-mounted array).
+    pub const NONE: &str = "none";
+}
+
+/// 6.90.2.1: PV dc circuits on or in one- and two-family dwellings may reach 600 V, on or in
+/// other buildings 1000 V; away from buildings, listed dc PV equipment rated 1500 V or less
+/// is exempt from Parts 4.90.2 and 4.90.3 (over 1000 V), so 1500 V. None for no building.
+pub fn voltage_limit(building: &str) -> Option<f64> {
+    match building {
+        building::ONE_TWO_FAMILY => Some(600.0),
+        building::MULTIFAMILY | building::OTHER => Some(1000.0),
+        building::NONE => Some(1500.0),
+        _ => None,
     }
+}
+
+/// 7.5.1.12(B)(2)(c)(4) is for dwellings: one- and two-family and multifamily alike.
+pub fn is_dwelling(building: Option<&str>) -> bool {
+    matches!(
+        building,
+        Some(building::ONE_TWO_FAMILY | building::MULTIFAMILY)
+    )
 }
 
 /// 6.90.2.2(A)(1)(1): a source circuit's maximum current, the parallel modules' rated
@@ -115,8 +134,6 @@ pub fn busbar_method(panel: BackFed) -> Busbar {
         // A center-fed busbar has no end opposite its main.
         Busbar::OppositeEnd
     } else if within_120 && panel.dwelling {
-        // shortcut: "dwellings" is read from the one- or two-family dwelling box, so a
-        // multifamily dwelling misses (4); add a dwelling-occupancy input if one is asked for.
         Busbar::EitherEnd
     } else if inverter_ocpd(panel.inverter_current) > 0.0
         && !exceeds(devices, busbar)
@@ -283,13 +300,15 @@ pub fn service_lines(pv: &SolarPv) -> Vec<String> {
         .zip(pv.lowest_ambient)
         .and_then(|((voc, modules), ambient)| max_voltage(voc, modules, ambient));
     if let Some(voltage) = voltage {
-        let limit = voltage_limit(pv.dwelling == Some(true));
-        let over = if exceeds(voltage, limit) {
-            format!(", OVER {} V", show(limit))
-        } else {
-            String::new()
+        let limit = pv.building.as_deref().and_then(voltage_limit);
+        let over = match limit {
+            Some(limit) if exceeds(voltage, limit) => format!(", OVER {} V", show(limit)),
+            _ => String::new(),
         };
-        lines.push(format!("PV max voltage: {} V{over}", up(voltage)));
+        lines.push(format!("PV max dc: {} V{over}", up(voltage)));
+        if limit.is_none() {
+            lines.push("PV dc limit: building not set".into());
+        }
         if needs_arc_fault_protection(voltage) {
             lines.push("PV dc arc-fault protection required".into());
         }
@@ -396,7 +415,7 @@ pub fn panel_lines(pv: &SolarPv, main_at: f64, load_ocpds: f64) -> Vec<String> {
         busbar_rating: busbar,
         load_ocpds,
         center_fed: pv.center_fed == Some(true),
-        dwelling: pv.dwelling == Some(true),
+        dwelling: is_dwelling(pv.building.as_deref()),
     };
     let method = busbar_method(panel);
     let over = if method == Busbar::Over { ", OVER" } else { "" };

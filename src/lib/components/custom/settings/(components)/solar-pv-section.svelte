@@ -1,6 +1,7 @@
 <script lang="ts" module>
 	import type { Node } from '#lib/types/db.js';
 	import type { SolarPv } from '#lib/types/solar.js';
+	import { PV_BUILDINGS } from '#lib/constants.js';
 
 	interface Props {
 		root: Node;
@@ -8,7 +9,7 @@
 
 	type NumberKey = Exclude<
 		keyof SolarPv,
-		'dwelling' | 'center_fed' | 'on_feeder' | 'near_roof' | 'panel' | 'supply_side'
+		'building' | 'center_fed' | 'on_feeder' | 'near_roof' | 'panel' | 'supply_side'
 	>;
 
 	const NUMBER_FIELDS: { key: NumberKey; label: string; unit: string; step: string }[] = [
@@ -156,15 +157,27 @@
 			{/snippet}
 		</Field>
 	</div>
-	<Field of={form} path={['dwelling']}>
+	<Field of={form} path={['building']}>
 		{#snippet children(field)}
-			<Label class="flex items-center gap-2 text-xs font-normal">
-				<Checkbox
-					checked={field.input ?? false}
-					onCheckedChange={(checked) => field.onInput(checked)}
-				/>
-				On or in a one- or two-family dwelling (600 V dc limit, else 1000 V)
-			</Label>
+			<div class="flex min-w-0 flex-col gap-1">
+				<Label class="text-xs font-normal">Array location (PEC 2017 6.90.2.1)</Label>
+				<Select.Root
+					type="single"
+					value={field.input ?? ''}
+					onValueChange={(value) => field.onInput(value as SolarPv['building'])}
+				>
+					<Select.Trigger class="w-full">
+						{PV_BUILDINGS.find((option) => option.value === field.input)?.label ??
+							'Pick where the array is'}
+					</Select.Trigger>
+					<Select.Content>
+						{#each PV_BUILDINGS as option (option.value)}
+							<Select.Item value={option.value}>{option.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<FieldErrors errors={field.errors} />
+			</div>
 		{/snippet}
 	</Field>
 	<Field of={form} path={['near_roof']}>

@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import { PV_BUILDINGS } from '#lib/constants.js';
 
 const positive = (name: string) =>
 	v.pipe(
@@ -41,8 +42,13 @@ export const SOLAR_PV_SCHEMA = v.object({
 			v.minValue(-40, 'PEC 2017 Table 6.90.2.1(A) goes down to −40 °C.')
 		)
 	),
-	/** 6.90.2.1: 600 V on or in one- and two-family dwellings, else 1000 V. */
-	dwelling: v.optional(v.boolean()),
+	/** 6.90.2.1's building: its dc limit, and the dwellings of 7.5.1.12(B)(2)(c)(4). */
+	building: v.optional(
+		v.picklist(
+			PV_BUILDINGS.map((option) => option.value),
+			'Please select where the array is.'
+		)
+	),
 	/** The outdoor temperature where the dc wiring runs, for its conductor sizes. */
 	dc_ambient: v.optional(v.number('Please enter the dc wiring ambient temperature.')),
 	/** 3.10.2.6(B)(3)(c): in sunlight less than 23 mm above the roof, 33 °C is added. */
